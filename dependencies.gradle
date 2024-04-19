@@ -1,0 +1,28 @@
+/*
+ * Common place to define all the versioned dependencies
+ */
+ext {
+    lombokDep = 'org.projectlombok:lombok:1.+'
+    conductorDep = 'com.netflix.conductor:conductor-core:2.31.5'
+    hikaricpDep = 'com.zaxxer:HikariCP:4.+'
+    flywayDep = 'org.flywaydb:flyway-core:7.6.+'
+    jacksonDatabindDep = 'com.fasterxml.jackson.core:jackson-databind:2.+'
+    jacksonYamlDep = 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.+'
+    javaxInjectDep = 'javax.inject:javax.inject:1'
+    javaxValidationDep = 'javax.validation:validation-api:2.0.+'
+    quartzDep = 'org.quartz-scheduler:quartz:2.3.+'
+    jodaTimeDep = 'joda-time:joda-time:2.10.+'
+    cronutilsDep = 'com.cronutils:cron-utils:9.1.+'
+    zipkinDep = 'io.zipkin.brave:brave:5.+'
+    spectatorApiDep = 'com.netflix.spectator:spectator-api:1.+'
+    slf4jApiDep = 'org.slf4j:slf4j-api:1.7.25'
+
+    testcontainerDep = 'org.testcontainers:cockroachdb:1.19.0'
+    postgresqlDep = 'org.postgresql:postgresql:42.+'
+    slf4jLog4jDep = 'org.slf4j:slf4j-log4j12:2.+'
+    junitDep = 'junit:junit:4.13.2'
+    bvalJsrDep= 'org.apache.bval:bval-jsr:2.0.+'
+    assertJCoreDep = 'org.assertj:assertj-core:3.+'
+    mocktoCoreDep = 'org.mockito:mockito-core:4.+'
+    junitEngineDep = 'org.junit.vintage:junit-vintage-engine:5.+'
+}

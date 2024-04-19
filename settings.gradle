@@ -1,0 +1,6 @@
+rootProject.name = 'maestro'
+
+include 'cockroachdb-persistence'
+include 'netflix-sel'
+include 'maestro-common'
+include 'maestro-engine'

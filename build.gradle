@@ -1,0 +1,88 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath 'com.diffplug.spotless:spotless-plugin-gradle:6.10.0'
+        classpath "com.github.spotbugs.snom:spotbugs-gradle-plugin:6.+"
+    }
+}
+
+apply from: "${rootDir}/dependencies.gradle"
+
+allprojects {
+    apply plugin: 'java'
+    apply plugin: 'jacoco'
+    apply plugin: 'com.diffplug.spotless'
+
+    repositories {
+        mavenCentral()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+
+    spotless {
+        java {
+            googleJavaFormat()
+            removeUnusedImports() // removes any unused imports
+        }
+    }
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(8)
+        }
+    }
+}
+
+configure(allprojects - project(':cockroachdb-persistence') - project(':netflix-sel')) {
+    apply plugin: 'checkstyle'
+    apply plugin: 'pmd'
+    apply plugin: 'com.github.spotbugs'
+
+    apply plugin: 'java-library'
+    apply plugin: 'java-test-fixtures'
+
+    checkstyle {
+        checkstyleMain.enabled = true
+        checkstyleMain.source = fileTree("src/main/java")
+        checkstyleTest.enabled = false
+        checkstyleTestFixtures.enabled = true
+    }
+
+    pmd {
+        toolVersion = "6.21.0"
+        pmdTest.enabled = false
+        pmdTestFixtures.enabled = true
+        consoleOutput = true
+        rulesMinimumPriority = 5
+        ruleSetFiles = files("${rootDir}/config/pmd/ruleset.xml")
+        ruleSets = []
+    }
+
+    spotbugs {
+        ignoreFailures = true
+    }
+
+    group = 'com.netflix.maestro'
+
+    // Print out full stack traces when our tests fail to assist debugging (e.g., when scanning Jenkins console output)
+    tasks.withType(Test).configureEach {
+        useJUnitPlatform()
+        testLogging {
+            exceptionFormat = 'full'
+        }
+    }
+
+    dependencies {
+        compileOnly lombokDep
+        annotationProcessor lombokDep
+
+        testCompileOnly lombokDep
+        testAnnotationProcessor lombokDep
+    }
+}
