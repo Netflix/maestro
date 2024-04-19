@@ -1,0 +1,13 @@
+apply plugin: 'java-library'
+
+dependencies {
+    api conductorDep
+    api hikaricpDep
+    api flywayDep
+
+    testImplementation flywayDep
+    testImplementation testcontainerDep
+    testImplementation postgresqlDep
+    testImplementation hikaricpDep
+    testRuntimeOnly slf4jLog4jDep
+}
