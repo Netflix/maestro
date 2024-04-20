@@ -1,0 +1,774 @@
+/*
+ * This file is a modified version of ones originally found in the
+ * VTransformer and JavaGrammars Examples directory of JavaCC.
+ *
+ * The AST classes have been generated. PLEASE DO NOT CHANGE THEM.
+ *
+ * SEL: Simple/Secure/Safe Scheduler Expression Language
+ * SEL grammar follows Java Language Specification (JLS) Java 1.1
+ * SEL parser only parses a subset of Java grammar and keep it simple and secure
+ *
+ * Major changes (subject to change to satisfy user needs)
+ *  1) support of implicit returning the value of the last statement if no return
+ *  2) support of single quoted string literal
+ *  3) support of assignment without pre-declaration
+ *  4) support of throw "error message" to terminate evaluation and surface errors
+ *  5) no support of Java package, interface, class, and method
+ *  6) no support of generic classes, final, static variables.
+ *  7) no support of char, byte, short, float primitive types
+ *  8) no support of operators, "|", "^", "&", "<<", ">>", ">>>", "<<=", ">>=", ++, --, ~.
+ *  9) no support of switch, goto, label, do...while..., multi-dimension array
+ *
+ */
+
+/* Copyright (c) 2006, Sun Microsystems, Inc.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *     * Redistributions of source code must retain the above copyright notice,
+ *       this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name of the Sun Microsystems, Inc. nor the names of its
+ *       contributors may be used to endorse or promote products derived from
+ *       this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+ * THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+
+options {
+  JAVA_UNICODE_ESCAPE = true;
+  CACHE_TOKENS = true;
+
+  STATIC = false;
+  MULTI = true;
+  VISITOR = true;
+  NODE_USES_PARSER = true;
+  TRACK_TOKENS = true;
+  NODE_CLASS = "com.netflix.sel.visitor.SelBaseNode";
+}
+
+PARSER_BEGIN(SelParser)
+
+package com.netflix.sel.ast;
+
+import com.netflix.sel.type.SelBoolean;
+import com.netflix.sel.type.SelDouble;
+import com.netflix.sel.type.SelLong;
+import com.netflix.sel.type.SelString;
+import com.netflix.sel.type.SelType;
+import com.netflix.sel.type.SelTypeUtil;
+import com.netflix.sel.visitor.SelOp;
+
+public class SelParser { /* SEL parser. */
+}
+
+PARSER_END(SelParser)
+
+
+/* WHITE SPACE */
+
+SPECIAL_TOKEN :
+{
+  " "
+| "\t"
+| "\n"
+| "\r"
+| "\f"
+}
+
+/* COMMENTS */
+
+MORE :
+{
+  <"/**" ~["/"]> { input_stream.backup(1); } : IN_FORMAL_COMMENT
+|
+  "/*" : IN_MULTI_LINE_COMMENT
+}
+
+SPECIAL_TOKEN :
+{
+  <SINGLE_LINE_COMMENT: "//" (~["\n", "\r"])* ("\n" | "\r" | "\r\n")?>
+}
+
+<IN_FORMAL_COMMENT>
+SPECIAL_TOKEN :
+{
+  <FORMAL_COMMENT: "*/" > : DEFAULT
+}
+
+<IN_MULTI_LINE_COMMENT>
+SPECIAL_TOKEN :
+{
+  <MULTI_LINE_COMMENT: "*/" > : DEFAULT
+}
+
+<IN_FORMAL_COMMENT,IN_MULTI_LINE_COMMENT>
+MORE :
+{
+  < ~[] >
+}
+
+/* RESERVED WORDS AND LITERALS */
+
+TOKEN :
+{
+  < ABSTRACT: "abstract" >
+| < BOOLEAN: "boolean" >
+| < BREAK: "break" >
+| < BYTE: "byte" >
+| < CASE: "case" >
+| < CATCH: "catch" >
+| < CHAR: "char" >
+| < CLASS: "class" >
+| < CONST: "const" >
+| < CONTINUE: "continue" >
+| < _DEFAULT: "default" >
+| < DO: "do" >
+| < DOUBLE: "double" >
+| < ELSE: "else" >
+| < EXTENDS: "extends" >
+| < FALSE: "false" >
+| < FINAL: "final" >
+| < FINALLY: "finally" >
+| < FLOAT: "float" >
+| < FOR: "for" >
+| < GOTO: "goto" >
+| < IF: "if" >
+| < IMPLEMENTS: "implements" >
+| < IMPORT: "import" >
+| < INSTANCEOF: "instanceof" >
+| < INT: "int" >
+| < INTERFACE: "interface" >
+| < LONG: "long" >
+| < NATIVE: "native" >
+| < NEW: "new" >
+| < NULL: "null" >
+| < PACKAGE: "package">
+| < PRIVATE: "private" >
+| < PROTECTED: "protected" >
+| < PUBLIC: "public" >
+| < RETURN: "return" >
+| < SHORT: "short" >
+| < STATIC: "static" >
+| < SUPER: "super" >
+| < SWITCH: "switch" >
+| < SYNCHRONIZED: "synchronized" >
+| < THIS: "this" >
+| < THROW: "throw" >
+| < THROWS: "throws" >
+| < TRANSIENT: "transient" >
+| < TRUE: "true" >
+| < TRY: "try" >
+| < VOID: "void" >
+| < VOLATILE: "volatile" >
+| < WHILE: "while" >
+}
+
+/* LITERALS */
+
+TOKEN :
+{
+  < INTEGER_LITERAL:
+        <DECIMAL_LITERAL> (["l","L"])?
+      | <HEX_LITERAL> (["l","L"])?
+      | <OCTAL_LITERAL> (["l","L"])?
+  >
+|
+  < #DECIMAL_LITERAL: ["1"-"9"] (["0"-"9"])* >
+|
+  < #HEX_LITERAL: "0" ["x","X"] (["0"-"9","a"-"f","A"-"F"])+ >
+|
+  < #OCTAL_LITERAL: "0" (["0"-"7"])* >
+|
+  < FLOATING_POINT_LITERAL:
+        (["0"-"9"])+ "." (["0"-"9"])* (<EXPONENT>)? (["f","F","d","D"])?
+      | "." (["0"-"9"])+ (<EXPONENT>)? (["f","F","d","D"])?
+      | (["0"-"9"])+ <EXPONENT> (["f","F","d","D"])?
+      | (["0"-"9"])+ (<EXPONENT>)? ["f","F","d","D"]
+  >
+|
+  < #EXPONENT: ["e","E"] (["+","-"])? (["0"-"9"])+ >
+|
+  < STRING_LITERAL:
+      <DOUBLE_QUOTED_STRING>
+    | <SINGLE_QUOTED_STRING> // SEL string can be defined within single quote, breaking JLS
+  >
+|
+  < #SINGLE_QUOTED_STRING:
+      "'"
+      (   (~["'","\\","\n","\r"])
+        | ("\\"
+            ( ["n","t","b","r","f","\\","'","\""]
+            | ["0"-"7"] ( ["0"-"7"] )?
+            | ["0"-"3"] ["0"-"7"] ["0"-"7"]
+            )
+          )
+      )*
+      "'"
+  >
+|
+  < #DOUBLE_QUOTED_STRING:
+      "\""
+      (   (~["\"","\\","\n","\r"])
+        | ("\\"
+            ( ["n","t","b","r","f","\\","'","\""]
+            | ["0"-"7"] ( ["0"-"7"] )?
+            | ["0"-"3"] ["0"-"7"] ["0"-"7"]
+            )
+          )
+      )*
+      "\""
+  >
+}
+
+/* IDENTIFIERS */
+
+TOKEN :
+{
+  < IDENTIFIER: <LETTER> (<LETTER>|<DIGIT>)* >
+|
+  < #LETTER:
+      [
+       "\u0024",
+       "\u0041"-"\u005a",
+       "\u005f",
+       "\u0061"-"\u007a",
+       "\u00c0"-"\u00d6",
+       "\u00d8"-"\u00f6",
+       "\u00f8"-"\u00ff",
+       "\u0100"-"\u1fff",
+       "\u3040"-"\u318f",
+       "\u3300"-"\u337f",
+       "\u3400"-"\u3d2d",
+       "\u4e00"-"\u9fff",
+       "\uf900"-"\ufaff"
+      ]
+  >
+|
+  < #DIGIT:
+      [
+       "\u0030"-"\u0039",
+       "\u0660"-"\u0669",
+       "\u06f0"-"\u06f9",
+       "\u0966"-"\u096f",
+       "\u09e6"-"\u09ef",
+       "\u0a66"-"\u0a6f",
+       "\u0ae6"-"\u0aef",
+       "\u0b66"-"\u0b6f",
+       "\u0be7"-"\u0bef",
+       "\u0c66"-"\u0c6f",
+       "\u0ce6"-"\u0cef",
+       "\u0d66"-"\u0d6f",
+       "\u0e50"-"\u0e59",
+       "\u0ed0"-"\u0ed9",
+       "\u1040"-"\u1049"
+      ]
+  >
+}
+
+/* SEPARATORS */
+
+TOKEN :
+{
+  < LPAREN: "(" >
+| < RPAREN: ")" >
+| < LBRACE: "{" >
+| < RBRACE: "}" >
+| < LBRACKET: "[" >
+| < RBRACKET: "]" >
+| < SEMICOLON: ";" >
+| < COMMA: "," >
+| < DOT: "." >
+}
+
+/* OPERATORS */
+
+TOKEN :
+{
+  < ASSIGN: "=" >
+| < GT: ">" >
+| < LT: "<" >
+| < BANG: "!" >
+| < TILDE: "~" >
+| < HOOK: "?" >
+| < COLON: ":" >
+| < EQ: "==" >
+| < LE: "<=" >
+| < GE: ">=" >
+| < NE: "!=" >
+| < SC_OR: "||" >
+| < SC_AND: "&&" >
+| < INCR: "++" >
+| < DECR: "--" >
+| < PLUS: "+" >
+| < MINUS: "-" >
+| < STAR: "*" >
+| < SLASH: "/" >
+| < BIT_AND: "&" >
+| < BIT_OR: "|" >
+| < XOR: "^" >
+| < REM: "%" >
+| < LSHIFT: "<<" >
+| < RSIGNEDSHIFT: ">>" >
+| < RUNSIGNEDSHIFT: ">>>" >
+| < PLUSASSIGN: "+=" >
+| < MINUSASSIGN: "-=" >
+| < STARASSIGN: "*=" >
+| < SLASHASSIGN: "/=" >
+| < ANDASSIGN: "&=" >
+| < ORASSIGN: "|=" >
+| < XORASSIGN: "^=" >
+| < REMASSIGN: "%=" >
+| < LSHIFTASSIGN: "<<=" >
+| < RSIGNEDSHIFTASSIGN: ">>=" >
+| < RUNSIGNEDSHIFTASSIGN: ">>>=" >
+}
+
+
+/*****************************************
+ * THE SEL GRAMMAR STARTS HERE *
+ *****************************************/
+
+/*
+ * Program structuring syntax follows.
+ */
+
+ASTExecute Execute() : {}
+{
+  ( ImportDeclaration() )*
+  ( BlockStatement() )* <EOF>
+  { return jjtThis; }
+}
+
+void ImportDeclaration() :
+{}
+{
+  "import" [ "static" ]
+  <IDENTIFIER>
+  ( LOOKAHEAD(2) "." <IDENTIFIER>
+  )*
+  [ "." "*" ] ";"
+}
+
+void VariableDeclarator() :
+{}
+{
+  VariableDeclaratorId() [ "=" VariableInitializer() ]
+}
+
+void VariableDeclaratorId() :
+{ com.netflix.sel.ast.Token t; }
+{
+  t=<IDENTIFIER> { jjtThis.value = t.image; }
+}
+
+void VariableInitializer() #void :
+{}
+{
+  Expression()
+}
+
+// Only support one dimensional array
+void ArrayInitializer() :
+{}
+{
+  "{" [ VariableInitializer() ( LOOKAHEAD(2) "," VariableInitializer() )* ] [ "," ] "}"
+}
+
+
+/*
+ * Type, name and expression syntax follows.
+ */
+
+// Only support one dimensional array
+void Type() :
+{}
+{
+  ( PrimitiveType() | ClassType() )
+  [ "[" "]" { jjtThis.value = Boolean.TRUE; /* an array */ } ]
+}
+
+// int/long is mapped to Java Long and float and double is mapped to Java Double.
+void PrimitiveType() :
+{ Token t; }
+{
+( t="boolean"
+|
+  t="int"
+|
+  t="long"
+|
+  t="float"
+|
+  t="double"
+) {jjtThis.value = t.image;}
+}
+
+// Not support full path class, e.g. java.lang.Double
+void ClassType() :
+{  Token t; }
+{
+  t=<IDENTIFIER> { jjtThis.value = t.image; }
+}
+
+void Name() :
+/*
+ * A lookahead of 2 is required below since "Name" can be followed
+ * by a ".*" when used in the context of an "ImportDeclaration".
+ */
+{ Token t; }
+{
+  t=<IDENTIFIER> { jjtThis.value = t.image; }
+}
+
+/*
+ * Expression syntax follows.
+ */
+
+void Expression() :
+/*
+ * This expansion has been written this way instead of:
+ *   Assignment() | ConditionalExpression()
+ * for performance reasons.
+ * However, it is a weakening of the grammar for it allows the LHS of
+ * assignments to be any conditional expression whereas it can only be
+ * a primary expression.  Consider adding a semantic predicate to work
+ * around this.
+ *
+ * put a stricter limit than JLS.
+ */
+{}
+{
+  LOOKAHEAD( VariableDeclaratorId() ["[" Expression() "]"] AssignmentOperator() )
+  Assignment()
+|
+  ConditionalExpression()
+}
+
+void Assignment() :
+{}
+{
+  VariableDeclaratorId()
+  ["[" Expression() {jjtThis.value = Boolean.TRUE; /* an array */} "]"]
+  AssignmentOperator() Expression()
+}
+
+// Bitwise operator is not supported for now.
+void AssignmentOperator() :
+{}
+{
+    "="  {jjtThis.value = SelOp.ASSIGN;}
+  | "*=" {jjtThis.value = SelOp.MUL_ASSIGN;}
+  | "/=" {jjtThis.value = SelOp.DIV_ASSIGN;}
+  | "%=" {jjtThis.value = SelOp.MOD_ASSIGN;}
+  | "+=" {jjtThis.value = SelOp.ADD_ASSIGN;}
+  | "-=" {jjtThis.value = SelOp.SUB_ASSIGN;}
+}
+
+void ConditionalExpression() #void :
+{}
+{
+  ConditionalOrExpression()
+  [ "?" Expression() ":" Expression() {jjtThis.value = SelOp.TERNARY;}
+  #Ternary(3) ]
+}
+
+void ConditionalOrExpression() #void :
+{}
+{
+  ConditionalAndExpression() (
+  "||" ConditionalAndExpression() {jjtThis.value = SelOp.OR;}
+  #BinaryExpr(2) )*
+}
+
+void ConditionalAndExpression() #void :
+{}
+{
+  EqualityExpression() (
+  ("&&" EqualityExpression() {jjtThis.value = SelOp.AND;})
+  #BinaryExpr(2) )*
+}
+
+void EqualityExpression() #void :
+{}
+{
+  RelationalExpression() (
+  ( "==" RelationalExpression() {jjtThis.value = SelOp.EQUAL;}
+  | "!=" RelationalExpression() {jjtThis.value = SelOp.NOT_EQUAL;})
+  #BinaryExpr(2) )*
+}
+
+
+void RelationalExpression() #void :
+{}
+{
+  AdditiveExpression() (
+  ( "<" AdditiveExpression() {jjtThis.value = SelOp.LT;}
+  | ">" AdditiveExpression() {jjtThis.value = SelOp.GT;}
+  | "<=" AdditiveExpression() {jjtThis.value = SelOp.LTE;}
+  | ">=" AdditiveExpression() {jjtThis.value = SelOp.GTE;})
+  #BinaryExpr(2) )*
+}
+
+void AdditiveExpression() #void :
+{}
+{
+  MultiplicativeExpression() (
+  ( "+" MultiplicativeExpression() {jjtThis.value = SelOp.ADD;}
+  | "-" MultiplicativeExpression() {jjtThis.value = SelOp.SUB;} )
+  #BinaryExpr(2))*
+}
+
+void MultiplicativeExpression() #void :
+{}
+{
+  UnaryExpression() (
+  ( "*" UnaryExpression() {jjtThis.value = SelOp.MUL;}
+  | "/" UnaryExpression() {jjtThis.value = SelOp.DIV;}
+  | "%" UnaryExpression() {jjtThis.value = SelOp.MOD;})
+  #BinaryExpr(2) )*
+}
+
+// Not support ++i, i++, --i, i--, or ~i
+void UnaryExpression() #void :
+{}
+{
+  ( "-" UnaryExpression() {jjtThis.value = SelOp.MINUS;}
+  | "+" UnaryExpression() {jjtThis.value = SelOp.PLUS;}
+  | "!" UnaryExpression() {jjtThis.value = SelOp.NOT;}
+  ) #Unary(1)
+|
+  PrimaryExpression()
+}
+
+void PrimaryExpression() :
+{}
+{
+  PrimaryPrefix() ( LOOKAHEAD(2) PrimarySuffix() )*
+}
+
+void PrimaryPrefix() #void :
+{}
+{
+  Literal()
+|
+  "(" Expression() ")"
+|
+  AllocationExpression()
+|
+  Name()
+}
+
+// Not support new Foo().new Bar()
+void PrimarySuffix() :
+{ Token t; }
+{
+  ( "[" Expression() "]" ) #ArrayIdx
+|
+  "." (t=<IDENTIFIER> { jjtThis.value = SelString.of(t.image); }) #Method
+  [ Arguments() #Params ]
+}
+
+void Literal() :
+{ Token t; }
+{
+  t=<INTEGER_LITERAL> { jjtThis.value = SelLong.of(
+     t.image.replace("L", "").replace("l", "")); }
+|
+  t=<FLOATING_POINT_LITERAL> { jjtThis.value = SelDouble.of(t.image); }
+|
+  t=<STRING_LITERAL> // remove extra ' or " and unescape
+  { jjtThis.value = SelString.of(SelTypeUtil.preprocess(t.image)); }
+|
+  "true" { jjtThis.value = SelBoolean.of(true); }
+|
+  "false" { jjtThis.value = SelBoolean.of(false); }
+|
+  "null" { jjtThis.value = SelType.NULL; }
+}
+
+void Arguments() #void :
+{}
+{
+  "(" [ ArgumentList() ] ")"
+}
+
+void ArgumentList() #void :
+{}
+{
+  Expression() ( "," Expression() )*
+}
+
+void AllocationExpression() :
+{}
+{
+  LOOKAHEAD(2)
+  "new" PrimitiveType() ArrayDimsAndInits()
+|
+  "new" ClassType()
+    (
+      ArrayDimsAndInits()
+    |
+      Arguments() #Args
+    )
+}
+
+/*
+ * The second LOOKAHEAD specification below is to parse to PrimarySuffix
+ * if there is an expression between the "[...]".
+ *
+ * only support simple 1D array as Maestro only support 1D array
+ */
+void ArrayDimsAndInits() #void :
+{}
+{
+  LOOKAHEAD(2) ( "[" Expression() "]" ) #ArrayDims
+|
+  "[" "]" ArrayInitializer()
+}
+
+
+/*
+ * Statement syntax follows.
+ */
+
+// No support for label, do...while, switch, try...catch, throw, synchronized.
+void Statement() :
+{}
+{
+  Block()
+|
+// Breaking JLS because most of expressions is not a Java StatementExpression.
+  Expression() ";"  //TODO: change it after migration
+|
+  IfStatement()
+|
+  WhileStatement()
+|
+  ForStatement()
+|
+  BreakStatement()
+|
+  ContinueStatement()
+|
+  ReturnStatement()
+|
+  ThrowStatement()
+}
+
+void Block() :
+{}
+{
+  "{" ( BlockStatement() )* "}"
+}
+
+void BlockStatement() #void :
+{}
+{
+  LOOKAHEAD(Type() <IDENTIFIER>)
+  LocalVariableDeclaration() ";"
+|
+  Statement()
+}
+
+void LocalVariableDeclaration() :
+{}
+{
+  Type() VariableDeclarator() ( "," VariableDeclarator() )*
+}
+
+void StatementExpression() #void :
+/*
+ * The last expansion of this production accepts more than the legal
+ * Java expansions for StatementExpression.  This expansion does not
+ * use PostfixExpression for performance reasons.
+ */
+{}
+{
+  LOOKAHEAD( VariableDeclaratorId() ["[" Expression() "]"] AssignmentOperator() )
+  Assignment()
+|
+  PrimaryExpression()
+}
+
+void IfStatement() :
+/*
+ * The disambiguating algorithm of JavaCC automatically binds dangling
+ * else's to the innermost if statement.  The LOOKAHEAD specification
+ * is to tell JavaCC that we know what we are doing.
+ */
+{}
+{
+  "if" "(" Expression() ")" Statement() [ LOOKAHEAD(1) "else" Statement() ]
+}
+
+void WhileStatement() :
+{}
+{
+  "while" "(" Expression() ")" Statement()
+}
+
+// Only define and update a single loop variable inside for(...;...;...)
+void ForStatement() :
+{}
+{
+  "for" "(" [ ForInit() ] ";" [ Expression() ] ";" [ ForUpdate() ] ")" Statement()
+}
+
+void ForInit() :
+{}
+{
+  LOOKAHEAD( Type() <IDENTIFIER> )
+  LocalVariableDeclaration()
+|
+  StatementExpression()
+}
+
+void ForUpdate() :
+{}
+{
+  StatementExpression()
+}
+
+// no label support
+void BreakStatement() :
+{}
+{
+  "break" ";"
+}
+
+// no label support
+void ContinueStatement() :
+{}
+{
+  "continue" ";"
+}
+
+// MUST return something
+void ReturnStatement() :
+{}
+{
+  "return" Expression() ";"
+}
+
+// Throw an error message string
+void ThrowStatement() :
+{}
+{
+  "throw" Expression() ";"
+}
