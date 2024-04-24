@@ -1,0 +1,102 @@
+{
+  "workflow_id": "maestro_foreach_F3_1K_inline_instance",
+  "workflow_instance_id": 7,
+  "workflow_run_id": 5,
+  "workflow_uuid": "22759d4a-827c-4e8f-a21c-498c461c6c42",
+  "correlation_id": "sample-instance-test-1-1-2",
+  "workflow_version_id": 1,
+  "internal_id": 201,
+  "run_properties": {
+    "create_time": 1673507498483,
+    "owner": "tester"
+  },
+  "runtime_workflow": {
+    "id": "nested-foreach-wf1",
+    "steps": [{
+      "foreach": {
+        "id": "root-step",
+        "concurrency": 2,
+        "params": {
+          "loop_params": {
+            "value": {
+              "param1": {
+                "value": ["a", "b"],
+                "type": "String_array"
+              }
+            },
+            "type": "MAP"
+          }
+        },
+        "steps": [
+          {
+            "foreach": {
+              "id": "parent-step",
+              "concurrency": 3,
+              "params": {
+                "loop_params": {
+                  "value": {
+                    "x" : {
+                      "expression": "Util.intsBetween(1, i, 1);",
+                      "type": "long_array"
+                    }
+                  },
+                  "type": "MAP"
+                }
+              },
+              "steps": [
+                {
+                  "step": {
+                    "id": "test-step1",
+                    "type": "Sleep",
+                    "params": {
+                      "sleep_seconds":  {"expression": "x * 5;", "type":  "LONG"}
+                    }
+                  }
+                }
+              ],
+              "transition": {"successors": {"test-step2": "true"}}
+            }
+          },
+          {
+            "step": {
+              "id": "test-step2",
+              "type": "Sleep",
+              "params": {
+                "sleep_seconds":  {"expression": "i * 10;", "type":  "LONG"}
+              }
+            }
+          }
+        ]
+      }}]
+  },
+  "runtime_dag": {
+    "test-step1": {}
+  },
+  "params": {},
+  "initiator": {
+    "ancestors": [
+      {
+        "workflow_id": "nested-foreach-wf1",
+        "instance_id": 10,
+        "run_id": 1,
+        "step_id": "root-step",
+        "step_attempt_id": 1
+      }, {
+        "workflow_id": "maestro_foreach_F3_1K_middle_one",
+        "instance_id": 3,
+        "run_id": 1,
+        "step_id": "parent-step",
+        "step_attempt_id": 1
+      }
+    ],
+    "depth": 3,
+    "type": "FOREACH"
+  },
+
+  "status": "CREATED",
+  "request_time": 1673870176491,
+  "create_time": 1673870176528,
+  "start_time": 1673870176750,
+  "end_time": 1673870208304,
+  "modify_time": 1673870208305
+}

@@ -1,0 +1,16 @@
+{
+  "test1": {
+    "CREATED": [1],
+    "IN_PROGRESS": [2,4, 21],
+    "PAUSED": [5],
+    "TIMED_OUT": [7],
+    "STOPPED": [6],
+    "FAILED": [[8,9], [11,15]],
+    "SUCCEEDED": [10,[16,20], 22]
+  },
+  "test2": {
+    "IN_PROGRESS": [2,4, 21],
+    "STOPPED": [6],
+    "SUCCEEDED": [10,[16,20], 22]
+  }
+}

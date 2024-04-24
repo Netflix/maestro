@@ -1,0 +1,70 @@
+{
+  "emails": [
+    "demo+alertconfig_default1@netflix.com",
+    "demo+alertconfig_default2@netflix.com"
+  ],
+  "pagerduties": [
+    "default pager1",
+    "default pager2"
+  ],
+  "slack": {
+    "channels": [
+      "default_channel_1",
+      "default_channel_2"
+    ],
+    "users": [
+      "defaultuser1",
+      "defaultuser2"
+    ]
+  },
+  "type_configs": {
+    "STEP_FAILURE": {
+      "emails": [
+        "demo+alertconfig_failure@netflix.com"
+      ],
+      "pagerduties": [
+        "alert config failure pager"
+      ],
+      "slack": {
+        "channels": [
+          "channel_failure1"
+        ],
+        "users": [
+          "failureuser"
+        ]
+      },
+      "actions": [
+        "email",
+        "page",
+        "slack"
+      ]
+    },
+    "SUCCESS_WITHIN": {
+      "disabled": false,
+      "emails": [
+        "demo+alertconfig_success_within@netflix.com"
+      ],
+      "pagerduties": [
+        "alert config success_within pager"
+      ],
+      "slack": {
+        "channels": [
+          "channel_success_within"
+        ],
+        "users": [
+          "success_within_user"
+        ],
+        "mention_users": [
+          "success_within_mention1",
+          "success_within_mention2"
+        ]
+      },
+      "actions": [
+        "page",
+        "slack",
+        "cancel"
+      ],
+      "duration_minutes": 1440
+    }
+  }
+}

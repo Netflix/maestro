@@ -1,0 +1,19 @@
+{
+  "request_id": "97a57978-803f-403e-9f9b-376d34689723",
+  "restart_policy": "RESTART_FROM_BEGINNING",
+  "upstream_restart_mode" :  "RESTART_FROM_INLINE_ROOT",
+  "step_run_params": {
+    "foo": {
+      "value": "bar", "type": "STRING", "mode": "mutable"
+    },
+    "auu": {
+      "value": 123, "type": "LONG", "tags": ["runtime"]
+    },
+    "aaa": {
+      "value": "bar", "type": "STRING", "validator": "@NotNull", "mode": "mutable"
+    },
+    "bbb": {
+      "expression": "1 + 1;", "type": "LONG", "validator": "@Positive", "mode": "mutable_on_start"
+    }
+  }
+}

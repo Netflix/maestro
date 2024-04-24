@@ -1,0 +1,208 @@
+{
+  "properties": {
+    "owner": "demo",
+    "run_strategy": "parallel",
+    "step_concurrency": 20
+  },
+  "workflow": {
+    "id": "sample-dag-test-1-wf",
+    "name": "Complex DAG sample test 1",
+    "description": "Long description about this workflow",
+    "tags": [
+      {"name": "demo", "namespace": "system"},
+      "test",
+      {"name": "foo"}],
+    "params": {
+      "foo":  {"expression": "'bar1';", "type":  "STRING"}
+    },
+    "steps": [
+      {
+        "step": {
+          "id": "job_3",
+          "name": "job_3",
+          "transition": {
+            "successors": {
+              "job_2": "true",
+              "job_5": "true",
+              "job_6": "true",
+              "job_7": "true"
+            }
+          },
+          "type": "Sleep",
+          "params": {
+            "Sleep": {
+              "value": 10,
+              "type": "LONG",
+              "mode": "MUTABLE"
+            }
+          }
+        }
+      },
+      {
+        "step": {
+          "id": "job_9",
+          "name": "job_9",
+          "transition": {
+            "successors": {
+              "job_6": "true",
+              "job_8": "true"
+            }
+          },
+          "type": "Sleep",
+          "params": {
+            "Sleep": {
+              "value": 10,
+              "type": "LONG",
+              "mode": "MUTABLE"
+            }
+          }
+        }
+      },
+      {
+        "step": {
+          "id": "job_6",
+          "name": "job_6",
+          "transition": {
+            "successors": {
+              "job_1": "true",
+              "job_11": "true"
+            }
+          },
+          "type": "Sleep",
+          "params": {
+            "Sleep": {
+              "value": 10,
+              "type": "LONG",
+              "mode": "MUTABLE"
+            }
+          }
+        }
+      },
+      {
+        "step": {
+          "id": "job_1",
+          "name": "job_1",
+          "transition": {
+            "successors": {
+              "job_10": "true",
+              "job_4": "true"
+            }
+          },
+          "type": "Sleep",
+          "params": {
+            "Sleep": {
+              "value": 10,
+              "type": "LONG",
+              "mode": "MUTABLE"
+            }
+          }
+        }
+      },
+      {
+        "step": {
+          "id": "job_2",
+          "name": "job_2",
+          "transition": {},
+          "type": "Sleep",
+          "params": {
+            "Sleep": {
+              "value": 10,
+              "type": "LONG",
+              "mode": "MUTABLE"
+            }
+          }
+        }
+      },
+      {
+        "step": {
+          "id": "job_7",
+          "name": "job_7",
+          "transition": {},
+          "type": "Sleep",
+          "params": {
+            "Sleep": {
+              "value": 10,
+              "type": "LONG",
+              "mode": "MUTABLE"
+            }
+          }
+        }
+      },
+      {
+        "step": {
+          "id": "job_8",
+          "name": "job_8",
+          "transition": {},
+          "type": "Sleep",
+          "params": {
+            "Sleep": {
+              "value": 10,
+              "type": "LONG",
+              "mode": "MUTABLE"
+            }
+          }
+        }
+      },
+      {
+        "step": {
+          "id": "job_11",
+          "name": "job_11",
+          "transition": {},
+          "type": "Sleep",
+          "params": {
+            "Sleep": {
+              "value": 10,
+              "type": "LONG",
+              "mode": "MUTABLE"
+            }
+          }
+        }
+      },
+      {
+        "step": {
+          "id": "job_4",
+          "name": "job_4",
+          "transition": {},
+          "type": "Sleep",
+          "params": {
+            "Sleep": {
+              "value": 10,
+              "type": "LONG",
+              "mode": "MUTABLE"
+            }
+          }
+        }
+      },
+      {
+        "step": {
+          "id": "job_5",
+          "name": "job_5",
+          "transition": {},
+          "type": "Sleep",
+          "params": {
+            "Sleep": {
+              "value": 10,
+              "type": "LONG",
+              "mode": "MUTABLE"
+            }
+          }
+        }
+      },
+      {
+        "step": {
+          "id": "job_10",
+          "name": "job_10",
+          "transition": {},
+          "type": "Sleep",
+          "params": {
+            "Sleep": {
+              "value": 10,
+              "type": "LONG",
+              "mode": "MUTABLE"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

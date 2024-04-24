@@ -1,0 +1,15 @@
+{
+  "workflow_id": "sample-foreach-wf",
+  "workflow_version_id": 1,
+  "workflow_instance_id": 1,
+  "workflow_run_id": 1,
+  "step_id": "foreach-step1",
+  "step_attempt_id": 2,
+  "status": "CREATED",
+  "timeline_event": {
+    "timestamp": 1642534971701,
+    "type": "LOG",
+    "level": "INFO",
+    "message": "User [mock] take action [RESTART] on the step"
+  }
+}

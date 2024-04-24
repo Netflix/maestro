@@ -1,0 +1,38 @@
+{
+  "properties_snapshot": {
+    "owner": "tester"
+  },
+  "is_active": true,
+  "activate_time": 1598399975650,
+  "activated_by": "demo",
+  "is_default": true,
+  "modify_time": 1598399975650,
+  "metadata": {
+    "workflow_id": "sample-active-wf-with-time-triggers",
+    "create_time": 1598399975650,
+    "version_author": "demo"
+  },
+  "workflow": {
+    "id": "sample-active-wf-with-time-triggers",
+    "time_triggers": [
+      {
+        "cron": "0 0 12 1/1 * ? *",
+        "timezone": "US/Pacific",
+        "type": "CRON"
+      },
+      {
+        "expression": "@daily",
+        "timezone": "Asia/Tokyo",
+        "type": "PREDEFINED"
+      }
+    ],
+    "steps": [
+      {
+        "step": {
+          "id": "job1",
+          "type": "NoOp"
+        }
+      }
+    ]
+  }
+}

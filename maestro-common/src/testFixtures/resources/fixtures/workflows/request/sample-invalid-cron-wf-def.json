@@ -1,0 +1,28 @@
+{
+  "properties": {
+    "owner": "tester",
+    "run_strategy": "sequential",
+    "step_concurrency": 20
+  },
+  "workflow": {
+    "time_triggers": [
+      {
+        "cron": "0 30 * * *",
+        "timezone": "US/Pacific",
+        "fuzzy_max_delay": 60,
+        "type": "CRON"
+      }
+    ],
+    "id": "sample-time-trigger-wf",
+    "name": "Time Trigger Test Workflow 01",
+    "description": "Long description about this workflow",
+    "steps": [
+      {"step": {"id": "job.1", "type": "NoOp", "transition": {"successors": {"job.5": "true", "job.2":  "true"}}}},
+      {"step": {"id": "job.2", "type": "NoOp", "transition": {"successors": {"job.3": "true", "job.6":  "true"}}}},
+      {"step": {"id": "job.3", "type": "NoOp", "transition": {"successors": {"job.4": "true"}}}},
+      {"step": {"id": "job.4", "type": "NoOp", "transition": {}}},
+      {"step": {"id": "job.5", "type": "NoOp", "transition": {"successors": {"job.3": "true"}}}},
+      {"step": {"id": "job.6", "type": "NoOp", "transition": {"successors": {"job.4": "true"}}}}
+    ]
+  }
+}

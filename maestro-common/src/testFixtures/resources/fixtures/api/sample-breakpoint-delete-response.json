@@ -1,0 +1,8 @@
+{
+  "workflow_id": "sample-active-wf-with-defaults",
+  "step_id": "job.1",
+  "timeline_event": {
+    "timestamp": 1627971854383, "type": "LOG", "level": "INFO",
+    "message": "StepBreakpoint has been removed by the user [mock]. Total of [5] steps have been resumed"
+  }
+}

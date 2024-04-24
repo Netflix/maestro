@@ -1,0 +1,332 @@
+{
+  "workflow_id": "sample-foreach-wf",
+  "workflow_instance_id": 1,
+  "workflow_run_id": 5,
+  "step_id": "foreach-step1",
+  "step_attempt_id": 1,
+  "workflow_uuid": "9f2fe1ca-754f-48d8-b1c7-08d845276a6a",
+  "step_uuid": "5f75bb8f-474e-448f-a014-075f9f5dbda8",
+  "correlation_id": "sample-foreach-wf-1-1",
+  "step_instance_id": 3,
+  "workflow_version_id": 1,
+  "owner": "demo",
+  "definition": {
+    "foreach": {
+      "id": "foreach-step1",
+      "transition": {},
+      "failure_mode": "FAIL_AFTER_RUNNING",
+      "concurrency": 2,
+      "params": {
+        "loop_params": {
+          "value": {
+            "i": {
+              "value": [
+                1,
+                2,
+                3
+              ],
+              "type": "LONG_ARRAY",
+              "validator": "param!=null && param.size() > 2",
+              "mode": "MUTABLE"
+            },
+            "j": {
+              "expression": "param1;",
+              "type": "STRING_ARRAY",
+              "validator": "param!=null && param.size() > 2"
+            }
+          },
+          "type": "MAP"
+        },
+        "param1": {
+          "value": [
+            "a",
+            "b"
+          ],
+          "type": "STRING_ARRAY"
+        }
+      },
+      "steps": [
+        {
+          "step": {
+            "id": "job1",
+            "transition": {
+              "successors": {
+                "job.2": "true"
+              }
+            },
+            "type": "NoOp",
+            "retry_policy": {},
+            "tags": [
+              {
+                "name": "NoOp"
+              }
+            ],
+            "params": {
+              "param2": {
+                "expression": "i + j;",
+                "type": "STRING",
+                "mode": "MUTABLE"
+              }
+            }
+          }
+        },
+        {
+          "step": {
+            "id": "job.2",
+            "transition": {},
+            "type": "Sleep",
+            "params": {
+              "sleep_seconds": {
+                "expression": "i * 10;",
+                "type": "LONG"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tags": [],
+  "params": {
+    "loop_index": {
+      "value": -1,
+      "type": "LONG",
+      "validator": "@Min(0)",
+      "tags": [],
+      "mode": "CONSTANT",
+      "evaluated_result": -1,
+      "evaluated_time": 1686462761502,
+      "source": "SYSTEM_DEFAULT"
+    },
+    "loop_params": {
+      "value": {
+        "i": {
+          "value": [
+            1,
+            2,
+            3
+          ],
+          "type": "LONG_ARRAY",
+          "validator": "param!=null && param.size() > 2",
+          "tags": [],
+          "mode": "MUTABLE",
+          "source": "DEFINITION"
+        },
+        "j": {
+          "expression": "param1;",
+          "type": "STRING_ARRAY",
+          "validator": "param!=null && param.size() > 2",
+          "tags": [],
+          "mode": "MUTABLE",
+          "source": "DEFINITION"
+        }
+      },
+      "type": "MAP",
+      "validator": "@NotEmpty",
+      "tags": [],
+      "mode": "MUTABLE_ON_START",
+      "evaluated_result": {
+        "i": [
+          1,
+          2,
+          3
+        ],
+        "j": [
+          "a",
+          "b"
+        ]
+      },
+      "evaluated_time": 1686462761502,
+      "source": "DEFINITION"
+    },
+    "maestro_step_satisfied": {
+      "value": true,
+      "type": "BOOLEAN",
+      "evaluated_result": true,
+      "evaluated_time": 1686462760684
+    },
+    "param1": {
+      "value": [
+        "a",
+        "b"
+      ],
+      "type": "STRING_ARRAY",
+      "tags": [],
+      "mode": "MUTABLE",
+      "evaluated_result": [
+        "a",
+        "b"
+      ],
+      "evaluated_time": 1686462761502,
+      "source": "DEFINITION"
+    },
+    "step_attempt_id": {
+      "value": 1,
+      "type": "LONG",
+      "tags": [],
+      "mode": "CONSTANT",
+      "evaluated_result": 1,
+      "evaluated_time": 1686462761502,
+      "source": "SYSTEM_INJECTED"
+    },
+    "step_id": {
+      "expression": "return params.getFromStep(\"step_id\");",
+      "type": "STRING",
+      "tags": [],
+      "mode": "CONSTANT",
+      "evaluated_result": "foreach-step1",
+      "evaluated_time": 1686462761502,
+      "source": "SYSTEM_DEFAULT"
+    },
+    "step_instance_uuid": {
+      "value": "5f75bb8f-474e-448f-a014-075f9f5dbda8",
+      "type": "STRING",
+      "tags": [],
+      "mode": "CONSTANT",
+      "evaluated_result": "5f75bb8f-474e-448f-a014-075f9f5dbda8",
+      "evaluated_time": 1686462761502,
+      "source": "SYSTEM_INJECTED"
+    },
+    "workflow_id": {
+      "value": "sample-foreach-wf",
+      "type": "STRING",
+      "tags": [],
+      "mode": "MUTABLE",
+      "evaluated_result": "sample-foreach-wf",
+      "evaluated_time": 1686462761502,
+      "source": "SYSTEM_INJECTED"
+    },
+    "workflow_instance_id": {
+      "value": 1,
+      "type": "LONG",
+      "tags": [],
+      "mode": "CONSTANT",
+      "evaluated_result": 1,
+      "evaluated_time": 1686462761502,
+      "source": "SYSTEM_INJECTED"
+    }
+  },
+  "transition": {},
+  "step_retry": {
+    "error_retries": 0,
+    "error_retry_limit": 2,
+    "platform_retries": 0,
+    "platform_retry_limit": 10,
+    "manual_retries": 0,
+    "retryable": true,
+    "backoff": {
+      "error_retry_backoff_in_secs": 60,
+      "error_retry_exponent": 2,
+      "error_retry_limit_in_secs": 600,
+      "platform_retry_backoff_in_secs": 60,
+      "platform_retry_exponent": 2,
+      "platform_retry_limit_in_secs": 3600,
+      "type": "EXPONENTIAL_BACKOFF"
+    }
+  },
+  "runtime_state": {
+    "status": "SUCCEEDED",
+    "create_time": 1686462759454,
+    "initialize_time": 1686462760684,
+    "wait_signal_time": 1686462761501,
+    "evaluate_param_time": 1686462761501,
+    "wait_permit_time": 1686462761502,
+    "start_time": 1686462767719,
+    "execute_time": 1686462767732,
+    "finish_time": 1686462770827,
+    "end_time": 1686462771743,
+    "modify_time": 1686462771743
+  },
+  "artifacts": {
+    "maestro_foreach": {
+      "foreach_workflow_id": "maestro_foreach_Ib2_11_94587073c5c260cfd048a0d09251a917",
+      "foreach_identity": "[sample-foreach-wf][1][5][foreach-step1][1][5f75bb8f-474e-448f-a014-075f9f5dbda8]",
+      "foreach_run_id": 5,
+      "run_policy": "RESTART_FROM_SPECIFIC",
+      "run_id": 5,
+      "ancestor_iteration_count": 6,
+      "total_loop_count": 6,
+      "next_loop_index": 6,
+      "foreach_overview": {
+        "checkpoint": 6,
+        "stats": {
+          "SUCCEEDED": 6
+        },
+        "rollup": {
+          "total_leaf_count": 0
+        },
+        "details": {
+          "SUCCEEDED": [
+            [
+              1,
+              6
+            ]
+          ]
+        }
+      },
+      "type": "FOREACH"
+    },
+    "tracing_context": {
+      "tracing_id": "64856127da80d24871b9d63118591014"
+    }
+  },
+  "timeline": [
+    {
+      "timestamp": 1686462759454,
+      "type": "STATUS",
+      "status": "CREATED"
+    },
+    {
+      "timestamp": 1686462760684,
+      "type": "STATUS",
+      "status": "INITIALIZED"
+    },
+    {
+      "timestamp": 1686462761501,
+      "type": "STATUS",
+      "status": "WAITING_FOR_SIGNALS"
+    },
+    {
+      "timestamp": 1686462761501,
+      "type": "STATUS",
+      "status": "EVALUATING_PARAMS"
+    },
+    {
+      "timestamp": 1686462761502,
+      "type": "STATUS",
+      "status": "WAITING_FOR_PERMITS"
+    },
+    {
+      "timestamp": 1686462764821,
+      "type": "LOG",
+      "level": "INFO",
+      "message": "Step could not acquire all the tag-permits"
+    },
+    {
+      "timestamp": 1686462767719,
+      "type": "LOG",
+      "level": "INFO",
+      "message": "Step acquired all the required tag-permits"
+    },
+    {
+      "timestamp": 1686462767719,
+      "type": "STATUS",
+      "status": "STARTING"
+    },
+    {
+      "timestamp": 1686462767732,
+      "type": "STATUS",
+      "status": "RUNNING"
+    },
+    {
+      "timestamp": 1686462770827,
+      "type": "STATUS",
+      "status": "FINISHING"
+    },
+    {
+      "timestamp": 1686462771743,
+      "type": "STATUS",
+      "status": "SUCCEEDED"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "cron": "0 0 12 1/1 * ? *",
+  "timezone": "US/Pacific",
+  "type": "CRON"
+}

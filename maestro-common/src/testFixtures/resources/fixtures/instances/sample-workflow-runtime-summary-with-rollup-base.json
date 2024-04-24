@@ -1,0 +1,38 @@
+{
+  "instance_status": "IN_PROGRESS",
+  "modify_time": 1609272999998,
+  "runtime_overview": {
+    "step_overview": {
+      "NOT_CREATED": 2,
+      "RUNNING": 1,
+      "SUCCEEDED": 1
+    },
+    "total_step_count": 4
+  },
+  "rollup_base": {
+    "total_leaf_count": 11,
+    "overview": {
+      "SUCCEEDED": {
+        "cnt": 10
+      },
+      "STOPPED": {
+        "cnt": 1
+      }
+    }
+  },
+  "start_time": 1609272999666,
+  "timeline": [
+    {
+      "timestamp": 1609272999666,
+      "type": "LOG",
+      "level": "INFO",
+      "message": "hello world"
+    },
+    {
+      "timestamp": 1609272999666,
+      "type": "DETAILS",
+      "status": "INTERNAL_ERROR",
+      "message": "sample error details"
+    }
+  ]
+}

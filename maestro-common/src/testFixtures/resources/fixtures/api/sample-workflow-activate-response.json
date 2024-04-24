@@ -1,0 +1,10 @@
+{
+  "workflow_id": "sample-dag-test-3",
+  "workflow_version_id": 1,
+  "timeline_event": {
+    "timestamp": 1627973018438,
+    "type": "ACTION",
+    "action": "ACTIVATE",
+    "message": "Caller [mock] activates workflow version [sample-dag-test-3][2], previous active version is [1]"
+  }
+}

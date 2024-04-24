@@ -1,0 +1,19 @@
+{
+  "workflow_id": "sample-dag-test-3",
+  "workflow_instance_id": 1,
+  "workflow_run_id": 1,
+  "step_id": "job.2",
+  "step_attempt_id": 1,
+  "timeline_event": {
+    "timestamp": 1627712566971,
+    "type": "LOG",
+    "level": "INFO",
+    "message": "User [unknown] take action [STOP] on the step"
+  },
+  "step_runtime_state": {
+    "status": "STOPPED",
+    "create_time": 1627712566293,
+    "initialize_time": 1627712566296,
+    "modify_time": 1627712566296
+  }
+}

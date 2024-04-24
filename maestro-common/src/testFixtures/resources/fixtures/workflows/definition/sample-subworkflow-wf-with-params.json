@@ -1,0 +1,42 @@
+{
+  "workflow": {
+    "name": "subworkflow_1",
+    "id": "subworkflow_1",
+    "steps": [
+      {
+        "subworkflow": {
+          "id": "job_1",
+          "name": "job_1",
+          "sync": true,
+          "params": {
+            "subworkflow_id": {
+              "value": "job_1",
+              "type": "STRING",
+              "mode": "MUTABLE"
+            },
+            "subworkflow_version": {
+              "value": "active",
+              "type": "STRING",
+              "mode": "MUTABLE"
+            }
+          },
+          "tags": [
+            "MAESTRO.defid.subworkflow_1.job_1",
+            "MAESTRO.owner.demo",
+            "MAESTRO.stepid.job_1",
+            "MAESTRO.type.steps.startsubworkflow",
+            "MAESTRO.wfid.subworkflow_1"
+          ],
+          "timeout": 0,
+          "transition": {}
+        }
+      }
+    ],
+    "tags": [
+      "MAESTRO",
+      "MAESTRO.wfid.subworkflow_1",
+      "MAESTRO.YAML_DSL"
+    ],
+    "timeout": 0
+  }
+}

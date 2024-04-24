@@ -1,0 +1,141 @@
+{
+  "emails": [
+    "demo+alertconfig_default1@netflix.com",
+    "demo+alertconfig_default2@netflix.com"
+  ],
+  "pagerduties": [
+    "default pager1",
+    "default pager2"
+  ],
+  "slack": {
+    "channels": [
+      "default_channel_1",
+      "default_channel_2"
+    ],
+    "users": [
+      "defaultuser1",
+      "defaultuser2"
+    ]
+  },
+  "tct": {
+    "completed_by_hour": 1,
+    "tz": "UTC"
+  },
+  "bypass_digest_config": {
+    "workflow": true,
+    "steps": [
+      "step1",
+      "another_really_important_step"
+    ]
+  },
+  "type_configs": {
+    "STEP_FAILURE": {
+      "emails": [
+        "demo+alertconfig_failure@netflix.com"
+      ],
+      "pagerduties": [
+        "alert config failure pager"
+      ],
+      "slack": {
+        "channels": [
+          "channel_failure1"
+        ],
+        "users": [
+          "failureuser"
+        ]
+      },
+      "actions": [
+        "email",
+        "page",
+        "slack"
+      ]
+    },
+    "TCT_VIOLATION": {
+      "disabled": false,
+      "emails": [
+        "demo+alertconfig_tct@netflix.com"
+      ],
+      "pagerduties": [
+        "alert config tct pager"
+      ],
+      "slack": {
+        "channels": [
+          "channel_tct"
+        ],
+        "users": [
+          "tctuser"
+        ],
+        "mention_users": [
+          "tct_mention1",
+          "tct_mention2"
+        ]
+      },
+      "actions": [
+        "page",
+        "slack",
+        "cancel"
+      ]
+    },
+    "LONG_RUNNING": {
+      "disabled": true,
+      "emails": [
+        "demo+alertconfig_longrunning@netflix.com"
+      ],
+      "pagerduties": [
+        "alert config long running pager"
+      ],
+      "slack": {
+        "channels": [
+          "channel_longrunning1",
+          "channel_longrunning2"
+        ],
+        "users": [
+          "longrunninguser"
+        ]
+      },
+      "actions": [
+        "email",
+        "page"
+      ],
+      "granularity": "ALL"
+    },
+    "BREAKPOINT_HIT": {
+      "emails": [
+        "demo+alertconfig_breakpoint@netflix.com"
+      ],
+      "slack": {
+        "channels": [
+          "channel_breakpoint"
+        ]
+      },
+      "actions": [
+        "email",
+        "slack"
+      ],
+      "granularity": "step"
+    },
+    "DEFINITION_CHANGE": {
+      "emails": [
+        "demo+alerting_wf_test_override_dc@netflix.com"
+      ],
+      "disabled": false,
+      "slack": {
+        "channels": [
+          "channel_defchange"
+        ],
+        "users": [
+          "defchange1",
+          "defchange2"
+        ]
+      },
+      "actions": [
+        "slack"
+      ],
+      "granularity": "Workflow"
+    }
+  },
+  "pagerduty_config": {
+    "always_page": true,
+    "severity": "warning"
+  }
+}

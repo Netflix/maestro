@@ -1,0 +1,8 @@
+{
+  "workflow_id": "sample-active-wf-with-defaults",
+  "workflow_version": "latest",
+  "workflow_instance_id": 1,
+  "workflow_run": "latest",
+  "step_id": "job.1",
+  "step_attempt_id": 1
+}

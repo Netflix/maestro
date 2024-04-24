@@ -1,0 +1,59 @@
+{
+  "long_array_param": {
+    "evaluated_result": [
+      1,
+      2,
+      3
+    ],
+    "evaluated_time": 1626893775979,
+    "type": "LONG_ARRAY",
+    "value": [
+      1,
+      2,
+      3
+    ]
+  },
+  "long_param": {
+    "evaluated_result": 21,
+    "evaluated_time": 1626893775979,
+    "type": "LONG",
+    "value": 21
+  },
+  "str_param": {
+    "evaluated_result": "hello",
+    "evaluated_time": 1626893775979,
+    "type": "STRING",
+    "value": "hello"
+  },
+  "string_map_param": {
+    "evaluated_result": {
+      "a": "b",
+      "b": "d"
+    },
+    "evaluated_time": 1626893775979,
+    "type": "STRING_MAP",
+    "value": {
+      "a": "b",
+      "b": "d"
+    }
+  },
+  "map_param": {
+    "value": {
+      "table_name": {
+        "value": [
+          "p1",
+          "p2"
+        ],
+        "type": "STRING_ARRAY"
+      }
+    },
+    "type": "MAP",
+    "evaluated_result": {
+      "table_name": [
+        "p1",
+        "p2"
+      ]
+    },
+    "evaluated_time": 1626893775979
+  }
+}

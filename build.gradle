@@ -37,6 +37,15 @@ allprojects {
             languageVersion = JavaLanguageVersion.of(8)
         }
     }
+
+    configurations.all {
+        resolutionStrategy {
+            // Force 2.11.4 until upgrade is done
+            // Jackson is to be locked due to conversion issue with Double<>BigDecimal
+            force "com.fasterxml.jackson.core:jackson-databind:2.11.4"
+            force "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.11.4"
+        }
+    }
 }
 
 configure(allprojects - project(':cockroachdb-persistence') - project(':netflix-sel')) {

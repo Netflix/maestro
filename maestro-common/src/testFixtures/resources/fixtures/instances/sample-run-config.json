@@ -1,0 +1,47 @@
+{
+  "runtime_tags": [
+    {
+      "name": "demo",
+      "namespace": "SYSTEM"
+    }
+  ],
+  "correlation_id": "97a57978-803f-403e-9f9b-376d34689723",
+  "policy": "RESTART_FROM_BEGINNING",
+  "restart_config": {
+    "restart_path": [
+      {
+        "workflow_id": "foo",
+        "instance_id": 123,
+        "step_id": "bar"
+      }
+    ],
+    "restart_policy": "RESTART_FROM_INCOMPLETE",
+    "downstream_policy": "RESTART_FROM_BEGINNING",
+    "restart_params": {
+      "foo": {
+        "value": "bar", "type": "STRING", "mode": "mutable"
+      },
+      "auu": {
+        "value": 123, "type": "LONG", "tags": ["runtime"]
+      },
+      "aaa": {
+        "value": "bar", "type": "STRING", "validator": "@NotNull", "mode": "mutable"
+      },
+      "bbb": {
+        "expression": "1 + 1;", "type": "LONG", "validator": "@Positive", "mode": "mutable_on_start"
+      }
+    },
+    "step_restart_params": {
+      "step_1": {
+        "param1":  {
+          "value": "foo", "type": "STRING", "mode": "mutable"
+        }
+      },
+      "step_2": {
+        "param2":  {
+          "value": "bar", "type": "STRING", "mode": "mutable"
+        }
+      }
+    }
+  }
+}

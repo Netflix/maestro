@@ -1,0 +1,9 @@
+{
+  "workflow_id": "sample-dag-test-3",
+  "workflow_instance_id": 1,
+  "workflow_run_id": 1,
+  "step_id": "job1",
+  "action": "BYPASS_STEP_DEPENDENCIES",
+  "user": "tester",
+  "create_time": 1628095341130
+}

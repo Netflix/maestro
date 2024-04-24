@@ -1,0 +1,22 @@
+{
+  "type": "SIGNAL",
+  "definitions": [
+    {
+      "value": {
+        "p1": {
+          "value": 1,
+          "type": "LONG"
+        },
+        "p2": {
+          "expression": "1+1",
+          "type": "STRING"
+        },
+        "name": {
+          "value": "out",
+          "type": "STRING"
+        }
+      },
+      "type": "MAP"
+    }
+  ]
+}

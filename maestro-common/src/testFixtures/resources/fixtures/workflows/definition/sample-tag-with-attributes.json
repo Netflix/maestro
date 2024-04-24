@@ -1,0 +1,8 @@
+{
+  "name": "some-workflow-tag",
+  "namespace": "PLATFORM",
+  "creator": "maestro-dev",
+  "created_at_milli":  1234,
+  "technical_support":  "maestro-dev",
+  "valid_until_milli":  12345
+}

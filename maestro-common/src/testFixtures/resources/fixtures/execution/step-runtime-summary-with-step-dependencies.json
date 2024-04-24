@@ -1,0 +1,131 @@
+{
+  "artifacts": {
+    "tracing_context": {
+      "tracing_id": "63db5f82b9ea6d4575eb9dfa8246d8a2"
+    }
+  },
+  "db_operation": "UPDATE",
+  "dependencies": {
+    "SIGNAL": {
+      "statuses": [
+        {
+          "params": {
+            "evaluated_result": {
+              "name": "db/test/table1",
+              "valid_thru_utc_ts": "1666767600"
+            },
+            "evaluated_time": 1675321220316,
+            "type": "MAP",
+            "value": {
+              "name": {
+                "type": "STRING",
+                "value": "db/test/table1"
+              },
+              "valid_thru_utc_ts": {
+                "operator": ">=",
+                "parameter": {
+                  "expression": "\nLong l = Util.dateIntHourToTs(TARGET_RUN_DATE, \"00\", WORKFLOW_CRON_TIMEZONE, 0, 0)/1000;\nreturn l.toString();\n",
+                  "type": "STRING"
+                },
+                "type": "SIGNAL"
+              }
+            }
+          },
+          "status": "PENDING"
+        }
+      ],
+      "type": "SIGNAL"
+    }
+  },
+  "params": {
+    "maestro_step_satisfied": {
+      "evaluated_result": true,
+      "evaluated_time": 1675321220315,
+      "type": "BOOLEAN",
+      "value": true
+    }
+  },
+  "runtime_state": {
+    "create_time": 1675321218593,
+    "initialize_time": 1675321220316,
+    "modify_time": 1675321222572,
+    "status": "WAITING_FOR_SIGNALS",
+    "wait_signal_time": 1675321222572
+  },
+  "step_attempt_id": 1,
+  "step_id": "etl.tableau_extract.ctas",
+  "step_instance_id": 3,
+  "step_instance_uuid": "a0ddb1d9-6cc4-4b65-ba85-57468c5275b1",
+  "step_name": "etl.tableau_extract.ctas",
+  "step_retry": {
+    "backoff": {
+      "error_retry_backoff_in_secs": 60,
+      "error_retry_exponent": 2,
+      "error_retry_limit_in_secs": 600,
+      "platform_retry_backoff_in_secs": 60,
+      "platform_retry_exponent": 2,
+      "platform_retry_limit_in_secs": 3600,
+      "type": "EXPONENTIAL_BACKOFF"
+    },
+    "error_retries": 0,
+    "error_retry_limit": 2,
+    "manual_retries": 0,
+    "platform_retries": 0,
+    "platform_retry_limit": 10,
+    "retryable": true
+  },
+  "sub_type": "Spark",
+  "synced": true,
+  "tags": [
+    {
+      "name": "hadoop"
+    },
+    {
+      "name": "MAESTRO.defid.etl.tableau_extract.ctas"
+    },
+    {
+      "name": "job-docs"
+    },
+    {
+      "name": "MAESTRO.type.sparknotebook"
+    },
+    {
+      "name": "spark"
+    },
+    {
+      "name": "MAESTRO.stepid.etl.tableau_extract.ctas"
+    },
+    {
+      "name": "genie"
+    },
+    {
+      "name": "MAESTRO.template.tde"
+    },
+    {
+      "name": "MAESTRO.runtime.titus"
+    },
+    {
+      "name": "MAESTRO.wfid.tool"
+    },
+    {
+      "name": "MAESTRO.owner.tester"
+    }
+  ],
+  "timeline": [],
+  "tracing_context": {
+    "parent_span_id": 8497058821217638000,
+    "sampled": true,
+    "span_id": -8451294782409568000,
+    "trace_id_high": 7195449844724035000,
+    "trace_id_low": 8497058821217638000
+  },
+  "transition": {
+    "successors": {
+      "etl.tableau_extract.tde": {
+        "expression": "return maestro_step_satisfied && (true);",
+        "type": "BOOLEAN"
+      }
+    }
+  },
+  "type": "Notebook"
+}

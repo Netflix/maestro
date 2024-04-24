@@ -1,0 +1,216 @@
+{
+  "workflow_id": "sample-dag-test-3",
+  "workflow_instance_id": 1,
+  "workflow_run_id": 2,
+  "step_id": "job1",
+  "step_instance_id": 1,
+  "step_attempt_id": 1,
+  "workflow_uuid": "9d989d63-b854-41c8-b406-df19b5b7374d",
+  "step_uuid": "ff4ccce2-0fda-4882-9cd8-12ff90cb5f01",
+  "correlation_id": "sample-dag-test-3-1-1",
+  "workflow_version_id": 1,
+  "owner": "tester",
+  "definition": {
+    "step": {
+      "id": "job1",
+      "transition": {
+        "successors": {
+          "job.2": "true",
+          "job3": "true"
+        }
+      },
+      "type": "Sleep",
+      "failure_mode": "IGNORE_FAILURE",
+      "retry_policy": {
+        "error_retry_limit": 2,
+        "platform_retry_limit": 10,
+        "backoff": {
+          "error_retry_backoff_in_secs": 1,
+          "platform_retry_backoff_in_secs": 1,
+          "type": "FIXED_BACKOFF"
+        }
+      },
+      "params": {
+        "sleep_seconds": {
+          "value": 15,
+          "type": "LONG"
+        }
+      },
+      "outputs": {
+        "SIGNAL": {
+          "type": "SIGNAL",
+          "definitions": [
+            {
+              "value": {
+                "name": {
+                  "value": "dummy/test/signal1",
+                  "type": "STRING"
+                },
+                "p1": {
+                  "value": 1,
+                  "type": "LONG"
+                },
+                "p2": {
+                  "expression": "1+1",
+                  "type": "LONG"
+                }
+              },
+              "type": "MAP"
+            },
+            {
+              "value": {
+                "name": {
+                  "expression": "aaa",
+                  "type": "STRING"
+                },
+                "p1": {
+                  "expression": "foo + 1;",
+                  "type": "LONG"
+                },
+                "p2": {
+                  "expression": "auu+1",
+                  "type": "LONG"
+                }
+              },
+              "type": "MAP"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "job1"
+    }
+  ],
+  "params": {
+    "maestro_step_satisfied": {
+      "value": true,
+      "type": "BOOLEAN",
+      "evaluated_result": true,
+      "evaluated_time": 1608749932077
+    },
+    "sleep_seconds": {
+      "value": 15,
+      "type": "LONG",
+      "evaluated_result": 15,
+      "evaluated_time": 1608749932078
+    }
+  },
+  "transition": {
+    "successors": {
+      "job.2": {
+        "expression": "return maestro_step_satisfied && (true);",
+        "type": "BOOLEAN",
+        "evaluated_result": true,
+        "evaluated_time": 1608749950265
+      },
+      "job3": {
+        "expression": "return maestro_step_satisfied && (true);",
+        "type": "BOOLEAN",
+        "evaluated_result": true,
+        "evaluated_time": 1608749950266
+      }
+    }
+  },
+  "step_retry": {
+    "error_retries": 0,
+    "error_retry_limit": 2,
+    "platform_retries": 0,
+    "platform_retry_limit": 10,
+    "manual_retries": 0,
+    "retryable": true
+  },
+  "runtime_state": {
+    "status": "FATALLY_FAILED",
+    "create_time": 1608749932076,
+    "initialize_time": 1608749932078,
+    "wait_signal_time": 1608749934142,
+    "wait_permit_time": 1608749934142,
+    "start_time": 1608749934142,
+    "execute_time": 1608749934147,
+    "finish_time": 1608749950263,
+    "end_time": 1608749950263,
+    "modify_time": 1608749950263
+  },
+  "timeline": [
+    {
+      "timestamp": 1609272999666,
+      "type": "LOG",
+      "level": "INFO",
+      "message": "hello world"
+    },
+    {
+      "timestamp": 1609272999666,
+      "type": "DETAILS",
+      "status": "INTERNAL_ERROR",
+      "message": "sample error details"
+    }
+  ],
+  "outputs": {
+    "SIGNAL": {
+      "type": "SIGNAL",
+      "outputs": [
+        {
+          "param": {
+            "value": {
+              "name": {
+                "value": "dummy/test/signal1",
+                "type": "STRING"
+              },
+              "p1": {
+                "value": 1,
+                "type": "LONG"
+              },
+              "p2": {
+                "expression": "1+1",
+                "type": "LONG"
+              }
+            },
+            "type": "MAP",
+            "evaluated_result": {
+              "name": "dummy/test/signal1",
+              "p1": 1,
+              "p2": 2
+            },
+            "evaluated_time": 1667197463147
+          },
+          "output_signal_instance": {
+            "announced_time": 1667197463771,
+            "output_signal_instance_id": "52726829-e6a9-366f-adae-4acb54e6b733"
+          }
+        },
+        {
+          "param": {
+            "value": {
+              "name": {
+                "expression": "aaa",
+                "type": "STRING"
+              },
+              "p1": {
+                "expression": "foo + 1;",
+                "type": "LONG"
+              },
+              "p2": {
+                "expression": "auu+1",
+                "type": "LONG"
+              }
+            },
+            "type": "MAP",
+            "evaluated_result": {
+              "name": "bar",
+              "p1": 11,
+              "p2": 124
+            },
+            "evaluated_time": 1667197463148
+          },
+          "output_signal_instance": {
+            "announced_time": 1667197464191,
+            "output_signal_instance_id": "9b9b994f-71a1-3b9c-bb95-6ead3951715d"
+          }
+        }
+      ]
+    }
+  }
+}

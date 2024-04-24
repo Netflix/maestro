@@ -1,0 +1,14 @@
+{
+  "workflow_id": "sample-foreach-wf",
+  "workflow_instance_id": 1,
+  "workflow_run_id": 1,
+  "workflow_instance_status": "FAILED",
+  "info": "The action is done.",
+  "timeline_event": {
+    "timestamp": 1628707375885,
+    "type": "LOG",
+    "level": "INFO",
+    "message": "[API] call by user to UNBLOCK the latest running workflow instance run"
+  },
+  "completed": true
+}

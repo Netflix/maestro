@@ -1,0 +1,57 @@
+{
+  "cmb_job_id": "1a6ae938-de11-4e42-95e4-078b8eda159a",
+  "cmb_ui_link": "https://titus.netflix.net/tenants/5b1547dd-b38f-42a2-9263-ca77abf756a8/jobs/1a6ae938-de11-4e42-95e4-078b8eda159a",
+  "execution_script": "/init sleep 15",
+  "titus_job_id": "e645e02f-fd0b-47ea-a679-800ce9427fab",
+  "titus_log_ui_link": "https://titus.netflix.net/jobs/e645e02f-fd0b-47ea-a679-800ce9427fab/tasks/102a46ae-a4df-48cb-81eb-c2fd4c64c3a6/logs",
+  "titus_options": {
+    "application_name": "test_app",
+    "attributes": {},
+    "container_attributes": {},
+    "cpu": 1,
+    "disk_mb": 10000,
+    "entrypoint": "/init sleep 15",
+    "environment_variables": {
+      "BD_INSIGHTS_APP": "maestro_job.sample.titus.dag.test.1"
+    },
+    "gpu": 0,
+    "iam_role": "arn:aws:iam::12345:role/TitusContainerRole",
+    "image": "dummy_image",
+    "image_tag": "latest",
+    "memory_mb": 4096,
+    "network_mbps": 128,
+    "priority_value": 1,
+    "priority_class": 1,
+    "runtime_limit_sec": 432000,
+    "security_groups": [
+      "sg-abcdefg"
+    ],
+    "tenant_id": "5b1547dd-b38f-42a2-9263-ca77abf756a8",
+    "job_group_detail": "unauthenticated",
+    "job_group_stack": "demo",
+    "acting_on_behalf_of": {},
+    "request_metatron_identity": true,
+    "job_deduplication_key": "sample-titus-dag-test-1:1:1:job1",
+    "triggering_on_behalf_of": {}
+  },
+  "titus_task_id": "102a46ae-a4df-48cb-81eb-c2fd4c64c3a6",
+  "milestones": [
+    {
+      "timestamp": 1630446538502,
+      "type": "MILESTONE",
+      "status": "Accepted",
+      "milestone_type": "CMB_JOB",
+      "source_id": "1a6ae938-de11-4e42-95e4-078b8eda159a",
+      "info": "Job accepted"
+    },
+    {
+      "timestamp": 1630446538508,
+      "type": "MILESTONE",
+      "status": "Created",
+      "milestone_type": "CMB_TASK",
+      "source_id": "c9d94589-9035-4443-9528-2b3fba22b6fe",
+      "info": "Initializing task"
+    }
+  ],
+  "type": "TITUS"
+}

@@ -1,0 +1,120 @@
+{
+  "params": {
+    "boolean": {
+      "value": true,
+      "type": "BOOLEAN",
+      "evaluated_result": true,
+      "evaluated_time": 1626915355946
+    },
+    "booleanarray": {
+      "value": [
+        true,
+        false,
+        true
+      ],
+      "type": "BOOLEAN_ARRAY",
+      "evaluated_result": [
+        true,
+        false,
+        true
+      ],
+      "evaluated_time": 1626915355946
+    },
+    "double": {
+      "value": 22.4,
+      "type": "DOUBLE",
+      "evaluated_result": 22.4,
+      "evaluated_time": 1626915355946
+    },
+    "doublearray": {
+      "value": [
+        3.0,
+        4.0,
+        5.0
+      ],
+      "type": "DOUBLE_ARRAY",
+      "evaluated_result": [
+        3.0,
+        4.0,
+        5.0
+      ],
+      "evaluated_time": 1626915355946
+    },
+    "foo": {
+      "value": "bar",
+      "type": "STRING",
+      "evaluated_result": "bar",
+      "evaluated_time": 1626915355946
+    },
+    "long": {
+      "value": 21,
+      "type": "LONG",
+      "evaluated_result": 21,
+      "evaluated_time": 1626915355946
+    },
+    "longarray": {
+      "value": [
+        1,
+        2,
+        3
+      ],
+      "type": "LONG_ARRAY",
+      "evaluated_result": [
+        1,
+        2,
+        3
+      ],
+      "evaluated_time": 1626915355946
+    },
+    "map": {
+      "value": {
+        "a": "b",
+        "c": "d"
+      },
+      "type": "STRING_MAP",
+      "evaluated_result": {
+        "a": "b",
+        "c": "d"
+      },
+      "evaluated_time": 1626915355946
+    },
+    "map2": {
+      "value": {
+        "a": "b",
+        "c": "d"
+      },
+      "type": "STRING_MAP",
+      "evaluated_result": {
+        "a": "b",
+        "c": "d"
+      },
+      "evaluated_time": 1626915355946
+    },
+    "param1": {
+      "value": 21,
+      "type": "LONG",
+      "evaluated_result": 21,
+      "evaluated_time": 1626915355946
+    },
+    "string": {
+      "value": "hello",
+      "type": "STRING",
+      "evaluated_result": "hello",
+      "evaluated_time": 1626915355946
+    },
+    "stringarray": {
+      "value": [
+        "a",
+        "b",
+        "c"
+      ],
+      "type": "STRING_ARRAY",
+      "evaluated_result": [
+        "a",
+        "b",
+        "c"
+      ],
+      "evaluated_time": 1626915355946
+    }
+  }
+}

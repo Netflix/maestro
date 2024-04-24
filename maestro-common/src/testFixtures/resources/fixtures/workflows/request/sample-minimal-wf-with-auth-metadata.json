@@ -1,0 +1,24 @@
+{
+  "properties": {
+    "owner": {
+      "name": "tester",
+      "AUTH_ACTING_ON_BEHALF_OF_BLOB": {"user":"{\"username\": \"demo@netflix.com\",\"user_id\": \"000000000000000000000\",\"domain\": \"netflix.com\"}", "source": "local"},
+      "AUTH_BLOB": {"user": "{\"username\": \"demo@netflix.com\", \"user_id\": \"000000000000000000000\",\"domain\": \"netflix.com\"}"},
+      "AUTH_TRIGGERING_ON_BEHALF_OF_BLOB": {"user":"{\"username\": \"demo@netflix.com\",\"user_id\": \"000000000000000000000\",\"domain\": \"netflix.com\"}", "source": "local"}
+    }
+  },
+  "is_active": true,
+  "activate_time": 1598399975650,
+  "activated_by": "test-user",
+  "is_default": true,
+  "modify_time": 1598399975650,
+  "metadata": {
+    "workflow_id": "sample-minimal-wf-with-auth-metadata",
+    "create_time": 1598399975650,
+    "version_author": "test-user"
+  },
+  "workflow": {
+    "id": "sample-minimal-wf-with-auth-metadata",
+    "steps": [{"step": {"id": "job1", "type": "NoOp"}}]
+  }
+}

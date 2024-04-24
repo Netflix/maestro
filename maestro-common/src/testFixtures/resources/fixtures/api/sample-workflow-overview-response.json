@@ -1,0 +1,20 @@
+{
+  "workflow_id": "sample-dag-test-3",
+  "active_version_id": 1,
+  "latest_version_id": 2,
+  "default_version_id": 1,
+  "properties_snapshot": {
+    "owner": "tester",
+    "run_strategy": {
+      "rule": "PARALLEL",
+      "workflow_concurrency": 20
+    }
+  },
+  "step_concurrency": 20,
+  "nonterminal_instances": {
+    "CREATED": 0,
+    "IN_PROGRESS": 0,
+    "PAUSED": 0
+  },
+  "failed_instances": 0
+}

@@ -1,0 +1,24 @@
+{
+  "instance_id": 2,
+  "instance_run_id": 1,
+  "restart_config": {
+    "restart_path": [
+      {
+        "workflow_id": "maestro_foreach_Ib2_11_94587073c5c260cfd048a0d09251a917",
+        "instance_id": 2,
+        "step_id": null
+      },
+      {
+        "workflow_id": "sample-foreach-wf",
+        "instance_id": 1,
+        "step_id": "foreach-step1"
+      }
+    ],
+    "restart_policy": "RESTART_FROM_BEGINNING",
+    "downstream_policy": "RESTART_FROM_BEGINNING",
+    "restart_params": {}
+  },
+  "action": "RESTART",
+  "user": "test@netflix.com",
+  "create_time": 1684537782885
+}

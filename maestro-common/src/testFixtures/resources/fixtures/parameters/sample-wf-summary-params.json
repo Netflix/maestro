@@ -1,0 +1,460 @@
+{
+  "workflow_id": "sample-wf-summary-params",
+  "internal_id": 12345,
+  "workflow_version_id": 1,
+  "workflow_name": "Test workflow 01",
+  "workflow_instance_id": 1,
+  "workflow_run_id": 1,
+  "initiator": {"type": "MANUAL"},
+  "criticality": "CRITICAL",
+  "run_policy": "START_FRESH_NEW_RUN",
+  "run_properties": {
+    "create_time": 1630510059790,
+    "owner": "tester"
+  },
+  "step_run_params": {
+    "step1": {
+      "foo": {
+        "value": "bar",
+        "type": "STRING",
+        "mode": "mutable"
+      }
+    }
+  },
+  "params": {
+    "e1": {
+      "evaluated_result": {
+        "bar": 123,
+        "bat": {
+          "baz": [
+            1,
+            2,
+            3
+          ]
+        },
+        "foo": "bar"
+      },
+      "evaluated_time": 1607477286102,
+      "expression": "m=new Map(); m.put('foo', 'bar'); m.put('bar', 123L); m.put('bat', new Map()); m.get('bat').put('baz', new long[]{1,2,3}); return m;",
+      "mode": "CONSTANT",
+      "type": "MAP",
+      "validator": "param!=null && param.size() > 1"
+    },
+    "p1": {
+      "evaluated_result": {
+        "e1": "bar",
+        "e2": 2,
+        "e3": 1.23,
+        "e4": true,
+        "e5": {
+          "foo": "bar"
+        },
+        "e6": [
+          "a",
+          "b",
+          "c"
+        ],
+        "e7": [
+          1,
+          2,
+          3
+        ],
+        "e8": [
+          1.1,
+          2.2,
+          3.3
+        ],
+        "e9": [
+          true,
+          false,
+          true
+        ],
+        "l1": "bar",
+        "l10": {
+          "e1": "bar",
+          "e2": 123,
+          "e3": 1.23,
+          "e4": true,
+          "e5": {
+            "foo": "bar"
+          },
+          "e6": [
+            "a",
+            "b",
+            "c"
+          ],
+          "e7": [
+            1,
+            2,
+            3
+          ],
+          "e8": [
+            1.1,
+            2.2,
+            3.3
+          ],
+          "e9": [
+            true,
+            false,
+            true
+          ],
+          "l1": "bar",
+          "l10": {},
+          "l2": 1598399975650,
+          "l3": 1.23,
+          "l4": true,
+          "l5": {
+            "foo": "bar"
+          },
+          "l6": [
+            "a",
+            "b",
+            "c"
+          ],
+          "l7": [
+            1,
+            2,
+            3
+          ],
+          "l8": [
+            1.1,
+            2.2,
+            3.3
+          ],
+          "l9": [
+            true,
+            false,
+            true
+          ]
+        },
+        "l2": 1598399975650,
+        "l3": 1.23,
+        "l4": true,
+        "l5": {
+          "foo": "bar"
+        },
+        "l6": [
+          "a",
+          "b",
+          "c"
+        ],
+        "l7": [
+          1,
+          2,
+          3
+        ],
+        "l8": [
+          1.1,
+          2.2,
+          3.3
+        ],
+        "l9": [
+          true,
+          false,
+          true
+        ]
+      },
+      "evaluated_time": 1607477286116,
+      "mode": "CONSTANT",
+      "type": "MAP",
+      "validator": "param!=null && param.size() > 1",
+      "value": {
+        "e1": {
+          "expression": "'bar';",
+          "mode": "MUTABLE",
+          "type": "STRING"
+        },
+        "e2": {
+          "expression": "1+1;",
+          "tags": [
+            {
+              "name": "SYSTEM"
+            }
+          ],
+          "type": "LONG"
+        },
+        "e3": {
+          "expression": "1.23;",
+          "mode": "MUTABLE",
+          "type": "DOUBLE",
+          "validator": "@Min(1.0)"
+        },
+        "e4": {
+          "expression": "1>0;",
+          "mode": "MUTABLE_ON_START",
+          "type": "BOOLEAN"
+        },
+        "e5": {
+          "expression": "m = new Map(); m.put('foo', 'bar'); return m;",
+          "mode": "MUTABLE_ON_START_RESTART",
+          "type": "STRING_MAP",
+          "validator": "@NotEmpty"
+        },
+        "e6": {
+          "expression": "'a,b,c'.split(',');",
+          "mode": "CONSTANT",
+          "type": "STRING_ARRAY",
+          "validator": "param!=null && param.size() > 2"
+        },
+        "e7": {
+          "expression": "new int[]{1,2,3};",
+          "mode": "CONSTANT",
+          "type": "LONG_ARRAY",
+          "validator": "param!=null && param.size() > 2"
+        },
+        "e8": {
+          "expression": "new double[]{1.1,2.2,3.3};",
+          "mode": "CONSTANT",
+          "type": "DOUBLE_ARRAY",
+          "validator": "param!=null && param.size() > 2"
+        },
+        "e9": {
+          "expression": "new boolean[]{true, false, true};",
+          "mode": "CONSTANT",
+          "type": "BOOLEAN_ARRAY",
+          "validator": "param!=null && param.size() > 2"
+        },
+        "l1": {
+          "mode": "MUTABLE",
+          "type": "STRING",
+          "value": "bar"
+        },
+        "l10": {
+          "type": "MAP",
+          "value": {
+            "e1": {
+              "expression": "'bar';",
+              "mode": "MUTABLE",
+              "type": "STRING"
+            },
+            "e2": {
+              "expression": "e1.get('bar');",
+              "tags": [
+                {
+                  "name": "SYSTEM"
+                }
+              ],
+              "type": "LONG"
+            },
+            "e3": {
+              "expression": "1.23;",
+              "mode": "MUTABLE",
+              "type": "DOUBLE",
+              "validator": "@Min(1.0)"
+            },
+            "e4": {
+              "expression": "1>0;",
+              "mode": "MUTABLE_ON_START",
+              "type": "BOOLEAN"
+            },
+            "e5": {
+              "expression": "m = new Map(); m.put('foo', 'bar'); return m;",
+              "mode": "MUTABLE_ON_START",
+              "type": "STRING_MAP",
+              "validator": "@NotEmpty"
+            },
+            "e6": {
+              "expression": "'a,b,c'.split(',');",
+              "mode": "CONSTANT",
+              "type": "STRING_ARRAY",
+              "validator": "param!=null && param.size() > 2"
+            },
+            "e7": {
+              "expression": "e1.get('bat').get('baz');",
+              "mode": "CONSTANT",
+              "type": "LONG_ARRAY",
+              "validator": "param!=null && param.size() > 2"
+            },
+            "e8": {
+              "expression": "new double[]{1.1,2.2,3.3};",
+              "mode": "CONSTANT",
+              "type": "DOUBLE_ARRAY",
+              "validator": "param!=null && param.size() > 2"
+            },
+            "e9": {
+              "expression": "new boolean[]{true, false, true};",
+              "mode": "CONSTANT",
+              "type": "BOOLEAN_ARRAY",
+              "validator": "param!=null && param.size() > 2"
+            },
+            "l1": {
+              "mode": "MUTABLE",
+              "type": "STRING",
+              "value": "bar"
+            },
+            "l10": {
+              "type": "MAP",
+              "value": {}
+            },
+            "l2": {
+              "tags": [
+                {
+                  "name": "SYSTEM"
+                }
+              ],
+              "type": "LONG",
+              "value": 1598399975650
+            },
+            "l3": {
+              "mode": "MUTABLE",
+              "type": "DOUBLE",
+              "validator": "@Min(1.0)",
+              "value": 1.23
+            },
+            "l4": {
+              "mode": "MUTABLE_ON_START",
+              "type": "BOOLEAN",
+              "value": true
+            },
+            "l5": {
+              "mode": "MUTABLE_ON_START",
+              "type": "STRING_MAP",
+              "validator": "@NotEmpty",
+              "value": {
+                "foo": "bar"
+              }
+            },
+            "l6": {
+              "mode": "CONSTANT",
+              "type": "STRING_ARRAY",
+              "validator": "param!=null && param.size() > 2",
+              "value": [
+                "a",
+                "b",
+                "c"
+              ]
+            },
+            "l7": {
+              "mode": "CONSTANT",
+              "type": "LONG_ARRAY",
+              "validator": "param!=null && param.size() > 2",
+              "value": [
+                1,
+                2,
+                3
+              ]
+            },
+            "l8": {
+              "mode": "CONSTANT",
+              "type": "DOUBLE_ARRAY",
+              "validator": "param!=null && param.size() > 2",
+              "value": [
+                1.1,
+                2.2,
+                3.3
+              ]
+            },
+            "l9": {
+              "mode": "CONSTANT",
+              "type": "BOOLEAN_ARRAY",
+              "validator": "param!=null && param.size() > 2",
+              "value": [
+                true,
+                false,
+                true
+              ]
+            }
+          }
+        },
+        "l2": {
+          "tags": [
+            {
+              "name": "SYSTEM"
+            }
+          ],
+          "type": "LONG",
+          "value": 1598399975650
+        },
+        "l3": {
+          "mode": "MUTABLE",
+          "type": "DOUBLE",
+          "validator": "@Min(1.0)",
+          "value": 1.23
+        },
+        "l4": {
+          "mode": "MUTABLE_ON_START",
+          "type": "BOOLEAN",
+          "value": true
+        },
+        "l5": {
+          "mode": "MUTABLE_ON_START",
+          "type": "STRING_MAP",
+          "validator": "@NotEmpty",
+          "value": {
+            "foo": "bar"
+          }
+        },
+        "l6": {
+          "mode": "CONSTANT",
+          "type": "STRING_ARRAY",
+          "validator": "param!=null && param.size() > 2",
+          "value": [
+            "a",
+            "b",
+            "c"
+          ]
+        },
+        "l7": {
+          "mode": "CONSTANT",
+          "type": "LONG_ARRAY",
+          "validator": "param!=null && param.size() > 2",
+          "value": [
+            1,
+            2,
+            3
+          ]
+        },
+        "l8": {
+          "mode": "CONSTANT",
+          "type": "DOUBLE_ARRAY",
+          "validator": "param!=null && param.size() > 2",
+          "value": [
+            1.1,
+            2.2,
+            3.3
+          ]
+        },
+        "l9": {
+          "mode": "CONSTANT",
+          "type": "BOOLEAN_ARRAY",
+          "validator": "param!=null && param.size() > 2",
+          "value": [
+            true,
+            false,
+            true
+          ]
+        }
+      }
+    }
+  },
+  "runtime_dag": {
+    "job.2": {
+      "predecessors": [
+        "job1"
+      ],
+      "successors": {
+        "job4": "true"
+      }
+    },
+    "job1": {
+      "successors": {
+        "job.2": "true",
+        "job3": "true"
+      }
+    },
+    "job3": {
+      "predecessors": [
+        "job1"
+      ],
+      "successors": {
+        "job4": "true"
+      }
+    },
+    "job4": {
+      "predecessors": [
+        "job3",
+        "job.2"
+      ]
+    }
+  }
+}

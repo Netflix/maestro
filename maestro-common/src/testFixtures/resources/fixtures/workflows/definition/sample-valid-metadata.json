@@ -1,0 +1,18 @@
+{
+  "workflow_id": "sample-inactive-wf-without-props",
+  "create_time": 1598399975650,
+  "version_author": "demo",
+  "git_info": {},
+  "source": "s3://source.jar",
+  "manifest": "s3://manifest.json",
+  "source_definition": "s3://sourcedef.yaml",
+  "api_version": "3.00",
+  "dsl_client_hostname": "user-test",
+  "dsl_client_version": "3.0.0",
+  "dsl_lang": "java",
+  "dsl_source": "nflx-scheduler-client",
+  "step_ordinals": {
+    "step1": 2,
+    "step2": 1
+  }
+}

@@ -1,0 +1,256 @@
+{
+  "workflow_id": "sample-instance-test-1",
+  "workflow_instance_id": 1,
+  "workflow_run_id": 5,
+  "workflow_uuid": "22759d4a-827c-4e8f-a21c-498c461c6c42",
+  "correlation_id": "sample-instance-test-1-1-2",
+  "workflow_version_id": 1,
+  "run_properties": {
+    "create_time": 1673507498483,
+    "owner": "tester"
+  },
+  "runtime_workflow": {
+    "id": "sample-instance-test-1",
+    "tags": [
+      {
+        "name": "testtest"
+      },
+      {
+        "name": "foo"
+      },
+      {
+        "name": "test"
+      }
+    ],
+    "criticality": "LOW",
+    "params": {},
+    "steps": [
+      {
+        "step": {
+          "id": "job1",
+          "transition": {
+            "successors": {
+              "job2": "true"
+            }
+          },
+          "type": "NoOp",
+          "tags": [
+            {
+              "name": "MAESTRO.type.noop"
+            }
+          ],
+          "params": {}
+        }
+      },
+      {
+        "step": {
+          "id": "job2",
+          "transition": {
+            "successors": {
+              "ndzenisenka_job_subworkflow": "true"
+            }
+          },
+          "type": "NoOp",
+          "tags": [
+            {
+              "name": "MAESTRO.type.noop"
+            }
+          ],
+          "params": {}
+        }
+      },
+      {
+        "subworkflow": {
+          "id": "job_subworkflow",
+          "transition": {
+            "successors": {
+              "job4": "true"
+            }
+          },
+          "tags": [
+            {
+              "name": "MAESTRO.type.steps.startsubworkflow"
+            }
+          ],
+          "params": {
+            "subworkflow_id": {
+              "value": "test_subworkflow_1",
+              "type": "STRING"
+            },
+            "subworkflow_version": {
+              "value": "active",
+              "type": "STRING"
+            }
+          }
+        }
+      },
+      {
+        "step": {
+          "id": "job4",
+          "transition": {
+            "successors": {
+              "job_foreach": "true"
+            }
+          },
+          "type": "NoOp",
+          "tags": [
+            {
+              "name": "MAESTRO.type.noop"
+            }
+          ],
+          "params": {}
+        }
+      },
+      {
+        "foreach": {
+          "id": "job_foreach",
+          "transition": {},
+          "tags": [
+            {
+              "name": "MAESTRO.type.foreach"
+            }
+          ],
+          "params": {
+            "loop_params": {
+              "value": {
+                "num": {
+                  "expression": "Util.intsBetween(1, 3, 1);",
+                  "type": "LONG_ARRAY"
+                }
+              },
+              "type": "MAP"
+            }
+          },
+          "steps": [
+            {
+              "step": {
+                "id": "job1",
+                "transition": {
+                  "successors": {
+                    "job2": "true"
+                  }
+                },
+                "type": "NoOp",
+                "tags": [
+                  {
+                    "name": "MAESTRO.type.noop"
+                  }
+                ],
+                "params": {}
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "runtime_dag": {
+    "job2": {
+      "successors": {
+        "job_subworkflow": "true"
+      }
+    },
+    "job4": {
+      "predecessors": [
+        "job_subworkflow"
+      ],
+      "successors": {
+        "job_foreach": "true"
+      }
+    },
+    "job_foreach": {
+      "predecessors": [
+        "job4"
+      ]
+    },
+    "job_subworkflow": {
+      "predecessors": [
+        "job2"
+      ],
+      "successors": {
+        "job4": "true"
+      }
+    }
+  },
+  "params": {
+  },
+  "initiator": {
+    "depth": 0,
+    "type": "MANUAL",
+    "user": "test@netflix.com"
+  },
+  "status": "CREATED",
+  "request_time": 1673870176491,
+  "create_time": 1673870176528,
+  "start_time": 1673870176750,
+  "end_time": 1673870208304,
+  "modify_time": 1673870208305,
+  "runtime_overview": {
+    "total_step_count": 4,
+    "step_overview": {
+      "SUCCEEDED": {
+        "cnt": 1,
+        "steps": [
+          [
+            1,
+            1673870190154,
+            1673870190154
+          ]
+        ]
+      },
+      "FATALLY_FAILED": {
+        "cnt": 1,
+        "steps": [
+          [
+            4,
+            1673870202286,
+            1673870206330
+          ]
+        ]
+      }
+    },
+    "rollup_overview": {
+      "total_leaf_count": 5,
+      "overview": {
+        "SUCCEEDED": {
+          "cnt": 5
+        }
+      }
+    }
+  },
+  "aggregated_info": {
+    "workflow_instance_status": "SUCCEEDED",
+    "step_aggregated_views": {
+      "job1": {
+        "workflow_run_id": 5,
+        "status": "SUCCEEDED",
+        "start_time": 1673870160254,
+        "end_time": 1673870160256
+      },
+      "job2": {
+        "workflow_run_id": 4,
+        "status": "SUCCEEDED",
+        "start_time": 1673870190154,
+        "end_time": 1673870190154
+      },
+      "job_subworkflow": {
+        "workflow_run_id": 3,
+        "status": "SUCCEEDED",
+        "start_time": 1673870202286,
+        "end_time": 1673870206330
+      },
+      "job4": {
+        "workflow_run_id": 3,
+        "status": "SUCCEEDED",
+        "start_time": 1673870202286,
+        "end_time": 1673870206330
+      },
+      "job_foreach": {
+        "workflow_run_id": 1,
+        "status": "SUCCEEDED",
+        "start_time": 1673870202286,
+        "end_time": 1673870206330
+      }
+    }
+  }
+}

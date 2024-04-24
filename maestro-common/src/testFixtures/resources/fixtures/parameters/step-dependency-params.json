@@ -1,0 +1,22 @@
+{
+  "definitions": [
+    {
+      "value": {
+        "name": {
+          "value": "signal_a",
+          "type": "STRING"
+        },
+        "foo": {
+          "parameter": {
+            "value": "bar",
+            "type": "STRING"
+          },
+          "operator": "=",
+          "type": "SIGNAL"
+        }
+      },
+      "type": "MAP"
+    }
+  ],
+  "type": "SIGNAL"
+}

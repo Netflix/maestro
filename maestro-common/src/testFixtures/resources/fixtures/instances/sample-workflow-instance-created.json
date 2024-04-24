@@ -1,0 +1,257 @@
+{
+  "workflow_id": "sample-dag-test-3",
+  "workflow_instance_id": 1,
+  "workflow_run_id": 1,
+  "workflow_uuid": "8a0bd56f-745f-4a2c-b81b-1b2f89127e73",
+  "correlation_id": "sample-dag-test-3-1-1",
+  "workflow_version_id": 1,
+  "run_properties": {
+    "create_time": 1630510059790,
+    "owner": "tester"
+  },
+  "runtime_workflow": {
+    "id": "sample-dag-test-3",
+    "name": "Test workflow 03",
+    "description": "Long description about this workflow",
+    "tags": [
+      {
+        "name": "demo",
+        "namespace": "SYSTEM"
+      },
+      {
+        "name": "test"
+      },
+      {
+        "name": "foo"
+      }
+    ],
+    "params": {
+      "foo": {
+        "expression": "'bar1';",
+        "type": "STRING"
+      }
+    },
+    "steps": [
+      {
+        "step": {
+          "id": "job1",
+          "transition": {
+            "successors": {
+              "job.2": "true",
+              "job3": "true"
+            }
+          },
+          "type": "Sleep",
+          "failure_mode": "IGNORE_FAILURE",
+          "retry_policy": {
+            "error_retry_limit": 2,
+            "platform_retry_limit": 10,
+            "backoff": {
+              "error_retry_backoff_in_secs": 1,
+              "platform_retry_backoff_in_secs": 1,
+              "type": "FIXED_BACKOFF"
+            }
+          },
+          "tags": [
+            {
+              "name": "Sleep",
+              "namespace": "SYSTEM"
+            },
+            {
+              "name": "job1"
+            }
+          ],
+          "params": {
+            "sleep_seconds": {
+              "value": 15,
+              "type": "LONG"
+            }
+          }
+        }
+      },
+      {
+        "step": {
+          "id": "job.2",
+          "transition": {
+            "successors": {
+              "job4": "true"
+            }
+          },
+          "type": "Sleep",
+          "failure_mode": "FAIL_AFTER_RUNNING",
+          "retry_policy": {
+            "error_retry_limit": 2,
+            "platform_retry_limit": 10,
+            "backoff": {
+              "error_retry_backoff_in_secs": 1,
+              "platform_retry_backoff_in_secs": 1,
+              "type": "FIXED_BACKOFF"
+            }
+          },
+          "params": {
+            "param1": {
+              "expression": "sleep_seconds + '1';",
+              "type": "STRING"
+            },
+            "sleep_seconds": {
+              "expression": "job3__sleep_seconds + 1;",
+              "type": "LONG"
+            }
+          }
+        }
+      },
+      {
+        "step": {
+          "id": "job3",
+          "transition": {
+            "successors": {
+              "job.2": "true",
+              "job4": "true"
+            }
+          },
+          "type": "Sleep",
+          "failure_mode": "FAIL_IMMEDIATELY",
+          "retry_policy": {
+            "error_retry_limit": 2,
+            "platform_retry_limit": 10,
+            "backoff": {
+              "error_retry_backoff_in_secs": 1,
+              "platform_retry_backoff_in_secs": 1,
+              "type": "FIXED_BACKOFF"
+            }
+          },
+          "params": {
+            "sleep_seconds": {
+              "value": 15,
+              "type": "LONG"
+            }
+          }
+        }
+      },
+      {
+        "step": {
+          "id": "job4",
+          "transition": { },
+          "type": "Sleep",
+          "params": {
+            "sleep_seconds": {
+              "value": 15,
+              "type": "LONG"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "runtime_dag": {
+    "job.2": {
+      "predecessors": [
+        "job1"
+      ],
+      "successors": {
+        "job4": "true"
+      }
+    },
+    "job1": {
+      "successors": {
+        "job.2": "true",
+        "job3": "true"
+      }
+    },
+    "job3": {
+      "predecessors": [
+        "job1"
+      ],
+      "successors": {
+        "job4": "true"
+      }
+    },
+    "job4": {
+      "predecessors": [
+        "job3",
+        "job.2"
+      ]
+    }
+  },
+  "timeout_in_millis": 123456,
+  "params": {
+    "foo": {
+      "expression": "'bar1';",
+      "type": "STRING",
+      "evaluated_result": "bar1",
+      "evaluated_time": 1609294729488
+    }
+  },
+  "initiator": {"type": "MANUAL"},
+  "status": "CREATED",
+  "request_time": 1609294729448,
+  "create_time": 1609294729488,
+  "start_time": 1609294730611,
+  "modify_time": 1609294753921,
+  "execution_id": "foo",
+  "runtime_overview": {
+    "total_step_count": 1,
+    "step_overview": {
+      "RUNNING": 1
+    },
+    "rollup_overview": {
+      "total_leaf_count": 4081,
+      "overview": {
+        "INITIALIZED": {
+          "cnt": 55
+        },
+        "RUNNING": {
+          "cnt": 24,
+          "ref": {
+            "maestro_foreach_2cdfc61cf61fd29d8046ea8c8828bddb:1": [
+              "2041:job.2:1",
+              "2032:job.2:1",
+              "2031:job.2:1",
+              "2026:job.2:1",
+              "2017:job.2:1",
+              "2016:job.2:1",
+              "2007:job.2:1",
+              "2006:job.2:1",
+              "2001:job.2:1",
+              "1991:job.2:1",
+              "1982:job.2:1",
+              "1959:job.2:1",
+              "1958:job.2:1",
+              "1950:job.2:1",
+              "1946:job.2:1",
+              "1932:job.2:1",
+              "1885:job.2:1",
+              "1875:job.2:1",
+              "1872:job.2:1",
+              "1863:job.2:1",
+              "1862:job.2:1",
+              "1827:job.2:1",
+              "1804:job.2:1",
+              "1802:job.2:1"
+            ]
+          }
+        },
+        "SUCCEEDED": {
+          "cnt": 4002
+        }
+      }
+    }
+  },
+  "aggregated_info": {
+    "step_aggregated_views": {
+      "job1": {
+        "workflow_run_id": 1,
+        "status": "SUCCEEDED",
+        "start_time": 1609294729488,
+        "end_time": 16092947993241
+      },
+      "job3": {
+        "workflow_run_id": 2,
+        "status": "SUCCEEDED",
+        "start_time": 1609294729488,
+        "end_time": 16092947993241
+      }
+    },
+    "workflow_instance_status": "SUCCEEDED"
+  }
+}

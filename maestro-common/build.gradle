@@ -1,0 +1,17 @@
+dependencies {
+    implementation jacksonDatabindDep
+    implementation javaxInjectDep
+    implementation javaxValidationDep
+    implementation jacksonYamlDep
+    implementation quartzDep
+    implementation jodaTimeDep
+    implementation cronutilsDep
+
+    testImplementation junitDep
+    testImplementation bvalJsrDep
+    testImplementation assertJCoreDep
+
+    testFixturesImplementation junitDep
+    testFixturesImplementation jacksonDatabindDep
+    testFixturesRuntimeOnly junitEngineDep
+}

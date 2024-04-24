@@ -1,0 +1,62 @@
+{
+  "properties_snapshot": {
+    "owner": "tester"
+  },
+  "is_active": true,
+  "activate_time": 1598399975650,
+  "activated_by": "demo",
+  "is_default": true,
+  "modify_time": 1598399975650,
+  "metadata": {
+    "workflow_id": "sample-active-wf-with-time-triggers",
+    "create_time": 1598399975650,
+    "version_author": "demo"
+  },
+  "workflow": {
+    "id": "sample-active-wf-with-time-triggers",
+    "time_triggers": [
+      {
+        "cron": "0 0 12 1/1 * ? *",
+        "timezone": "US/Pacific",
+        "type": "CRON"
+      },
+      {
+        "expression": "@daily",
+        "timezone": "US/Pacific",
+        "type": "PREDEFINED"
+      },
+      {
+        "cron": "0 0 13 1 * ? *",
+        "timezone": "UTC",
+        "type": "CRON",
+        "fuzzy_max_delay": 4320
+      },
+      {
+        "cron": "0 0 14 1 * ? *",
+        "timezone": "UTC",
+        "type": "CRON",
+        "fuzzy_max_delay": "2 mins"
+      },
+      {
+        "expression": "@hourly",
+        "timezone": "US/Pacific",
+        "type": "PREDEFINED",
+        "fuzzy_max_delay": 76140
+      },
+      {
+        "expression": "@daily",
+        "timezone": "US/Pacific",
+        "type": "PREDEFINED",
+        "fuzzy_max_delay": "2 hours, 5 mins"
+      }
+    ],
+    "steps": [
+      {
+        "step": {
+          "id": "job1",
+          "type": "NoOp"
+        }
+      }
+    ]
+  }
+}

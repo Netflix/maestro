@@ -1,0 +1,6 @@
+{
+  "name": "demo",
+  "AUTH_BLOB": {"user": "{\"username\": \"demo@netflix.com\", \"user_id\": \"000000000000000000000\",\"domain\": \"netflix.com\"}"},
+  "AUTH_ACTING_ON_BEHALF_OF_BLOB": {"user":"{\"username\": \"demo@netflix.com\",\"user_id\": \"000000000000000000000\",\"domain\": \"netflix.com\"}", "source": "local"},
+  "AUTH_TRIGGERING_ON_BEHALF_OF_BLOB": {"user":"{\"username\": \"demo@netflix.com\",\"user_id\": \"000000000000000000000\",\"domain\": \"netflix.com\"}", "source": "local"}
+}

@@ -1,0 +1,14 @@
+{
+  "properties": {
+    "owner": "tester",
+    "alerting": {
+      "pagerduties": [
+        "non-existent-pagerduty-service"
+      ]
+    }
+  },
+  "workflow": {
+    "id": "sample-minimal-wf",
+    "steps": [{"step": {"id": "job1", "type": "NoOp"}}]
+  }
+}

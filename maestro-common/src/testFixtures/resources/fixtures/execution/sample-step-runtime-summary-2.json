@@ -1,0 +1,55 @@
+{
+  "step_id": "foreach-job",
+  "step_name": "step1",
+  "step_instance_id": 123,
+  "step_attempt_id": 2,
+  "step_instance_uuid": "bar",
+  "step_run_params": {
+    "foo": {
+      "value": "bar",
+      "type": "STRING",
+      "mode": "mutable"
+    }
+  },
+  "type": "FOREACH",
+  "params": {
+    "param1": {
+      "value": "foo",
+      "type": "STRING",
+      "evaluated_result": "foo",
+      "evaluated_time": 1608171805392
+    }
+  },
+  "synced": true,
+  "runtime_state": {
+    "status": "SUCCEEDED",
+    "end_time": 1608171805401,
+    "modify_time": 1608171805401
+  },
+  "timeline": [{
+    "timestamp": 1609272999666,
+    "type": "LOG",
+    "level": "INFO",
+    "message": "hello"
+  }],
+  "artifacts": {
+    "artifact1": {
+      "value": 1,
+      "foo": "bar"
+    },
+    "maestro_foreach": {
+      "foreach_workflow_id": "maestro_foreach_inline-123",
+      "foreach_identity": "foo",
+      "total_loop_count": 6,
+      "next_loop_index": 0,
+      "foreach_overview": {
+        "checkpoint": 6,
+        "stats": {
+          "CREATED": 5,
+          "SUCCEEDED": 1
+        }
+      },
+      "type": "FOREACH"
+    }
+  }
+}

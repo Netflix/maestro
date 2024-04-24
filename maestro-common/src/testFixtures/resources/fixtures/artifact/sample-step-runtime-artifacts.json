@@ -1,0 +1,52 @@
+{
+  "artifacts": {
+    "maestro_notebook": {
+      "output_path": "'s3://maestro-output/test/bdp.samplenoteworkflows.hellonotebook/Notebook/20210412113917__1_1_43ae39da-8cee-4d3d-a483-bb15998d62ca.ipynb'",
+      "type": "NOTEBOOK",
+      "uploaded_params_path": "s3://maestro/maestro-params/bdp.samplenoteworkflows.hellonotebook/43ae39da-8cee-4d3d-a483-bb15998d62ca/inputparams.json"
+    },
+    "maestro_titus": {
+      "cmb_job_id": "5709de2e-5feb-421c-936b-0ac5f3d9014a",
+      "cmb_ui_link": "https://titus.netflix.net/tenants/default/jobs/5709de2e-5feb-421c-936b-0ac5f3d9014a",
+      "execution_script": "/init papermill 'https://notebook.netflix.net:7002/ipynb/notebooks/SimpleNotebook.ipynb' 's3://maestro-output/test/bdp.samplenoteworkflows.hellonotebook/Notebook/20210412113917__1_1_43ae39da-8cee-4d3d-a483-bb15998d62ca.ipynb' -f 's3://maestro/maestro-params/bdp.samplenoteworkflows.hellonotebook/43ae39da-8cee-4d3d-a483-bb15998d62ca/inputparams.json' --log-output '--start_timeout' '600'",
+      "titus_job_id": "97a90633-7b99-4ab4-ac17-b9928dab3402",
+      "titus_log_ui_link": "https://titus.netflix.net/jobs/97a90633-7b99-4ab4-ac17-b9928dab3402/tasks/a4bf967e-27c1-44ec-9d2b-4e981f6156b2/logs",
+      "titus_options": {
+        "application_name": "test_app",
+        "attributes": {},
+        "container_attributes": {},
+        "cpu": 1.0,
+        "disk_mb": 10000,
+        "entrypoint": "/init papermill 'https://notebook.netflix.net:7002/ipynb/notebooks/SimpleNotebook.ipynb' 's3://maestro-output/test/bdp.samplenoteworkflows.hellonotebook/Notebook/20210412113917__1_1_43ae39da-8cee-4d3d-a483-bb15998d62ca.ipynb' -f 's3://maestro/maestro-params/bdp.samplenoteworkflows.hellonotebook/43ae39da-8cee-4d3d-a483-bb15998d62ca/inputparams.json' --log-output '--start_timeout' '600'",
+        "environment_variables": {
+          "MAESTRO_API_URL": "https://maestro.test.netflix.net:8443",
+          "MAESTRO_STEP_ATTEMPT_ID": "1",
+          "MAESTRO_STEP_ID": "hellonotebook",
+          "MAESTRO_STEP_INSTANCE_ID": "1",
+          "MAESTRO_STEP_INSTANCE_UUID": "43ae39da-8cee-4d3d-a483-bb15998d62ca",
+          "MAESTRO_WORKFLOW_ID": "bdp.samplenoteworkflows.hellonotebook",
+          "MAESTRO_WORKFLOW_INSTANCE_ID": "1",
+          "MAESTRO_WORKFLOW_RUN_ID": "1",
+          "SCHEDULER_NAME": "maestro"
+        },
+        "gpu": 0,
+        "iam_role": "arn:aws:iam::12345:role/TitusContainerRole",
+        "image": "dummy_image",
+        "image_tag": "latest",
+        "job_group_detail": "unauthenticated",
+        "job_group_stack": "demo",
+        "memory_mb": 4096,
+        "network_mbps": 128,
+        "priority_class": 1,
+        "priority_value": 1,
+        "request_metatron_identity": true,
+        "runtime_limit_sec": 432000,
+        "security_groups": [
+          "sg-12345"
+        ]
+      },
+      "titus_task_id": "a4bf967e-27c1-44ec-9d2b-4e981f6156b2",
+      "type": "TITUS"
+    }
+  }
+}

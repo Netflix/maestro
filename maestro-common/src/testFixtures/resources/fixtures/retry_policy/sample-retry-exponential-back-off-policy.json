@@ -1,0 +1,13 @@
+{
+  "error_retry_limit": 10,
+  "platform_retry_limit": 10,
+  "backoff": {
+    "error_retry_backoff_in_secs": 1,
+    "error_retry_exponent": 2,
+    "error_retry_limit_in_secs": 3,
+    "platform_retry_backoff_in_secs": 1,
+    "platform_retry_exponent": 2,
+    "platform_retry_limit_in_secs": 3,
+    "type": "EXPONENTIAL_BACKOFF"
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "step": {
+    "id": "job1",
+    "transition": {
+      "successors": {
+        "job.2": "true",
+        "job3": "true"
+      }
+    },
+    "type": "Sleep",
+    "timeout": "10 minutes",
+    "dependencies": {
+      "SIGNAL": {
+        "definitions": [
+          {
+            "value": {
+              "key1": {
+                "parameter": {
+                  "value": "value1",
+                  "type": "STRING"
+                },
+                "operator": "=",
+                "type": "SIGNAL"
+              }
+            },
+            "type": "MAP"
+          }
+        ],
+        "type": "SIGNAL"
+      }
+    },
+    "params": {
+      "sleep_seconds": {
+        "value": 15,
+        "type": "LONG"
+      }
+    }
+  }
+}

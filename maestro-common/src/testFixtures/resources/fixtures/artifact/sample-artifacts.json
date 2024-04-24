@@ -1,0 +1,84 @@
+{
+  "artifacts": {
+    "artifact1": {
+      "value": 1,
+      "foo": "bar"
+    },
+    "artifact2": {
+      "value": 2,
+      "foo": "baz",
+      "type": "DEFAULT"
+    },
+    "maestro_subworkflow": {
+      "subworkflow_id": "test-dag",
+      "subworkflow_version_id": 1,
+      "subworkflow_instance_id": 1,
+      "subworkflow_run_id": 1,
+      "subworkflow_uuid": "foo-bar",
+      "subworkflow_overview": {
+        "total_step_count": 1,
+        "step_overview": {
+          "RUNNING": 1
+        },
+        "rollup_overview": {
+          "total_leaf_count": 29,
+          "overview": {
+            "INITIALIZED": {
+              "cnt": 1
+            },
+            "SUCCEEDED": {
+              "cnt": 28
+            }
+          }
+        }
+      },
+      "type": "SUBWORKFLOW"
+    },
+    "maestro_foreach": {
+      "foreach_workflow_id": "inline-wf",
+      "foreach_identity": "foo",
+      "foreach_run_id": 5,
+      "run_policy": "RESTART_FROM_INCOMPLETE",
+      "run_id": 3,
+      "ancestor_iteration_count": 8,
+      "total_loop_count": 10,
+      "next_loop_index": 6,
+      "foreach_overview": {
+        "checkpoint": 4,
+        "stats": {
+          "CREATED": 1,
+          "SUCCEEDED": 2
+        },
+        "rollup": {
+          "total_leaf_count": 10,
+          "overview": {
+            "SUCCEEDED": {
+              "cnt": 10
+            }
+          }
+        },
+        "running_stats": {
+          "IN_PROGRESS": 2
+        },
+        "running_rollup": {
+          "total_leaf_count": 4,
+          "overview": {
+            "RUNNING": {
+              "cnt": 2,
+              "ref": {
+                "maestro_foreach_524606d3b1721e3bfe78e608f509ba85:1": [
+                  "4:sub-step2:1",
+                  "3:sub-step2:1"
+                ]
+              }
+            },
+            "SUCCEEDED": {
+              "cnt": 2
+            }
+          }
+        }
+      },
+      "type": "FOREACH"
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "subworkflow_id": "test-dag",
+  "subworkflow_version_id": 1,
+  "subworkflow_instance_id": 1,
+  "subworkflow_run_id": 1,
+  "subworkflow_uuid": "foo-bar",
+  "subworkflow_overview": {
+    "total_step_count": 1,
+    "step_overview": {
+      "RUNNING": 1
+    },
+    "rollup_overview": {
+      "total_leaf_count": 29,
+      "overview": {
+        "INITIALIZED": {
+          "cnt": 1
+        },
+        "SUCCEEDED": {
+          "cnt": 28
+        }
+      }
+    }
+  },
+  "type": "SUBWORKFLOW"
+}

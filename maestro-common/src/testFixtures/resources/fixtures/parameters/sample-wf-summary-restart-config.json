@@ -1,0 +1,78 @@
+{
+  "workflow_id": "sample-wf-summary-params",
+  "workflow_version_id": 1,
+  "workflow_name": "Test workflow 01",
+  "workflow_instance_id": 1,
+  "workflow_run_id": 1,
+  "initiator": {"type": "MANUAL"},
+  "run_policy": "RESTART_FROM_SPECIFIC",
+  "restart_config": {
+    "restart_path": [
+      {
+        "workflow_id": "sample-wf-summary-params",
+        "instance_id": 1,
+        "step_id": "job3"
+      }
+    ],
+    "restart_policy": "RESTART_FROM_INCOMPLETE",
+    "downstream_policy": "RESTART_FROM_BEGINNING",
+    "restart_params": {
+      "foo": {
+        "value": "bar", "type": "STRING", "mode": "mutable"
+      },
+      "auu": {
+        "value": 123, "type": "LONG", "tags": ["runtime"]
+      },
+      "aaa": {
+        "value": "bar", "type": "STRING", "validator": "@NotNull", "mode": "mutable"
+      },
+      "bbb": {
+        "expression": "1 + 1;", "type": "LONG", "validator": "@Positive", "mode": "mutable_on_start"
+      }
+    },
+    "step_restart_params": {
+      "step_1": {
+        "param1":  {
+          "value": "foo", "type": "STRING", "mode": "mutable"
+        }
+      },
+      "step_2": {
+        "param2":  {
+          "value": "bar", "type": "STRING", "mode": "mutable"
+        }
+      }
+    }
+  },
+  "run_properties": {
+    "create_time": 1630510059790,
+    "owner": "tester"
+  },
+  "step_run_params": {
+    "step1": {
+      "foo": {
+        "value": "bar",
+        "type": "STRING",
+        "mode": "mutable"
+      }
+    }
+  },
+  "params": {},
+  "runtime_dag": {
+    "job.2": {
+      "successors": {
+        "job4": "true"
+      }
+    },
+    "job3": {
+      "successors": {
+        "job4": "true"
+      }
+    },
+    "job4": {
+      "predecessors": [
+        "job3",
+        "job.2"
+      ]
+    }
+  }
+}

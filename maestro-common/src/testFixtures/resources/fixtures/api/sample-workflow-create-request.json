@@ -1,0 +1,46 @@
+{
+  "properties": {
+    "owner": "test_owner",
+    "run_strategy": {
+      "rule": "last_only",
+      "workflow_concurrency": 1
+    },
+    "step_concurrency": 20
+  },
+  "additional_meta": "foo",
+  "git_info": {
+    "branch": "foo",
+    "origin": "bar",
+    "path": "test_path",
+    "author": "test_author",
+    "sha": "121EF7B36826EDEDEB662F53A12DB5951E1AE1D7",
+    "timestamp": 1627332490,
+    "uncommitted_changes": false
+  },
+  "workflow": {
+    "id": "sample-dag-test-9",
+    "name": "Test workflow 09",
+    "description": "Long description about this workflow",
+    "steps": [
+      {
+        "step": {
+          "id": "job.1",
+          "name": "a",
+          "description": "b",
+          "type": "NoOp",
+          "transition": {
+            "successors": {
+              "job.2": "true"
+            }
+          }
+        }
+      },
+      {
+        "step": {
+          "id": "job.2",
+          "type": "NoOp"
+        }
+      }
+    ]
+  }
+}

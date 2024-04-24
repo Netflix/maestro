@@ -1,0 +1,138 @@
+{
+  "properties_snapshot": {
+    "owner": "demo",
+    "run_strategy": "parallel",
+    "step_concurrency": 20
+  },
+  "workflow": {
+    "id": "sample-wf-map-params",
+    "name": "Test workflow MAP parameter",
+    "params": {
+      "p1" : {
+        "value": {
+          "l1": {
+            "value": "bar", "type": "STRING", "mode": "mutable"
+          },
+          "l2": {
+            "value": 1598399975650, "type": "LONG", "tags": ["SYSTEM"]
+          },
+          "l3": {
+            "value": 1.23, "type": "DOUBLE", "validator": "@Min(1.0)", "mode": "mutable"
+          },
+          "l4": {
+            "value": true, "type": "BOOLEAN", "mode": "mutable_on_start"
+          },
+          "l5": {
+            "value": {"foo": "bar"}, "type": "STRING_MAP", "validator": "@NotEmpty", "mode": "mutable_on_start_restart"
+          },
+          "l6" : {
+            "value": ["a", "b", "c"], "type": "string_array", "validator": "param!=null && param.size() > 2", "mode": "constant"
+          },
+          "l7" : {
+            "value": [1, 2, 3], "type": "long_array", "validator": "param!=null && param.size() > 2", "mode": "constant"
+          },
+          "l8" : {
+            "value": [1.1, 2.2, 3.3], "type": "double_array", "validator": "param!=null && param.size() > 2", "mode": "constant"
+          },
+          "l9" : {
+            "value": [true, false, true], "type": "boolean_array", "validator": "param!=null && param.size() > 2", "mode": "constant"
+          },
+          "e1": {
+            "expression": "'bar';", "type": "STRING", "mode": "mutable"
+          },
+          "e2": {
+            "expression": "1+1;", "type": "LONG", "tags": ["SYSTEM"]
+          },
+          "e3": {
+            "expression": "1.23;", "type": "DOUBLE", "validator": "@Min(1.0)", "mode": "mutable"
+          },
+          "e4": {
+            "expression": "1>0;", "type": "BOOLEAN", "mode": "mutable_on_start"
+          },
+          "e5": {
+            "expression": "m = new Map(); m.put('foo', 'bar'); return m;", "type": "string_map", "validator": "@NotEmpty", "mode": "mutable_on_start"
+          },
+          "e6" : {
+            "expression": "'a,b,c'.split(',');", "type": "string_array", "validator": "param!=null && param.size() > 2", "mode": "constant"
+          },
+          "e7" : {
+            "expression": "new int[]{1,2,3};", "type": "long_array", "validator": "param!=null && param.size() > 2", "mode": "constant"
+          },
+          "e8" : {
+            "expression": "new double[]{1.1,2.2,3.3};", "type": "double_array", "validator": "param!=null && param.size() > 2", "mode": "constant"
+          },
+          "e9" : {
+            "expression": "new boolean[]{true, false, true};", "type": "boolean_array", "validator": "param!=null && param.size() > 2", "mode": "constant"
+          },
+          "l10": {"value":  {
+            "l1": {
+              "value": "bar", "type": "STRING", "mode": "mutable"
+            },
+            "l2": {
+              "value": 1598399975650, "type": "LONG", "tags": ["SYSTEM"]
+            },
+            "l3": {
+              "value": 1.23, "type": "DOUBLE", "validator": "@Min(1.0)", "mode": "mutable"
+            },
+            "l4": {
+              "value": true, "type": "BOOLEAN", "mode": "mutable_on_start"
+            },
+            "l5": {
+              "value": {"foo": "bar"}, "type": "STRING_MAP", "validator": "@NotEmpty", "mode": "mutable_on_start"
+            },
+            "l6" : {
+              "value": ["a", "b", "c"], "type": "string_array", "validator": "param!=null && param.size() > 2", "mode": "constant"
+            },
+            "l7" : {
+              "value": [1, 2, 3], "type": "long_array", "validator": "param!=null && param.size() > 2", "mode": "constant"
+            },
+            "l8" : {
+              "value": [1.1, 2.2, 3.3], "type": "double_array", "validator": "param!=null && param.size() > 2", "mode": "constant"
+            },
+            "l9" : {
+              "value": [true, false, true], "type": "boolean_array", "validator": "param!=null && param.size() > 2", "mode": "constant"
+            },
+            "e1": {
+              "expression": "'bar';", "type": "STRING", "mode": "mutable"
+            },
+            "e2": {
+              "expression": "e1.get('bar');", "type": "LONG", "tags": ["SYSTEM"]
+            },
+            "e3": {
+              "expression": "1.23;", "type": "DOUBLE", "validator": "@Min(1.0)", "mode": "mutable"
+            },
+            "e4": {
+              "expression": "1>0;", "type": "BOOLEAN", "mode": "mutable_on_start"
+            },
+            "e5": {
+              "expression": "m = new Map(); m.put('foo', 'bar'); return m;", "type": "string_map", "validator": "@NotEmpty", "mode": "mutable_on_start"
+            },
+            "e6" : {
+              "expression": "'a,b,c'.split(',');", "type": "string_array", "validator": "param!=null && param.size() > 2", "mode": "constant"
+            },
+            "e7" : {
+              "expression": "e1.get('bat').get('baz');", "type": "long_array", "validator": "param!=null && param.size() > 2", "mode": "constant"
+            },
+            "e8" : {
+              "expression": "new double[]{1.1,2.2,3.3};", "type": "double_array", "validator": "param!=null && param.size() > 2", "mode": "constant"
+            },
+            "e9" : {
+              "expression": "new boolean[]{true, false, true};", "type": "boolean_array", "validator": "param!=null && param.size() > 2", "mode": "constant"
+            },
+            "l10": {"value":  {}, "type": "MAP"}
+          }, "type": "MAP"},
+          "l11": {"value":  [], "type": "LONG_ARRAY"},
+          "l12": {"value":  [], "type": "DOUBLE_ARRAY"},
+          "l13": {"value":  [], "type": "BOOLEAN_ARRAY"},
+          "l14": {"value":  [], "type": "STRING_ARRAY"},
+          "l15": {"value":  {}, "type": "STRING_MAP"}
+        }, "type": "MAP", "validator": "param!=null && param.size() > 1", "mode": "constant"
+      },
+      "e1" : {
+        "expression": "m=new Map(); m.put('foo', 'bar'); m.put('bar', 123L); m.put('bat', new Map()); m.get('bat').put('baz', new long[]{1,2,3}); return m;",
+        "type": "MAP", "validator": "param!=null && param.size() > 1", "mode": "constant"
+      }
+    },
+    "steps": [{"step": {"id": "job1", "type": "NoOp"}}]
+  }
+}

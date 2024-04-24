@@ -1,0 +1,12 @@
+{
+  "properties": {
+    "owner": "tester"
+  },
+  "is_active": false,
+  "workflow": {
+    "id": "sample-invalid-wf-def",
+    "name": "abcdefghijklmnopqrstabcdefghijklmnopqrstabcdefghijklmnopqrstabcdefghijklmnopqrstabcdefghijklmnopqrstabcdefghijklmnopqrstabcdefghijklmnopqrstabcdefghijklmnopqrstabcdefghijklmnopqrstabcdefghijklmnopqrstabcdefghijklmnopqrstabcdefghijklmnopqrstabcdefghijklmnopqrst",
+    "params": {"$foo":  {"value": 15, "type":  "LONG"}},
+    "steps": [{"step": {"id": "maestro_foo", "type": "NoOp", "transition": {"successors": {"bar": "true"}}}}]
+  }
+}

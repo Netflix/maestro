@@ -1,0 +1,14 @@
+{
+  "workflow_id": "test-workflow-id",
+  "timeline_events": [
+    {
+      "author": "tester1",
+      "log": "sample log",
+      "timestamp": 123
+    }, {
+      "author": "tester2",
+      "log": "sample log2",
+      "timestamp": 12345
+    }
+  ]
+}

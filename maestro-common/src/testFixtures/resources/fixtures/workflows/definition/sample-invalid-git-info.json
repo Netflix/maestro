@@ -1,0 +1,9 @@
+{
+  "author": "demo",
+  "branch": "foo",
+  "path": "bar",
+  "origin": "test",
+  "timestamp1": 1627344338,
+  "sha": "16E3D14AA7F0B96359023842B012588CD0A891C5",
+  "uncommitted_changes": false
+}

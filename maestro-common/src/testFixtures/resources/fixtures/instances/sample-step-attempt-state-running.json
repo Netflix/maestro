@@ -1,0 +1,18 @@
+{
+  "workflow_id": "sample-dag-test-3",
+  "workflow_instance_id": 1,
+  "workflow_run_id": 1,
+  "workflow_version_id": 7,
+  "step_id": "job1",
+  "step_attempt_id": 1,
+  "runtime_state": {
+    "status": "RUNNING",
+    "create_time": 1608749932076,
+    "initialize_time": 1608749932078,
+    "wait_signal_time": 1608749934142,
+    "wait_permit_time": 1608749934142,
+    "start_time": 1608749934142,
+    "execute_time": 1608749934147,
+    "modify_time": 1608749936287
+  }
+}

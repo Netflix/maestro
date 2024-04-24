@@ -1,0 +1,187 @@
+{
+  "workflow_id": "sample-dag-test-3",
+  "internal_id": 12345,
+  "workflow_instance_id": 1,
+  "workflow_run_id": 1,
+  "workflow_uuid": "8a0bd56f-745f-4a2c-b81b-1b2f89127e73",
+  "correlation_id": "sample-dag-test-3-1-1",
+  "workflow_version_id": 1,
+  "runtime_workflow": {
+    "id": "sample-dag-test-3",
+    "name": "Test workflow 03",
+    "description": "Long description about this workflow",
+    "tags": [
+      {
+        "name": "demo",
+        "namespace": "SYSTEM"
+      },
+      {
+        "name": "test"
+      },
+      {
+        "name": "foo"
+      }
+    ],
+    "params": {
+      "foo": {
+        "expression": "'bar1';",
+        "type": "STRING"
+      }
+    },
+    "steps": [
+      {
+        "step": {
+          "id": "job1",
+          "transition": {
+            "successors": {
+              "job.2": "true",
+              "job3": "true"
+            }
+          },
+          "type": "Sleep",
+          "failure_mode": "IGNORE_FAILURE",
+          "retry_policy": {
+            "error_retry_limit": 2,
+            "platform_retry_limit": 10,
+            "backoff": {
+              "error_retry_backoff_in_secs": 1,
+              "platform_retry_backoff_in_secs": 1,
+              "type": "FIXED_BACKOFF"
+            }
+          },
+          "tags": [
+            {
+              "name": "Sleep",
+              "namespace": "SYSTEM"
+            },
+            {
+              "name": "job1"
+            }
+          ],
+          "params": {
+            "sleep_seconds": {
+              "value": 15,
+              "type": "LONG"
+            }
+          }
+        }
+      },
+      {
+        "step": {
+          "id": "job.2",
+          "transition": {
+            "successors": {
+              "job4": "true"
+            }
+          },
+          "type": "Sleep",
+          "failure_mode": "FAIL_AFTER_RUNNING",
+          "retry_policy": {
+            "error_retry_limit": 2,
+            "platform_retry_limit": 10,
+            "backoff": {
+              "error_retry_backoff_in_secs": 1,
+              "platform_retry_backoff_in_secs": 1,
+              "type": "FIXED_BACKOFF"
+            }
+          },
+          "params": {
+            "param1": {
+              "expression": "sleep_seconds + '1';",
+              "type": "STRING"
+            },
+            "sleep_seconds": {
+              "expression": "job3__sleep_seconds + 1;",
+              "type": "LONG"
+            }
+          }
+        }
+      },
+      {
+        "step": {
+          "id": "job3",
+          "transition": {
+            "successors": {
+              "job.2": "true",
+              "job4": "true"
+            }
+          },
+          "type": "Sleep",
+          "failure_mode": "FAIL_IMMEDIATELY",
+          "retry_policy": {
+            "error_retry_limit": 2,
+            "platform_retry_limit": 10,
+            "backoff": {
+              "error_retry_backoff_in_secs": 1,
+              "platform_retry_backoff_in_secs": 1,
+              "type": "FIXED_BACKOFF"
+            }
+          },
+          "params": {
+            "sleep_seconds": {
+              "value": 15,
+              "type": "LONG"
+            }
+          }
+        }
+      },
+      {
+        "step": {
+          "id": "job4",
+          "transition": {},
+          "type": "Sleep",
+          "params": {
+            "sleep_seconds": {
+              "value": 15,
+              "type": "LONG"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "params": {
+    "foo": {
+      "expression": "'bar1';",
+      "type": "STRING",
+      "evaluated_result": "bar1",
+      "evaluated_time": 1609294729488
+    }
+  },
+  "initiator": {"type": "MANUAL"},
+  "status": "SUCCEEDED",
+  "request_time": 1609294729448,
+  "create_time": 1609294729488,
+  "start_time": 1609294730611,
+  "end_time": 1609294808164,
+  "modify_time": 1609294808421,
+  "execution_id": "foo",
+  "runtime_overview": {
+    "total_step_count": 1,
+    "step_overview": {
+      "SUCCEEDED": 1
+    },
+    "rollup_overview": {
+      "total_leaf_count": 24108,
+      "overview": {
+        "SUCCEEDED": {
+          "cnt": 24108
+        }
+      }
+    }
+  },
+  "timeline": [
+    {
+      "timestamp": 1609272999666,
+      "type": "LOG",
+      "level": "INFO",
+      "message": "hello world"
+    },
+    {
+      "timestamp": 1609272999666,
+      "type": "DETAILS",
+      "status": "INTERNAL_ERROR",
+      "message": "sample error details"
+    }
+  ]
+}

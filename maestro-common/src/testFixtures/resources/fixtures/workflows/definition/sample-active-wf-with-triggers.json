@@ -1,0 +1,99 @@
+{
+  "properties_snapshot": {
+    "owner": "tester"
+  },
+  "is_active": true,
+  "activate_time": 1598399975650,
+  "activated_by": "demo",
+  "is_default": true,
+  "modify_time": 1598399975650,
+  "metadata": {
+    "workflow_id": "sample-active-wf-with-triggers",
+    "create_time": 1598399975650,
+    "version_author": "demo"
+  },
+  "workflow": {
+    "id": "sample-active-wf-with-triggers",
+    "time_triggers": [
+      {
+        "cron": "0 0 12 1/1 * ? *",
+        "timezone": "US/Pacific",
+        "type": "CRON"
+      },
+      {
+        "expression": "@daily",
+        "timezone": "US/Pacific",
+        "type": "PREDEFINED"
+      },
+      {
+        "cron": "0 0 13 1 * ? *",
+        "timezone": "UTC",
+        "type": "CRON",
+        "fuzzy_max_delay": 4320
+      },
+      {
+        "expression": "@hourly",
+        "timezone": "US/Pacific",
+        "type": "PREDEFINED",
+        "fuzzy_max_delay": 76140
+      }
+    ],
+    "signal_triggers": [
+      {
+        "definition": {
+          "signal_a": {
+            "foo": {
+              "type": "SIGNAL",
+              "parameter": {
+                "value": "bar",
+                "type": "STRING",
+                "mode": "mutable"
+              },
+              "operator": "="
+            },
+            "posted_by": {
+              "type": "SIGNAL",
+              "parameter": {
+                "value": "a",
+                "type": "STRING",
+                "mode": "mutable"
+              },
+              "operator": "="
+            }
+          },
+          "signal_b": {
+            "foo": {
+              "type": "SIGNAL",
+              "parameter": {
+                "value": "bar",
+                "type": "STRING",
+                "mode": "mutable"
+              },
+              "operator": "="
+            },
+            "posted_by": {
+              "type": "SIGNAL",
+              "parameter": {
+                "value": "a",
+                "type": "STRING",
+                "mode": "mutable"
+              },
+              "operator": "="
+            }
+          }
+        },
+        "join_keys": [
+          "updated_by"
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "step": {
+          "id": "job1",
+          "type": "NoOp"
+        }
+      }
+    ]
+  }
+}

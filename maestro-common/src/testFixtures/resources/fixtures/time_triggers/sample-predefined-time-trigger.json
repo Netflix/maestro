@@ -1,0 +1,5 @@
+{
+"expression": "@daily",
+"timezone": "US/Pacific",
+"type": "PREDEFINED"
+}

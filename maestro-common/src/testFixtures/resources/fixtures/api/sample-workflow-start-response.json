@@ -1,0 +1,14 @@
+{
+  "workflow_id": "sample-dag-test-3",
+  "workflow_version_id": 1,
+  "workflow_instance_id": 1,
+  "workflow_run_id": 1,
+  "workflow_uuid": "114839b7-559b-4f4f-8acc-6fd4a4ba79fa",
+  "status": "CREATED",
+  "timeline_event": {
+    "timestamp": 1627973018438,
+    "type": "LOG",
+    "level": "INFO",
+    "message": "Manually run a new workflow instance by a user [unknown]"
+  }
+}

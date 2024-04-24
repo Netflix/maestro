@@ -1,0 +1,137 @@
+{
+  "properties": {
+    "owner": "demo"
+  },
+  "is_active": true,
+  "git_info": {},
+  "source": "s3://netflix-code/dev/test/20200825235935__uuid/source.jar",
+  "manifest": "s3://netflix-code/dev/test/20200825235935__uuid/manifest.json",
+  "source_definition": "s3://netflix-code/dev/test/20200825235935__uuid/def.yaml",
+  "api_version": "3.00",
+  "dsl_client_hostname": "user-demo",
+  "dsl_client_version": "3.0.0",
+  "dsl_lang": "java",
+  "dsl_source": "nflx-scheduler-client",
+  "workflow": {
+    "id": "sample-active-wf-with-output-signals",
+    "name": "Test workflow 01",
+    "description": "Long description about this workflow",
+    "tags": [
+      {
+        "name": "demo",
+        "namespace": "system"
+      },
+      "test",
+      {
+        "name": "foo"
+      }
+    ],
+    "timeout": "3600",
+    "time_triggers": [],
+    "signal_triggers": [],
+    "params": {
+      "foo": {
+        "value": "bar",
+        "type": "STRING",
+        "mode": "mutable"
+      },
+      "auu": {
+        "value": 123,
+        "type": "LONG",
+        "tags": [
+          "notebook_template"
+        ]
+      },
+      "aaa": {
+        "value": "bar",
+        "type": "STRING",
+        "validator": "@NotNull",
+        "mode": "mutable"
+      },
+      "bbb": {
+        "expression": "1 + 1;",
+        "type": "LONG",
+        "validator": "@Positive",
+        "mode": "mutable"
+      }
+    },
+    "steps": [
+      {
+        "step": {
+          "id": "job1",
+          "name": "job 1's name",
+          "description": "step description about this step",
+          "type": "NoOp",
+          "tags": [
+            {
+              "name": "NoOp",
+              "namespace": "system"
+            },
+            "job.1"
+          ],
+          "timeout": 300,
+          "outputs": {
+            "SIGNAL": {
+              "type": "SIGNAL",
+              "definitions": [
+                {
+                  "value": {
+                    "p1": {
+                      "value": 1,
+                      "type": "LONG"
+                    },
+                    "p2": {
+                      "expression": "1+1",
+                      "type": "LONG"
+                    },
+                    "name": {
+                      "value": "out_1",
+                      "type": "STRING"
+                    }
+                  },
+                  "type": "MAP"
+                },
+                {
+                  "value": {
+                    "p1": {
+                      "expression": "foo + 1;",
+                      "type": "LONG"
+                    },
+                    "p2": {
+                      "expression": "auu+1",
+                      "type": "LONG"
+                    },
+                    "name": {
+                      "expression": "aaa",
+                      "type": "STRING"
+                    }
+                  },
+                  "type": "MAP"
+                }
+              ]
+            }
+          },
+          "params": {
+            "foo": {
+              "value": 10,
+              "type": "LONG",
+              "mode": "mutable"
+            },
+            "fuu": {
+              "expression": "1 > 0;",
+              "type": "BOOLEAN"
+            },
+            "bar": {
+              "value": [
+                1.1,
+                2.2,
+                3.3
+              ],
+              "type": "double_array"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

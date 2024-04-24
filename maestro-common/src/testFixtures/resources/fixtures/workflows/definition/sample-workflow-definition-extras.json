@@ -1,0 +1,26 @@
+{
+  "workflow_params": {
+    "foo": {
+      "value": "bar",
+      "type": "STRING",
+      "mode": "mutable"
+    },
+    "auu": {
+      "value": 123,
+      "type": "LONG",
+      "tags": [
+        "runtime"
+      ]
+    }
+  },
+  "step_params": {
+    "job.4": {
+      "param2": {
+        "expression": "params['job' + '.' +'2__param1']",
+        "type": "STRING_MAP",
+        "mode": "mutable"
+      }
+    }
+  },
+  "next_execution_time": 1639209600000
+}

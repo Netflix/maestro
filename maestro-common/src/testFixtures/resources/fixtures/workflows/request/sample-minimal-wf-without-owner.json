@@ -1,0 +1,10 @@
+{
+  "properties": {
+    "step_concurrency": 20
+  },
+  "is_active": true,
+  "workflow": {
+    "id": "sample-minimal-wf",
+    "steps": [{"step": {"id": "job1", "type": "NoOp"}}]
+  }
+}

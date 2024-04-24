@@ -1,0 +1,70 @@
+{
+  "foreach_workflow_id": "inline-wf",
+  "foreach_identity": "foo",
+  "foreach_run_id": 5,
+  "run_policy": "RESTART_FROM_INCOMPLETE",
+  "run_id": 3,
+  "ancestor_iteration_count": 8,
+  "total_loop_count": 10,
+  "next_loop_index": 6,
+  "foreach_overview": {
+    "checkpoint": 4,
+    "stats": {
+      "CREATED": 1,
+      "SUCCEEDED": 2
+    },
+    "running_stats": {
+      "IN_PROGRESS": 2
+    },
+    "rollup": {
+      "total_leaf_count": 10,
+      "overview": {
+        "SUCCEEDED": {
+          "cnt": 10
+        }
+      }
+    },
+    "running_rollup": {
+      "total_leaf_count": 4,
+      "overview": {
+        "RUNNING": {
+          "cnt": 2,
+          "ref": {
+            "maestro_foreach_Ib2_11_94587073c5c260cfd048a0d09251a917:1": [
+              "4:sub-step2:1",
+              "3:sub-step2:1"
+            ]
+          }
+        },
+        "SUCCEEDED": {
+          "cnt": 2
+        }
+      }
+    }
+  },
+  "pending_action": {
+    "instance_id": 2,
+    "instance_run_id": 1,
+    "restart_config": {
+      "restart_path": [
+        {
+          "workflow_id": "maestro_foreach_Ib2_11_94587073c5c260cfd048a0d09251a917",
+          "instance_id": 2,
+          "step_id": null
+        },
+        {
+          "workflow_id": "sample-foreach-wf",
+          "instance_id": 1,
+          "step_id": "foreach-step1"
+        }
+      ],
+      "restart_policy": "RESTART_FROM_BEGINNING",
+      "downstream_policy": "RESTART_FROM_BEGINNING",
+      "restart_params": {}
+    },
+    "action": "RESTART",
+    "user": "mock",
+    "create_time": 1684537782885
+  },
+  "type": "FOREACH"
+}

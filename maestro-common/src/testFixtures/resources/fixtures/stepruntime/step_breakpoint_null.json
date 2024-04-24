@@ -1,0 +1,8 @@
+{
+  "workflow_id": "sample-dag-test-3",
+  "workflow_version_id": 1,
+  "step_id": "job.1",
+  "step_attempt_id": 1,
+  "create_time": 1608749934142,
+  "created_by" : "test_user"
+}

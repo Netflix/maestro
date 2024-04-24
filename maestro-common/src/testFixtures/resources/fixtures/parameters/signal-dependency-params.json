@@ -1,0 +1,13 @@
+{
+  "signal_a": {
+    "foo": {
+      "type": "SIGNAL",
+      "parameter": {
+        "value": "bar",
+        "type": "STRING",
+        "mode": "mutable"
+      },
+      "operator": "="
+    }
+  }
+}

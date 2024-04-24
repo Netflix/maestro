@@ -1,0 +1,28 @@
+{
+  "properties": {
+    "owner": "tester"
+  },
+  "workflow": {
+    "id": "sample-invalid-wf-dry-run-failure",
+    "steps": [
+      {
+        "step": {
+          "id": "spark-step",
+          "type": "Notebook",
+          "sub_type": "Spark",
+          "params": {
+            "spark": {
+              "value": {
+                "options": {
+                  "expression": "{}",
+                  "type": "STRING"
+                }
+              },
+              "type": "MAP"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "step": {
+    "id": "job1",
+    "transition": {
+      "successors": {
+        "job.2": "true",
+        "job3": "true"
+      }
+    },
+    "type": "Sleep",
+    "timeout": "10 minutes",
+    "dependencies": {
+      "SIGNAL": {
+        "definitions": [
+          {
+            "value": {
+              "name": {
+                "value": "signal_a",
+                "type": "STRING"
+              },
+              "key1": {
+                "parameter": {
+                  "value": "value1",
+                  "type": "STRING"
+                },
+                "operator": "=",
+                "type": "SIGNAL"
+              }
+            },
+            "type": "MAP"
+          },
+          {
+            "value": {
+              "name": {
+                "value": "signal_b",
+                "type": "STRING"
+              },
+              "key2": {
+                "parameter": {
+                  "value": "value2",
+                  "type": "STRING"
+                },
+                "operator": "=",
+                "type": "SIGNAL"
+              }
+            },
+            "type": "MAP"
+          }
+        ],
+        "type": "SIGNAL"
+      }
+    },
+    "outputs": {
+      "SIGNAL": {
+        "type": "SIGNAL",
+        "definitions": [
+          {
+            "value": {
+              "p1": {
+                "value": 1,
+                "type": "LONG"
+              },
+              "p2": {
+                "expression": "1+1",
+                "type": "STRING"
+              },
+              "name": {
+                "value": "out",
+                "type": "STRING"
+              }
+            },
+            "type": "MAP"
+          }
+        ]
+      }
+    },
+    "params": {
+      "sleep_seconds": {
+        "value": 15,
+        "type": "LONG"
+      }
+    }
+  }
+}

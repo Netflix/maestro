@@ -1,0 +1,174 @@
+{
+  "workflow_definition": {
+    "properties_snapshot": {
+      "workflow_id": "sample-dag-test-3",
+      "create_time": 1615333573468,
+      "author": "unknown",
+      "owner": "demo",
+      "run_strategy": {
+        "rule": "PARALLEL"
+      },
+      "step_concurrency": 20,
+      "alerting": {
+        "emails": [
+          "test+alertconfig_default1@netflix.com",
+          "${foo}+alertconfig_default2@netflix.com"
+        ],
+        "tct": {
+          "completed_by_hour": 1,
+          "tz": "UTC"
+        }
+      }
+    },
+    "metadata": {
+      "workflow_id": "sample-dag-test-3",
+      "workflow_version_id": 2,
+      "create_time": 1615333573468,
+      "version_author": "unknown"
+    },
+    "workflow": {
+      "id": "sample-dag-test-3",
+      "name": "Test workflow 03",
+      "description": "Long description about this workflow",
+      "tags": [
+        {
+          "name": "demo",
+          "namespace": "SYSTEM"
+        },
+        {
+          "name": "test"
+        },
+        {
+          "name": "foo"
+        }
+      ],
+      "params": {
+        "foo": {
+          "expression": "'bar1';",
+          "type": "STRING"
+        }
+      },
+      "steps": [
+        {
+          "step": {
+            "id": "job1",
+            "transition": {
+              "successors": {
+                "job.2": "true",
+                "job3": "true"
+              }
+            },
+            "type": "Sleep",
+            "failure_mode": "IGNORE_FAILURE",
+            "retry_policy": {
+              "error_retry_limit": 2,
+              "platform_retry_limit": 10,
+              "backoff": {
+                "error_retry_backoff_in_secs": 1,
+                "platform_retry_backoff_in_secs": 1,
+                "type": "FIXED_BACKOFF"
+              }
+            },
+            "tags": [
+              {
+                "name": "Sleep",
+                "namespace": "SYSTEM"
+              },
+              {
+                "name": "job1"
+              }
+            ],
+            "params": {
+              "sleep_seconds": {
+                "value": 15,
+                "type": "LONG"
+              }
+            }
+          }
+        },
+        {
+          "step": {
+            "id": "job.2",
+            "transition": {
+              "successors": {
+                "job4": "true"
+              }
+            },
+            "type": "Sleep",
+            "failure_mode": "FAIL_AFTER_RUNNING",
+            "retry_policy": {
+              "error_retry_limit": 2,
+              "platform_retry_limit": 10,
+              "backoff": {
+                "error_retry_backoff_in_secs": 1,
+                "platform_retry_backoff_in_secs": 1,
+                "type": "FIXED_BACKOFF"
+              }
+            },
+            "params": {
+              "param1": {
+                "expression": "sleep_seconds + '1';",
+                "type": "STRING"
+              },
+              "param2": {
+                "value": "${job1__sleep_seconds} + 1",
+                "type": "STRING"
+              },
+              "sleep_seconds": {
+                "expression": "job3__sleep_seconds + 1;",
+                "type": "LONG"
+              }
+            }
+          }
+        },
+        {
+          "step": {
+            "id": "job3",
+            "transition": {
+              "successors": {
+                "job4": "true",
+                "job.2": "true"
+              }
+            },
+            "type": "Sleep",
+            "failure_mode": "FAIL_IMMEDIATELY",
+            "retry_policy": {
+              "error_retry_limit": 2,
+              "platform_retry_limit": 10,
+              "backoff": {
+                "error_retry_backoff_in_secs": 1,
+                "platform_retry_backoff_in_secs": 1,
+                "type": "FIXED_BACKOFF"
+              }
+            },
+            "params": {
+              "sleep_seconds": {
+                "value": 15,
+                "type": "LONG"
+              }
+            }
+          }
+        },
+        {
+          "step": {
+            "id": "job4",
+            "transition": {},
+            "type": "Sleep",
+            "failure_mode": "FAIL_IMMEDIATELY",
+            "params": {
+              "sleep_seconds": {
+                "value": 15,
+                "type": "LONG"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "is_active": true,
+    "activate_time": 1615333573468,
+    "activated_by": "unknown",
+    "is_default": true,
+    "modify_time": 1615333573468
+  }
+}

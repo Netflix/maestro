@@ -1,0 +1,10 @@
+{
+  "properties": {
+    "owner": "tester"
+  },
+  "is_active": true,
+  "workflow": {
+    "id": "sample-minimal-wf",
+    "steps": [{"step": {"id": "job1", "type": "NoOp"}}]
+  }
+}

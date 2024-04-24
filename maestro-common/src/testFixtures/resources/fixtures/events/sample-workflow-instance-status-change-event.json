@@ -1,0 +1,28 @@
+{
+  "workflow_id": "sample-dag-test-3",
+  "workflow_instance_id": 1,
+  "workflow_run_id": 1,
+  "workflow_uuid": "7090ec3e-c4b4-4e02-9ada-c0a5db4ff2ff",
+  "correlation_id": "sample-dag-test-3-1-1",
+  "depth": 3,
+  "workflow_name": "Test workflow 03",
+  "cluster_name": "laptop",
+  "tags": [
+    {
+      "name": "demo",
+      "namespace": "SYSTEM"
+    },
+    {
+      "name": "test"
+    },
+    {
+      "name": "foo"
+    }
+  ],
+  "old_status": "IN_PROGRESS",
+  "new_status": "SUCCEEDED",
+  "event_time": 1610671075388,
+  "sync_time": 1610671075650,
+  "send_time": 1610671075871,
+  "type": "WORKFLOW_INSTANCE_STATUS_CHANGE_EVENT"
+}

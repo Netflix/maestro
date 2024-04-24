@@ -1,0 +1,9 @@
+{
+  "workflow_id": "sample-dag-test-3",
+  "author": "tester",
+  "previous_active_version": 1,
+  "event_time": 1610740278741,
+  "sync_time": 1610740278805,
+  "log": "Caller [tester] deactivated workflow [sample-dag-test-3], whose last active version is [1]",
+  "type": "WORKFLOW_VERSION_UPDATE_JOB_EVENT"
+}

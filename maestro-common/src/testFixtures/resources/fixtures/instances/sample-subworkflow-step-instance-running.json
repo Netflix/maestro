@@ -1,0 +1,136 @@
+{
+  "workflow_id": "sample-subworkflow-wf",
+  "workflow_instance_id": 1,
+  "workflow_run_id": 4,
+  "step_id": "job1",
+  "step_attempt_id": 1,
+  "workflow_uuid": "dae9e399-9a8d-42f6-82ec-6147f12cdfd5",
+  "step_uuid": "008b6322-0c0f-4cff-8a58-c195df904459",
+  "correlation_id": "sample-subworkflow-wf-1-1",
+  "step_instance_id": 1,
+  "workflow_version_id": 1,
+  "owner": "tester",
+  "definition": {
+    "subworkflow": {
+      "id": "job1",
+      "transition": {},
+      "sync": true,
+      "explicit_params": false,
+      "failure_mode": "FAIL_AFTER_RUNNING",
+      "params": {
+        "param1": {
+          "value": {
+            "foo": "bar"
+          },
+          "type": "STRING_MAP"
+        },
+        "subworkflow_id": {
+          "value": "sample-dag-test-3",
+          "type": "STRING"
+        },
+        "subworkflow_version": {
+          "value": "latest",
+          "type": "STRING"
+        }
+      }
+    }
+  },
+  "tags": [],
+  "params": {
+    "maestro_step_satisfied": {
+      "value": true,
+      "type": "BOOLEAN",
+      "evaluated_result": true,
+      "evaluated_time": 1625375651167
+    },
+    "param1": {
+      "value": {
+        "foo": "bar"
+      },
+      "type": "STRING_MAP",
+      "evaluated_result": {
+        "foo": "bar"
+      },
+      "evaluated_time": 1625375651167
+    },
+    "step_attempt_id": {
+      "value": 1,
+      "type": "LONG",
+      "evaluated_result": 1,
+      "evaluated_time": 1625375651167
+    },
+    "step_instance_uuid": {
+      "value": "008b6322-0c0f-4cff-8a58-c195df904459",
+      "type": "STRING",
+      "evaluated_result": "008b6322-0c0f-4cff-8a58-c195df904459",
+      "evaluated_time": 1625375651167
+    },
+    "subworkflow_id": {
+      "value": "sample-dag-test-3",
+      "type": "STRING",
+      "evaluated_result": "sample-dag-test-3",
+      "evaluated_time": 1625375651167
+    },
+    "subworkflow_version": {
+      "value": "latest",
+      "type": "STRING",
+      "evaluated_result": "latest",
+      "evaluated_time": 1625375651167
+    },
+    "workflow_id": {
+      "value": "sample-subworkflow-wf",
+      "type": "STRING",
+      "evaluated_result": "sample-subworkflow-wf",
+      "evaluated_time": 1625375651167
+    },
+    "workflow_instance_id": {
+      "value": 1,
+      "type": "LONG",
+      "evaluated_result": 1,
+      "evaluated_time": 1625375651167
+    }
+  },
+  "transition": {},
+  "step_retry": {
+    "error_retries": 0,
+    "error_retry_limit": 0,
+    "platform_retries": 0,
+    "platform_retry_limit": 0,
+    "manual_retries": 0,
+    "retryable": true
+  },
+  "runtime_state": {
+    "status": "RUNNING",
+    "create_time": 1625375651166,
+    "initialize_time": 1625375651167,
+    "wait_signal_time": 1625375653525,
+    "wait_permit_time": 1625375653525,
+    "start_time": 1625375653525,
+    "execute_time": 1625375653525,
+    "modify_time": 1625375661310
+  },
+  "artifacts": {
+    "maestro_subworkflow": {
+      "subworkflow_id": "sample-dag-test-3",
+      "subworkflow_version_id": 1,
+      "subworkflow_instance_id": 2,
+      "subworkflow_run_id": 4,
+      "subworkflow_uuid": "39e7bf75-d5b0-390a-a681-46707c6293aa",
+      "subworkflow_overview": {
+        "total_step_count": 1,
+        "step_overview": {
+          "RUNNING": 1
+        }
+      },
+      "type": "SUBWORKFLOW"
+    }
+  },
+  "timeline": [
+    {
+      "timestamp": 1625375653661,
+      "type": "LOG",
+      "level": "INFO",
+      "message": "Started a subworkflow with uuid: 39e7bf75-d5b0-390a-a681-46707c6293aa"
+    }
+  ]
+}

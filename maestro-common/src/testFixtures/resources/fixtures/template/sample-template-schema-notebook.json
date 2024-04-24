@@ -1,0 +1,332 @@
+{
+  "params": {
+    "titus": {
+      "type": "MAP",
+      "value": {
+        "allocate_ip": {
+          "type": "STRING",
+          "tags": [
+            "titus"
+          ],
+          "internal_mode": "OPTIONAL"
+        },
+        "application_name": {
+          "type": "STRING",
+          "tags": [
+            "titus"
+          ],
+          "value": "maestro_job",
+          "internal_mode": "PROVIDED"
+        },
+        "attributes": {
+          "type": "MAP",
+          "tags": [
+            "titus"
+          ],
+          "internal_mode": "OPTIONAL"
+        },
+        "capacity_group": {
+          "type": "STRING",
+          "tags": [
+            "titus"
+          ],
+          "internal_mode": "OPTIONAL"
+        },
+        "cluster_env": {
+          "type": "STRING",
+          "tags": [
+            "titus"
+          ],
+          "internal_mode": "OPTIONAL",
+          "validator": "Maestro.enumCheck(\"test\",\"prod\")"
+        },
+        "cluster_region": {
+          "type": "STRING",
+          "tags": [
+            "titus"
+          ],
+          "internal_mode": "OPTIONAL"
+        },
+        "container_attributes": {
+          "type": "MAP",
+          "tags": [
+            "titus"
+          ],
+          "internal_mode": "OPTIONAL"
+        },
+        "cpu": {
+          "type": "DOUBLE",
+          "tags": [
+            "titus"
+          ],
+          "value": 1.0,
+          "internal_mode": "PROVIDED"
+        },
+        "disk_mb": {
+          "type": "LONG",
+          "tags": [
+            "titus"
+          ],
+          "value": 10000,
+          "internal_mode": "PROVIDED"
+        },
+        "efs_mounts": {
+          "type": "STRING_ARRAY",
+          "tags": [
+            "titus"
+          ],
+          "internal_mode": "OPTIONAL"
+        },
+        "entry_point": {
+          "type": "STRING",
+          "tags": [
+            "titus"
+          ],
+          "internal_mode": "OPTIONAL"
+        },
+        "env": {
+          "type": "MAP",
+          "tags": [
+            "titus"
+          ],
+          "internal_mode": "OPTIONAL"
+        },
+        "gpu": {
+          "type": "LONG",
+          "tags": [
+            "titus"
+          ],
+          "value": 0,
+          "internal_mode": "PROVIDED",
+          "validator": "Maestro.enumCheck(\"0\",\"1\",\"2\",\"3\",\"4\")"
+        },
+        "hard_constraints": {
+          "type": "STRING_ARRAY",
+          "tags": [
+            "titus"
+          ],
+          "internal_mode": "OPTIONAL"
+        },
+        "iam_role": {
+          "type": "STRING",
+          "tags": [
+            "titus"
+          ],
+          "value": "arn:aws:iam::12345:role/TitusContainerRole",
+          "internal_mode": "PROVIDED"
+        },
+        "image": {
+          "type": "STRING",
+          "tags": [
+            "titus"
+          ],
+          "internal_mode": "OPTIONAL"
+        },
+        "image_tag": {
+          "type": "STRING",
+          "tags": [
+            "titus"
+          ],
+          "value": "latest",
+          "internal_mode": "PROVIDED"
+        },
+        "image_digest": {
+          "type": "STRING",
+          "tags": [
+            "titus"
+          ],
+          "internal_mode": "OPTIONAL"
+        },
+        "job_group_detail": {
+          "type": "STRING",
+          "tags": [
+            "titus"
+          ],
+          "internal_mode": "OPTIONAL"
+        },
+        "job_group_sequence": {
+          "type": "STRING",
+          "tags": [
+            "titus"
+          ],
+          "internal_mode": "OPTIONAL"
+        },
+        "job_group_stack": {
+          "type": "STRING",
+          "tags": [
+            "titus"
+          ],
+          "internal_mode": "OPTIONAL"
+        },
+        "memory_mb": {
+          "type": "LONG",
+          "tags": [
+            "titus"
+          ],
+          "value": 4096,
+          "internal_mode": "PROVIDED"
+        },
+        "metatron": {
+          "type": "BOOLEAN",
+          "tags": [
+            "titus"
+          ],
+          "value": true,
+          "internal_mode": "PROVIDED"
+        },
+        "network_mbps": {
+          "type": "LONG",
+          "tags": [
+            "titus"
+          ],
+          "value": 128,
+          "internal_mode": "PROVIDED"
+        },
+        "platform_errors": {
+          "type": "STRING_ARRAY",
+          "tags": [
+            "titus"
+          ],
+          "internal_mode": "OPTIONAL"
+        },
+        "ports": {
+          "type": "STRING_ARRAY",
+          "tags": [
+            "titus"
+          ],
+          "internal_mode": "OPTIONAL"
+        },
+        "priority_class": {
+          "type": "LONG",
+          "tags": [
+            "titus"
+          ],
+          "value": 1,
+          "internal_mode": "PROVIDED"
+        },
+        "priority_value": {
+          "type": "LONG",
+          "tags": [
+            "titus"
+          ],
+          "value": 1,
+          "internal_mode": "PROVIDED"
+        },
+        "retries": {
+          "type": "LONG",
+          "tags": [
+            "titus"
+          ],
+          "internal_mode": "OPTIONAL"
+        },
+        "retry_policy": {
+          "type": "STRING",
+          "tags": [
+            "titus"
+          ],
+          "internal_mode": "OPTIONAL",
+          "validator": "Maestro.enumCheck(\"Immediate\",\"Delayed\",\"ExponentialBackoff\")"
+        },
+        "retry_policy_delay_ms": {
+          "type": "LONG",
+          "tags": [
+            "titus"
+          ],
+          "internal_mode": "OPTIONAL"
+        },
+        "retry_policy_initial_delay_ms": {
+          "type": "LONG",
+          "tags": [
+            "titus"
+          ],
+          "internal_mode": "OPTIONAL"
+        },
+        "retry_policy_max_delay_interval_ms": {
+          "type": "LONG",
+          "tags": [
+            "titus"
+          ],
+          "internal_mode": "OPTIONAL"
+        },
+        "runtime_limit_sec": {
+          "type": "LONG",
+          "tags": [
+            "titus"
+          ],
+          "value": 432000,
+          "internal_mode": "PROVIDED"
+        },
+        "security_groups": {
+          "type": "STRING_ARRAY",
+          "tags": [
+            "titus"
+          ],
+          "value": [],
+          "internal_mode": "PROVIDED"
+        },
+        "shm_size_mb": {
+          "type": "LONG",
+          "tags": [
+            "titus"
+          ],
+          "internal_mode": "OPTIONAL"
+        },
+        "size": {
+          "type": "LONG",
+          "tags": [
+            "titus"
+          ],
+          "internal_mode": "OPTIONAL"
+        },
+        "soft_constraints": {
+          "type": "STRING_ARRAY",
+          "tags": [
+            "titus"
+          ],
+          "internal_mode": "OPTIONAL"
+        },
+        "team_email": {
+          "type": "STRING",
+          "tags": [
+            "titus"
+          ],
+          "internal_mode": "OPTIONAL"
+        }
+      },
+      "internal_mode": "PROVIDED",
+      "tags": [
+        "titus"
+      ]
+    },
+    "notebook": {
+      "type": "MAP",
+      "value": {
+        "input_path": {
+          "type": "STRING",
+          "tags": [
+            "notebook"
+          ],
+          "internal_mode": "REQUIRED"
+        },
+        "output_path": {
+          "type": "STRING",
+          "tags": [
+            "notebook"
+          ],
+          "internal_mode": "OPTIONAL"
+        },
+        "papermill_arguments": {
+          "type": "STRING_ARRAY",
+          "tags": [
+            "notebook"
+          ],
+          "internal_mode": "OPTIONAL"
+        }
+      },
+      "internal_mode": "REQUIRED",
+      "tags": [
+        "notebook"
+      ]
+    }
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "timeout1": 12345,
+  "timeout2": "10 minutes 5 seconds 1 day",
+  "timeout3": "123456"
+}

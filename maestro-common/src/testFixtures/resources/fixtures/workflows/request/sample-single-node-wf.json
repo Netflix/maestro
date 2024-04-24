@@ -1,0 +1,17 @@
+{
+  "properties": {
+    "owner": "tester",
+    "run_strategy": "strict_sequential"
+  },
+  "is_active": true,
+  "workflow": {
+    "id": "sample-single-node-wf",
+    "tags": ["test"],
+    "steps": [{
+      "step": {
+        "id": "job1", "type": "NoOp",
+        "tags": ["job1"],
+        "params": {"foo": {"value": "bar", "type": "STRING"}}
+      }}]
+  }
+}

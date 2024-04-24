@@ -1,0 +1,9 @@
+{
+  "properties_snapshot": {
+    "owner": "tester"
+  },
+  "metadata": {},
+  "definition": {
+    "id": "sample-invalid-wf"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "workflow_id": "sample-dag-test-3",
+  "instance_run_uuids": [
+    {
+      "instance_id": 1,
+      "run_id": 1,
+      "uuid": "97a57978-803f-403e-9f9b-376d34689723"
+    },
+    {
+      "instance_id": 2,
+      "run_id": 2,
+      "uuid": "7a6599fe-fff4-4e2b-9b2d-4adc1e8dfc12"
+    },
+    {
+      "instance_id": 3,
+      "run_id": 3,
+      "uuid": "5d2351cd-d371-422c-9bb6-73724298ffc2"
+    }
+  ],
+  "action": "STOP",
+  "user": "tester",
+  "reason": "test reason",
+  "type": "TERMINATE_INSTANCES_JOB_EVENT"
+}

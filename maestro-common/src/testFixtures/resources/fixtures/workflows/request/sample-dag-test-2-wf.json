@@ -1,0 +1,105 @@
+{
+  "properties": {
+    "owner": "demo",
+    "run_strategy": "parallel",
+    "step_concurrency": 20
+  },
+  "workflow": {
+    "id": "sample-dag-test-1-wf",
+    "name": "Complex DAG sample test 2",
+    "description": "Long description about this workflow",
+    "tags": [
+      {"name": "demo", "namespace": "system"},
+      "test",
+      {"name": "foo"}],
+    "params": {
+      "foo":  {"expression": "'bar1';", "type":  "STRING"}
+    },
+    "steps": [
+      {
+        "step": {
+          "id": "job_2",
+          "name": "job_2",
+          "transition": {
+            "successors": {
+              "job_3": "true"
+            }
+          },
+          "type": "Sleep",
+          "params": {
+            "Sleep": {
+              "value": 10,
+              "type": "LONG",
+              "mode": "MUTABLE"
+            }
+          }
+        }
+      },
+      {
+        "subworkflow": {
+          "id": "job_3",
+          "name": "job_3",
+          "transition": {
+            "successors": {
+              "job_4": "true"
+            }
+          },
+          "sync": true,
+          "params": {
+            "subworkflow_id": {
+              "value": "subworkflow.write",
+              "type": "STRING",
+              "mode": "MUTABLE"
+            },
+            "subworkflow_version": {
+              "value": "active",
+              "type": "STRING",
+              "mode": "MUTABLE"
+            }
+          }
+        }
+      },
+      {
+        "step": {
+          "id": "job_4",
+          "name": "job_4",
+          "transition": {
+            "successors": {
+              "job_1": "true"
+            }
+          },
+          "type": "Sleep",
+          "params": {
+            "Sleep": {
+              "value": 10,
+              "type": "LONG",
+              "mode": "MUTABLE"
+            }
+          }
+        }
+      },
+      {
+        "step": {
+          "id": "job_5",
+          "name": "job_5",
+          "transition": {
+            "successors": {
+              "job_1": "1 > 0",
+              "job_2": "2 > 0"
+            }
+          },
+          "type": "NoOp",
+          "params": {}
+        }
+      },
+      {
+        "step": {
+          "id": "job_1",
+          "name": "job_1",
+          "transition": {},
+          "type": "NoOp",
+          "params": {}
+        }
+      }
+    ]  }
+}

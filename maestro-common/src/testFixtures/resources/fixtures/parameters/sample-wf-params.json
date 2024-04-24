@@ -1,0 +1,90 @@
+{
+  "properties_snapshot": {
+    "owner": "demo",
+    "run_strategy": "parallel",
+    "step_concurrency": 20
+  },
+  "workflow": {
+    "id": "sample-wf-params",
+    "name": "Test workflow parameters",
+    "params": {
+      "l1": {
+        "value": "bar", "type": "STRING", "mode": "mutable", "source": "user"
+      },
+      "l2": {
+        "value": 1598399975650, "type": "LONG", "tags": ["SYSTEM"], "internal_mode": "system"
+      },
+      "l3": {
+        "value": 1.23, "type": "DOUBLE", "validator": "@Min(1.0)", "mode": "mutable"
+      },
+      "l4": {
+        "value": true, "type": "BOOLEAN", "mode": "mutable_on_start"
+      },
+      "l5": {
+        "value": {"foo": "bar"}, "type": "STRING_MAP", "validator": "@NotEmpty", "mode": "mutable_on_start_restart"
+      },
+      "l6" : {
+        "value": ["a", "b", "c"], "type": "string_array", "validator": "param!=null && param.size() > 2", "mode": "constant"
+      },
+      "l7" : {
+        "value": [1, 2, 3], "type": "long_array", "validator": "param!=null && param.size() > 2", "mode": "constant"
+      },
+      "l8" : {
+        "value": [1.1, 2.2, 3.3], "type": "double_array", "validator": "param!=null && param.size() > 2", "mode": "constant"
+      },
+      "l9" : {
+        "value": [true, false, true], "type": "boolean_array", "validator": "param!=null && param.size() > 2", "mode": "constant"
+      },
+      "AUTH_ACTING_ON_BEHALF_OF_BLOB" : {
+        "value": {"application": "{\"application_name\":\"bdp_scheduler_api\"}"}, "type": "STRING_MAP", "validator": "@NotEmpty"
+      },
+      "AUTH_TRIGGERING_ON_BEHALF_OF_BLOB" : {
+        "value": {"application": "{\"application_name\":\"bdp_scheduler_api\"}"}, "type": "STRING_MAP", "internal_mode": "optional"
+      },
+      "e1": {
+        "expression": "'bar';", "type": "STRING", "mode": "mutable"
+      },
+      "e2": {
+        "expression": "1+1;", "type": "LONG", "tags": ["SYSTEM"]
+      },
+      "e3": {
+        "expression": "1.23;", "type": "DOUBLE", "validator": "@Min(1.0)", "mode": "mutable"
+      },
+      "e4": {
+        "expression": "1>0;", "type": "BOOLEAN", "mode": "mutable_on_start"
+      },
+      "e5": {
+        "expression": "m = new Map(); m.put('foo', 'bar'); return m;", "type": "string_map", "validator": "@NotEmpty", "mode": "mutable_on_start"
+      },
+      "e6" : {
+        "expression": "'a,b,c'.split(',');", "type": "string_array", "validator": "param!=null && param.size() > 2", "mode": "constant"
+      },
+      "e7" : {
+        "expression": "new int[]{1,2,3};", "type": "long_array", "validator": "param!=null && param.size() > 2", "mode": "constant"
+      },
+      "e8" : {
+        "expression": "new double[]{1.1,2.2,3.3};", "type": "double_array", "validator": "param!=null && param.size() > 2", "mode": "constant"
+      },
+      "e9" : {
+        "expression": "new boolean[]{true, false, true};", "type": "boolean_array", "validator": "param!=null && param.size() > 2", "mode": "constant"
+      }
+    },
+    "steps": [
+      {"step": {
+        "id": "job1", "type": "Sleep", "params": {
+          "sleep_seconds":  {"value": 15, "type":  "LONG"},
+          "cpu": {"value": 2, "type":  "DOUBLE"},
+          "memory": {"value": "10.229999999999", "type":  "DOUBLE"},
+          "monitor": {"value": 1.00000000000001, "type":  "DOUBLE"}
+        }}},
+      {"step": {
+        "id": "job2", "type": "NoOp", "params": {
+          "param1":  {"value": [15, 16], "type":  "DOUBLE_ARRAY"},
+          "param2":  {"value": ["12.3", "45"], "type":  "DOUBLE_ARRAY"},
+          "param3":  {"value": ["10.229999999999", 1.00000000000001], "type":  "DOUBLE_ARRAY"},
+          "param4":  {"expression": "return new double[]{1.2, 3.45};", "type":  "DOUBLE_ARRAY"},
+          "param5":  {"expression": "return new double[]{1.229999999999, 3.00000000000001};", "type":  "DOUBLE_ARRAY"}
+        }}}
+    ]
+  }
+}

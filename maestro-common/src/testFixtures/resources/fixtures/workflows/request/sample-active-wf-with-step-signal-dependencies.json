@@ -1,0 +1,213 @@
+{
+  "properties": {
+    "owner": "demo"
+  },
+  "is_active": true,
+  "git_info": {},
+  "source": "s3://netflix-code/dev/test/20200825235935__uuid/source.jar",
+  "manifest": "s3://netflix-code/dev/test/20200825235935__uuid/manifest.json",
+  "source_definition": "s3://netflix-code/dev/test/20200825235935__uuid/def.yaml",
+  "api_version": "3.00",
+  "dsl_client_hostname": "user-demo",
+  "dsl_client_version": "3.0.0",
+  "dsl_lang": "java",
+  "dsl_source": "nflx-scheduler-client",
+  "workflow": {
+    "id": "sample-active-wf-with-step-signal-dependencies",
+    "name": "Test workflow 01",
+    "description": "Long description about this workflow",
+    "tags": [
+      {
+        "name": "demo",
+        "namespace": "system"
+      },
+      "test",
+      {
+        "name": "foo"
+      }
+    ],
+    "timeout": 3600,
+    "time_triggers": [],
+    "params": {
+      "foo": {
+        "value": "bar",
+        "type": "STRING",
+        "mode": "mutable"
+      },
+      "auu": {
+        "value": 123,
+        "type": "LONG",
+        "tags": [
+          "notebook_template"
+        ]
+      },
+      "aaa": {
+        "value": "bar",
+        "type": "STRING",
+        "validator": "@NotNull",
+        "mode": "mutable"
+      },
+      "bbb": {
+        "expression": "1 + 1;",
+        "type": "LONG",
+        "validator": "@Positive",
+        "mode": "mutable_on_start"
+      }
+    },
+    "steps": [
+      {
+        "step": {
+          "id": "job.1",
+          "name": "job 1's name",
+          "description": "step description about this step",
+          "transition": {
+            "successors": {
+              "job.2": "true",
+              "job.3": "true"
+            }
+          },
+          "type": "NoOp",
+          "tags": [
+            {
+              "name": "NoOp",
+              "namespace": "system"
+            },
+            "job.1"
+          ],
+          "timeout": 300,
+          "params": {
+            "foo": {
+              "value": 10.2,
+              "type": "double",
+              "mode": "mutable_on_start_restart"
+            },
+            "fuu": {
+              "expression": "1 > 0;",
+              "type": "BOOLEAN"
+            },
+            "bar": {
+              "value": [
+                1.1,
+                2.2,
+                3.3
+              ],
+              "type": "double_array"
+            }
+          },
+          "dependencies": {
+            "SIGNAL": {
+              "definitions": [
+                {
+                  "value": {
+                    "name": {
+                      "value": "signal_a",
+                      "type": "STRING"
+                    },
+                    "_step_dependency_sub_type": {
+                      "value": "input_signal",
+                      "type": "STRING"
+                    },
+                    "foo": {
+                      "type": "SIGNAL",
+                      "parameter": {
+                        "value": "bar",
+                        "type": "STRING",
+                        "mode": "mutable"
+                      },
+                      "operator": "="
+                    }
+                  },
+                  "type": "MAP"
+                }
+              ],
+              "type": "SIGNAL"
+            }
+          }
+        }
+      },
+      {
+        "subworkflow": {
+          "id": "job.2",
+          "sync": true,
+          "params": {
+            "subworkflow_id": {
+              "value": "demo-sample-test-2",
+              "type": "STRING"
+            },
+            "param1": {
+              "value": {
+                "foo": "bar"
+              },
+              "type": "STRING_MAP",
+              "validator": "@NotEmpty",
+              "mode": "mutable_on_start"
+            }
+          }
+        }
+      },
+      {
+        "foreach": {
+          "id": "job.3",
+          "params": {
+            "param1": {
+              "value": [
+                "a",
+                "b"
+              ],
+              "type": "String_array"
+            },
+            "loop_params": {
+              "value": {
+                "i": {
+                  "value": [
+                    1,
+                    2,
+                    3
+                  ],
+                  "type": "long_array",
+                  "validator": "param!=null && param.size() > 2",
+                  "mode": "mutable"
+                },
+                "j": {
+                  "expression": "param1",
+                  "type": "STRING_ARRAY",
+                  "validator": "param!=null && param.size() > 2"
+                }
+              },
+              "type": "MAP"
+            }
+          },
+          "steps": [
+            {
+              "step": {
+                "id": "job.4",
+                "type": "NoOp",
+                "tags": [
+                  "NoOp"
+                ],
+                "params": {
+                  "param2": {
+                    "expression": "params['job' + '.' +'2__param1']",
+                    "type": "MAP",
+                    "mode": "mutable"
+                  }
+                },
+                "transition": {
+                  "successors": {
+                    "job.5": "true"
+                  }
+                }
+              }
+            },
+            {
+              "step": {
+                "id": "job.5",
+                "type": "NoOp"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

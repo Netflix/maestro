@@ -1,0 +1,10 @@
+{
+  "workflow_id": "sample-dag-test-3",
+  "author": "tester",
+  "previous_active_version_id": 2,
+  "cluster_name": "laptop",
+  "event_time": 1610739643352,
+  "sync_time": 1610739643415,
+  "send_time": 1610739644585,
+  "type": "WORKFLOW_DEACTIVATION_CHANGE_EVENT"
+}

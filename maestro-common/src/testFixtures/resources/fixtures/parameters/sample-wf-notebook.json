@@ -1,0 +1,44 @@
+{
+  "properties_snapshot": {
+    "owner": "demo",
+    "run_strategy": "parallel",
+    "step_concurrency": 20
+  },
+  "metadata": {},
+  "workflow": {
+    "id": "sample-wf-map-params",
+    "name": "Test workflow MAP parameter",
+    "params": {
+      "RUN_TS": {
+        "value": 1607746121804,
+        "type": "long"
+      },
+      "DSL_DEFAULT_TZ": {
+        "value": "UTC",
+        "type": "String",
+        "mode": "MUTABLE_ON_START"
+      },
+      "notebook": {
+        "value": {
+          "input_path": {
+            "type": "STRING",
+            "value": "/some/notebook.ipynb"
+          },
+          "output_path": {
+            "type": "STRING",
+            "value": "s3://path/someplace/nice.ipynb"
+          },
+          "papermill_arguments": {
+            "type": "STRING_ARRAY",
+            "value": [
+              "--start_timeout",
+              "100"
+            ]
+          }
+        },
+        "type": "MAP"
+      }
+    },
+    "steps": [{"step": {"id": "job1", "type": "NoOp"}}]
+  }
+}

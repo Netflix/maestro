@@ -1,0 +1,21 @@
+{
+  "properties": {
+    "owner": "demo",
+    "run_strategy": "parallel",
+    "step_concurrency": 20
+  },
+  "workflow": {
+    "id": "sample-conditional-wf",
+    "name": "Test conditional workflow",
+    "description": "Long description about this workflow",
+    "steps": [
+      {"step": {"id": "job.1", "type": "NoOp", "transition": {"successors": {"job.2": "true"}}}},
+      {"step": {"id": "job.2", "type": "NoOp", "transition": {"successors": {"job.3": "true", "job.5": "1 > 0", "job.6": "!(1 > 0)"}}}},
+      {"step": {"id": "job.3", "type": "NoOp", "transition": {"successors": {"job.6": "!(1 > 0)"}}}},
+      {"step": {"id": "job.4", "type": "NoOp"}},
+      {"step": {"id": "job.5", "type": "NoOp", "transition": {"successors": {"job.6": "true"}}}},
+      {"step": {"id": "job.6", "type": "NoOp", "transition": {"successors": {"job.7": "true"}}}},
+      {"step": {"id": "job.7", "type": "NoOp"}}
+    ]
+  }
+}

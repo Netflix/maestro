@@ -1,0 +1,22 @@
+{
+  "workflow_id": "sample-dag-test-3",
+  "workflow_instance_id": 1,
+  "workflow_run_id": 1,
+  "step_id": "job1",
+  "step_instance_id": 1,
+  "step_attempt_id": 1,
+  "workflow_uuid": "7090ec3e-c4b4-4e02-9ada-c0a5db4ff2ff",
+  "step_uuid": "83585796-b600-47af-8b59-2bacdae25ad8",
+  "correlation_id": "sample-dag-test-3-1-1",
+  "cluster_name": "laptop",
+  "status_change_records": [
+    {
+      "old_status": "FINISHING",
+      "new_status": "SUCCEEDED",
+      "event_time": 1610671016274
+    }
+  ],
+  "sync_time": 1610671016293,
+  "send_time": 1610671017329,
+  "type": "STEP_INSTANCE_STATUS_CHANGE_EVENT"
+}

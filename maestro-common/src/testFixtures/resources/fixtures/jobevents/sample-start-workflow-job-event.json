@@ -1,0 +1,4 @@
+{
+  "workflow_id": "sample-dag-test-3",
+  "type": "START_WORKFLOW_JOB_EVENT"
+}

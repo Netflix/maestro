@@ -1,0 +1,7 @@
+{
+  "backoff": {
+    "error_retry_backoff_in_secs": 1,
+    "platform_retry_backoff_in_secs": 1,
+    "type": "FIXED_BACKOFF"
+  }
+}

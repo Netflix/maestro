@@ -1,0 +1,31 @@
+{
+  "properties": {
+    "owner": "demo",
+    "run_strategy": "parallel",
+    "step_concurrency": 20
+  },
+  "workflow": {
+    "id": "sample-dag-test-1-wf",
+    "name": "Complex DAG sample test 1",
+    "description": "Long description about this workflow",
+    "tags": [
+      {"name": "demo", "namespace": "system"},
+      "test",
+      {"name": "foo"}],
+    "params": {
+      "foo":  {"expression": "'bar1';", "type":  "STRING"}
+    },
+    "steps": [
+      {"step": {"id": "job.1", "type": "NoOp",
+        "timeout": "${base_workflow_timeout}",
+        "transition": {"successors": {"job.2": "true"}}}},
+      {"step": {"id": "job.2", "type": "NoOp",
+        "transition": {"successors": {"job.3": "true"}}}},
+      {"step": {"id": "job.3", "type": "NoOp",
+        "transition": {"successors": {"job.4": "true", "job.5":  "true"}}}},
+      {"step": {"id": "job.4", "type": "NoOp",
+        "transition": {"successors": {"job.2": "false"}}}},
+      {"step": {"id": "job.5", "type": "NoOp", "transition": {}}}
+    ]
+  }
+}

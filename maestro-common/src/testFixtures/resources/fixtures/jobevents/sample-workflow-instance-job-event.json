@@ -1,0 +1,51 @@
+{
+  "workflow_id": "sample-dag-test-3",
+  "workflow_name": "Test workflow 03",
+  "change_records": [
+    {
+      "workflow_instance_id": 1,
+      "workflow_run_id": 1,
+      "workflow_uuid": "7090ec3e-c4b4-4e02-9ada-c0a5db4ff2ff",
+      "correlation_id": "sample-dag-test-3-1-1",
+      "depth": 1,
+      "tags": [
+        {
+          "name": "demo",
+          "namespace": "SYSTEM"
+        },
+        {
+          "name": "test"
+        },
+        {
+          "name": "foo"
+        }
+      ],
+      "old_status": "IN_PROGRESS",
+      "new_status": "SUCCEEDED",
+      "event_time": 1610671075388
+    },
+    {
+      "workflow_instance_id": 2,
+      "workflow_run_id": 1,
+      "workflow_uuid": "96dac771-0a3f-3194-8570-61b1381471ef",
+      "correlation_id": "sample-dag-test-3-2-1",
+      "tags": [
+        {
+          "name": "demo",
+          "namespace": "SYSTEM"
+        },
+        {
+          "name": "test"
+        },
+        {
+          "name": "foo"
+        }
+      ],
+      "old_status": "IN_PROGRESS",
+      "new_status": "FAILED",
+      "event_time": 1610671075388
+    }
+  ],
+  "sync_time": 1610671075650,
+  "type": "WORKFLOW_INSTANCE_UPDATE_JOB_EVENT"
+}

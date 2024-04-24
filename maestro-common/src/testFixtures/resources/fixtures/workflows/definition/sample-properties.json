@@ -1,0 +1,26 @@
+{
+  "owner": "demo",
+  "run_strategy": {
+    "rule": "parallel",
+    "workflow_concurrency": 20
+  },
+  "step_concurrency": 20,
+  "alerting": {
+    "tct": {
+      "completed_by_hour": 1,
+      "tz": "UTC"
+    }
+  },
+  "alerting_disabled": true,
+  "signal_trigger_disabled": true,
+  "time_trigger_disabled": true,
+  "description": "unit test",
+  "tags": [{
+    "name": "some-workflow-tag",
+    "namespace": "PLATFORM",
+    "creator": "maestro-dev",
+    "created_at_milli":  1234,
+    "technical_support":  "maestro-dev",
+    "valid_until_milli":  12345
+  }]
+}

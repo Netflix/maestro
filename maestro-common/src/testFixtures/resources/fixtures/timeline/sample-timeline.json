@@ -1,0 +1,84 @@
+[
+  {
+    "timestamp": 1609272999666,
+    "type": "LOG",
+    "level": "TRACE",
+    "message": "sample trace log"
+  },
+  {
+    "timestamp": 1609272999666,
+    "type": "LOG",
+    "level": "DEBUG",
+    "message": "sample debug log"
+  },
+  {
+    "timestamp": 1609272999666,
+    "type": "LOG",
+    "level": "INFO",
+    "message": "sample info log"
+  },
+  {
+    "timestamp": 1609272999666,
+    "type": "LOG",
+    "level": "WARN",
+    "message": "sample log"
+  },
+  {
+    "timestamp": 1609272999666,
+    "type": "LOG",
+    "level": "ERROR",
+    "message": "sample warn log"
+  },
+  {
+    "timestamp": 1609272999666,
+    "type": "DETAILS",
+    "status": "INTERNAL_ERROR",
+    "message": "sample error details",
+    "errors": [
+      "error 1",
+      "error 2"
+    ]
+  },
+  {
+    "timestamp": 1609272999666,
+    "type": "DETAILS",
+    "status": "BAD_REQUEST",
+    "message": "sample bad request error"
+  },
+  {
+    "timestamp": 1609272999666,
+    "type": "DETAILS",
+    "status": "INTERNAL_ERROR",
+    "message": "sample retryable error",
+    "retryable": true
+  },
+  {
+    "timestamp": 1609272999666,
+    "type": "STATUS",
+    "status": "CREATED"
+  },
+  {
+    "timestamp": 1609272999666,
+    "type": "ACTION",
+    "action": "CREATED",
+    "author": "tester",
+    "message": "test",
+    "reason": "api call"
+  },
+  {
+    "timestamp": 1630445483780,
+    "type": "MILESTONE",
+    "status": "Finished",
+    "milestone_type": "CMB_TASK",
+    "source_id": "a54fb6c5-5b52-451e-a4fc-bf05246206ab",
+    "info": "Completing task (provider status ComputePlatformJobStatus{state=FinishedSuccess, reasonCode='normal', reasonMessage='main container successfully exited with 0', timestamp='1630445478303'})"
+  },
+  {
+    "timestamp": 1630445484621,
+    "type": "MILESTONE",
+    "status": "Finished",
+    "milestone_type": "CMB_JOB",
+    "source_id": "d9275f41-b049-4988-b319-41a5a7f191bd",
+    "info": "Closing job"
+  }
+]

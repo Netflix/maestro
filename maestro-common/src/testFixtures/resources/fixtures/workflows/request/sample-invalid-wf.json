@@ -1,0 +1,8 @@
+{
+  "properties": {
+    "owner": "tester"
+  },
+  "definition": {
+    "id": "sample-invalid-wf"
+  }
+}

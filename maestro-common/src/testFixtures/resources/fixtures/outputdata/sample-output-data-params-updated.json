@@ -1,0 +1,61 @@
+{
+  "long_array_param": {
+    "evaluated_result": [
+      4,
+      5,
+      6
+    ],
+    "evaluated_time": 1626893775979,
+    "type": "LONG_ARRAY",
+    "value": [
+      4,
+      5,
+      6
+    ]
+  },
+  "long_param": {
+    "evaluated_result": 51,
+    "evaluated_time": 1626893775979,
+    "type": "LONG",
+    "value": 51
+  },
+  "str_param": {
+    "evaluated_result": "goodbye",
+    "evaluated_time": 1626893775979,
+    "type": "STRING",
+    "value": "goodbye"
+  },
+  "string_map_param": {
+    "evaluated_result": {
+      "a": "e",
+      "b": "f"
+    },
+    "evaluated_time": 1626893775979,
+    "type": "STRING_MAP",
+    "value": {
+      "a": "e",
+      "b": "f"
+    }
+  },
+  "map_param": {
+    "value": {
+      "table_name": {
+        "value": [
+          "p1",
+          "p2",
+          "p3"
+        ],
+        "type": "STRING_ARRAY"
+      }
+    },
+    "type": "MAP",
+    "evaluated_result": {
+      "table_name": [
+        "p1",
+        "p2",
+        "p3"
+      ]
+    },
+    "evaluated_time": 1626893775979
+  }
+}
