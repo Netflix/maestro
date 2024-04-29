@@ -1,0 +1,6 @@
+# This is a Gradle generated file for dependency locking.
+# Manual edits can break the build and are not advised.
+# This file is expected to be part of source control.
+joda-time:joda-time:2.10.14=compileClasspath
+org.slf4j:slf4j-api:1.7.25=compileClasspath
+empty=annotationProcessor
