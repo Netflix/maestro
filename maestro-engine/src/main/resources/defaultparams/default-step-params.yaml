@@ -1,0 +1,13 @@
+workflow_instance_id:
+  internal_mode: RESERVED
+  type: LONG
+step_instance_uuid:
+  internal_mode: RESERVED
+  type: STRING
+step_attempt_id:
+  internal_mode: RESERVED
+  type: LONG
+step_id:
+  expression: 'return params.getFromStep("step_id");'
+  internal_mode: RESERVED
+  type: STRING

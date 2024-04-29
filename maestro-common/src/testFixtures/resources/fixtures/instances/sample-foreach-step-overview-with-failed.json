@@ -24,7 +24,7 @@
       "RUNNING": {
         "cnt": 59,
         "ref": {
-          "maestro_foreach_a63ec3fe828bb4add1fa91ecf0555205:1": [
+          "maestro_foreach_inline_123:1": [
             "80398:job.2:1",
             "80397:job.2:1",
             "80396:job.2:1",

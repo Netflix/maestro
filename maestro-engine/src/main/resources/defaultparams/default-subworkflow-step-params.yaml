@@ -1,0 +1,11 @@
+subworkflow_id:
+  internal_mode: REQUIRED
+  mode: MUTABLE_ON_START
+  type: STRING
+  validator: "@NotEmpty"
+subworkflow_version:
+  internal_mode: PROVIDED
+  mode: MUTABLE_ON_START
+  type: STRING
+  value: active
+  validator: "@NotEmpty"

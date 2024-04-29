@@ -1,0 +1,22 @@
+dependencies {
+    implementation(conductorDep) {
+        exclude group: 'org.google.inject'
+    }
+    implementation zipkinDep
+
+    implementation project(':maestro-common')
+    implementation project(':cockroachdb-persistence')
+    implementation project(':netflix-sel')
+
+    implementation spectatorApiDep
+
+    testImplementation flywayDep
+    testImplementation testcontainerDep
+    testImplementation postgresqlDep
+    testImplementation hikaricpDep
+    testImplementation mocktoCoreDep
+    testImplementation assertJCoreDep
+    testImplementation(testFixtures(project(':maestro-common')))
+
+    testFixturesImplementation(testFixtures(project(':maestro-common')))
+}

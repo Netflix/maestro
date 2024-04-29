@@ -87,6 +87,11 @@ public final class IdHelper {
         "%s_%s_", Constants.FOREACH_INLINE_WORKFLOW_PREFIX, hashKey(workflowInternalId));
   }
 
+  /** determine if the given workflow id is for an inline workflow. */
+  public static boolean isInlineWorkflowId(String workflowId) {
+    return workflowId.startsWith(Constants.FOREACH_INLINE_WORKFLOW_PREFIX);
+  }
+
   /**
    * Encode a long value into a compact base62 string using some special algorithm. For the case
    * (e.g. range key) if the string must be preserving the natural ordering, the value will be

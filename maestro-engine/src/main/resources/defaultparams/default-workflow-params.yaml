@@ -1,0 +1,133 @@
+DSL_DEFAULT_TZ:
+  expression: '
+    String timezone = params.getFromInstance("FIRST_TIME_TRIGGER_TIMEZONE");
+    return timezone != null && !timezone.isEmpty() ? timezone : "UTC"; 
+    '
+  mode: MUTABLE_ON_START
+  type: STRING
+WORKFLOW_CRON_TIMEZONE:
+  expression: '
+    String INITIATOR_TIMEZONE = params.getFromInstance("INITIATOR_TIMEZONE");
+    return INITIATOR_TIMEZONE != null && !INITIATOR_TIMEZONE.isEmpty() ? INITIATOR_TIMEZONE : DSL_DEFAULT_TZ;
+    '
+  mode: MUTABLE_ON_START
+  type: STRING
+RUN_TS:
+  expression: 'System.currentTimeMillis();'
+  mode: MUTABLE_ON_START
+  type: LONG
+TARGET_RUN_DATE:
+  expression: '
+    DateTime utcNow = new DateTime(RUN_TS);
+    DateTime localNow = utcNow.withZone(DateTimeZone.forID(WORKFLOW_CRON_TIMEZONE));
+    localNow.toString("yyyyMMdd");
+    '
+  mode: MUTABLE_ON_START
+  type: STRING
+TARGET_RUN_HOUR:
+  expression: '
+    DateTime utcNow = new DateTime(RUN_TS);
+    DateTime localNow = utcNow.withZone(DateTimeZone.forID(WORKFLOW_CRON_TIMEZONE));
+    localNow.toString("HH");
+    '
+  mode: MUTABLE_ON_START
+  type: STRING
+DERIVED_RUN_TS:
+  expression: '
+    DateTimeFormatter tz_dateint_hour_formatter = DateTimeFormat.forPattern("yyyyMMddHH")
+      .withZone(DateTimeZone.forID(WORKFLOW_CRON_TIMEZONE));
+    DateTime dt = tz_dateint_hour_formatter.parseDateTime(TARGET_RUN_DATE + TARGET_RUN_HOUR);
+    dt.getMillis();
+    '
+  mode: MUTABLE_ON_START
+  type: LONG
+DERIVED_RUN_DATE_US_PACIFIC:
+  expression: '
+    DateTime utcNow = new DateTime(DERIVED_RUN_TS);
+    DateTime localNow = utcNow.withZone(DateTimeZone.forID("America/Los_Angeles"));
+    localNow.toString("yyyyMMdd");
+    '
+  mode: MUTABLE_ON_START
+  type: STRING
+DERIVED_RUN_DATE_US_PACIFIC_MINUS_ONE:
+  expression: '
+    DateTime utcNow = new DateTime(DERIVED_RUN_TS);
+    DateTime localNow = utcNow.withZone(DateTimeZone.forID("America/Los_Angeles"));
+    localNow.minusDays(1).toString("yyyyMMdd");
+    '
+  mode: MUTABLE_ON_START
+  type: STRING
+DERIVED_RUN_DATE_UTC:
+  expression: '
+    DateTime utcNow = new DateTime(DERIVED_RUN_TS);
+    DateTime localNow = utcNow.withZone(DateTimeZone.forID("UTC"));
+    localNow.toString("yyyyMMdd");
+    '
+  mode: MUTABLE_ON_START
+  type: STRING
+DERIVED_RUN_DATE_UTC_MINUS_ONE:
+  expression: '
+    DateTime utcNow = new DateTime(DERIVED_RUN_TS);
+    DateTime localNow = utcNow.withZone(DateTimeZone.forID("UTC"));
+    localNow.minusDays(1).toString("yyyyMMdd");
+    '
+  mode: MUTABLE_ON_START
+  type: STRING
+DERIVED_RUN_HOUR_US_PACIFIC:
+  expression: '
+    DateTime utcNow = new DateTime(DERIVED_RUN_TS);
+    DateTime localNow = utcNow.withZone(DateTimeZone.forID("America/Los_Angeles"));
+    localNow.toString("HH");
+    '
+  mode: MUTABLE_ON_START
+  type: STRING
+DERIVED_RUN_HOUR_UTC:
+  expression: '
+    DateTime utcNow = new DateTime(DERIVED_RUN_TS);
+    DateTime localNow = utcNow.withZone(DateTimeZone.forID("UTC"));
+    localNow.toString("HH");
+    '
+  mode: MUTABLE_ON_START
+  type: STRING
+LOCAL_RUN_DATE:
+  expression: 'DateTime utcNow = new DateTime(RUN_TS);
+    DateTime localNow = utcNow.withZone(DateTimeZone.forID(WORKFLOW_CRON_TIMEZONE));
+    localNow.toString("yyyyMMdd");
+    '
+  mode: MUTABLE_ON_START
+  type: STRING
+RUN_DATE:
+  expression: '
+    DateTime utcNow = new DateTime(RUN_TS);
+    DateTime localNow = utcNow.withZone(DateTimeZone.forID("UTC"));
+    localNow.toString("yyyyMMdd");
+    '
+  mode: MUTABLE_ON_START
+  type: STRING
+RUN_DATE_MINUS_1:
+  expression: '
+    DateTime utcNow = new DateTime(RUN_TS).minusDays(1);
+    DateTime localNow = utcNow.withZone(DateTimeZone.forID("UTC"));
+    localNow.toString("yyyyMMdd");
+    '
+  mode: MUTABLE_ON_START
+  type: STRING
+RUN_DATE_MINUS_7:
+  expression: '
+    DateTime utcNow = new DateTime(RUN_TS).minusDays(7);
+    DateTime localNow = utcNow.withZone(DateTimeZone.forID("UTC"));
+    localNow.toString("yyyyMMdd");
+    '
+  mode: MUTABLE_ON_START
+  type: STRING
+yaml_sha:
+  internal_mode: OPTIONAL
+  type: STRING
+owner:
+  expression: 'return params.getFromInstance("owner");'
+  internal_mode: RESERVED
+  type: STRING
+workflow_id:
+  expression: 'return params.getFromInstance("workflow_id");'
+  internal_mode: RESERVED
+  type: STRING

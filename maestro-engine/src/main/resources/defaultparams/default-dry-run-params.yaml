@@ -1,0 +1,6 @@
+FROM_DATE:
+  value: 20210101
+  type: STRING
+TO_DATE:
+  value: 20210101
+  type: STRING

@@ -25,4 +25,15 @@ public class MaestroInvalidExpressionException extends MaestroRuntimeException {
   public MaestroInvalidExpressionException(String template, Object... args) {
     super(Code.BAD_REQUEST, String.format(template, args));
   }
+
+  /**
+   * Constructor with throwable and an error message template with arguments.
+   *
+   * @param cause throwable error
+   * @param template template string following String.format()
+   * @param args arguments
+   */
+  public MaestroInvalidExpressionException(Throwable cause, String template, Object... args) {
+    super(Code.BAD_REQUEST, String.format(template, args), cause);
+  }
 }

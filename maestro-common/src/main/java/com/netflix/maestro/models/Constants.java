@@ -302,8 +302,7 @@ public final class Constants {
               "AUTH_DATA",
               "AUTH_ACTING_ON_BEHALF_OF_BLOB",
               "AUTH_TRIGGERING_ON_BEHALF_OF_BLOB",
-              "AUTHORIZED_MANAGERS",
-              "_dirty_parameters"));
+              "AUTHORIZED_MANAGERS"));
 
   /** Minimum interval for any time trigger. */
   public static final long TIME_TRIGGER_MINIMUM_INTERVAL = TimeUnit.MINUTES.toMillis(3);

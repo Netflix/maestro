@@ -77,8 +77,7 @@ public class WorkflowRollupOverviewTest extends MaestroBaseTest {
     ref1.setCnt(1);
     ref1.setRef(
         Collections.singletonMap(
-            "maestro_foreach_2b6e7ab1ae5975490c94a12ae63555c9:1",
-            Collections.singletonList("5000:job.2:1")));
+            "maestro_foreach_inline_123:1", Collections.singletonList("5000:job.2:1")));
     WorkflowRollupOverview.CountReference ref2 = new WorkflowRollupOverview.CountReference();
     ref2.setCnt(1);
     Map<StepInstance.Status, WorkflowRollupOverview.CountReference> newOverview = new HashMap<>();
@@ -95,7 +94,7 @@ public class WorkflowRollupOverviewTest extends MaestroBaseTest {
             .getOverview()
             .get(StepInstance.Status.RUNNING)
             .getRef()
-            .get("maestro_foreach_2b6e7ab1ae5975490c94a12ae63555c9:1")
+            .get("maestro_foreach_inline_123:1")
             .remove("5000:job.2:1"));
   }
 }
