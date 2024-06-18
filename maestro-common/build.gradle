@@ -5,7 +5,9 @@ dependencies {
     implementation jacksonYamlDep
     implementation quartzDep
     implementation jodaTimeDep
-    implementation cronutilsDep
+    implementation(cronutilsDep) {
+        exclude group: 'org.glassfish'
+    }
 
     testImplementation junitDep
     testImplementation bvalJsrDep

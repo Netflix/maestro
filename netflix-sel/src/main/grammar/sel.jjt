@@ -654,7 +654,7 @@ void Statement() :
   Block()
 |
 // Breaking JLS because most of expressions is not a Java StatementExpression.
-  Expression() ";"  //TODO: change it after migration
+  Expression() ";"
 |
   IfStatement()
 |

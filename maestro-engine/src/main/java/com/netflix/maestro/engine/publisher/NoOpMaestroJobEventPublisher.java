@@ -15,12 +15,10 @@ package com.netflix.maestro.engine.publisher;
 import com.netflix.maestro.engine.jobevents.MaestroJobEvent;
 import com.netflix.maestro.models.error.Details;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /** NoOp Maestro job event publisher. */
 @Slf4j
-@AllArgsConstructor
 public class NoOpMaestroJobEventPublisher implements MaestroJobEventPublisher {
 
   /**
@@ -32,7 +30,7 @@ public class NoOpMaestroJobEventPublisher implements MaestroJobEventPublisher {
   @Override
   public Optional<Details> publish(MaestroJobEvent maestroJob, long invisibleMs) {
     try {
-      LOG.info("Noop publish an maestro job event: {} with delay {}", maestroJob, invisibleMs);
+      LOG.info("Noop publish a maestro job event: [{}] with delay [{}]", maestroJob, invisibleMs);
       return Optional.empty();
     } catch (Exception e) {
       return Optional.of(Details.create(e, true, "Failed to publish a Maestro job event"));

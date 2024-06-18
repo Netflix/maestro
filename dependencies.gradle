@@ -23,6 +23,6 @@ ext {
     junitDep = 'junit:junit:4.13.2'
     bvalJsrDep= 'org.apache.bval:bval-jsr:2.0.+'
     assertJCoreDep = 'org.assertj:assertj-core:3.+'
-    mocktoCoreDep = 'org.mockito:mockito-core:4.+'
+    mockitoCoreDep = 'org.mockito:mockito-core:4.+'
     junitEngineDep = 'org.junit.vintage:junit-vintage-engine:5.+'
 }

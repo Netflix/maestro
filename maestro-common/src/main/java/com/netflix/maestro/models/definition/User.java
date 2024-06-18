@@ -31,7 +31,6 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import javax.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -49,7 +48,7 @@ import lombok.Getter;
 @EqualsAndHashCode
 public class User {
   private static final String NAME_KEY = "name";
-  @NotNull private final String name;
+  private final String name;
   @Nullable private final Map<String, Object> extraInfo;
 
   /**
@@ -60,6 +59,13 @@ public class User {
    */
   public static User create(String name) {
     return User.builder().name(name).build();
+  }
+
+  public static class UserBuilder {
+    public User build() {
+      Checks.notNull(this.name, "the user name cannot be null");
+      return new User(this.name, this.extraInfo);
+    }
   }
 
   /** Custom Serializer. */

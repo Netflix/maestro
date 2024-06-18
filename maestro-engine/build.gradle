@@ -1,6 +1,6 @@
 dependencies {
     implementation(conductorDep) {
-        exclude group: 'org.google.inject'
+        exclude group: 'com.google.inject'
     }
     implementation zipkinDep
 
@@ -14,7 +14,7 @@ dependencies {
     testImplementation testcontainerDep
     testImplementation postgresqlDep
     testImplementation hikaricpDep
-    testImplementation mocktoCoreDep
+    testImplementation mockitoCoreDep
     testImplementation assertJCoreDep
     testImplementation(testFixtures(project(':maestro-common')))
 
