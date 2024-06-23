@@ -33,7 +33,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Savepoint;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -53,7 +52,6 @@ import org.slf4j.LoggerFactory;
 public abstract class CockroachDBBaseDAO {
   private static final Logger LOG = LoggerFactory.getLogger(CockroachDBBaseDAO.class);
 
-  private static final String SAVEPOINT_NAME = "cockroach_restart";
   private static final String RETRY_SQL_STATE = "40001";
 
   private static final String VERSION_COLUMN = "version";
@@ -303,7 +301,7 @@ public abstract class CockroachDBBaseDAO {
    * TransactionalFunction#apply)}.
    *
    * <p>If SQL exception has a retry sql state without exhausting the retry chances, the transaction
-   * rollback to the save point and retry. Otherwise, the error will be thrown.
+   * will be rollback and retried. Otherwise, the error will be thrown.
    *
    * <p>The retry only handles transaction contention error. It does not handle other error cases,
    * e.g. disconnection or timeout.
@@ -317,16 +315,11 @@ public abstract class CockroachDBBaseDAO {
    * @throws ApplicationException If any errors occur.
    */
   protected <R> R withRetryableTransaction(final TransactionalFunction<R> function) {
-    try (Connection connection = dataSource.getConnection()) {
-      connection.setAutoCommit(false); // manually manage the commit lifecycle
+    try {
       int retryCount = 0;
       while (true) {
-        Savepoint sp = connection.setSavepoint(SAVEPOINT_NAME);
         try {
-          R result = function.apply(connection);
-          connection.releaseSavepoint(sp);
-          connection.commit();
-          return result;
+          return withTransaction(function);
         } catch (SQLException e) {
           if (retryCount < maxRetries && RETRY_SQL_STATE.equals(e.getSQLState())) {
             LOG.warn(
@@ -334,7 +327,6 @@ public abstract class CockroachDBBaseDAO {
                 e.getSQLState(),
                 e.getMessage(),
                 retryCount);
-            connection.rollback(sp);
             retryCount++;
             int sleepMillis =
                 Math.min(
@@ -348,7 +340,6 @@ public abstract class CockroachDBBaseDAO {
                 e.getSQLState(),
                 e.getMessage(),
                 retryCount);
-            connection.rollback();
             throw e;
           }
         }
@@ -373,6 +364,35 @@ public abstract class CockroachDBBaseDAO {
   }
 
   /**
+   * Initialize a new transactional {@link Connection} from {@link #dataSource} and pass it to
+   * {@literal function}.
+   *
+   * <p>Successful executions of {@literal function} will result in a commit and return of {@link
+   * TransactionalFunction#apply)}.
+   *
+   * <p>Generally this is used to wrap multiple cockroachDB statements producing some expected
+   * return value.
+   *
+   * @param function The function to apply with a new transactional {@link Connection}
+   * @param <R> The return type.
+   * @return The result of {@code TransactionalFunction#apply(Connection)}
+   * @throws ApplicationException If any errors occur.
+   */
+  private <R> R withTransaction(final TransactionalFunction<R> function) throws SQLException {
+    try (Connection connection = dataSource.getConnection()) {
+      connection.setAutoCommit(false); // manually manage the commit lifecycle
+      try {
+        R result = function.apply(connection);
+        connection.commit();
+        return result;
+      } catch (SQLException e) {
+        connection.rollback();
+        throw e;
+      }
+    }
+  }
+
+  /**
    * Initialize a new transactional {@link Connection} from {@link #dataSource}, prepare a new SQL
    * statement, and pass then it to {@literal function}. It includes a retry mechanism as
    * CockroachDB recommend to implement client side retry
@@ -381,8 +401,7 @@ public abstract class CockroachDBBaseDAO {
    * StatementFunction#apply)}.
    *
    * <p>If SQL exception has a retry sql state without exhausting the retry chances, the transaction
-   * rollback to the save point and retry with a new prepared statement. Otherwise, the error will
-   * be thrown.
+   * is rollback and retried with a new prepared statement. Otherwise, the error will be thrown.
    *
    * <p>The retry only handles transaction contention error. It does not handle other error cases,
    * e.g. disconnection or timeout.

@@ -311,7 +311,7 @@ public final class Constants {
   public static final String WORKFLOW_CREATE_REQUEST_DATA_SIZE_LIMIT = "256KB";
 
   /** params' total size (in JSON format) limit for a workflow instance or a step instance. */
-  public static final int JSONIFIED_PARAMS_STRING_SIZE_LIMIT = 500000;
+  public static final int JSONIFIED_PARAMS_STRING_SIZE_LIMIT = 750000;
 
   /** Defines limit for the query for step attempt state view. */
   public static final int STEP_ATTEMPT_STATE_LIMIT = 100;

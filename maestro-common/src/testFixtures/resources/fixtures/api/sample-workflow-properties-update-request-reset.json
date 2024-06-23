@@ -1,0 +1,10 @@
+{
+  "owner": "testowner",
+  "alerting": {
+    "tct": {
+      "duration_minutes": 60
+    }
+  },
+  "reset_step_concurrency": true,
+  "reset_run_strategy_rule": true
+}

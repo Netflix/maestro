@@ -482,7 +482,7 @@ public class ParamEvaluator {
     try {
       long size = objectMapper.writeValueAsString(params).length();
       Checks.checkTrue(
-          size < Constants.JSONIFIED_PARAMS_STRING_SIZE_LIMIT,
+          size <= Constants.JSONIFIED_PARAMS_STRING_SIZE_LIMIT,
           "Parameters' total size [%s] is larger than system limit [%s]",
           size,
           Constants.JSONIFIED_PARAMS_STRING_SIZE_LIMIT);

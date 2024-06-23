@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 
 /** Literal value evaluator with the support of string interpolation. */
@@ -86,7 +87,9 @@ public final class LiteralEvaluator {
           try {
             return param.asStringMapParam().getValue().entrySet().stream()
                 .collect(
-                    MapHelper.toListMap(Map.Entry::getKey, e -> interpolate(e.getValue(), params)));
+                    MapHelper.toListMap(
+                        e -> interpolate(e.getKey(), params),
+                        e -> interpolate(e.getValue(), params)));
           } catch (Exception e) {
             LOG.error(
                 "Failed to evaluate literal param: {} due to ",
@@ -163,7 +166,9 @@ public final class LiteralEvaluator {
             .flatMap(Set::stream)
             .collect(Collectors.toSet());
       case STRING_MAP:
-        return param.asStringMapParam().getValue().values().stream()
+        return Stream.concat(
+                param.asStringMapParam().getValue().keySet().stream(),
+                param.asStringMapParam().getValue().values().stream())
             .map(LiteralEvaluator::getReferencedParamNames)
             .flatMap(Set::stream)
             .collect(Collectors.toSet());

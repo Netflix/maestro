@@ -10,10 +10,11 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.maestro.engine.dao;
+package com.netflix.maestro.engine.db;
 
 import static org.junit.Assert.assertEquals;
 
+import com.netflix.maestro.engine.db.PropertiesUpdate.Type;
 import com.netflix.maestro.models.definition.Tag;
 import com.netflix.maestro.models.definition.TagList;
 import java.lang.reflect.InvocationTargetException;
@@ -27,8 +28,7 @@ public class PropertiesUpdateTypeTest {
   @Test
   public void testUpsertTag()
       throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-    final Class<? extends PropertiesUpdateType> clazz =
-        PropertiesUpdateType.ADD_WORKFLOW_TAG.getClass();
+    final Class<? extends Type> clazz = Type.ADD_WORKFLOW_TAG.getClass();
     Class<?>[] parameterTypes = {List.class, Tag.class};
     final Method upsertTagMethod = clazz.getDeclaredMethod("upsertTag", parameterTypes);
     List<Tag> tags = Collections.emptyList();
@@ -36,25 +36,19 @@ public class PropertiesUpdateTypeTest {
     // add two tags
     final Tag tag1 = Tag.create("dummy-tag-1");
     tag1.setNamespace(Tag.Namespace.NOTEBOOK_TEMPLATE);
-    tags =
-        ((TagList) upsertTagMethod.invoke(PropertiesUpdateType.ADD_WORKFLOW_TAG, tags, tag1))
-            .getTags();
+    tags = ((TagList) upsertTagMethod.invoke(Type.ADD_WORKFLOW_TAG, tags, tag1)).getTags();
     assertEquals(Collections.singletonList(tag1), tags);
 
     final String tag2Name = "dummy-tag-2";
     final Tag tag2 = Tag.create(tag2Name);
     tag2.setNamespace(Tag.Namespace.NOTEBOOK_TEMPLATE);
-    tags =
-        ((TagList) upsertTagMethod.invoke(PropertiesUpdateType.ADD_WORKFLOW_TAG, tags, tag2))
-            .getTags();
+    tags = ((TagList) upsertTagMethod.invoke(Type.ADD_WORKFLOW_TAG, tags, tag2)).getTags();
     assertEquals(Arrays.asList(tag1, tag2), tags);
 
     // update second tag
     final Tag tag2Updated = Tag.create(tag2Name);
     tag2Updated.setNamespace(Tag.Namespace.PLATFORM);
-    tags =
-        ((TagList) upsertTagMethod.invoke(PropertiesUpdateType.ADD_WORKFLOW_TAG, tags, tag2Updated))
-            .getTags();
+    tags = ((TagList) upsertTagMethod.invoke(Type.ADD_WORKFLOW_TAG, tags, tag2Updated)).getTags();
     assertEquals(Arrays.asList(tag1, tag2Updated), tags);
   }
 }

@@ -807,13 +807,13 @@ public class ParamEvaluatorTest extends MaestroEngineBaseTest {
     AssertHelper.assertThrows(
         "Parameter size is over limit",
         IllegalArgumentException.class,
-        "Parameters' total size [500001] is larger than system limit [500000]",
+        "Parameters' total size [750001] is larger than system limit [750000]",
         () -> testEvaluator.evaluateWorkflowParameters(Collections.emptyMap(), "foo"));
 
     AssertHelper.assertThrows(
         "Parameter size is over limit",
         IllegalArgumentException.class,
-        "Parameters' total size [500001] is larger than system limit [500000]",
+        "Parameters' total size [750001] is larger than system limit [750000]",
         () ->
             testEvaluator.evaluateStepParameters(
                 Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(), "bar"));

@@ -156,6 +156,20 @@ public class LiteralEvaluatorTest extends MaestroEngineBaseTest {
   }
 
   @Test
+  public void testStringInterpolationWithKeyValueParamInStringMap() {
+    Parameter param =
+        StringMapParameter.builder().value(Collections.singletonMap("$var", "$var2")).build();
+
+    // check get referenced param names
+    Set<String> paramNames = LiteralEvaluator.getReferencedParamNames(param);
+    Assert.assertEquals(new LinkedHashSet<>(Arrays.asList("var", "var2")), paramNames);
+
+    // check string interpolation in both the key and the value
+    Object result = LiteralEvaluator.eval(param, params);
+    Assert.assertEquals(Collections.singletonMap("0", "2"), result);
+  }
+
+  @Test
   public void testStringInterpolationWithEscapedNames() {
     Parameter param =
         StringParameter.builder()

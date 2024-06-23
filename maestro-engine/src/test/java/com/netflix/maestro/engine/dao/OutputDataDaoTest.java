@@ -17,9 +17,15 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.engine.dto.ExternalJobType;
 import com.netflix.maestro.engine.dto.OutputData;
+import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.WorkflowDefinition;
 import com.netflix.maestro.models.parameter.Parameter;
 import java.io.IOException;
@@ -42,6 +48,28 @@ public class OutputDataDaoTest extends MaestroDaoBaseTest {
     WorkflowDefinition definition =
         loadObject("fixtures/parameters/sample-wf-notebook.json", WorkflowDefinition.class);
     params = toParameters(definition.getWorkflow().getParams());
+  }
+
+  @Test
+  public void testParamsSizeOverLimit() throws Exception {
+    ObjectMapper mockMapper = mock(ObjectMapper.class);
+    OutputDataDao testDao = new OutputDataDao(dataSource, mockMapper, config);
+    when(mockMapper.writeValueAsString(any()))
+        .thenReturn(new String(new char[Constants.JSONIFIED_PARAMS_STRING_SIZE_LIMIT + 1]));
+    AssertHelper.assertThrows(
+        "Output data size is over limit",
+        IllegalArgumentException.class,
+        "Output data's total size [750001] is larger than system param size limit [750000]",
+        () ->
+            testDao.insertOrUpdateOutputData(
+                new OutputData(
+                    JOB_TYPE,
+                    EXT_JOB_ID,
+                    WORKFLOW_ID,
+                    System.currentTimeMillis(),
+                    System.currentTimeMillis(),
+                    params,
+                    new HashMap<>())));
   }
 
   @Test(expected = NullPointerException.class)

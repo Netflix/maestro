@@ -1,0 +1,22 @@
+{
+  "properties_snapshot": {
+    "workflow_id": "sample-dag-test-3",
+    "create_time": 1615333573468,
+    "author": "tester",
+    "owner": "tester",
+    "run_strategy": {
+      "rule": "PARALLEL"
+    },
+    "step_concurrency": 20,
+    "alerting": {
+      "emails": [
+        "test+alertconfig_default1@netflix.com",
+        "${foo}+alertconfig_default2@netflix.com"
+      ],
+      "tct": {
+        "completed_by_hour": 1,
+        "tz": "UTC"
+      }
+    }
+  }
+}

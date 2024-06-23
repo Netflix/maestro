@@ -17,6 +17,7 @@ import com.netflix.conductor.cockroachdb.CockroachDBConfiguration;
 import com.netflix.conductor.cockroachdb.dao.CockroachDBBaseDAO;
 import com.netflix.maestro.engine.dto.ExternalJobType;
 import com.netflix.maestro.engine.dto.OutputData;
+import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.utils.Checks;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -61,14 +62,13 @@ public class OutputDataDao extends CockroachDBBaseDAO {
    * @param outputData output data
    */
   public void insertOrUpdateOutputData(OutputData outputData) {
-    validate(outputData);
+    final String outputDataStr = validateAndToJson(outputData);
     withMetricLogError(
         () ->
-            withRetryableUpdate(
-                UPSERT_OUTPUT_DATA_QUERY, stmt -> stmt.setString(1, toJson(outputData))),
-        "insertOrUpdateOutputParameters",
-        "Failed updating output data {}",
-        outputData);
+            withRetryableUpdate(UPSERT_OUTPUT_DATA_QUERY, stmt -> stmt.setString(1, outputDataStr)),
+        "insertOrUpdateOutputData",
+        "Failed updating output data: [{}]",
+        outputDataStr);
   }
 
   private Optional<OutputData> outputDataFromResult(ResultSet rs) throws SQLException {
@@ -82,12 +82,19 @@ public class OutputDataDao extends CockroachDBBaseDAO {
     }
   }
 
-  private void validate(OutputData data) {
+  private String validateAndToJson(OutputData data) {
     Checks.notNull(data, "data object cannot be null");
     Checks.notNull(data.getExternalJobId(), "External job id cannot be null");
     Checks.notNull(data.getExternalJobType(), "External Job Type cannot be null");
     Checks.notNull(data.getWorkflowId(), "Workflow id cannot be null");
     Checks.notNull(data.getParams(), "Output data cannot be null");
     Checks.checkTrue(!data.getParams().isEmpty(), "Output data cannot be empty");
+    String dataStr = toJson(data);
+    Checks.checkTrue(
+        dataStr.length() <= Constants.JSONIFIED_PARAMS_STRING_SIZE_LIMIT,
+        "Output data's total size [%s] is larger than system param size limit [%s]",
+        dataStr.length(),
+        Constants.JSONIFIED_PARAMS_STRING_SIZE_LIMIT);
+    return dataStr;
   }
 }

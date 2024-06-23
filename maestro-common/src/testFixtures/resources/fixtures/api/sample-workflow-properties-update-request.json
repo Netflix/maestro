@@ -1,0 +1,8 @@
+{
+  "owner": "testowner",
+  "run_strategy": {
+    "rule": "last_only",
+    "workflow_concurrency": 1
+  },
+  "step_concurrency": 20
+}

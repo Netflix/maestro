@@ -29,6 +29,8 @@ import static org.mockito.Mockito.when;
 
 import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.engine.MaestroTestHelper;
+import com.netflix.maestro.engine.db.PropertiesUpdate;
+import com.netflix.maestro.engine.db.PropertiesUpdate.Type;
 import com.netflix.maestro.engine.dto.MaestroWorkflow;
 import com.netflix.maestro.engine.jobevents.DeleteWorkflowJobEvent;
 import com.netflix.maestro.engine.jobevents.WorkflowVersionUpdateJobEvent;
@@ -93,6 +95,12 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
   private static final String TEST_WORKFLOW_ID9 = "sample-minimal-wf-with-tags";
   private static final String TEST_INLINE_WORKFLOW_ID1 =
       Constants.FOREACH_INLINE_WORKFLOW_PREFIX + TEST_WORKFLOW_ID1;
+  private static final PropertiesUpdate PROPERTIES_UPDATE =
+      new PropertiesUpdate(Type.UPDATE_PROPERTIES);
+  private static final PropertiesUpdate PROPERTIES_UPDATE_ADD_TAG =
+      new PropertiesUpdate(Type.ADD_WORKFLOW_TAG);
+  private static final PropertiesUpdate PROPERTIES_UPDATE_DELETE_TAG =
+      new PropertiesUpdate(Type.DELETE_WORKFLOW_TAG);
 
   private MaestroWorkflowDao workflowDao;
   private MaestroJobEventPublisher publisher;
@@ -295,10 +303,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
     assertEquals(1L, maestroWorkflow.getLatestVersionId().longValue());
     PropertiesSnapshot newSnapshot =
         workflowDao.updateWorkflowProperties(
-            TEST_WORKFLOW_ID2,
-            User.create("test"),
-            new Properties(),
-            PropertiesUpdateType.UPDATE_PROPERTIES);
+            TEST_WORKFLOW_ID2, User.create("test"), new Properties(), PROPERTIES_UPDATE);
     assertEquals(
         wfd.getPropertiesSnapshot()
             .toBuilder()
@@ -312,7 +317,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
     Properties props = new Properties();
     props.setOwner(User.create("another-owner"));
     workflowDao.updateWorkflowProperties(
-        TEST_WORKFLOW_ID2, User.create("test"), props, PropertiesUpdateType.UPDATE_PROPERTIES);
+        TEST_WORKFLOW_ID2, User.create("test"), props, PROPERTIES_UPDATE);
     verify(publisher, times(3)).publishOrThrow(any(), any());
     maestroWorkflow = workflowDao.getMaestroWorkflow(TEST_WORKFLOW_ID2);
     assertEquals("another-owner", maestroWorkflow.getPropertiesSnapshot().getOwner().getName());
@@ -332,7 +337,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
     props.setTags(new TagList(Collections.singletonList(tagToBeAdded)));
     PropertiesSnapshot newSnapshot =
         workflowDao.updateWorkflowProperties(
-            TEST_WORKFLOW_ID2, User.create("test"), props, PropertiesUpdateType.ADD_WORKFLOW_TAG);
+            TEST_WORKFLOW_ID2, User.create("test"), props, PROPERTIES_UPDATE_ADD_TAG);
     assertEquals(
         wfd.getPropertiesSnapshot()
             .toBuilder()
@@ -366,19 +371,13 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
     Properties propsForFirstAdd = new Properties();
     propsForFirstAdd.setTags(new TagList(Collections.singletonList(tagToBeAdded1)));
     workflowDao.updateWorkflowProperties(
-        TEST_WORKFLOW_ID2,
-        User.create("test"),
-        propsForFirstAdd,
-        PropertiesUpdateType.ADD_WORKFLOW_TAG);
+        TEST_WORKFLOW_ID2, User.create("test"), propsForFirstAdd, PROPERTIES_UPDATE_ADD_TAG);
 
     Properties propsForSecondAdd = new Properties();
     propsForSecondAdd.setTags(new TagList(Collections.singletonList(tagToBeAdded2)));
     PropertiesSnapshot newSnapshot =
         workflowDao.updateWorkflowProperties(
-            TEST_WORKFLOW_ID2,
-            User.create("test"),
-            propsForSecondAdd,
-            PropertiesUpdateType.ADD_WORKFLOW_TAG);
+            TEST_WORKFLOW_ID2, User.create("test"), propsForSecondAdd, PROPERTIES_UPDATE_ADD_TAG);
 
     assertEquals(
         wfd.getPropertiesSnapshot()
@@ -402,7 +401,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
     props.setTags(new TagList(Collections.singletonList(newVersionOfTag)));
     PropertiesSnapshot newSnapshotAfterUpdate =
         workflowDao.updateWorkflowProperties(
-            TEST_WORKFLOW_ID2, User.create("test"), props, PropertiesUpdateType.ADD_WORKFLOW_TAG);
+            TEST_WORKFLOW_ID2, User.create("test"), props, PROPERTIES_UPDATE_ADD_TAG);
     assertEquals(
         wfd.getPropertiesSnapshot()
             .toBuilder()
@@ -432,10 +431,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
     props.setTags(new TagList(Collections.singletonList(tagToBeDeleted)));
     PropertiesSnapshot newSnapshot =
         workflowDao.updateWorkflowProperties(
-            TEST_WORKFLOW_ID9,
-            User.create("test"),
-            props,
-            PropertiesUpdateType.DELETE_WORKFLOW_TAG);
+            TEST_WORKFLOW_ID9, User.create("test"), props, PROPERTIES_UPDATE_DELETE_TAG);
     assertEquals(
         wfd.getPropertiesSnapshot()
             .toBuilder()
@@ -456,10 +452,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
         "properties changes to apply cannot be null for workflow",
         () ->
             workflowDao.updateWorkflowProperties(
-                TEST_WORKFLOW_ID2,
-                User.create("test"),
-                null,
-                PropertiesUpdateType.UPDATE_PROPERTIES));
+                TEST_WORKFLOW_ID2, User.create("test"), null, PROPERTIES_UPDATE));
 
     AssertHelper.assertThrows(
         "cannot push a properties change for non-existing workflow",
@@ -467,10 +460,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
         "Cannot update workflow properties while the workflow",
         () ->
             workflowDao.updateWorkflowProperties(
-                TEST_WORKFLOW_ID2,
-                User.create("test"),
-                new Properties(),
-                PropertiesUpdateType.UPDATE_PROPERTIES));
+                TEST_WORKFLOW_ID2, User.create("test"), new Properties(), PROPERTIES_UPDATE));
   }
 
   @Test
@@ -481,7 +471,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
 
     Properties props = new Properties();
     workflowDao.updateWorkflowProperties(
-        TEST_WORKFLOW_ID6, User.create("test"), props, PropertiesUpdateType.UPDATE_PROPERTIES);
+        TEST_WORKFLOW_ID6, User.create("test"), props, PROPERTIES_UPDATE);
     // update properties without an active version, and then no upsert call
     verifyTriggerUpdate(true, true, 0);
 
@@ -492,37 +482,37 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
     assertEquals(2L, maestroWorkflow.getLatestVersionId().longValue());
 
     workflowDao.updateWorkflowProperties(
-        TEST_WORKFLOW_ID6, User.create("test"), props, PropertiesUpdateType.UPDATE_PROPERTIES);
+        TEST_WORKFLOW_ID6, User.create("test"), props, PROPERTIES_UPDATE);
     // update properties with existing triggers, and then call upsert
     verifyTriggerUpdate(false, false, 1);
 
     props.setTimeTriggerDisabled(true);
     workflowDao.updateWorkflowProperties(
-        TEST_WORKFLOW_ID6, User.create("test"), props, PropertiesUpdateType.UPDATE_PROPERTIES);
+        TEST_WORKFLOW_ID6, User.create("test"), props, PROPERTIES_UPDATE);
     // update properties with any trigger enabled, and then call upsert
     verifyTriggerUpdate(false, false, 1);
 
     props.setSignalTriggerDisabled(true);
     workflowDao.updateWorkflowProperties(
-        TEST_WORKFLOW_ID6, User.create("test"), props, PropertiesUpdateType.UPDATE_PROPERTIES);
+        TEST_WORKFLOW_ID6, User.create("test"), props, PROPERTIES_UPDATE);
     // update properties with all triggers disabled, and then no upsert call
     verifyTriggerUpdate(true, false, 0);
 
     props = new Properties();
     workflowDao.updateWorkflowProperties(
-        TEST_WORKFLOW_ID6, User.create("test"), props, PropertiesUpdateType.UPDATE_PROPERTIES);
+        TEST_WORKFLOW_ID6, User.create("test"), props, PROPERTIES_UPDATE);
     // update properties still with all triggers disabled, and then no upsert
     verifyTriggerUpdate(true, true, 0);
 
     props.setTimeTriggerDisabled(false);
     workflowDao.updateWorkflowProperties(
-        TEST_WORKFLOW_ID6, User.create("test"), props, PropertiesUpdateType.UPDATE_PROPERTIES);
+        TEST_WORKFLOW_ID6, User.create("test"), props, PROPERTIES_UPDATE);
     // update properties with any trigger enabled, and then call upsert
     verifyTriggerUpdate(false, true, 1);
 
     props.setSignalTriggerDisabled(false);
     workflowDao.updateWorkflowProperties(
-        TEST_WORKFLOW_ID6, User.create("test"), props, PropertiesUpdateType.UPDATE_PROPERTIES);
+        TEST_WORKFLOW_ID6, User.create("test"), props, PROPERTIES_UPDATE);
     // update properties still with all triggers disabled, and then call upsert
     verifyTriggerUpdate(false, false, 1);
   }
@@ -1113,10 +1103,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
               properties.setRunStrategy(rs);
               assertNotNull(
                   workflowDao.updateWorkflowProperties(
-                      TEST_WORKFLOW_ID1,
-                      tester,
-                      properties,
-                      PropertiesUpdateType.UPDATE_PROPERTIES));
+                      TEST_WORKFLOW_ID1, tester, properties, PROPERTIES_UPDATE));
               verify(publisher, times(1)).publishOrThrow(any(), any());
               reset(publisher);
             });
@@ -1148,10 +1135,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
                   "because there are 2 nonterminal workflow instances",
                   () ->
                       workflowDao.updateWorkflowProperties(
-                          TEST_WORKFLOW_ID1,
-                          tester,
-                          properties,
-                          PropertiesUpdateType.UPDATE_PROPERTIES));
+                          TEST_WORKFLOW_ID1, tester, properties, PROPERTIES_UPDATE));
             });
 
     MaestroWorkflowInstanceDao instanceDao =
@@ -1164,7 +1148,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
         "because there are 1 FAILED workflow instances",
         () ->
             workflowDao.updateWorkflowProperties(
-                TEST_WORKFLOW_ID1, tester, properties, PropertiesUpdateType.UPDATE_PROPERTIES));
+                TEST_WORKFLOW_ID1, tester, properties, PROPERTIES_UPDATE));
   }
 
   @Test
@@ -1296,14 +1280,32 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
     newProps.setAlerting(null);
     PropertiesSnapshot ps = wfd.getPropertiesSnapshot();
 
-    // alerting will not get reset when it's update_properties path
-    Properties resetNotAllowed =
-        PropertiesUpdateType.UPDATE_PROPERTIES.getNewProperties(newProps, ps);
+    // properties will not get reset when it's update_properties path
+    Properties resetNotAllowed = PROPERTIES_UPDATE.getNewProperties(newProps, ps);
     assertNotNull(resetNotAllowed.getAlerting());
+    assertNotNull(resetNotAllowed.getRunStrategy());
+    assertNotNull(resetNotAllowed.getStepConcurrency());
+    assertNotNull(resetNotAllowed.getOwner());
 
-    // alerting will get reset when it's add_workflow path
+    // alerting, description, run strategy, step concurrency will get reset when it's
+    // add_workflow path
     Properties resetAllowed =
-        PropertiesUpdateType.ADD_WORKFLOW_DEFINITION.getNewProperties(newProps, ps);
+        new PropertiesUpdate(Type.ADD_WORKFLOW_DEFINITION).getNewProperties(newProps, ps);
     assertNull(resetAllowed.getAlerting());
+    assertNull(resetAllowed.getDescription());
+    assertNull(resetAllowed.getRunStrategy());
+    assertNull(resetAllowed.getStepConcurrency());
+
+    // owner will not get reset when it's add_workflow path
+    assertNotNull(resetAllowed.getOwner());
+
+    // properties explicitly reset will be reset when it's update_properties path
+    PropertiesUpdate update = new PropertiesUpdate(Type.UPDATE_PROPERTIES);
+    update.setResetRunStrategyRule(true);
+    update.setResetStepConcurrency(true);
+    Properties reset = update.getNewProperties(newProps, ps);
+
+    assertNull(reset.getRunStrategy());
+    assertNull(reset.getStepConcurrency());
   }
 }

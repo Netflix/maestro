@@ -80,12 +80,16 @@ public class MaestroRuntimeException extends RuntimeException {
         return REQUEST_TIMEOUT;
       } else if (statusCode == CONFLICT.getStatusCode()) {
         return CONFLICT;
+      } else if (statusCode == GONE.getStatusCode()) {
+        return GONE;
       } else if (statusCode == INTERNAL_ERROR.getStatusCode()) {
         return INTERNAL_ERROR;
       } else if (statusCode == BAD_GATEWAY.getStatusCode()) {
         return BAD_GATEWAY;
       } else if (statusCode == UNPROCESSABLE_ENTITY.getStatusCode()) {
         return UNPROCESSABLE_ENTITY;
+      } else if (statusCode == PRECONDITION_FAILED.getStatusCode()) {
+        return PRECONDITION_FAILED;
       } else {
         throw new MaestroInvalidStatusException("Invalid status code: " + statusCode);
       }

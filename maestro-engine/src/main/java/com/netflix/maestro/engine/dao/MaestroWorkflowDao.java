@@ -20,6 +20,8 @@ import com.netflix.conductor.cockroachdb.util.StatementPreparer;
 import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.annotations.VisibleForTesting;
+import com.netflix.maestro.engine.db.PropertiesUpdate;
+import com.netflix.maestro.engine.db.PropertiesUpdate.Type;
 import com.netflix.maestro.engine.dto.MaestroWorkflow;
 import com.netflix.maestro.engine.dto.MaestroWorkflowVersion;
 import com.netflix.maestro.engine.jobevents.DeleteWorkflowJobEvent;
@@ -242,7 +244,7 @@ public class MaestroWorkflowDao extends CockroachDBBaseDAO {
                           metadata.getCreateTime(),
                           workflowInfo.getPrevPropertiesSnapshot(),
                           changes,
-                          PropertiesUpdateType.ADD_WORKFLOW_DEFINITION);
+                          new PropertiesUpdate(Type.ADD_WORKFLOW_DEFINITION));
                   // add new snapshot to workflowDef
                   if (snapshot != null) {
                     workflowDef.setPropertiesSnapshot(snapshot);
@@ -307,7 +309,7 @@ public class MaestroWorkflowDao extends CockroachDBBaseDAO {
    * @return the persisted properties
    */
   public PropertiesSnapshot updateWorkflowProperties(
-      String workflowId, User author, Properties props, PropertiesUpdateType updateType) {
+      String workflowId, User author, Properties props, PropertiesUpdate update) {
     LOG.debug("Updating workflow properties for workflow id [{}]", workflowId);
     Checks.notNull(
         props, "properties changes to apply cannot be null for workflow [%s]", workflowId);
@@ -328,7 +330,7 @@ public class MaestroWorkflowDao extends CockroachDBBaseDAO {
                           System.currentTimeMillis(),
                           workflowInfo.getPrevPropertiesSnapshot(),
                           props,
-                          updateType);
+                          update);
 
                   List<StatementPreparer> preparers = new ArrayList<>();
                   StringBuilder fields = prepareProperties(preparers, workflowId, snapshot);
@@ -760,7 +762,7 @@ public class MaestroWorkflowDao extends CockroachDBBaseDAO {
       Long createTime,
       PropertiesSnapshot snapshot,
       Properties props,
-      PropertiesUpdateType updateType)
+      PropertiesUpdate update)
       throws SQLException {
     if (props == null) {
       return null;
@@ -770,7 +772,7 @@ public class MaestroWorkflowDao extends CockroachDBBaseDAO {
             workflowId,
             createTime,
             author,
-            snapshot == null ? props : updateType.getNewProperties(props, snapshot));
+            snapshot == null ? props : update.getNewProperties(props, snapshot));
 
     if (snapshot != null
         && props.getRunStrategy() != null
