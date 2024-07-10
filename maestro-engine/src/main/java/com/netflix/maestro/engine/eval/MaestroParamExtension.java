@@ -445,6 +445,8 @@ public class MaestroParamExtension extends AbstractParamExtension {
         return stepInstanceAttributes.getStepInstanceId();
       case Constants.STEP_INSTANCE_UUID_PARAM:
         return stepInstanceAttributes.getStepInstanceUuid();
+      case Constants.STEP_ATTEMPT_ID_PARAM:
+        return stepInstanceAttributes.getStepAttemptId();
       case Constants.STEP_TYPE_INFO_PARAM:
         return StepHelper.getStepTypeInfo(
             stepInstanceAttributes.getType(), stepInstanceAttributes.getSubType());

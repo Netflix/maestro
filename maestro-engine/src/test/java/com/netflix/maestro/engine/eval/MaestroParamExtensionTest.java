@@ -311,10 +311,12 @@ public class MaestroParamExtensionTest extends MaestroEngineBaseTest {
     String stepId = "step-123";
     String stepInstanceUuid = UUID.randomUUID().toString();
     long stepInstanceId = 2;
+    long stepAttemptId = 3;
     StepRuntimeSummary summary =
         StepRuntimeSummary.builder()
             .stepId(stepId)
             .stepInstanceId(stepInstanceId)
+            .stepAttemptId(stepAttemptId)
             .stepInstanceUuid(stepInstanceUuid)
             .type(StepType.NOTEBOOK)
             .subType(null)
@@ -325,6 +327,7 @@ public class MaestroParamExtensionTest extends MaestroEngineBaseTest {
     assertEquals(stepId, paramExtension.getFromStep(Constants.STEP_ID_PARAM));
     assertEquals(stepInstanceId, paramExtension.getFromStep(Constants.STEP_INSTANCE_ID_PARAM));
     assertEquals(stepInstanceUuid, paramExtension.getFromStep(Constants.STEP_INSTANCE_UUID_PARAM));
+    assertEquals(stepAttemptId, paramExtension.getFromStep(Constants.STEP_ATTEMPT_ID_PARAM));
     assertEquals(
         StepType.NOTEBOOK.toString(), paramExtension.getFromStep(Constants.STEP_TYPE_INFO_PARAM));
   }

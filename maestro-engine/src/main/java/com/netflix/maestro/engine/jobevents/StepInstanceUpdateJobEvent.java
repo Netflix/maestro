@@ -149,7 +149,7 @@ public class StepInstanceUpdateJobEvent implements MaestroJobEvent {
   }
 
   /**
-   * create a StepInstanceStatusChangeEvent from a StepInstancePendingEvent.
+   * create a StepInstanceStatusChangeEvent from a StepInstanceUpdateJobEvent.
    *
    * @param clusterName cluster name
    * @return status change event

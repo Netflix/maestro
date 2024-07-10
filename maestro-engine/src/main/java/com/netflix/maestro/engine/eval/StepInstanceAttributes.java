@@ -29,6 +29,7 @@ class StepInstanceAttributes {
   private final StepType type;
   private final String subType;
   private final long stepInstanceId;
+  private final long stepAttemptId;
   private final String stepInstanceUuid;
 
   static StepInstanceAttributes from(StepRuntimeSummary summary) {
@@ -37,6 +38,7 @@ class StepInstanceAttributes {
         .subType(summary.getSubType())
         .stepId(summary.getStepId())
         .stepInstanceId(summary.getStepInstanceId())
+        .stepAttemptId(summary.getStepAttemptId())
         .stepInstanceUuid(summary.getStepInstanceUuid())
         .build();
   }
