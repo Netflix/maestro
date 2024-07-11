@@ -1,0 +1,84 @@
+spring:
+  application:
+    name: maestro
+  sleuth:
+    sampler:
+      # disable tracing
+      probability: 0.0
+
+maestro:
+  queue:
+    type: in-memory
+  publisher:
+    type: in-memory
+  alerting:
+    type: noop
+  redis:
+    enabled: false
+  sel:
+    thread-num: 3
+    timeout-millis: 120000
+    stack-limit: 128
+    loop-limit: 25001
+    array-limit: 25001
+    length-limit: 10000
+    visit-limit: 100000000
+    memory-limit: 100000000
+  cluster:
+    name: test
+
+conductor:
+  configs:
+    payload-compression-enabled: true
+    payload-compressor-name: gzip
+    # cockroachdb config
+    workflow-cockroachdb-error-retries: 5
+    workflow-cockroachdb-insert-batch-size: 32
+    workflow-cockroachdb-follower-reads-enabled: false
+    workflow-cockroachdb-rewrite-batched-inserts: true
+    workflow-cockroachdb-login-timeout-seconds: 5
+    workflow-cockroachdb-socket-timeout-seconds: 50
+    jdbc-username: maestro
+    jdbc-url: "jdbc:tc:cockroach:v22.1.16:///maestro_local"
+    flyway-enabled: true
+    workflow-cockroachdb-client-name: maestro-local
+    workflow-cockroachdb-connection-pool-size-max: 8
+    workflow-cockroachdb-connection-pool-idle-min: 8
+    workflow-cockroachdb-connection-lifetime-max: 50000
+    workflow-cockroachdb-connection-idle-timeout: 30000
+    # conductor system task worker config
+    workflow-system-task-worker-thread-count: 1
+    workflow-system-task-worker-callback-seconds: 1
+    workflow-system-task-worker-poll-interval: 100
+    workflow-system-task-queue-pollcount: 16
+
+stepruntime:
+  env: test
+  foreach:
+    loop-batch-limit: 50
+    insert-batch-limit: 10
+    run-job-batch-limit: 5
+    get-rollup-batch-limit: 100
+  subworkflow:
+    always-pass-down-param-names: []
+  cache:
+    default-sha-cache-minutes: 43200  # 30 days
+    default-sha-max-size: 100
+    custom-sha-cache-minutes: 10
+    custom-sha-max-size: 50
+  # callback delay interval setting based on step instance status and step type.
+  callback-delay-config:
+    fixed-callback-delay-in-secs:
+      RUNNING:
+        default: 3
+      WAITING_FOR_PERMITS:
+        default: 3
+      WAITING_FOR_SIGNALS:
+        default: 3
+      PAUSED:
+        default: 3
+
+logging:
+  level:
+    com:
+      netflix: INFO

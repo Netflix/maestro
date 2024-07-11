@@ -1,0 +1,41 @@
+plugins {
+    id 'org.springframework.boot' version '2.7.+'
+}
+
+sourceSets {
+    integrationTest {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+
+configurations {
+    integrationTestImplementation.extendsFrom testImplementation
+    integrationTestRuntimeOnly.extendsFrom testRuntime
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web:2.7.+'
+
+    implementation hikaricpDep
+    implementation postgresqlDep
+    implementation flywayDep
+    implementation 'io.swagger.core.v3:swagger-annotations:2.+'
+    implementation 'org.springframework.cloud:spring-cloud-starter-sleuth:3.+'
+    runtimeOnly testcontainerDep
+
+    implementation project(':maestro-engine')
+    implementation project(':maestro-common')
+    implementation project(':cockroachdb-persistence')
+    implementation project(':netflix-sel')
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test:2.7.+'
+}
+
+checkstyle {
+    checkstyleIntegrationTest.enabled = false
+}
+
+pmd {
+    pmdIntegrationTest.enabled = false
+}

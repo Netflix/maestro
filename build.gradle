@@ -65,20 +65,15 @@ configure(allprojects - project(':cockroachdb-persistence') - project(':netflix-
     apply plugin: 'pmd'
     apply plugin: 'com.github.spotbugs'
 
-    apply plugin: 'java-library'
-    apply plugin: 'java-test-fixtures'
-
     checkstyle {
         checkstyleMain.enabled = true
         checkstyleMain.source = fileTree("src/main/java")
         checkstyleTest.enabled = false
-        checkstyleTestFixtures.enabled = true
     }
 
     pmd {
         toolVersion = "6.21.0"
         pmdTest.enabled = false
-        pmdTestFixtures.enabled = true
         consoleOutput = true
         rulesMinimumPriority = 5
         ruleSetFiles = files("${rootDir}/config/pmd/ruleset.xml")
@@ -105,5 +100,18 @@ configure(allprojects - project(':cockroachdb-persistence') - project(':netflix-
 
         testCompileOnly lombokDep
         testAnnotationProcessor lombokDep
+    }
+}
+
+configure([project(':maestro-common'), project(':maestro-engine')]) {
+    apply plugin: 'java-library'
+    apply plugin: 'java-test-fixtures'
+
+    checkstyle {
+        checkstyleTestFixtures.enabled = true
+    }
+
+    pmd {
+        pmdTestFixtures.enabled = true
     }
 }
