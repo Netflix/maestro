@@ -92,7 +92,7 @@ public class MaestroCockroachDBExecutionDaoTest extends MaestroDaoBaseTest {
     // should update DB if this is new
     maestroExecutionDao.updateTask(task);
     Task actual = maestroExecutionDao.getTask(TEST_TASK_ID);
-    assertEquals("df52193d782fd8e02292a75504ce6eb7", actual.getWorkerId());
+    assertEquals("b1a2db354f803423e990fad1b9265b6f", actual.getWorkerId());
     assertEquals(1, actual.getPollCount());
     assertEquals(0, actual.getUpdateTime());
 
@@ -100,7 +100,7 @@ public class MaestroCockroachDBExecutionDaoTest extends MaestroDaoBaseTest {
     task.getOutputData().put("bat", true);
     maestroExecutionDao.updateTask(task);
     actual = maestroExecutionDao.getTask(TEST_TASK_ID);
-    assertEquals("6292ff0c02a892ed0990e872c210ce7d", actual.getWorkerId());
+    assertEquals("2858a83f63639306837f276e545b57ed", actual.getWorkerId());
     assertEquals(2, actual.getPollCount());
     assertEquals(0, actual.getUpdateTime());
 
@@ -108,7 +108,7 @@ public class MaestroCockroachDBExecutionDaoTest extends MaestroDaoBaseTest {
     task.setPollCount(10);
     maestroExecutionDao.updateTask(task);
     actual = maestroExecutionDao.getTask(TEST_TASK_ID);
-    assertEquals("6292ff0c02a892ed0990e872c210ce7d", actual.getWorkerId());
+    assertEquals("2858a83f63639306837f276e545b57ed", actual.getWorkerId());
     assertEquals(2, actual.getPollCount());
     assertEquals(0, actual.getUpdateTime());
 
@@ -117,7 +117,7 @@ public class MaestroCockroachDBExecutionDaoTest extends MaestroDaoBaseTest {
     task.setWorkerId("foo");
     maestroExecutionDao.updateTask(task);
     actual = maestroExecutionDao.getTask(TEST_TASK_ID);
-    assertEquals("6292ff0c02a892ed0990e872c210ce7d", actual.getWorkerId());
+    assertEquals("2858a83f63639306837f276e545b57ed", actual.getWorkerId());
     assertEquals(2, actual.getPollCount());
     assertEquals(0, actual.getUpdateTime());
 
@@ -126,7 +126,7 @@ public class MaestroCockroachDBExecutionDaoTest extends MaestroDaoBaseTest {
     task.setUpdateTime(MAX_UPDATE_INTERVAL - 1);
     maestroExecutionDao.updateTask(task);
     actual = maestroExecutionDao.getTask(TEST_TASK_ID);
-    assertEquals("6292ff0c02a892ed0990e872c210ce7d", actual.getWorkerId());
+    assertEquals("2858a83f63639306837f276e545b57ed", actual.getWorkerId());
     assertEquals(2, actual.getPollCount());
     assertEquals(0, actual.getUpdateTime());
 
@@ -135,7 +135,7 @@ public class MaestroCockroachDBExecutionDaoTest extends MaestroDaoBaseTest {
     task.setUpdateTime(MAX_UPDATE_INTERVAL + 1);
     maestroExecutionDao.updateTask(task);
     actual = maestroExecutionDao.getTask(TEST_TASK_ID);
-    assertEquals("6292ff0c02a892ed0990e872c210ce7d", actual.getWorkerId());
+    assertEquals("2858a83f63639306837f276e545b57ed", actual.getWorkerId());
     assertEquals(11, actual.getPollCount());
     assertEquals(MAX_UPDATE_INTERVAL + 1, actual.getUpdateTime());
   }
@@ -151,7 +151,7 @@ public class MaestroCockroachDBExecutionDaoTest extends MaestroDaoBaseTest {
     // should update DB if there is no checksum
     maestroExecutionDao.updateTask(task);
     actual = maestroExecutionDao.getTask(TEST_TASK_ID);
-    assertEquals("df52193d782fd8e02292a75504ce6eb7", actual.getWorkerId());
+    assertEquals("b1a2db354f803423e990fad1b9265b6f", actual.getWorkerId());
     assertEquals(1, actual.getPollCount());
     assertEquals(0, actual.getUpdateTime());
   }
@@ -167,7 +167,7 @@ public class MaestroCockroachDBExecutionDaoTest extends MaestroDaoBaseTest {
     String taskPayload = getTaskPayload();
     JsonNode root = mapper.readTree(taskPayload);
     Assert.assertEquals(
-        "{\"compressed\":\"H4sIAAAAAAAAAKtWSiQWKFkRrVapFgC8tuw9WAAAAA==\",\"compressor\":\"gzip\"}",
+        "{\"compressed\":\"H4sIAAAAAAAA/6tWSiQWKFkRrVapFgC8tuw9WAAAAA==\",\"compressor\":\"gzip\"}",
         root.get("inputData").toString());
 
     Task dbTask = maestroExecutionDao.getTask(task.getTaskId());

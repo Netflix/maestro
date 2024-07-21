@@ -69,7 +69,7 @@ public enum SignalOperator {
         .orElseThrow(() -> new IllegalArgumentException("Invalid operator code: " + operatorCode));
   }
 
-  private static class Constants {
+  private static final class Constants {
     private static final String EQUALS = "=";
   }
 }

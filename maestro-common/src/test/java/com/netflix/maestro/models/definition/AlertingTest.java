@@ -108,16 +108,12 @@ public class AlertingTest extends MaestroBaseTest {
     bdc.setSteps(new HashSet<>(Arrays.asList("step1", "another_really_important_step")));
     expected.setBypassDigestConfig(bdc);
 
-    expected.setTypeConfigs(
-        new EnumMap<AlertType, AlertingTypeConfig>(AlertType.class) {
-          {
-            put(STEP_FAILURE, stepFailureType);
-            put(TCT_VIOLATION, tctType);
-            put(LONG_RUNNING, lrType);
-            put(BREAKPOINT_HIT, bhType);
-            put(DEFINITION_CHANGE, dcType);
-          }
-        });
+    expected.setTypeConfigs(new EnumMap<>(AlertType.class));
+    expected.getTypeConfigs().put(STEP_FAILURE, stepFailureType);
+    expected.getTypeConfigs().put(TCT_VIOLATION, tctType);
+    expected.getTypeConfigs().put(LONG_RUNNING, lrType);
+    expected.getTypeConfigs().put(BREAKPOINT_HIT, bhType);
+    expected.getTypeConfigs().put(DEFINITION_CHANGE, dcType);
 
     Tct tct = new Tct();
     tct.setCompletedByHour(1);

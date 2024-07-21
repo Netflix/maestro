@@ -312,15 +312,13 @@ public class ParamsManagerTest extends MaestroEngineBaseTest {
     Map<String, ParamDefinition> defaultParams =
         singletonMap(
             "TARGET_RUN_DATE",
-            ParamDefinition.buildParamDefinition("TARGET_RUN_DATE", 1000)
-                .toBuilder()
+            ParamDefinition.buildParamDefinition("TARGET_RUN_DATE", 1000).toBuilder()
                 .mode(ParamMode.MUTABLE_ON_START)
                 .build());
     Map<String, ParamDefinition> runParams =
         singletonMap(
             "TARGET_RUN_DATE",
-            ParamDefinition.buildParamDefinition("TARGET_RUN_DATE", 1001)
-                .toBuilder()
+            ParamDefinition.buildParamDefinition("TARGET_RUN_DATE", 1001).toBuilder()
                 .mode(ParamMode.MUTABLE)
                 .meta(singletonMap(Constants.METADATA_SOURCE_KEY, "DEFINITION"))
                 .build());
@@ -360,8 +358,7 @@ public class ParamsManagerTest extends MaestroEngineBaseTest {
     Map<String, ParamDefinition> restartParams =
         singletonMap(
             "TARGET_RUN_DATE",
-            ParamDefinition.buildParamDefinition("TARGET_RUN_DATE", 1001)
-                .toBuilder()
+            ParamDefinition.buildParamDefinition("TARGET_RUN_DATE", 1001).toBuilder()
                 .mode(ParamMode.MUTABLE)
                 .meta(singletonMap(Constants.METADATA_SOURCE_KEY, "RESTART"))
                 .build());
@@ -725,10 +722,7 @@ public class ParamsManagerTest extends MaestroEngineBaseTest {
     Map<String, ParamDefinition> restartParams =
         singletonMap(
             "TARGET_RUN_DATE",
-            param
-                .toDefinition()
-                .asLongParamDef()
-                .toBuilder()
+            param.toDefinition().asLongParamDef().toBuilder()
                 .mode(ParamMode.MUTABLE)
                 .meta(restartMeta)
                 .build());
@@ -771,10 +765,7 @@ public class ParamsManagerTest extends MaestroEngineBaseTest {
     Map<String, ParamDefinition> restartParams =
         singletonMap(
             "TARGET_RUN_DATE",
-            param
-                .toDefinition()
-                .asLongParamDef()
-                .toBuilder()
+            param.toDefinition().asLongParamDef().toBuilder()
                 .value(1001L)
                 .mode(ParamMode.MUTABLE)
                 .meta(restartMeta)

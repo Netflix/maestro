@@ -46,8 +46,6 @@ final class SelClassLoader extends ClassLoader {
     loadClassesInPackage("com.netflix.sel.ext");
     loadClassesInPackage("org.joda.time");
     ResourceBundle.getBundle("org.joda.time.format.messages");
-    ResourceBundle.getBundle("sun.text.resources.FormatData");
-    ResourceBundle.getBundle("sun.util.resources.CurrencyNames");
 
     Provider provider = DateTimeZone.getProvider(); // loads all zone info
     provider.getAvailableIDs().forEach(id -> preloadedTimezones.add(provider.getZone(id)));

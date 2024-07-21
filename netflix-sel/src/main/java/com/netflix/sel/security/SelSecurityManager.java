@@ -194,34 +194,9 @@ public final class SelSecurityManager extends SecurityManager {
   }
 
   @Override
-  @SuppressWarnings("deprecation")
-  public boolean checkTopLevelWindow(Object window) {
-    if (accs.get() != null) {
-      return super.checkTopLevelWindow(window);
-    }
-    return true; // no restriction
-  }
-
-  @Override
   public void checkPrintJobAccess() {
     if (accs.get() != null) {
       super.checkPrintJobAccess();
-    }
-  }
-
-  @Override
-  @SuppressWarnings("deprecation")
-  public void checkSystemClipboardAccess() {
-    if (accs.get() != null) {
-      super.checkSystemClipboardAccess();
-    }
-  }
-
-  @Override
-  @SuppressWarnings("deprecation")
-  public void checkAwtEventQueueAccess() {
-    if (accs.get() != null) {
-      super.checkAwtEventQueueAccess();
     }
   }
 
@@ -243,14 +218,6 @@ public final class SelSecurityManager extends SecurityManager {
   public void checkSetFactory() {
     if (accs.get() != null) {
       super.checkSetFactory();
-    }
-  }
-
-  @Override
-  @SuppressWarnings("deprecation")
-  public void checkMemberAccess(Class<?> clazz, int which) {
-    if (accs.get() != null) {
-      super.checkMemberAccess(clazz, which);
     }
   }
 

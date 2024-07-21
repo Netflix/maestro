@@ -6,7 +6,7 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'com.diffplug.spotless:spotless-plugin-gradle:6.10.0'
+        classpath 'com.diffplug.spotless:spotless-plugin-gradle:6.+'
         classpath "com.github.spotbugs.snom:spotbugs-gradle-plugin:6.+"
     }
 }
@@ -34,8 +34,12 @@ allprojects {
 
     java {
         toolchain {
-            languageVersion = JavaLanguageVersion.of(8)
+            languageVersion = JavaLanguageVersion.of(21)
         }
+    }
+
+    test {
+        jvmArgs += ["-Djava.security.manager=allow"]
     }
 
     configurations.configureEach {

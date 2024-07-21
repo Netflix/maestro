@@ -346,9 +346,7 @@ public class WorkflowActionHandlerTest extends MaestroEngineBaseTest {
                       .currentPolicy(RunPolicy.START_FRESH_NEW_RUN)
                       .build();
               PropertiesSnapshot snapshot =
-                  definition
-                      .getPropertiesSnapshot()
-                      .toBuilder()
+                  definition.getPropertiesSnapshot().toBuilder()
                       .signalTriggerDisabled(true)
                       .timeTriggerDisabled(true)
                       .build();

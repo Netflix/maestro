@@ -39,7 +39,7 @@ conductor:
     workflow-cockroachdb-login-timeout-seconds: 5
     workflow-cockroachdb-socket-timeout-seconds: 50
     jdbc-username: maestro
-    jdbc-url: "jdbc:tc:cockroach:v22.1.16:///maestro_local"
+    jdbc-url: "jdbc:tc:cockroach:v22.2.19:///maestro_local"
     flyway-enabled: true
     workflow-cockroachdb-client-name: maestro-local
     workflow-cockroachdb-connection-pool-size-max: 8

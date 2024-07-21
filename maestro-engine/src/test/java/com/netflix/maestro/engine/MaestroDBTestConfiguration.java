@@ -25,7 +25,7 @@ public class MaestroDBTestConfiguration extends SystemPropertiesConfiguration
 
   @Override
   public String getJdbcUrl() {
-    return "jdbc:tc:cockroach:v22.1.16:///maestro";
+    return "jdbc:tc:cockroach:v22.2.19:///maestro";
   }
 
   @Override

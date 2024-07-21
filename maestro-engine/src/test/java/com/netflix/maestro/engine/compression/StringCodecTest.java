@@ -32,8 +32,8 @@ public class StringCodecTest {
 
   @Test
   public void testCompress() throws IOException {
-    assertEquals("H4sIAAAAAAAAAEtMBAMAdCCLWwcAAAA=", stringCodec.compress("gzip", "aaaaaaa"));
-    assertEquals("H4sIAAAAAAAAAEtMBAMAdCCLWwcAAAA=", stringCodec.compress(null, "aaaaaaa"));
+    assertEquals("H4sIAAAAAAAA/0tMBAMAdCCLWwcAAAA=", stringCodec.compress("gzip", "aaaaaaa"));
+    assertEquals("H4sIAAAAAAAA/0tMBAMAdCCLWwcAAAA=", stringCodec.compress(null, "aaaaaaa"));
   }
 
   @Test
@@ -65,7 +65,7 @@ public class StringCodecTest {
         "decompress should throw exception if compressor not found",
         NullPointerException.class,
         "unknown compressorName: abcd",
-        () -> stringCodec.decompress("abcd", "H4sIAAAAAAAAAEtMBAMAdCCLWwcAAAA="));
+        () -> stringCodec.decompress("abcd", "H4sIAAAAAAAA/0tMBAMAdCCLWwcAAAA="));
   }
 
   @Test

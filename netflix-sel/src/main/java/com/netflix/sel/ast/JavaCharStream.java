@@ -157,7 +157,9 @@ public class JavaCharStream {
     return nextCharBuf[nextCharInd];
   }
 
-  /** @return starting character for token. */
+  /**
+   * @return starting character for token.
+   */
   public char BeginToken() throws java.io.IOException {
     if (inBuf > 0) {
       --inBuf;
@@ -326,12 +328,16 @@ public class JavaCharStream {
     return bufline[bufpos];
   }
 
-  /** @return column of token start */
+  /**
+   * @return column of token start
+   */
   public int getBeginColumn() {
     return bufcolumn[tokenBegin];
   }
 
-  /** @return line number of token start */
+  /**
+   * @return line number of token start
+   */
   public int getBeginLine() {
     return bufline[tokenBegin];
   }
@@ -476,7 +482,9 @@ public class JavaCharStream {
     ReInit(dstream, 1, 1, 4096);
   }
 
-  /** @return token image as String */
+  /**
+   * @return token image as String
+   */
   public String GetImage() {
     if (bufpos >= tokenBegin) return new String(buffer, tokenBegin, bufpos - tokenBegin + 1);
     else
@@ -484,7 +492,9 @@ public class JavaCharStream {
           + new String(buffer, 0, bufpos + 1);
   }
 
-  /** @return suffix */
+  /**
+   * @return suffix
+   */
   public char[] GetSuffix(int len) {
     char[] ret = new char[len];
 

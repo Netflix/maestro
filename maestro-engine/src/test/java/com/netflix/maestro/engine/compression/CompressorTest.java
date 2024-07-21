@@ -23,7 +23,7 @@ public class CompressorTest {
   @Test
   public void shouldCompressAndDeCompress() throws IOException {
     Compressor compressor = new GZIPCompressor();
-    String compressed = "H4sIAAAAAAAAACtJLS4JS8wpTQUA5C3qhAkAAAA=";
+    String compressed = "H4sIAAAAAAAA/ytJLS4JS8wpTQUA5C3qhAkAAAA=";
     String decompressed = "testValue";
 
     Assert.assertEquals(

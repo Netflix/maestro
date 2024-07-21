@@ -23,7 +23,7 @@ public class CockroachDBTestConfiguration extends SystemPropertiesConfiguration
 
   @Override
   public String getJdbcUrl() {
-    return "jdbc:tc:cockroach:///maestro";
+    return "jdbc:tc:cockroach:v22.2.19:///maestro";
   }
 
   @Override

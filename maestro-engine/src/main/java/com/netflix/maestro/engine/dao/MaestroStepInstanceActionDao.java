@@ -682,12 +682,14 @@ public class MaestroStepInstanceActionDao extends CockroachDBBaseDAO {
     // batch upsert them into DB.
     String workflowIdentity = instance.getIdentity();
     int upsert =
-        IntStream.range(0, payloads.size()).boxed()
+        IntStream.range(0, payloads.size())
+            .boxed()
             .collect(
                 Collectors.groupingBy(
                     partition -> (partition / Constants.TERMINATE_BATCH_LIMIT),
                     Collectors.mapping(payloads::get, Collectors.toList())))
-            .values().stream()
+            .values()
+            .stream()
             // There is a chance of inconsistency if batches fail in the middle for manual
             // termination case. Expect users to manually retry to terminate all of them.
             .mapToInt(payloadList -> upsertActions(workflowIdentity, payloadList))

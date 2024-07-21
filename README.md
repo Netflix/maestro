@@ -13,7 +13,7 @@ Maestro is highly scalable and extensible to support existing and new use cases 
 # Get started
 ## Prerequisite
 - Git
-- Java 8
+- Java 21
 - Gradle
 - Docker
 

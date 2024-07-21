@@ -226,8 +226,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
 
     // push an active version with any triggers, and then call trigger upsert
     wfd.setWorkflow(
-        wfd.getWorkflow()
-            .toBuilder()
+        wfd.getWorkflow().toBuilder()
             .timeTriggers(timeTriggers)
             .signalTriggers(signalTriggers)
             .build());
@@ -265,8 +264,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
     wfd.getMetadata().setCreateTime(wfd.getMetadata().getCreateTime() + 1);
     wfd.setIsActive(active);
     wfd.setPropertiesSnapshot(
-        wfd.getPropertiesSnapshot()
-            .toBuilder()
+        wfd.getPropertiesSnapshot().toBuilder()
             .timeTriggerDisabled(timeTriggerDisabled)
             .signalTriggerDisabled(signalTriggerDisabled)
             .build());
@@ -305,8 +303,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
         workflowDao.updateWorkflowProperties(
             TEST_WORKFLOW_ID2, User.create("test"), new Properties(), PROPERTIES_UPDATE);
     assertEquals(
-        wfd.getPropertiesSnapshot()
-            .toBuilder()
+        wfd.getPropertiesSnapshot().toBuilder()
             .createTime(newSnapshot.getCreateTime())
             .author(User.create("test"))
             .build(),
@@ -339,8 +336,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
         workflowDao.updateWorkflowProperties(
             TEST_WORKFLOW_ID2, User.create("test"), props, PROPERTIES_UPDATE_ADD_TAG);
     assertEquals(
-        wfd.getPropertiesSnapshot()
-            .toBuilder()
+        wfd.getPropertiesSnapshot().toBuilder()
             .createTime(newSnapshot.getCreateTime())
             .author(User.create("test"))
             .tags(new TagList(Collections.singletonList(tagToBeAdded)))
@@ -380,8 +376,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
             TEST_WORKFLOW_ID2, User.create("test"), propsForSecondAdd, PROPERTIES_UPDATE_ADD_TAG);
 
     assertEquals(
-        wfd.getPropertiesSnapshot()
-            .toBuilder()
+        wfd.getPropertiesSnapshot().toBuilder()
             .createTime(newSnapshot.getCreateTime())
             .author(User.create("test"))
             .tags(
@@ -403,8 +398,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
         workflowDao.updateWorkflowProperties(
             TEST_WORKFLOW_ID2, User.create("test"), props, PROPERTIES_UPDATE_ADD_TAG);
     assertEquals(
-        wfd.getPropertiesSnapshot()
-            .toBuilder()
+        wfd.getPropertiesSnapshot().toBuilder()
             .createTime(newSnapshotAfterUpdate.getCreateTime())
             .author(User.create("test"))
             .tags(
@@ -433,8 +427,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
         workflowDao.updateWorkflowProperties(
             TEST_WORKFLOW_ID9, User.create("test"), props, PROPERTIES_UPDATE_DELETE_TAG);
     assertEquals(
-        wfd.getPropertiesSnapshot()
-            .toBuilder()
+        wfd.getPropertiesSnapshot().toBuilder()
             .createTime(newSnapshot.getCreateTime())
             .author(User.create("test"))
             .tags(new TagList(null))

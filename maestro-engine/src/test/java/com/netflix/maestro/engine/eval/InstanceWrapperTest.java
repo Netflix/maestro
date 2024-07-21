@@ -169,9 +169,7 @@ public class InstanceWrapperTest extends MaestroBaseTest {
     CronTimeTrigger cronTrigger2 = new CronTimeTrigger();
     cronTrigger2.setTimezone("UTC");
     instance.setRuntimeWorkflow(
-        instance
-            .getRuntimeWorkflow()
-            .toBuilder()
+        instance.getRuntimeWorkflow().toBuilder()
             .timeTriggers(Arrays.asList(cronTrigger1, cronTrigger2))
             .build());
     RunRequest runRequest =

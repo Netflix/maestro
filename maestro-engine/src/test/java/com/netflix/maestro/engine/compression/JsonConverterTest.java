@@ -57,13 +57,13 @@ public class JsonConverterTest {
 
     JsonNode root = objectMapper.readTree(json);
     assertEquals(
-        "{\"compressed\":\"H4sIAAAAAAAAAKtWSiQWKFkRrVapFgC8tuw9WAAAAA==\",\"compressor\":\"gzip\"}",
+        "{\"compressed\":\"H4sIAAAAAAAA/6tWSiQWKFkRrVapFgC8tuw9WAAAAA==\",\"compressor\":\"gzip\"}",
         root.get("inputData").toString());
     assertEquals(
-        "{\"compressed\":\"H4sIAAAAAAAAAKtWSsIPEuFAyYoEtbUAknwp8FkAAAA=\",\"compressor\":\"gzip\"}",
+        "{\"compressed\":\"H4sIAAAAAAAA/6tWSsIPEuFAyYoEtbUAknwp8FkAAAA=\",\"compressor\":\"gzip\"}",
         root.get("outputData").toString());
     assertEquals(
-        "{\"compressed\":\"H4sIAAAAAAAAAKVPQQ6CMBD8y545eO4VMMGgkKAn42FTF1MpbdMtREL4uyUYPuDeZnZ2ZmcG5MnI1PZOUyAQLWqmBJ4kFStrUmRiEPOyUi0OOqwMiPtjJ/KP1AOrkU5WmStyt21b67sV8QaVcUOo0WMfY/zP8h0vKrMJtLWuGslvyEQdCJB/DCRgXYgdUO+1PAU/lfalZDS/XZo6T4tjkWdRywF9yEjjBOKQQJjc+kBTnOsyh+UL0Pf/6CgBAAA=\",\"compressor\":\"gzip\"}",
+        "{\"compressed\":\"H4sIAAAAAAAA/6VPQQ6CMBD8y545eO4VMMGgkKAn42FTF1MpbdMtREL4uyUYPuDeZnZ2ZmcG5MnI1PZOUyAQLWqmBJ4kFStrUmRiEPOyUi0OOqwMiPtjJ/KP1AOrkU5WmStyt21b67sV8QaVcUOo0WMfY/zP8h0vKrMJtLWuGslvyEQdCJB/DCRgXYgdUO+1PAU/lfalZDS/XZo6T4tjkWdRywF9yEjjBOKQQJjc+kBTnOsyh+UL0Pf/6CgBAAA=\",\"compressor\":\"gzip\"}",
         root.get("workflowTask").toString());
 
     Task convertedTask = jsonConverter.fromJson(json, Task.class);
@@ -105,10 +105,10 @@ public class JsonConverterTest {
 
     JsonNode root = objectMapper.readTree(json);
     assertEquals(
-        "{\"compressed\":\"H4sIAAAAAAAAAKtWSiQeKFmRoFqpFgBUGtfvXAAAAA==\",\"compressor\":\"gzip\"}",
+        "{\"compressed\":\"H4sIAAAAAAAA/6tWSiQeKFmRoFqpFgBUGtfvXAAAAA==\",\"compressor\":\"gzip\"}",
         root.get("inputData").toString());
     assertEquals(
-        "{\"compressed\":\"H4sIAAAAAAAAAKtWSsIPEpGAkhVJqmsBFCS8Jl0AAAA=\",\"compressor\":\"gzip\"}",
+        "{\"compressed\":\"H4sIAAAAAAAA/6tWSsIPEpGAkhVJqmsBFCS8Jl0AAAA=\",\"compressor\":\"gzip\"}",
         root.get("outputData").toString());
 
     Task convertedTask = jsonConverter.fromJson(json, Task.class);

@@ -33,7 +33,8 @@ public class SelParser /*@bgen(jjtree)*/ implements SelParserTreeConstants, SelP
       while (true) {
         switch (jj_nt.kind) {
           case IMPORT:
-            {;
+            {
+              ;
               break;
             }
           default:
@@ -70,7 +71,8 @@ public class SelParser /*@bgen(jjtree)*/ implements SelParserTreeConstants, SelP
           case BANG:
           case PLUS:
           case MINUS:
-            {;
+            {
+              ;
               break;
             }
           default:
@@ -136,7 +138,8 @@ public class SelParser /*@bgen(jjtree)*/ implements SelParserTreeConstants, SelP
       jj_consume_token(IDENTIFIER);
       label_3:
       while (true) {
-        if (jj_2_1(2)) {;
+        if (jj_2_1(2)) {
+          ;
         } else {
           break label_3;
         }
@@ -261,7 +264,8 @@ public class SelParser /*@bgen(jjtree)*/ implements SelParserTreeConstants, SelP
             VariableInitializer();
             label_4:
             while (true) {
-              if (jj_2_2(2)) {;
+              if (jj_2_2(2)) {
+                ;
               } else {
                 break label_4;
               }
@@ -709,7 +713,8 @@ public class SelParser /*@bgen(jjtree)*/ implements SelParserTreeConstants, SelP
     while (true) {
       switch (jj_nt.kind) {
         case SC_OR:
-          {;
+          {
+            ;
             break;
           }
         default:
@@ -742,7 +747,8 @@ public class SelParser /*@bgen(jjtree)*/ implements SelParserTreeConstants, SelP
     while (true) {
       switch (jj_nt.kind) {
         case SC_AND:
-          {;
+          {
+            ;
             break;
           }
         default:
@@ -796,7 +802,8 @@ public class SelParser /*@bgen(jjtree)*/ implements SelParserTreeConstants, SelP
       switch (jj_nt.kind) {
         case EQ:
         case NE:
-          {;
+          {
+            ;
             break;
           }
         default:
@@ -872,7 +879,8 @@ public class SelParser /*@bgen(jjtree)*/ implements SelParserTreeConstants, SelP
         case LT:
         case LE:
         case GE:
-          {;
+          {
+            ;
             break;
           }
         default:
@@ -966,7 +974,8 @@ public class SelParser /*@bgen(jjtree)*/ implements SelParserTreeConstants, SelP
       switch (jj_nt.kind) {
         case PLUS:
         case MINUS:
-          {;
+          {
+            ;
             break;
           }
         default:
@@ -1041,7 +1050,8 @@ public class SelParser /*@bgen(jjtree)*/ implements SelParserTreeConstants, SelP
         case STAR:
         case SLASH:
         case REM:
-          {;
+          {
+            ;
             break;
           }
         default:
@@ -1224,7 +1234,8 @@ public class SelParser /*@bgen(jjtree)*/ implements SelParserTreeConstants, SelP
       PrimaryPrefix();
       label_11:
       while (true) {
-        if (jj_2_4(2)) {;
+        if (jj_2_4(2)) {
+          ;
         } else {
           break label_11;
         }
@@ -1545,7 +1556,8 @@ public class SelParser /*@bgen(jjtree)*/ implements SelParserTreeConstants, SelP
     while (true) {
       switch (jj_nt.kind) {
         case COMMA:
-          {;
+          {
+            ;
             break;
           }
         default:
@@ -1855,7 +1867,8 @@ public class SelParser /*@bgen(jjtree)*/ implements SelParserTreeConstants, SelP
           case BANG:
           case PLUS:
           case MINUS:
-            {;
+            {
+              ;
               break;
             }
           default:
@@ -1945,7 +1958,8 @@ public class SelParser /*@bgen(jjtree)*/ implements SelParserTreeConstants, SelP
       while (true) {
         switch (jj_nt.kind) {
           case COMMA:
-            {;
+            {
+              ;
               break;
             }
           default:

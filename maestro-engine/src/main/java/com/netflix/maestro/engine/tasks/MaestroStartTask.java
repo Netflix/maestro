@@ -124,8 +124,11 @@ public class MaestroStartTask extends WorkflowSystemTask {
       Map<String, String> stepUuids =
           stepInstanceDao.getAllLatestStepUuidFromAncestors(
               summary.getWorkflowId(), summary.getWorkflowInstanceId());
-      workflow.getWorkflowDefinition().getTaskByRefName(Constants.DEFAULT_START_FORK_STEP_NAME)
-          .getForkTasks().stream()
+      workflow
+          .getWorkflowDefinition()
+          .getTaskByRefName(Constants.DEFAULT_START_FORK_STEP_NAME)
+          .getForkTasks()
+          .stream()
           .flatMap(tasks -> tasks.stream().map(WorkflowTask::getTaskReferenceName))
           .forEach(stepUuids::remove);
       if (!stepUuids.isEmpty()) {

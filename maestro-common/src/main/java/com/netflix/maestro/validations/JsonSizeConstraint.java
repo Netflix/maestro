@@ -117,7 +117,7 @@ public @interface JsonSizeConstraint {
       return l;
     }
 
-    private static class CountingOutputStream extends OutputStream {
+    private static final class CountingOutputStream extends OutputStream {
       private long count;
 
       /** return the number of bytes that have passed through this stream. */

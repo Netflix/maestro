@@ -32,6 +32,10 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test:2.7.+'
 }
 
+bootRun {
+    jvmArgs += ["-Djava.security.manager=allow"]
+}
+
 checkstyle {
     checkstyleIntegrationTest.enabled = false
 }

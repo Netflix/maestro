@@ -357,8 +357,10 @@ public class ForeachStepOverview {
     if (details == null || ancestorMax == null || ancestorMax.intValue() < startInstanceId) {
       return Collections.emptySet();
     }
-    return details.flatten(e -> e == WorkflowInstance.Status.SUCCEEDED)
-        .getOrDefault(WorkflowInstance.Status.SUCCEEDED, Collections.emptyList()).stream()
+    return details
+        .flatten(e -> e == WorkflowInstance.Status.SUCCEEDED)
+        .getOrDefault(WorkflowInstance.Status.SUCCEEDED, Collections.emptyList())
+        .stream()
         .filter(iterId -> iterId >= startInstanceId)
         .collect(Collectors.toSet());
   }

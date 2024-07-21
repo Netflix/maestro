@@ -348,7 +348,8 @@ public class MaestroRunStrategyDao extends CockroachDBBaseDAO {
                       instance.getTimeline(),
                       "When addTerminatedInstance, workflow instance timeline cannot be null for %s",
                       instance.getIdentity())
-                  .getTimelineEvents().stream()
+                  .getTimelineEvents()
+                  .stream()
                   .map(this::toJson)
                   .toArray(String[]::new)));
       int res = wfiStmt.executeUpdate();

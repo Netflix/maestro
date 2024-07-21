@@ -95,7 +95,7 @@ public class JsonConverter {
    * workflowTask.
    */
   @Getter
-  private static class TaskMixIn {
+  private static final class TaskMixIn {
     @JsonSerialize(using = CompressBeanSerDe.Serializer.class)
     @JsonDeserialize(using = CompressBeanSerDe.Deserializer.class)
     private Map<String, Object> inputData;
