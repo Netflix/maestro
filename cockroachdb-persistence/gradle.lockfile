@@ -11,7 +11,6 @@ com.fasterxml.jackson.core:jackson-core:2.11.4=compileClasspath
 com.fasterxml.jackson.core:jackson-databind:2.11.4=compileClasspath
 com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.6.6=compileClasspath
 com.github.rholder:guava-retrying:2.0.0=compileClasspath
-com.github.vmg.protogen:protogen-annotations:1.0.0=compileClasspath
 com.google.code.findbugs:jsr305:2.0.2=compileClasspath
 com.google.guava:guava:19.0=compileClasspath
 com.google.inject.extensions:guice-multibindings:4.1.0=compileClasspath

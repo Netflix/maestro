@@ -1,6 +1,7 @@
 dependencies {
     implementation(conductorDep) {
         exclude group: 'com.google.inject'
+        exclude group: 'com.github.vmg.protogen'
     }
     implementation zipkinDep
 

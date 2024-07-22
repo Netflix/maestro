@@ -1,7 +1,9 @@
 apply plugin: 'java-library'
 
 dependencies {
-    api conductorDep
+    api(conductorDep) {
+        exclude group: 'com.github.vmg.protogen'
+    }
     api hikaricpDep
     api flywayDep
 
