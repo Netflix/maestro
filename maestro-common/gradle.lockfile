@@ -2,10 +2,11 @@
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
 com.cronutils:cron-utils:9.1.8=compileClasspath
-com.fasterxml.jackson.core:jackson-annotations:2.11.4=compileClasspath
-com.fasterxml.jackson.core:jackson-core:2.11.4=compileClasspath
-com.fasterxml.jackson.core:jackson-databind:2.11.4=compileClasspath
-com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.11.4=compileClasspath
+com.fasterxml.jackson.core:jackson-annotations:2.15.4=compileClasspath
+com.fasterxml.jackson.core:jackson-core:2.15.4=compileClasspath
+com.fasterxml.jackson.core:jackson-databind:2.15.4=compileClasspath
+com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.15.4=compileClasspath
+com.fasterxml.jackson:jackson-bom:2.15.4=compileClasspath
 com.mchange:c3p0:0.9.5.4=compileClasspath
 com.mchange:mchange-commons-java:0.2.15=compileClasspath
 com.zaxxer:HikariCP-java7:2.4.13=compileClasspath
@@ -15,5 +16,5 @@ joda-time:joda-time:2.10.14=compileClasspath
 org.projectlombok:lombok:1.18.34=annotationProcessor,compileClasspath
 org.quartz-scheduler:quartz:2.3.2=compileClasspath
 org.slf4j:slf4j-api:1.7.30=compileClasspath
-org.yaml:snakeyaml:1.26=compileClasspath
+org.yaml:snakeyaml:2.1=compileClasspath
 empty=
