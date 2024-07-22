@@ -42,7 +42,8 @@ public class StepOutputsDefinitionTest extends MaestroBaseTest {
     Assert.assertEquals(
         loadJson("fixtures/step_outputs/step_outputs_definition.json")
             .replace("\n", "")
-            .replace(" ", ""),
+            .replace(" ", "")
+            .replace("\r", ""),
         MAPPER.writeValueAsString(
             MAPPER.readValue(
                 loadJson("fixtures/step_outputs/step_outputs_definition.json"),

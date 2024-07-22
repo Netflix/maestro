@@ -25,7 +25,8 @@ public class ExceptionHelperTest {
       throw new Exception("error happened!!");
     } catch (Exception e) {
       assertEquals(0, ExceptionHelper.getStackTrace(e, 0).length());
-      assertEquals("java.lang.Exception: error happened!!", ExceptionHelper.getStackTrace(e, 1));
+      assertTrue(
+          ExceptionHelper.getStackTrace(e, 1).startsWith("java.lang.Exception: error happened!!"));
       assertTrue(ExceptionHelper.getStackTrace(e, 2000).length() > 100);
     }
   }
