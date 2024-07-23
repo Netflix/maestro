@@ -15,10 +15,10 @@ It is simple, secure, and safe.
 
 ## SEL Language guide
 
-* [Getting started](lang-guide/getting-started.md)
-* [Data types](lang-guide/data-type.md)
-* [Operators](lang-guide/operator.md)
-* [Expressions](lang-guide/expression.md)
-* [Statements](lang-guide/statement.md)
-* [Supported classes](lang-guide/class-function.md)
-* [Examples](lang-guide/example.md)
+* [Getting started](docs/lang-guide/getting-started.md)
+* [Data types](docs/lang-guide/data-type.md)
+* [Operators](docs/lang-guide/operator.md)
+* [Expressions](docs/lang-guide/expression.md)
+* [Statements](docs/lang-guide/statement.md)
+* [Supported classes](docs/lang-guide/class-function.md)
+* [Examples](docs/lang-guide/example.md)
