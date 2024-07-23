@@ -1,0 +1,22 @@
+name: Build Maestro
+on:
+  push:
+    branches:
+      - '*'
+    tags:
+      - v*.*.*
+      - v*.*.*-rc.*
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+      - name: Gradle build
+        run: ./gradlew build
