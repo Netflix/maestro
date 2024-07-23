@@ -32,6 +32,12 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test:2.7.+'
 }
 
+bootJar {
+    layered {
+        enabled = true
+    }
+}
+
 bootRun {
     jvmArgs += ["-Djava.security.manager=allow"]
 }
