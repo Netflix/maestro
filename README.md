@@ -10,6 +10,8 @@ It schedules hundreds of thousands of workflows, millions of jobs every day
 and operate with a strict SLO even when there are spikes in the traffic.
 Maestro is highly scalable and extensible to support existing and new use cases and offers enhanced usability to end users.
 
+You can read more details about it in our latest [blog post](https://netflixtechblog.com/maestro-netflixs-workflow-orchestrator-ee13a06f9c78).
+
 # Get started
 ## Prerequisite
 - Git
