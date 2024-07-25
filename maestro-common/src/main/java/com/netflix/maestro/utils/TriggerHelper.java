@@ -23,6 +23,7 @@ import com.netflix.maestro.models.trigger.PredefinedTimeTrigger;
 import com.netflix.maestro.models.trigger.TimeTrigger;
 import com.netflix.maestro.models.trigger.TimeTriggerWithJitter;
 import java.text.ParseException;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.Optional;
 import java.util.Random;
@@ -31,7 +32,6 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.joda.time.DateTimeZone;
 import org.quartz.CronExpression;
 
 /** Cron Helper utility class. * */
@@ -60,7 +60,7 @@ public final class TriggerHelper {
    * @throws ParseException parse error
    */
   public static CronExpression buildCron(String cron, String timezone) throws ParseException {
-    return buildCron(cron, DateTimeZone.forID(timezone).toTimeZone());
+    return buildCron(cron, TimeZone.getTimeZone(ZoneId.of(timezone)));
   }
 
   /**
