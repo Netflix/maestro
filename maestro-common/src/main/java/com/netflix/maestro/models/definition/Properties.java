@@ -20,9 +20,9 @@ import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.utils.Checks;
 import com.netflix.maestro.validations.TagListConstraint;
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 /**

@@ -14,7 +14,7 @@ package com.netflix.maestro.server.validations;
 
 import com.netflix.maestro.models.definition.Alerting;
 import com.netflix.maestro.validations.AlertingValidator;
-import javax.validation.ConstraintValidatorContext;
+import jakarta.validation.ConstraintValidatorContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;

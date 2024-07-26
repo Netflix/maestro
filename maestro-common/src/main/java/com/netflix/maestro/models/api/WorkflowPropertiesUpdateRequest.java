@@ -25,7 +25,7 @@ import com.netflix.maestro.models.definition.Properties;
 import com.netflix.maestro.models.definition.RunStrategy;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.validations.PropertiesConstraint;
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import lombok.Data;
 
 /** Request to update workflow properties. */

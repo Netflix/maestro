@@ -26,10 +26,10 @@ import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.trigger.SignalTrigger;
 import com.netflix.maestro.models.trigger.TimeTrigger;
 import com.netflix.maestro.utils.Checks;
+import jakarta.validation.constraints.NotNull;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import javax.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Getter;
 

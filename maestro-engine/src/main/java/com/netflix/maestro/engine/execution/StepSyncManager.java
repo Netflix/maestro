@@ -19,8 +19,8 @@ import com.netflix.maestro.engine.publisher.MaestroJobEventPublisher;
 import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.models.error.Details;
 import com.netflix.maestro.models.instance.StepInstance;
+import jakarta.validation.constraints.NotNull;
 import java.util.Optional;
-import javax.validation.constraints.NotNull;
 
 /**
  * Step synchronization manager to write the update to maestro step instance table and also publish

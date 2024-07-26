@@ -15,11 +15,13 @@ configurations {
 }
 
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-web:2.7.+'
+    implementation 'org.springframework.boot:spring-boot-starter-web:3.3.+'
+    implementation 'org.springframework.boot:spring-boot-starter-validation:3.3.+'
 
     implementation hikaricpDep
     implementation postgresqlDep
     implementation flywayDep
+    implementation jakartaServletDep
     implementation 'io.swagger.core.v3:swagger-annotations:2.+'
     implementation 'org.springframework.cloud:spring-cloud-starter-sleuth:3.+'
     runtimeOnly testcontainerDep
@@ -29,7 +31,7 @@ dependencies {
     implementation project(':cockroachdb-persistence')
     implementation project(':netflix-sel')
 
-    testImplementation 'org.springframework.boot:spring-boot-starter-test:2.7.+'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test:3.3.+'
 }
 
 bootRun {

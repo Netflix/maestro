@@ -20,13 +20,14 @@ import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.exceptions.MaestroInvalidStatusException;
 import com.netflix.maestro.exceptions.MaestroRuntimeException;
 import com.netflix.maestro.models.error.Details;
+import jakarta.validation.ValidationException;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.validation.ValidationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -102,7 +103,7 @@ public class MaestroRestExceptionHandler extends ResponseEntityExceptionHandler 
   protected ResponseEntity<Object> handleMethodArgumentNotValid(
       MethodArgumentNotValidException e,
       HttpHeaders headers,
-      HttpStatus status,
+      HttpStatusCode status,
       WebRequest request) {
     LOG.info("Handle MethodArgumentNotValidException with a message: {}", e.getMessage());
     List<String> errors =
@@ -116,7 +117,7 @@ public class MaestroRestExceptionHandler extends ResponseEntityExceptionHandler 
   protected ResponseEntity<Object> handleHttpMessageNotReadable(
       HttpMessageNotReadableException e,
       HttpHeaders headers,
-      HttpStatus status,
+      HttpStatusCode status,
       WebRequest request) {
     LOG.info("Handle HttpMessageNotReadableException with a message: {}", e.getMessage());
     return buildDetailedResponse(e, Collections.emptyList(), headers, request);

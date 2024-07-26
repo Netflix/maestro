@@ -24,8 +24,8 @@ import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.utils.HashHelper;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)

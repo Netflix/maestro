@@ -16,8 +16,8 @@ import com.fasterxml.jackson.databind.node.LongNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.Duration;
+import jakarta.validation.ConstraintViolation;
 import java.util.Set;
-import javax.validation.ConstraintViolation;
 import org.junit.Assert;
 import org.junit.Test;
 

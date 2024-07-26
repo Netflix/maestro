@@ -17,11 +17,9 @@ import java.util.Locale;
 import java.util.Map;
 import lombok.AllArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.ConstructorBinding;
 
 /** Conductor configuration properties. */
 @AllArgsConstructor
-@ConstructorBinding
 @ConfigurationProperties(prefix = "conductor")
 public class ConductorProperties extends MaestroConductorProperties {
 

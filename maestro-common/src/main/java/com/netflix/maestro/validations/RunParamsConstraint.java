@@ -14,6 +14,10 @@ package com.netflix.maestro.validations;
 
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.parameter.ParamDefinition;
+import jakarta.validation.Constraint;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
+import jakarta.validation.Payload;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -21,10 +25,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.Map;
 import java.util.Optional;
-import javax.validation.Constraint;
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
-import javax.validation.Payload;
 
 /** Maestro validation for user provided run parameter definition during restart or start. */
 @Documented

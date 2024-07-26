@@ -36,6 +36,7 @@ import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.timeline.TimelineEvent;
 import com.netflix.maestro.models.timeline.TimelineLogEvent;
 import com.netflix.maestro.utils.Checks;
+import jakarta.validation.constraints.NotNull;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -49,7 +50,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.sql.DataSource;
-import javax.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**

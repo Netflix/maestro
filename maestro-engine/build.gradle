@@ -3,6 +3,8 @@ dependencies {
         exclude group: 'com.google.inject'
         exclude group: 'com.github.vmg.protogen'
     }
+    implementation jakartaValidationDep
+    implementation bvalJsrDep
     implementation zipkinDep
 
     implementation project(':maestro-common')

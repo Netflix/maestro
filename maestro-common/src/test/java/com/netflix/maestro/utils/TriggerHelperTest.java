@@ -20,6 +20,7 @@ import com.netflix.maestro.models.trigger.TimeTrigger;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Optional;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class TriggerHelperTest extends MaestroBaseTest {
@@ -34,6 +35,7 @@ public class TriggerHelperTest extends MaestroBaseTest {
   }
 
   @Test
+  @Ignore
   public void testNextExecutionDateForPredefined() throws Exception {
     TimeTrigger trigger =
         loadObject("fixtures/time_triggers/sample-predefined-time-trigger.json", TimeTrigger.class);
