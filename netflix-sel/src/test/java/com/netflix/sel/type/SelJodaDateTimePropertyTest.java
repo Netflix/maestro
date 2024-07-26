@@ -15,6 +15,12 @@ package com.netflix.sel.type;
 import static org.junit.Assert.*;
 
 import com.netflix.sel.visitor.SelOp;
+import java.time.DayOfWeek;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.TextStyle;
+import java.util.Locale;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
@@ -59,13 +65,20 @@ public class SelJodaDateTimePropertyTest {
   @Test
   public void testCalls() {
     SelType res = one.call("getAsText", new SelType[0]);
-    assertEquals("STRING: Thursday", res.type() + ": " + res);
+    assertEquals("STRING: " + this.getLocalDayOfWeek(), res.type() + ": " + res);
     res = one.call("withMinimumValue", new SelType[0]);
     assertEquals("DATETIME: 1969-12-29T00:00:12.345Z", res.type() + ": " + res);
     res = one.call("withMaximumValue", new SelType[0]);
     assertEquals("DATETIME: 1970-01-04T00:00:12.345Z", res.type() + ": " + res);
     res = one.call("get", new SelType[0]);
     assertEquals("LONG: 4", res.type() + ": " + res);
+  }
+
+  private String getLocalDayOfWeek() {
+    Instant temporal = Instant.ofEpochMilli(DateTimeUtils.currentTimeMillis());
+    ZonedDateTime zonedDateTime = temporal.atZone(ZoneId.systemDefault());
+    DayOfWeek dayOfWeek = zonedDateTime.getDayOfWeek();
+    return dayOfWeek.getDisplayName(TextStyle.FULL, Locale.getDefault());
   }
 
   @Test(expected = UnsupportedOperationException.class)
