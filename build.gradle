@@ -39,7 +39,7 @@ allprojects {
     }
 
     test {
-        jvmArgs += ["-Djava.security.manager=allow"]
+        jvmArgs += ["-Djava.security.manager=allow", "-Duser.language=en", "-Duser.country=US"]
     }
 
     configurations.configureEach {
