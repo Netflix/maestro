@@ -14,6 +14,7 @@ package com.netflix.sel.type;
 
 import com.netflix.sel.visitor.SelOp;
 import java.util.Arrays;
+import java.util.Locale;
 import org.joda.time.DateTime;
 
 /** Wrapper class to support org.joda.time.DateTime.Property. */
@@ -52,7 +53,7 @@ public final class SelJodaDateTimeProperty extends AbstractSelType {
   public SelType call(String methodName, SelType[] args) {
     if (args.length == 0) {
       if ("getAsText".equals(methodName)) {
-        return SelString.of(val.getAsText());
+        return SelString.of(val.getAsText(Locale.US));
       } else if ("withMinimumValue".equals(methodName)) {
         return SelJodaDateTime.of(val.withMinimumValue());
       } else if ("withMaximumValue".equals(methodName)) {
