@@ -1280,12 +1280,10 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
     assertNotNull(resetNotAllowed.getStepConcurrency());
     assertNotNull(resetNotAllowed.getOwner());
 
-    // alerting, description, run strategy, step concurrency will get reset when it's
-    // add_workflow path
+    // alerting, run strategy, step concurrency will get reset when it's add_workflow path
     Properties resetAllowed =
         new PropertiesUpdate(Type.ADD_WORKFLOW_DEFINITION).getNewProperties(newProps, ps);
     assertNull(resetAllowed.getAlerting());
-    assertNull(resetAllowed.getDescription());
     assertNull(resetAllowed.getRunStrategy());
     assertNull(resetAllowed.getStepConcurrency());
 
