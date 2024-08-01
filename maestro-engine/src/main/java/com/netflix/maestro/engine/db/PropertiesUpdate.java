@@ -170,9 +170,6 @@ public class PropertiesUpdate {
         Properties currentProperties = prevSnapshot.extractProperties();
 
         // If certain properties are undefined in newly pushed wf definition, reset them
-        if (newProperties.getDescription() == null) {
-          currentProperties.setDescription(null);
-        }
         if (newProperties.getRunStrategy() == null) {
           currentProperties.setRunStrategy(null);
         }
