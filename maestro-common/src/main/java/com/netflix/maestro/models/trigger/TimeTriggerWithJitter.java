@@ -14,7 +14,7 @@ package com.netflix.maestro.models.trigger;
 
 import com.netflix.maestro.models.definition.Duration;
 import com.netflix.maestro.validations.TimeoutConstraint;
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import lombok.Data;
 
 @Data

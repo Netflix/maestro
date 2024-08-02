@@ -24,9 +24,9 @@ import com.netflix.maestro.models.definition.Properties;
 import com.netflix.maestro.models.definition.Workflow;
 import com.netflix.maestro.validations.PropertiesConstraint;
 import com.netflix.maestro.validations.WorkflowConstraint;
+import jakarta.validation.Valid;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import javax.validation.Valid;
 import lombok.Data;
 
 /** Request to create a workflow definition. */

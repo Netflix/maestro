@@ -27,8 +27,8 @@ import com.netflix.maestro.models.events.WorkflowDeactivationChangeEvent;
 import com.netflix.maestro.models.events.WorkflowDefinitionChangeEvent;
 import com.netflix.maestro.models.events.WorkflowPropertiesChangeEvent;
 import com.netflix.maestro.models.events.WorkflowVersionChangeEvent;
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 /** Workflow definition pending event schema. It will be persisted to DB and sent internally. */

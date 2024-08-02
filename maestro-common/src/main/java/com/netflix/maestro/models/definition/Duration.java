@@ -21,8 +21,8 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.utils.Checks;
+import jakarta.validation.constraints.NotNull;
 import java.io.IOException;
-import javax.validation.constraints.NotNull;
 import lombok.Data;
 
 /** Duration data model for workflow and step timeout configurations. */

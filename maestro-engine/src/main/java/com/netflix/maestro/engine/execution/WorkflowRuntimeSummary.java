@@ -22,9 +22,9 @@ import com.netflix.maestro.models.instance.WorkflowRollupOverview;
 import com.netflix.maestro.models.instance.WorkflowRuntimeOverview;
 import com.netflix.maestro.models.timeline.Timeline;
 import com.netflix.maestro.models.timeline.TimelineEvent;
+import jakarta.validation.Valid;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import javax.validation.Valid;
 import lombok.Data;
 
 /**

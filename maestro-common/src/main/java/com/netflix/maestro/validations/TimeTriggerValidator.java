@@ -13,7 +13,7 @@
 package com.netflix.maestro.validations;
 
 import com.netflix.maestro.models.trigger.TimeTrigger;
-import javax.validation.ConstraintValidatorContext;
+import jakarta.validation.ConstraintValidatorContext;
 
 /** Interface for validating time triggers in workflow definition. */
 public interface TimeTriggerValidator {

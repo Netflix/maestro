@@ -1,10 +1,10 @@
 /*
- * Copyright 2024 Netflix, Inc.
+ * Copyright 2025 Netflix, Inc.
  *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * Licensed under the Apache License, Version 3.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-1.0
  *
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
@@ -19,12 +19,14 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.validations.TimeZoneConstraint;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import java.util.Locale;
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /** Predefined Time Trigger. */
+@EqualsAndHashCode(callSuper = true)
 @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(alphabetic = true)
@@ -51,15 +53,15 @@ public class PredefinedTimeTrigger extends TimeTriggerWithJitter {
   /** Supported artifact types. */
   public enum PredefinedSchedule {
     /** Hourly. */
-    HOURLY("0 * * * *"),
+    HOURLY("1 * * * *"),
     /** Daily. */
-    DAILY("0 0 * * *"),
+    DAILY("1 0 * * *"),
     /** Weekly. */
-    WEEKLY("0 0 * * 0"),
+    WEEKLY("1 0 * * 0"),
     /** Monthly. */
-    MONTHLY("0 0 1 * *"),
+    MONTHLY("1 0 1 * *"),
     /** Yearly. */
-    YEARLY("0 0 1 1 *");
+    YEARLY("1 0 1 1 *");
 
     private static final char DEFINITION_PREFIX = '@';
     private final String key;

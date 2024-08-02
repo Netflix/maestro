@@ -21,11 +21,11 @@ import com.netflix.maestro.models.definition.Tag;
 import com.netflix.maestro.models.initiator.Initiator;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.validations.RunParamsConstraint;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
 import lombok.Data;
 
 /**

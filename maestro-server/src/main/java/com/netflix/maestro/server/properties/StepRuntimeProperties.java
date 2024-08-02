@@ -20,12 +20,10 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.ConstructorBinding;
 
 /** Properties for step runtime. */
 @AllArgsConstructor
 @Getter
-@ConstructorBinding
 @ConfigurationProperties(prefix = "stepruntime")
 @ToString
 public class StepRuntimeProperties {

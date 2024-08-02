@@ -18,10 +18,12 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.validations.CronConstraint;
 import com.netflix.maestro.validations.TimeZoneConstraint;
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /** Cron based time trigger. */
+@EqualsAndHashCode(callSuper = true)
 @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(alphabetic = true)

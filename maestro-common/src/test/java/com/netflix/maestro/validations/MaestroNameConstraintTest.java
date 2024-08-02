@@ -16,9 +16,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 import com.netflix.maestro.models.Constants;
+import jakarta.validation.ConstraintViolation;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import javax.validation.ConstraintViolation;
 import org.junit.Test;
 
 public class MaestroNameConstraintTest extends BaseConstraintTest {

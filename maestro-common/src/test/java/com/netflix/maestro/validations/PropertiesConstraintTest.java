@@ -19,8 +19,8 @@ import com.netflix.maestro.models.definition.Properties;
 import com.netflix.maestro.models.definition.RunStrategy;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.TypedStep;
+import jakarta.validation.ConstraintViolation;
 import java.util.Set;
-import javax.validation.ConstraintViolation;
 import org.junit.Test;
 
 public class PropertiesConstraintTest extends BaseConstraintTest {

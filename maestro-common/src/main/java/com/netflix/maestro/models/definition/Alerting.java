@@ -25,13 +25,13 @@ import com.netflix.maestro.models.definition.alerting.BypassDigestConfig;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.validations.TctConstraint;
+import jakarta.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import javax.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.Getter;
 

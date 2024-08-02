@@ -19,11 +19,11 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.netflix.maestro.models.instance.StepInstance;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
-import javax.validation.Valid;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -59,22 +59,22 @@ public class StepInstanceStatusChangeEvent implements MaestroEvent {
   @NotNull private final String workflowId;
 
   @Min(1)
-  private final long workflowInstanceId;
+  private final Long workflowInstanceId;
 
   @Min(1)
-  private final long workflowRunId;
+  private final Long workflowRunId;
 
   @NotNull private final String stepId;
 
   @Min(1)
-  private final long stepAttemptId;
+  private final Long stepAttemptId;
 
   @NotNull private final String workflowUuid;
   @NotNull private final String stepUuid; // internal UUID to identify this step run
   @NotNull private final String correlationId; // default to the workflow instance uuid
 
   @Min(1)
-  private final long stepInstanceId; // step sequence number.
+  private final Long stepInstanceId; // step sequence number.
 
   @NotNull private final String clusterName;
 

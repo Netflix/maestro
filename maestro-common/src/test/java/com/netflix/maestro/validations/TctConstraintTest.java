@@ -15,8 +15,8 @@ package com.netflix.maestro.validations;
 import static org.junit.Assert.assertEquals;
 
 import com.netflix.maestro.models.definition.Tct;
+import jakarta.validation.ConstraintViolation;
 import java.util.Set;
-import javax.validation.ConstraintViolation;
 import org.junit.Test;
 
 public class TctConstraintTest extends BaseConstraintTest {

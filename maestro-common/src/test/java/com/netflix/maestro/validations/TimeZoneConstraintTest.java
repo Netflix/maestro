@@ -15,8 +15,8 @@ package com.netflix.maestro.validations;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 
+import jakarta.validation.ConstraintViolation;
 import java.util.Set;
-import javax.validation.ConstraintViolation;
 import org.junit.Test;
 
 public class TimeZoneConstraintTest extends BaseConstraintTest {

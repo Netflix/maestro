@@ -19,8 +19,8 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.events.MaestroEvent;
 import com.netflix.maestro.models.events.WorkflowDeletionChangeEvent;
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 /**

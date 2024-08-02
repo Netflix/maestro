@@ -13,8 +13,8 @@
 package com.netflix.maestro.validations;
 
 import com.netflix.maestro.MaestroBaseTest;
-import javax.validation.Validation;
-import javax.validation.Validator;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 import org.junit.Before;
 
 public abstract class BaseConstraintTest extends MaestroBaseTest {

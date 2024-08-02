@@ -23,14 +23,14 @@ import com.netflix.maestro.models.definition.TagList;
 import com.netflix.maestro.models.events.WorkflowInstanceStatusChangeEvent;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.validations.TagListConstraint;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.validation.Valid;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 import lombok.Data;
 
 /** Workflow instance pending change event schema. */
