@@ -12,12 +12,14 @@
  */
 package com.netflix.maestro.utils;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.MaestroBaseTest;
 import com.netflix.maestro.models.trigger.TimeTrigger;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.Optional;
 import org.junit.Test;
@@ -28,18 +30,22 @@ public class TriggerHelperTest extends MaestroBaseTest {
   public void testNextExecutionDateForCron() throws Exception {
     TimeTrigger trigger =
         loadObject("fixtures/time_triggers/sample-cron-time-trigger.json", TimeTrigger.class);
-    Optional<Date> actual =
+    Optional<ZonedDateTime> actual =
         TriggerHelper.nextExecutionDate(trigger, Date.from(Instant.EPOCH), "test-id");
-    assertEquals(Optional.of(Date.from(Instant.ofEpochSecond(72000))), actual);
+    ZonedDateTime expected =
+        ZonedDateTime.ofInstant(Instant.ofEpochSecond(72000), ZoneId.of(trigger.getTimezone()));
+    assertEquals(Optional.of(expected), actual);
   }
 
   @Test
   public void testNextExecutionDateForPredefined() throws Exception {
     TimeTrigger trigger =
         loadObject("fixtures/time_triggers/sample-predefined-time-trigger.json", TimeTrigger.class);
-    Optional<Date> actual =
+    Optional<ZonedDateTime> actual =
         TriggerHelper.nextExecutionDate(trigger, Date.from(Instant.EPOCH), "test-id");
-    assertEquals(Optional.of(Date.from(Instant.ofEpochSecond(28800))), actual);
+    ZonedDateTime expected =
+        ZonedDateTime.ofInstant(Instant.ofEpochSecond(28800), ZoneId.of(trigger.getTimezone()));
+    assertEquals(Optional.of(expected), actual);
   }
 
   @Test

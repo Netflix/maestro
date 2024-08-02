@@ -21,6 +21,7 @@ import com.netflix.maestro.models.definition.WorkflowDefinition;
 import com.netflix.maestro.models.definition.WorkflowDefinitionExtras;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.utils.TriggerHelper;
+import java.time.ZonedDateTime;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -72,7 +73,7 @@ public class WorkflowEnrichmentHelper {
       return;
     }
     Date now = new Date();
-    Optional<Date> earliestDate =
+    Optional<ZonedDateTime> earliestDate =
         workflowDefinition.getWorkflow().getTimeTriggers().stream()
             .map(
                 trigger ->
@@ -81,7 +82,8 @@ public class WorkflowEnrichmentHelper {
             .filter(Optional::isPresent)
             .map(Optional::get)
             .min(Comparator.naturalOrder());
-    earliestDate.ifPresent(date -> enrichedWorkflowExtras.setNextExecutionTime(date.getTime()));
+    earliestDate.ifPresent(
+        date -> enrichedWorkflowExtras.setNextExecutionTime(date.toEpochSecond()));
 
     enrichedWorkflowExtras.setNextExecutionTimes(
         workflowDefinition.getWorkflow().getTimeTriggers().stream()
@@ -89,7 +91,7 @@ public class WorkflowEnrichmentHelper {
                 trigger ->
                     TriggerHelper.nextExecutionDate(
                         trigger, now, workflowDefinition.getWorkflow().getId()))
-            .map(date -> date.map(Date::getTime).orElse(null))
+            .map(date -> date.map(ZonedDateTime::toEpochSecond).orElse(null))
             .collect(Collectors.toList()));
   }
 }

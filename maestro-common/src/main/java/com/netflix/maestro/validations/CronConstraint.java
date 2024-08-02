@@ -12,13 +12,13 @@
  */
 package com.netflix.maestro.validations;
 
+import com.cronutils.model.Cron;
 import com.netflix.maestro.utils.TriggerHelper;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.text.ParseException;
 import javax.validation.Constraint;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
@@ -52,14 +52,12 @@ public @interface CronConstraint {
             .addConstraintViolation();
         return false;
       }
-      try {
-        TriggerHelper.buildCron(cronExpression);
-      } catch (ParseException e) {
+      Cron cron = TriggerHelper.buildCron(cronExpression);
+      if (cron == null) {
         context
             .buildConstraintViolationWithTemplate(
                 String.format(
-                    "[cron expression] is not valid - rejected value is [%s] - error: [%s]",
-                    cronExpression, e.getMessage()))
+                    "[cron expression] is not valid - rejected value is [%s]", cronExpression))
             .addConstraintViolation();
         return false;
       }
