@@ -80,7 +80,7 @@ public class StepInstanceActionHandlerTest extends MaestroEngineBaseTest {
             .restartConfig(
                 RestartConfig.builder().addRestartNode("sample-minimal-wf", 1, "job1").build())
             .build();
-    RunResponse response = stepActionHandler.restart(runRequest);
+    RunResponse response = stepActionHandler.restart(runRequest, true);
 
     ArgumentCaptor<RunRequest> requestCaptor = ArgumentCaptor.forClass(RunRequest.class);
     Mockito.verify(actionHandler, Mockito.times(1)).restartRecursively(requestCaptor.capture());
@@ -104,7 +104,7 @@ public class StepInstanceActionHandlerTest extends MaestroEngineBaseTest {
     RunResponse runResponse =
         RunResponse.builder().status(RunResponse.Status.STEP_ATTEMPT_CREATED).build();
     when(actionDao.restartDirectly(any(), any(), anyBoolean())).thenReturn(runResponse);
-    RunResponse response = stepActionHandler.restart(runRequest);
+    RunResponse response = stepActionHandler.restart(runRequest, true);
 
     ArgumentCaptor<RunRequest> requestCaptor = ArgumentCaptor.forClass(RunRequest.class);
     Mockito.verify(actionHandler, Mockito.times(1)).restartRecursively(requestCaptor.capture());
@@ -158,7 +158,7 @@ public class StepInstanceActionHandlerTest extends MaestroEngineBaseTest {
                     .build())
             .build();
 
-    RunResponse response = stepActionHandler.restart(runRequest);
+    RunResponse response = stepActionHandler.restart(runRequest, true);
 
     ArgumentCaptor<RunRequest> requestCaptor = ArgumentCaptor.forClass(RunRequest.class);
     Mockito.verify(actionHandler, Mockito.times(1)).restartRecursively(requestCaptor.capture());
@@ -204,7 +204,7 @@ public class StepInstanceActionHandlerTest extends MaestroEngineBaseTest {
                     .build())
             .build();
 
-    RunResponse response = stepActionHandler.restart(runRequest);
+    RunResponse response = stepActionHandler.restart(runRequest, true);
 
     ArgumentCaptor<RunRequest> requestCaptor = ArgumentCaptor.forClass(RunRequest.class);
     Mockito.verify(actionHandler, Mockito.times(1)).restartRecursively(requestCaptor.capture());
@@ -238,7 +238,7 @@ public class StepInstanceActionHandlerTest extends MaestroEngineBaseTest {
         "Cannot restart from inline root for non-terminal root",
         IllegalArgumentException.class,
         "instance [null] is in non-terminal state [IN_PROGRESS]",
-        () -> stepActionHandler.restart(runRequest));
+        () -> stepActionHandler.restart(runRequest, true));
 
     when(instance.getStatus()).thenReturn(WorkflowInstance.Status.FAILED);
     WorkflowInstanceAggregatedInfo aggregatedInfo = mock(WorkflowInstanceAggregatedInfo.class);
@@ -250,14 +250,14 @@ public class StepInstanceActionHandlerTest extends MaestroEngineBaseTest {
         "Cannot restart from inline root for non-terminal step",
         IllegalArgumentException.class,
         "step null[job1] is in non-terminal state [RUNNING]",
-        () -> stepActionHandler.restart(runRequest));
+        () -> stepActionHandler.restart(runRequest, true));
 
     when(aggregatedView.getStatus()).thenReturn(StepInstance.Status.FATALLY_FAILED);
     AssertHelper.assertThrows(
         "Cannot restart from inline root for invalid restart path",
         IllegalArgumentException.class,
         "restart-path size is not 1",
-        () -> stepActionHandler.restart(runRequest));
+        () -> stepActionHandler.restart(runRequest, true));
   }
 
   @Test
@@ -291,7 +291,7 @@ public class StepInstanceActionHandlerTest extends MaestroEngineBaseTest {
     when(aggregatedInfo.getStepAggregatedViews()).thenReturn(singletonMap("job1", aggregatedView));
     when(instance.getStatus()).thenReturn(WorkflowInstance.Status.IN_PROGRESS);
     when(aggregatedView.getStatus()).thenReturn(StepInstance.Status.RUNNING);
-    stepActionHandler.skip("sample-minimal-wf", 1, "job1", user, null);
+    stepActionHandler.skip("sample-minimal-wf", 1, "job1", user, null, true);
     verify(actionDao, times(1)).terminate(instance, "job1", user, Actions.StepInstanceAction.SKIP);
   }
 
@@ -321,7 +321,7 @@ public class StepInstanceActionHandlerTest extends MaestroEngineBaseTest {
         .thenReturn(RunResponse.builder().status(RunResponse.Status.DELEGATED).build());
     when(actionDao.restartDirectly(any(), eq(runRequest), eq(true)))
         .thenReturn(RunResponse.builder().status(RunResponse.Status.STEP_ATTEMPT_CREATED).build());
-    stepActionHandler.skip("sample-minimal-wf", 1, "job1", user, runRequest);
+    stepActionHandler.skip("sample-minimal-wf", 1, "job1", user, runRequest, true);
     verify(actionDao, times(0)).terminate(instance, "job1", user, Actions.StepInstanceAction.SKIP);
     verify(actionHandler, times(1)).restartRecursively(runRequest);
     verify(actionDao, times(1)).restartDirectly(any(), eq(runRequest), eq(true));
@@ -338,7 +338,7 @@ public class StepInstanceActionHandlerTest extends MaestroEngineBaseTest {
     when(aggregatedInfo.getStepAggregatedViews()).thenReturn(singletonMap("job1", aggregatedView));
     when(instance.getStatus()).thenReturn(WorkflowInstance.Status.IN_PROGRESS);
     when(aggregatedView.getStatus()).thenReturn(StepInstance.Status.PLATFORM_FAILED);
-    stepActionHandler.skip("sample-minimal-wf", 1, "job1", user, null);
+    stepActionHandler.skip("sample-minimal-wf", 1, "job1", user, null, true);
     verify(actionDao, times(1)).terminate(instance, "job1", user, Actions.StepInstanceAction.SKIP);
   }
 
@@ -367,7 +367,7 @@ public class StepInstanceActionHandlerTest extends MaestroEngineBaseTest {
             .build();
     when(actionHandler.restartRecursively(runRequest))
         .thenReturn(RunResponse.builder().status(RunResponse.Status.WORKFLOW_RUN_CREATED).build());
-    stepActionHandler.skip("sample-minimal-wf", 1, "job1", user, runRequest);
+    stepActionHandler.skip("sample-minimal-wf", 1, "job1", user, runRequest, true);
     verify(actionDao, times(0)).terminate(instance, "job1", user, Actions.StepInstanceAction.SKIP);
     verify(actionHandler, times(1)).restartRecursively(runRequest);
     verify(actionDao, times(0)).restartDirectly(any(), eq(runRequest), eq(true));
@@ -388,20 +388,20 @@ public class StepInstanceActionHandlerTest extends MaestroEngineBaseTest {
         "Cannot find status in aggregated step views",
         NullPointerException.class,
         "Invalid: cannot find the step view of workflow step ",
-        () -> stepActionHandler.skip("sample-minimal-wf", 1, "job2", user, null));
+        () -> stepActionHandler.skip("sample-minimal-wf", 1, "job2", user, null, true));
 
     when(aggregatedView.getStatus()).thenReturn(StepInstance.Status.NOT_CREATED);
     AssertHelper.assertThrows(
         "Cannot skip not-created step",
         MaestroBadRequestException.class,
         "Cannot skip step [sample-minimal-wf][1][job1] before it is created. Please try it again.",
-        () -> stepActionHandler.skip("sample-minimal-wf", 1, "job1", user, null));
+        () -> stepActionHandler.skip("sample-minimal-wf", 1, "job1", user, null, true));
 
     when(aggregatedView.getStatus()).thenReturn(StepInstance.Status.CREATED);
     AssertHelper.assertThrows(
         "Cannot skip not-created step",
         MaestroBadRequestException.class,
         "Cannot skip step [sample-minimal-wf][1][job1] because it is unsupported by the step action map",
-        () -> stepActionHandler.skip("sample-minimal-wf", 1, "job1", user, null));
+        () -> stepActionHandler.skip("sample-minimal-wf", 1, "job1", user, null, true));
   }
 }
