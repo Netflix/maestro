@@ -263,21 +263,21 @@ public class StepInstanceActionHandlerTest extends MaestroEngineBaseTest {
   @Test
   public void testTerminate() {
     when(instance.getStatus()).thenReturn(WorkflowInstance.Status.IN_PROGRESS);
-    stepActionHandler.terminate("sample-minimal-wf", 1, "job1", user, STOP);
-    verify(actionDao, times(1)).terminate(instance, "job1", user, STOP);
+    stepActionHandler.terminate("sample-minimal-wf", 1, "job1", user, STOP, true);
+    verify(actionDao, times(1)).terminate(instance, "job1", user, STOP, true);
     when(instance.getStatus()).thenReturn(WorkflowInstance.Status.FAILED);
     AssertHelper.assertThrows(
         "Cannot manually terminate the step",
         MaestroInvalidStatusException.class,
         "Cannot manually STOP the step [job1] as the workflow instance",
-        () -> stepActionHandler.terminate("sample-minimal-wf", 1, "job1", user, STOP));
+        () -> stepActionHandler.terminate("sample-minimal-wf", 1, "job1", user, STOP, true));
   }
 
   @Test
   public void testBypassDependencies() {
     when(instance.getStatus()).thenReturn(WorkflowInstance.Status.IN_PROGRESS);
-    stepActionHandler.bypassStepDependencies("sample-minimal-wf", 1, "job1", user);
-    verify(actionDao, times(1)).bypassStepDependencies(instance, "job1", user);
+    stepActionHandler.bypassStepDependencies("sample-minimal-wf", 1, "job1", user, true);
+    verify(actionDao, times(1)).bypassStepDependencies(instance, "job1", user, true);
   }
 
   @Test
@@ -292,7 +292,8 @@ public class StepInstanceActionHandlerTest extends MaestroEngineBaseTest {
     when(instance.getStatus()).thenReturn(WorkflowInstance.Status.IN_PROGRESS);
     when(aggregatedView.getStatus()).thenReturn(StepInstance.Status.RUNNING);
     stepActionHandler.skip("sample-minimal-wf", 1, "job1", user, null, true);
-    verify(actionDao, times(1)).terminate(instance, "job1", user, Actions.StepInstanceAction.SKIP);
+    verify(actionDao, times(1))
+        .terminate(instance, "job1", user, Actions.StepInstanceAction.SKIP, true);
   }
 
   @Test
@@ -322,7 +323,8 @@ public class StepInstanceActionHandlerTest extends MaestroEngineBaseTest {
     when(actionDao.restartDirectly(any(), eq(runRequest), eq(true)))
         .thenReturn(RunResponse.builder().status(RunResponse.Status.STEP_ATTEMPT_CREATED).build());
     stepActionHandler.skip("sample-minimal-wf", 1, "job1", user, runRequest, true);
-    verify(actionDao, times(0)).terminate(instance, "job1", user, Actions.StepInstanceAction.SKIP);
+    verify(actionDao, times(0))
+        .terminate(instance, "job1", user, Actions.StepInstanceAction.SKIP, true);
     verify(actionHandler, times(1)).restartRecursively(runRequest);
     verify(actionDao, times(1)).restartDirectly(any(), eq(runRequest), eq(true));
   }
@@ -339,7 +341,8 @@ public class StepInstanceActionHandlerTest extends MaestroEngineBaseTest {
     when(instance.getStatus()).thenReturn(WorkflowInstance.Status.IN_PROGRESS);
     when(aggregatedView.getStatus()).thenReturn(StepInstance.Status.PLATFORM_FAILED);
     stepActionHandler.skip("sample-minimal-wf", 1, "job1", user, null, true);
-    verify(actionDao, times(1)).terminate(instance, "job1", user, Actions.StepInstanceAction.SKIP);
+    verify(actionDao, times(1))
+        .terminate(instance, "job1", user, Actions.StepInstanceAction.SKIP, true);
   }
 
   @Test
@@ -368,7 +371,8 @@ public class StepInstanceActionHandlerTest extends MaestroEngineBaseTest {
     when(actionHandler.restartRecursively(runRequest))
         .thenReturn(RunResponse.builder().status(RunResponse.Status.WORKFLOW_RUN_CREATED).build());
     stepActionHandler.skip("sample-minimal-wf", 1, "job1", user, runRequest, true);
-    verify(actionDao, times(0)).terminate(instance, "job1", user, Actions.StepInstanceAction.SKIP);
+    verify(actionDao, times(0))
+        .terminate(instance, "job1", user, Actions.StepInstanceAction.SKIP, true);
     verify(actionHandler, times(1)).restartRecursively(runRequest);
     verify(actionDao, times(0)).restartDirectly(any(), eq(runRequest), eq(true));
   }

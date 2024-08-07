@@ -121,12 +121,6 @@ public class MaestroStepInstanceActionDao extends CockroachDBBaseDAO {
 
   /** bypass the signal dependencies. */
   public StepInstanceActionResponse bypassStepDependencies(
-      WorkflowInstance instance, String stepId, User user) {
-    return bypassStepDependencies(instance, stepId, user, true);
-  }
-
-  @VisibleForTesting
-  StepInstanceActionResponse bypassStepDependencies(
       WorkflowInstance instance, String stepId, User user, boolean blocking) {
     validateStepId(instance, stepId, Actions.StepInstanceAction.BYPASS_STEP_DEPENDENCIES);
     StepInstance stepInstance =
@@ -399,12 +393,6 @@ public class MaestroStepInstanceActionDao extends CockroachDBBaseDAO {
    * callback will do the cleanup.
    */
   public StepInstanceActionResponse terminate(
-      WorkflowInstance instance, String stepId, User user, Actions.StepInstanceAction action) {
-    return terminate(instance, stepId, user, action, true);
-  }
-
-  @VisibleForTesting
-  StepInstanceActionResponse terminate(
       WorkflowInstance instance,
       String stepId,
       User user,

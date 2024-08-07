@@ -518,7 +518,7 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
         "Cannot manually RESTART the step",
         MaestroBadRequestException.class,
         "Cannot manually BYPASS_STEP_DEPENDENCIES the step [not-existing] because the latest workflow run",
-        () -> actionDao.bypassStepDependencies(instance, "not-existing", user));
+        () -> actionDao.bypassStepDependencies(instance, "not-existing", user, true));
 
     stepInstance.getRuntimeState().setStatus(StepInstance.Status.RUNNING);
     stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true);
@@ -527,7 +527,7 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
         "Cannot manually bypass the step dependencies",
         MaestroInvalidStatusException.class,
         "Cannot manually bypass-step-dependencies the step as its status [RUNNING] is not waiting for signals",
-        () -> actionDao.bypassStepDependencies(instance, "job1", user));
+        () -> actionDao.bypassStepDependencies(instance, "job1", user, true));
   }
 
   @Test

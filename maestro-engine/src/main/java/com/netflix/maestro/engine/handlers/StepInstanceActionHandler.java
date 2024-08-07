@@ -119,10 +119,10 @@ public class StepInstanceActionHandler {
 
   /** Bypasses the step dependencies. */
   public StepInstanceActionResponse bypassStepDependencies(
-      String workflowId, long workflowInstanceId, String stepId, User user) {
+      String workflowId, long workflowInstanceId, String stepId, User user, boolean blocking) {
     WorkflowInstance instance =
         instanceDao.getLatestWorkflowInstanceRun(workflowId, workflowInstanceId);
-    return actionDao.bypassStepDependencies(instance, stepId, user);
+    return actionDao.bypassStepDependencies(instance, stepId, user, blocking);
   }
 
   /** Terminate a step instance, i.e. the latest workflow instance run's latest attempt. */
@@ -131,7 +131,8 @@ public class StepInstanceActionHandler {
       long workflowInstanceId,
       String stepId,
       User user,
-      Actions.StepInstanceAction action) {
+      Actions.StepInstanceAction action,
+      boolean blocking) {
     WorkflowInstance instance =
         instanceDao.getLatestWorkflowInstanceRun(workflowId, workflowInstanceId);
     if (instance.getStatus().isTerminal()) {
@@ -139,7 +140,7 @@ public class StepInstanceActionHandler {
           "Cannot manually %s the step [%s] as the workflow instance %s is in a terminal state [%s]",
           action.name(), stepId, instance.getIdentity(), instance.getStatus());
     }
-    return actionDao.terminate(instance, stepId, user, action);
+    return actionDao.terminate(instance, stepId, user, action, blocking);
   }
 
   public StepInstanceActionResponse skip(
@@ -181,7 +182,7 @@ public class StepInstanceActionHandler {
     }
 
     if (!instance.getStatus().isTerminal() && view.getStatus().shouldWakeup()) {
-      return actionDao.terminate(instance, stepId, user, Actions.StepInstanceAction.SKIP);
+      return actionDao.terminate(instance, stepId, user, Actions.StepInstanceAction.SKIP, blocking);
     }
 
     RunResponse runResponse = restart(runRequest, blocking);
