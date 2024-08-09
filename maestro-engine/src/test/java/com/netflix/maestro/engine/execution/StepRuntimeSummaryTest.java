@@ -211,7 +211,7 @@ public class StepRuntimeSummaryTest extends MaestroEngineBaseTest {
   public void testMergeForeachArtifact() throws Exception {
     StepRuntimeSummary summary =
         loadObject(
-            "fixtures/execution/sample-step-runtime-summary-1.json", StepRuntimeSummary.class);
+            "fixtures/execution/sample-step-runtime-summary-3.json", StepRuntimeSummary.class);
     ForeachArtifact artifact = summary.getArtifacts().get(Artifact.Type.FOREACH.key()).asForeach();
     assertEquals("inline-wf", artifact.getForeachWorkflowId());
     assertEquals("foo", artifact.getForeachIdentity());
@@ -427,6 +427,10 @@ public class StepRuntimeSummaryTest extends MaestroEngineBaseTest {
     summary.mergeRuntimeUpdate(null, artifacts);
     assertTrue(summary.isSynced());
 
+    summary =
+        loadObject(
+            "fixtures/execution/sample-step-runtime-summary-3.json", StepRuntimeSummary.class);
+    artifacts.clear();
     ForeachArtifact artifact3 = new ForeachArtifact();
     artifact3.setForeachWorkflowId("inline-wf");
     artifact3.setForeachIdentity("foo");

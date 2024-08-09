@@ -15,6 +15,7 @@ package com.netflix.maestro.engine.eval;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
 import com.netflix.maestro.AssertHelper;
@@ -32,6 +33,7 @@ import com.netflix.maestro.models.initiator.Initiator;
 import com.netflix.maestro.models.initiator.ManualInitiator;
 import com.netflix.maestro.models.initiator.SignalInitiator;
 import com.netflix.maestro.models.initiator.SubworkflowInitiator;
+import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.parameter.MapParameter;
 import com.netflix.maestro.models.parameter.ParamType;
 import com.netflix.maestro.models.parameter.Parameter;
@@ -51,6 +53,10 @@ import org.mockito.Mockito;
 public class MaestroParamExtensionTest extends MaestroEngineBaseTest {
   private static final String TEST_STEP_RUNTIME_SUMMARY =
       "fixtures/execution/sample-step-runtime-summary-2.json";
+  private static final String TEST_SUBWORKFLOW_STEP_RUNTIME_SUMMARY =
+      "fixtures/execution/sample-step-runtime-summary-1.json";
+  private static final String TEST_STEP_INSTANCE =
+      "fixtures/instances/sample-step-instance-succeeded.json";
 
   @Mock MaestroStepInstanceDao stepInstanceDao;
   @Mock InstanceWrapper instanceWrapper;
@@ -78,6 +84,8 @@ public class MaestroParamExtensionTest extends MaestroEngineBaseTest {
         .thenReturn(Collections.singletonMap("maestro_step_runtime_summary", summary));
     assertEquals("foo", paramExtension.getFromStep("step1", "param1"));
     assertEquals("SUCCEEDED", paramExtension.getFromStep("step1", Constants.STEP_STATUS_PARAM));
+    assertEquals(
+        1608171805401L, paramExtension.getFromStep("step1", Constants.STEP_END_TIME_PARAM));
   }
 
   @Test
@@ -132,6 +140,19 @@ public class MaestroParamExtensionTest extends MaestroEngineBaseTest {
         .thenReturn(Collections.singletonMap(1L, "12"));
     long[] res = (long[]) paramExtension.getFromForeach("foreach-job", "job1", "sleep_seconds");
     assertArrayEquals(new long[] {12, 0, 0, 0, 0, 0}, res);
+  }
+
+  @Test
+  public void testGetFromSubworkflow() throws Exception {
+    StepRuntimeSummary summary =
+        loadObject(TEST_SUBWORKFLOW_STEP_RUNTIME_SUMMARY, StepRuntimeSummary.class);
+    when(allStepOutputData.get("foo"))
+        .thenReturn(Collections.singletonMap("maestro_step_runtime_summary", summary));
+    StepInstance stepInSubworkflow = loadObject(TEST_STEP_INSTANCE, StepInstance.class);
+    when(stepInstanceDao.getStepInstance(any(), anyLong(), anyLong(), any(), any()))
+        .thenReturn(stepInSubworkflow);
+    long res = (Long) paramExtension.getFromSubworkflow("foo", "job1", "sleep_seconds");
+    assertEquals(15, res);
   }
 
   @Test
@@ -262,6 +283,36 @@ public class MaestroParamExtensionTest extends MaestroEngineBaseTest {
         MaestroInternalError.class,
         "getFromForeach throws an exception",
         () -> paramExtension.getFromForeach("foreach-job", "job1", "sleep_seconds"));
+  }
+
+  @Test
+  public void testInvalidGetFromSubworkflow() throws Exception {
+    AssertHelper.assertThrows(
+        "Cannot find the referenced step id",
+        MaestroInternalError.class,
+        "getFromSubworkflow throws an exception",
+        () -> paramExtension.getFromSubworkflow("non-existing-job", "job1", "sleep_seconds"));
+
+    StepRuntimeSummary summary = loadObject(TEST_STEP_RUNTIME_SUMMARY, StepRuntimeSummary.class);
+    when(allStepOutputData.get("foo"))
+        .thenReturn(Collections.singletonMap("maestro_step_runtime_summary", summary));
+    AssertHelper.assertThrows(
+        "step type is not subworkflow",
+        MaestroInternalError.class,
+        "getFromSubworkflow throws an exception",
+        () -> paramExtension.getFromSubworkflow("foo", "job1", "sleep_seconds"));
+
+    summary = loadObject(TEST_SUBWORKFLOW_STEP_RUNTIME_SUMMARY, StepRuntimeSummary.class);
+    when(allStepOutputData.get("foo"))
+        .thenReturn(Collections.singletonMap("maestro_step_runtime_summary", summary));
+    StepInstance stepInSubworkflow = loadObject(TEST_STEP_INSTANCE, StepInstance.class);
+    when(stepInstanceDao.getStepInstance(any(), anyLong(), anyLong(), any(), any()))
+        .thenReturn(stepInSubworkflow);
+    AssertHelper.assertThrows(
+        "param name does not exist",
+        MaestroInternalError.class,
+        "getFromSubworkflow throws an exception",
+        () -> paramExtension.getFromSubworkflow("foo", "job1", "not-existing"));
   }
 
   @Test

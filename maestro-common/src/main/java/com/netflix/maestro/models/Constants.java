@@ -262,6 +262,9 @@ public final class Constants {
   /** Step instance status param name key used in SEL to retrieve the step status. */
   public static final String STEP_STATUS_PARAM = "MAESTRO_STEP_STATUS";
 
+  /** Step instance end time param name key used in SEL to retrieve the step end time. */
+  public static final String STEP_END_TIME_PARAM = "MAESTRO_STEP_END_TIME";
+
   /**
    * Match all instances. Special value to denote a breakpoint which is set to match all wf
    * instances.

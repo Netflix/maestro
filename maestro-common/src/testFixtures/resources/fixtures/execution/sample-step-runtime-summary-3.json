@@ -4,7 +4,7 @@
   "step_instance_id": 123,
   "step_attempt_id": 2,
   "step_instance_uuid": "bar",
-  "type": "subworkflow",
+  "type": "foreach",
   "step_run_params": {
     "foo": {
       "value": "bar",
@@ -46,19 +46,19 @@
       "value": 1,
       "foo": "bar"
     },
-    "maestro_subworkflow": {
-      "subworkflow_id": "test-dag",
-      "subworkflow_version_id": 1,
-      "subworkflow_instance_id": 1,
-      "subworkflow_run_id": 1,
-      "subworkflow_uuid": "foo-bar",
-      "subworkflow_overview": {
-        "step_overview": {
+    "maestro_foreach": {
+      "foreach_workflow_id": "inline-wf",
+      "foreach_identity": "foo",
+      "total_loop_count": 10,
+      "next_loop_index": 0,
+      "foreach_overview": {
+        "checkpoint": 6,
+        "stats": {
+          "CREATED": 5,
           "SUCCEEDED": 1
-        },
-        "total_step_count": 1
+        }
       },
-      "type": "SUBWORKFLOW"
+      "type": "FOREACH"
     }
   },
   "dependencies": {
