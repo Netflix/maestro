@@ -18,14 +18,17 @@ import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.engine.utils.StepHelper;
 import com.netflix.maestro.engine.validations.DryRunValidator;
 import com.netflix.maestro.exceptions.MaestroInternalError;
+import com.netflix.maestro.exceptions.MaestroInvalidExpressionException;
 import com.netflix.maestro.exceptions.MaestroValidationException;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.artifact.ForeachArtifact;
+import com.netflix.maestro.models.artifact.SubworkflowArtifact;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.initiator.Initiator;
 import com.netflix.maestro.models.initiator.ManualInitiator;
 import com.netflix.maestro.models.initiator.SignalInitiator;
+import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.parameter.ParamType;
 import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.utils.Checks;
@@ -71,6 +74,9 @@ public class MaestroParamExtension extends AbstractParamExtension {
 
   /** Function to get the signal metadata for return default value if not found. */
   static final String GET_FROM_SIGNAL_OR_DEFAULT = "getFromSignalOrDefault";
+
+  /** Function to get the data from the subworkflow instance. */
+  static final String GET_FROM_SUBWORKFLOW = "getFromSubworkflow";
 
   /** Function to get the foreach metadata. */
   static final String GET_FROM_FOREACH = "getFromForeach";
@@ -132,6 +138,8 @@ public class MaestroParamExtension extends AbstractParamExtension {
         throw new IllegalStateException(
             methodName + " must return an array instead of " + res.getClass());
       }
+    } else if (GET_FROM_SUBWORKFLOW.equals(methodName)) {
+      return getFromSubworkflow(arg1, arg2, arg3);
     } else if (GET_FROM_SIGNAL_OR_DEFAULT.equals(methodName)) {
       return getFromSignalOrDefault(arg1, arg2, arg3);
     }
@@ -167,6 +175,12 @@ public class MaestroParamExtension extends AbstractParamExtension {
     StepRuntimeSummary runtimeSummary = validateAndGet(stepId);
     if (Constants.STEP_STATUS_PARAM.equals(paramName)) {
       return runtimeSummary.getRuntimeState().getStatus().name();
+    } else if (Constants.STEP_END_TIME_PARAM.equals(paramName)) {
+      return Checks.notNull(
+          runtimeSummary.getRuntimeState().getEndTime(),
+          "ERROR: step [%s]'s [%s] is not set yet.",
+          stepId,
+          paramName);
     }
     Parameter stepParam =
         Checks.notNull(
@@ -363,6 +377,52 @@ public class MaestroParamExtension extends AbstractParamExtension {
         throw new UnsupportedOperationException(
             "cannot get param from foreach with a type: " + type);
     }
+  }
+
+  Object getFromSubworkflow(String subworkflowStepId, String stepId, String paramName) {
+    try {
+      return executor
+          .submit(() -> fromSubworkflow(subworkflowStepId, stepId, paramName))
+          .get(TIMEOUT_IN_MILLIS, TimeUnit.MILLISECONDS);
+    } catch (Exception e) {
+      throw new MaestroInternalError(
+          e,
+          "getFromSubworkflow throws an exception for subworkflowStepId=[%s], stepId=[%s], paramName=[%s]",
+          subworkflowStepId,
+          stepId,
+          paramName);
+    }
+  }
+
+  private Object fromSubworkflow(String subworkflowStepId, String stepId, String paramName) {
+    StepRuntimeSummary runtimeSummary = validateAndGet(subworkflowStepId);
+    Checks.checkTrue(
+        runtimeSummary.getType() == StepType.SUBWORKFLOW,
+        "step [%s] is a type of [%s] instead of subworkflow step, cannot call getFromSubworkflow",
+        subworkflowStepId,
+        runtimeSummary.getType());
+
+    SubworkflowArtifact artifact =
+        Checks.notNull(
+                runtimeSummary.getArtifacts().get(Artifact.Type.SUBWORKFLOW.key()),
+                "Cannot load param [%s] of step [%s] from subworkflow [%s] as it is not initialized",
+                paramName,
+                stepId,
+                subworkflowStepId)
+            .asSubworkflow();
+
+    StepInstance stepInstance =
+        stepInstanceDao.getStepInstance(
+            artifact.getSubworkflowId(),
+            artifact.getSubworkflowInstanceId(),
+            artifact.getSubworkflowRunId(),
+            stepId,
+            Constants.LATEST_INSTANCE_RUN);
+
+    if (stepInstance.getParams() == null || !stepInstance.getParams().containsKey(paramName)) {
+      throw new MaestroInvalidExpressionException("Cannot find the param name: [%s]", paramName);
+    }
+    return stepInstance.getParams().get(paramName).getEvaluatedResult();
   }
 
   Long nextUniqueId() {
