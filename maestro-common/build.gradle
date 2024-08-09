@@ -3,7 +3,6 @@ dependencies {
     implementation javaxInjectDep
     implementation javaxValidationDep
     implementation jacksonYamlDep
-    implementation quartzDep
     implementation jodaTimeDep
     implementation(cronutilsDep) {
         exclude group: 'org.glassfish'

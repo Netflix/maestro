@@ -10,7 +10,6 @@ ext {
     jacksonYamlDep = 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.+'
     javaxInjectDep = 'javax.inject:javax.inject:1'
     javaxValidationDep = 'javax.validation:validation-api:2.0.+'
-    quartzDep = 'org.quartz-scheduler:quartz:2.3.+'
     jodaTimeDep = 'joda-time:joda-time:2.10.+'
     cronutilsDep = 'com.cronutils:cron-utils:9.1.+'
     zipkinDep = 'io.zipkin.brave:brave:5.+'

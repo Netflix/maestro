@@ -44,9 +44,7 @@ public class CronConstraintTest extends BaseConstraintTest {
     assertEquals(1, violations.size());
     ConstraintViolation<TestCron> violation = violations.iterator().next();
     assertThat(violation.getMessage())
-        .contains(
-            "[cron expression] is not valid "
-                + "- rejected value is [* * blah blah] - error: [Illegal characters for this position");
+        .contains("[cron expression] is not valid " + "- rejected value is [* * blah blah]");
   }
 
   @Test
