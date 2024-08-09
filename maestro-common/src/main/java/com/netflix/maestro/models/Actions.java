@@ -208,6 +208,9 @@ public final class Actions {
     STEP_INSTANCE_STATUS_TO_ACTION_MAP.put(
         StepInstance.Status.PLATFORM_FAILED,
         Arrays.asList(StepInstanceAction.STOP, StepInstanceAction.KILL, StepInstanceAction.SKIP));
+    STEP_INSTANCE_STATUS_TO_ACTION_MAP.put(
+        StepInstance.Status.TIMEOUT_FAILED,
+        Arrays.asList(StepInstanceAction.STOP, StepInstanceAction.KILL, StepInstanceAction.SKIP));
 
     STEP_INSTANCE_STATUS_TO_ACTION_MAP.put(
         StepInstance.Status.FATALLY_FAILED,

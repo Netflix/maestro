@@ -542,11 +542,12 @@ public class MaestroTask extends WorkflowSystemTask {
     return satisfied;
   }
 
-  /** Check if timed out, which is based on step start time. */
+  /** Check if the execution is timed out, which is based on step start time. */
   private boolean isTimeout(StepRuntimeSummary runtimeSummary) {
     if (runtimeSummary.getRuntimeState() != null
         && runtimeSummary.getRuntimeState().getStartTime() != null) {
-      if (runtimeSummary.getRuntimeState().getStatus() == StepInstance.Status.TIMED_OUT) {
+      if (runtimeSummary.getRuntimeState().getStatus() == StepInstance.Status.TIMED_OUT
+          || runtimeSummary.getRuntimeState().getStatus() == StepInstance.Status.TIMEOUT_FAILED) {
         return true;
       }
       long timeoutInMillis =
@@ -650,12 +651,7 @@ public class MaestroTask extends WorkflowSystemTask {
           runtimeSummary.getRuntimeState().getStatus().name());
 
       if (isTimeout(runtimeSummary)) {
-        LOG.info(
-            "Workflow instance {}'s step {} is timed out.",
-            workflowSummary.getIdentity(),
-            runtimeSummary.getIdentity());
-        terminate(workflowSummary, runtimeSummary, StepInstance.Status.TIMED_OUT);
-        runtimeSummary.addTimeline(TimelineLogEvent.info("Step instance is timed out."));
+        handleTimeoutError(workflowSummary, runtimeSummary);
       } else {
         tryUpdateByAction(workflowSummary, stepDefinition, runtimeSummary);
       }
@@ -682,6 +678,20 @@ public class MaestroTask extends WorkflowSystemTask {
       }
       handleUnexpectedException(workflow, task, e);
       return true; // swallow exception and fail the workflow
+    }
+  }
+
+  private void handleTimeoutError(
+      WorkflowSummary workflowSummary, StepRuntimeSummary runtimeSummary) {
+    LOG.info(
+        "Workflow instance {}'s step {} is timed out.",
+        workflowSummary.getIdentity(),
+        runtimeSummary.getIdentity());
+    if (runtimeSummary.getStepRetry().hasReachedTimeoutRetryLimit()) {
+      terminate(workflowSummary, runtimeSummary, StepInstance.Status.TIMED_OUT);
+      runtimeSummary.addTimeline(TimelineLogEvent.info("Step instance is timed out."));
+    } else {
+      runtimeSummary.markTerminated(StepInstance.Status.TIMEOUT_FAILED, tracingManager);
     }
   }
 
@@ -837,6 +847,7 @@ public class MaestroTask extends WorkflowSystemTask {
           case INTERNALLY_FAILED: // Ignoring failure model as the error happens within Maestro
           case USER_FAILED:
           case PLATFORM_FAILED:
+          case TIMEOUT_FAILED:
           case STOPPED:
           case TIMED_OUT:
             doneWithExecute = true;
@@ -904,7 +915,8 @@ public class MaestroTask extends WorkflowSystemTask {
   void updateRetryDelayTimeToTimeline(StepRuntimeSummary runtimeSummary) {
     StepInstance.Status status = runtimeSummary.getRuntimeState().getStatus();
     if (status == StepInstance.Status.USER_FAILED
-        || status == StepInstance.Status.PLATFORM_FAILED) {
+        || status == StepInstance.Status.PLATFORM_FAILED
+        || status == StepInstance.Status.TIMEOUT_FAILED) {
       int nextRetryDelayInSecs =
           runtimeSummary
               .getStepRetry()
@@ -1069,6 +1081,7 @@ public class MaestroTask extends WorkflowSystemTask {
         break;
       case USER_FAILED:
       case PLATFORM_FAILED:
+      case TIMEOUT_FAILED:
         task.setStatus(Task.Status.FAILED);
         task.setStartDelayInSeconds(
             runtimeSummary

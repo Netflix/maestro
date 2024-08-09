@@ -250,7 +250,8 @@ public final class TaskHelper {
         } else if (entry.getKey() == StepInstance.Status.FATALLY_FAILED
             || entry.getKey() == StepInstance.Status.INTERNALLY_FAILED
             || entry.getKey() == StepInstance.Status.USER_FAILED
-            || entry.getKey() == StepInstance.Status.PLATFORM_FAILED) {
+            || entry.getKey() == StepInstance.Status.PLATFORM_FAILED
+            || entry.getKey() == StepInstance.Status.TIMEOUT_FAILED) {
           isFailed = true;
         } else if (entry.getKey() == StepInstance.Status.TIMED_OUT) {
           isTimeout = true;

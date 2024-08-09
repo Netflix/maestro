@@ -151,6 +151,8 @@ public class StepInstance {
         "error_retry_limit",
         "platform_retries",
         "platform_retry_limit",
+        "timeout_retries",
+        "timeout_retry_limit",
         "manual_retries",
         "retryable",
         "backoff"
@@ -162,6 +164,8 @@ public class StepInstance {
     private long errorRetryLimit;
     private long platformRetries; // retry count due to platform failure
     private long platformRetryLimit;
+    private long timeoutRetries; // retry count due to timeout failure
+    private long timeoutRetryLimit;
     private long manualRetries; // retry count due to manual api call to restart
     private boolean retryable = true; // mark if the step is retryable by the system
     private RetryPolicy.Backoff backoff;
@@ -176,12 +180,19 @@ public class StepInstance {
       return platformRetries >= platformRetryLimit || !retryable;
     }
 
+    /** check if reaching timeout retry limit. */
+    public boolean hasReachedTimeoutRetryLimit() {
+      return timeoutRetries >= timeoutRetryLimit || !retryable;
+    }
+
     /** increment corresponding retry count based on status. */
     public void incrementByStatus(Status status) {
       if (status == Status.USER_FAILED) {
         errorRetries++;
       } else if (status == Status.PLATFORM_FAILED) {
         platformRetries++;
+      } else if (status == Status.TIMEOUT_FAILED) {
+        timeoutRetries++;
       } else if (status.isRestartable()) {
         manualRetries++;
       } else {
@@ -193,14 +204,16 @@ public class StepInstance {
     /**
      * Get next retry delay based on error and configured retry policy.
      *
-     * @param status status
-     * @return delay for the next attempt
+     * @param status the step instance status
+     * @return the next retry delay in secs.
      */
     public int getNextRetryDelay(Status status) {
       if (status == Status.USER_FAILED) {
         return backoff.getNextRetryDelayForUserError(errorRetries);
       } else if (status == Status.PLATFORM_FAILED) {
         return backoff.getNextRetryDelayForPlatformError(platformRetries);
+      } else if (status == Status.TIMEOUT_FAILED) {
+        return backoff.getNextRetryDelayForTimeoutError(timeoutRetries);
       } else {
         // Not expected to get retry delay for any other errors.
         throw new MaestroInvalidStatusException(
@@ -214,6 +227,7 @@ public class StepInstance {
       StepRetry stepRetry = new StepRetry();
       stepRetry.errorRetryLimit = retryPolicy.getErrorRetryLimit();
       stepRetry.platformRetryLimit = retryPolicy.getPlatformRetryLimit();
+      stepRetry.timeoutRetryLimit = retryPolicy.getTimeoutRetryLimit();
       stepRetry.retryable = true;
       stepRetry.backoff = retryPolicy.getBackoff();
       return stepRetry;
@@ -281,7 +295,9 @@ public class StepInstance {
 
     /** Step is stopped by a user or the workflow, terminal state. */
     STOPPED(true, false, false, false),
-    /** Step is timed out by the system, terminal state. */
+    /** Step is failed due to execution timeout error, terminal state. */
+    TIMEOUT_FAILED(true, false, true, true),
+    /** Step is fatally timed out by the system, terminal state. */
     TIMED_OUT(true, false, false, false);
 
     @JsonIgnore private final boolean terminal; // if it is terminal
