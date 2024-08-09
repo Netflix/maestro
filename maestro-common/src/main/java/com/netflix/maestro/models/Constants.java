@@ -147,6 +147,9 @@ public final class Constants {
   /** maximum retry wait limit for platform errors. */
   public static final int MAX_PLATFORM_RETRY_LIMIT_SECS = 24 * 3600; // 1 day
 
+  /** maximum retry wait limit for timeout errors. */
+  public static final int MAX_TIMEOUT_RETRY_LIMIT_SECS = 24 * 3600; // 1 days
+
   /** Max timeout limit in milliseconds. */
   public static final long MAX_TIME_OUT_LIMIT_IN_MILLIS = TimeUnit.DAYS.toMillis(120); // 120 days
 

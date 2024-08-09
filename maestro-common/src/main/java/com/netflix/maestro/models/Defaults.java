@@ -39,6 +39,9 @@ public final class Defaults {
   /** Defaults for fixed retry delay for user errors. */
   private static final long DEFAULT_FIXED_USER_RETRY_BACKOFF_SECS = 60L;
 
+  /** Defaults for fixed retry delay for timeout errors. */
+  private static final long DEFAULT_FIXED_TIMEOUT_RETRY_BACKOFF_SECS = 60L;
+
   /** Defaults for exponential retry exponent for user errors. */
   private static final int DEFAULT_ERROR_RETRY_EXPONENT = 2;
 
@@ -57,32 +60,47 @@ public final class Defaults {
   /** Defaults for exponential max retry limit for platform errors. */
   private static final long DEFAULT_PLATFORM_RETRY_LIMIT_SECS = 3600L;
 
+  /** Defaults for exponential retry exponent for timeout errors. */
+  private static final int DEFAULT_TIMEOUT_RETRY_EXPONENT = 2;
+
+  /** Defaults for exponential retry base backoff for timeout errors. */
+  private static final long DEFAULT_BASE_TIMEOUT_RETRY_BACKOFF_SECS = 60L;
+
+  /** Defaults for exponential max retry limit for timeout errors. */
+  private static final long DEFAULT_TIMEOUT_RETRY_LIMIT_SECS = 3600L;
+
   /** Default Exponential backoff. */
   public static final RetryPolicy.ExponentialBackoff DEFAULT_EXPONENTIAL_BACK_OFF =
       RetryPolicy.ExponentialBackoff.builder()
           .errorRetryExponent(DEFAULT_ERROR_RETRY_EXPONENT)
           .errorRetryBackoffInSecs(DEFAULT_BASE_ERROR_RETRY_BACKOFF_SECS)
           .errorRetryLimitInSecs(DEFAULT_ERROR_RETRY_LIMIT_SECS)
-          .platformRetryBackoffInSecs(DEFAULT_BASE_PLATFORM_RETRY_BACKOFF_SECS)
           .platformRetryExponent(DEFAULT_PLATFORM_RETRY_EXPONENT)
+          .platformRetryBackoffInSecs(DEFAULT_BASE_PLATFORM_RETRY_BACKOFF_SECS)
           .platformRetryLimitInSecs(DEFAULT_PLATFORM_RETRY_LIMIT_SECS)
+          .timeoutRetryExponent(DEFAULT_TIMEOUT_RETRY_EXPONENT)
+          .timeoutRetryBackoffInSecs(DEFAULT_BASE_TIMEOUT_RETRY_BACKOFF_SECS)
+          .timeoutRetryLimitInSecs(DEFAULT_TIMEOUT_RETRY_LIMIT_SECS)
           .build();
 
   /** Default Fixed backoff. */
   public static final RetryPolicy.FixedBackoff DEFAULT_FIXED_BACK_OFF =
       RetryPolicy.FixedBackoff.builder()
-          .platformRetryBackoffInSecs(DEFAULT_FIXED_PLATFORM_RETRY_BACKOFF_SECS)
           .errorRetryBackoffInSecs(DEFAULT_FIXED_USER_RETRY_BACKOFF_SECS)
+          .platformRetryBackoffInSecs(DEFAULT_FIXED_PLATFORM_RETRY_BACKOFF_SECS)
+          .timeoutRetryBackoffInSecs(DEFAULT_FIXED_TIMEOUT_RETRY_BACKOFF_SECS)
           .build();
 
   private static final long DEFAULT_USER_RETRY_LIMIT = 2L;
   private static final long DEFAULT_PLATFORM_RETRY_LIMIT = 10L;
+  private static final long DEFAULT_TIMEOUT_RETRY_LIMIT = 0L;
 
   /** Default retry policy if unset. */
   public static final RetryPolicy DEFAULT_RETRY_POLICY =
       RetryPolicy.builder()
           .errorRetryLimit(DEFAULT_USER_RETRY_LIMIT)
           .platformRetryLimit(DEFAULT_PLATFORM_RETRY_LIMIT)
+          .timeoutRetryLimit(DEFAULT_TIMEOUT_RETRY_LIMIT)
           .backoff(DEFAULT_EXPONENTIAL_BACK_OFF)
           .build();
 

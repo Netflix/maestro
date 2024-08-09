@@ -81,6 +81,8 @@ public final class AggregatedViewHelper {
         StepInstance.Status.USER_FAILED, WorkflowInstance.Status.FAILED);
     STEP_INSTANCE_STATUS_TO_WORKFLOW_INSTANCE_STATUS.put(
         StepInstance.Status.PLATFORM_FAILED, WorkflowInstance.Status.FAILED);
+    STEP_INSTANCE_STATUS_TO_WORKFLOW_INSTANCE_STATUS.put(
+        StepInstance.Status.TIMEOUT_FAILED, WorkflowInstance.Status.FAILED);
 
     // STOPPED statuses
     STEP_INSTANCE_STATUS_TO_WORKFLOW_INSTANCE_STATUS.put(

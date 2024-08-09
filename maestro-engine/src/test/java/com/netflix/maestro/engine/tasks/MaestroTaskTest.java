@@ -99,6 +99,51 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
   }
 
   @Test
+  public void testUpdateTimeoutRetryDelayTimeToTimeline() {
+    StepRuntimeState runtimeState = new StepRuntimeState();
+    runtimeState.setStatus(StepInstance.Status.TIMEOUT_FAILED);
+    Timeline timeline = new Timeline(new ArrayList<>());
+    StepInstance.StepRetry stepRetry = new StepInstance.StepRetry();
+    stepRetry.setRetryable(true);
+    RetryPolicy.FixedBackoff fixedBackoff =
+        RetryPolicy.FixedBackoff.builder().timeoutRetryBackoffInSecs(200L).build();
+    stepRetry.setBackoff(fixedBackoff);
+    StepRuntimeSummary runtimeSummary =
+        StepRuntimeSummary.builder()
+            .timeline(timeline)
+            .runtimeState(runtimeState)
+            .stepRetry(stepRetry)
+            .build();
+
+    maestroTask.updateRetryDelayTimeToTimeline(runtimeSummary);
+    List<TimelineEvent> timelineEvents = timeline.getTimelineEvents();
+    assertThat(timelineEvents)
+        .hasSize(1)
+        .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
+        .contains(TimelineLogEvent.info("Retrying task in [3m 20s]"));
+
+    RetryPolicy.ExponentialBackoff exponentialBackoff =
+        RetryPolicy.ExponentialBackoff.builder()
+            .timeoutRetryExponent(2)
+            .timeoutRetryLimitInSecs(600L)
+            .timeoutRetryBackoffInSecs(100L)
+            .build();
+    stepRetry.setBackoff(exponentialBackoff);
+    stepRetry.setTimeoutRetries(6);
+    timelineEvents.clear();
+    maestroTask.updateRetryDelayTimeToTimeline(runtimeSummary);
+    assertThat(timelineEvents)
+        .hasSize(1)
+        .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
+        .contains(TimelineLogEvent.info("Retrying task in [10m]"));
+
+    timelineEvents.clear();
+    runtimeState.setStatus(StepInstance.Status.PAUSED);
+    maestroTask.updateRetryDelayTimeToTimeline(runtimeSummary);
+    assertThat(timelineEvents).isEmpty();
+  }
+
+  @Test
   public void testIsStepSkipped() {
     WorkflowSummary summary = new WorkflowSummary();
     summary.setWorkflowId("test-workflow");
