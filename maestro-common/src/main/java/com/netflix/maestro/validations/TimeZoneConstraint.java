@@ -17,11 +17,12 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.time.ZoneId;
+import java.util.Set;
 import javax.validation.Constraint;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 import javax.validation.Payload;
-import org.joda.time.DateTimeZone;
 
 /** Maestro timezone expression validation. */
 @Documented
@@ -40,6 +41,8 @@ public @interface TimeZoneConstraint {
 
   /** Maestro timezone validator. */
   class TimeZoneValidator implements ConstraintValidator<TimeZoneConstraint, String> {
+    private static final Set<String> AVAILABLE_ZONE_IDS = ZoneId.getAvailableZoneIds();
+
     @Override
     public void initialize(TimeZoneConstraint constraint) {}
 
@@ -49,14 +52,13 @@ public @interface TimeZoneConstraint {
         return true;
       }
 
-      try {
-        DateTimeZone.forID(timezone);
-      } catch (IllegalArgumentException e) {
+      if (!AVAILABLE_ZONE_IDS.contains(timezone)) {
         context
-            .buildConstraintViolationWithTemplate("[timezone expression] is not valid: " + e)
+            .buildConstraintViolationWithTemplate("[timezone expression] is not valid: " + timezone)
             .addConstraintViolation();
         return false;
       }
+
       return true;
     }
   }
