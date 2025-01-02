@@ -14,12 +14,12 @@ package com.netflix.maestro.engine.execution;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.engine.db.StepAction;
-import com.netflix.maestro.engine.metrics.MaestroMetrics;
 import com.netflix.maestro.engine.metrics.MetricConstants;
 import com.netflix.maestro.engine.params.ParamsManager;
 import com.netflix.maestro.engine.steps.StepRuntime;
 import com.netflix.maestro.engine.tracing.MaestroTracingManager;
 import com.netflix.maestro.exceptions.MaestroInternalError;
+import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.Tag;
