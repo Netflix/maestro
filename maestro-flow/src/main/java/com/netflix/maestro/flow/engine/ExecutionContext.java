@@ -122,7 +122,7 @@ public class ExecutionContext {
 
   /** Run the flow's final callback function. */
   public void finalCall(Flow flow) {
-    if (flow.getFlowDef().isFlowFinalCallbackEnabled()) {
+    if (flow.getFlowDef().isFinalFlowStatusCallbackEnabled()) {
       if (flow.getStatus().isSuccessful()) {
         finalCallback.onFlowCompleted(flow);
       } else {

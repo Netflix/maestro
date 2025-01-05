@@ -7,6 +7,7 @@ import com.netflix.maestro.flow.models.FlowGroup;
 import com.netflix.maestro.flow.properties.FlowEngineProperties;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.utils.Checks;
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import javax.sql.DataSource;
@@ -36,6 +37,8 @@ public class MaestroFlowDao extends AbstractDatabaseDao {
           + "RETURNING group_id,generation";
   private static final String ADD_FLOW_GROUP_QUERY =
       "INSERT INTO maestro_flow_group (group_id,generation,address) VALUES (?,?,?)";
+  private static final String GET_FLOW_WITH_SAME_KEYS_QUERY =
+      "SELECT 1 FROM maestro_flow WHERE group_id=? AND flow_id=? LIMIT 1";
 
   public MaestroFlowDao(
       DataSource dataSource,
@@ -215,5 +218,22 @@ public class MaestroFlowDao extends AbstractDatabaseDao {
             group.groupId());
     Checks.checkTrue(
         res == 1, "Insert flow group row count for [%s] is not 1 but %s", group.groupId(), res);
+  }
+
+  /** Used to get if there is any flow instance with this flow keys. */
+  public boolean existFlowWithSameKeys(long groupId, String flowId) {
+    return withMetricLogError(
+        () ->
+            withRetryableQuery(
+                GET_FLOW_WITH_SAME_KEYS_QUERY,
+                stmt -> {
+                  stmt.setLong(1, groupId);
+                  stmt.setString(2, flowId);
+                },
+                ResultSet::next),
+        "existFlowWithSameKeys",
+        "Failed to check the existence of the flow instance [{}][{}]",
+        groupId,
+        flowId);
   }
 }

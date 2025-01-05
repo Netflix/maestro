@@ -16,5 +16,5 @@ public class FlowDef {
   private List<List<TaskDef>> tasks; // tasks in the flow graph
 
   private long timeoutInMillis;
-  private boolean flowFinalCallbackEnabled;
+  private boolean finalFlowStatusCallbackEnabled;
 }

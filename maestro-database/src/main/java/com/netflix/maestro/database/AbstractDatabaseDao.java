@@ -20,6 +20,7 @@ import com.netflix.maestro.database.utils.ConnectionFunction;
 import com.netflix.maestro.database.utils.ResultProcessor;
 import com.netflix.maestro.database.utils.StatementFunction;
 import com.netflix.maestro.database.utils.StatementPreparer;
+import com.netflix.maestro.exceptions.MaestroDatabaseError;
 import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.exceptions.MaestroUnprocessableEntityException;
 import com.netflix.maestro.metrics.MaestroMetrics;
@@ -289,7 +290,7 @@ public abstract class AbstractDatabaseDao {
             ERROR_TYPE_TAG_NAME,
             "retryable_transaction_error_" + e.getSQLState());
       }
-      throw new MaestroInternalError(e, e.getMessage());
+      throw new MaestroDatabaseError(e, e.getMessage());
     } catch (InterruptedException e) {
       LOG.warn("InterruptedException exception occurred: message = [{}]", e.getMessage());
       Thread.currentThread().interrupt();
