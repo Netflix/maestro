@@ -37,12 +37,14 @@ final class FlowActor extends BaseActor {
   private final Flow flow; // read-only access from all child actors
   private final long reconciliationInterval; // flow reconciliation interval in millis
   private final long refreshInterval; // flow refresh (monitor task) interval in millis
+  private boolean finalized; // flag indicating if the final call is done
 
   FlowActor(Flow flow, GroupActor parent, ExecutionContext context) {
     super(context, parent);
     this.flow = flow;
     this.reconciliationInterval = context.getProperties().getFlowReconciliationIntervalInMillis();
     this.refreshInterval = context.getProperties().getFlowRefreshIntervalInMillis();
+    this.finalized = false;
   }
 
   @Override
@@ -70,9 +72,11 @@ final class FlowActor extends BaseActor {
 
   @Override
   void afterRunning() {
-    getMetrics().counter("num_of_finished_flows", getClass());
-    getContext().deleteFlow(flow);
-    LOG.debug("Flow for {} is deleted", reference());
+    if (finalized) {
+      getMetrics().counter("num_of_finished_flows", getClass());
+      getContext().deleteFlow(flow);
+      LOG.info("Flow for {} is deleted as it finishes.", reference());
+    }
   }
 
   @Override
@@ -214,6 +218,7 @@ final class FlowActor extends BaseActor {
 
       try {
         getContext().finalCall(flow);
+        finalized = true;
         shutdownNow();
       } catch (RuntimeException e) {
         LOG.warn(

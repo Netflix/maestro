@@ -49,6 +49,11 @@ public class FlowExecutor {
 
   /** PostConstructor to boostrap and start flow executor. */
   public void init() {
+    LOG.info(
+        "FlowExecutor is initialized with initial_delay: {}, delay_interval: {} and address {}",
+        initialDelay,
+        delay,
+        address);
     maintainer.scheduleWithFixedDelay(
         this::maintenance, initialDelay, delay, TimeUnit.MILLISECONDS);
   }
@@ -87,6 +92,7 @@ public class FlowExecutor {
 
   /** Pre-destroy to shut down flow executors. */
   public void shutdown() {
+    LOG.info("FlowExecutor starts to shutdown ...");
     try {
       writeLock.lock(); // make sure no new flow launching
       groupActors.values().forEach(actor -> actor.post(Action.GROUP_SHUTDOWN));
@@ -95,6 +101,7 @@ public class FlowExecutor {
     } finally {
       writeLock.unlock();
     }
+    LOG.info("FlowExecutor shutdown is completed.");
   }
 
   /**
