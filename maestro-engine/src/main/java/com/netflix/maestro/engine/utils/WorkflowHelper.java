@@ -45,6 +45,7 @@ public class WorkflowHelper {
   private final DagTranslator dagTranslator;
   private final MaestroParamExtensionRepo paramExtensionRepo;
   private final MaestroJobEventPublisher publisher;
+  private final long maxGroupNum;
 
   /**
    * Returns workflow id if workflow name is missing and was not provided by the user.
@@ -81,6 +82,8 @@ public class WorkflowHelper {
     // set correlation id if request contains it, otherwise, update it later inside DAO
     instance.setCorrelationId(runRequest.getCorrelationId());
     instance.setRunProperties(runProperties);
+    // set the group id for the fresh new workflow instance
+    instance.setGroupId(ObjectHelper.valueOrDefault(runRequest.getGroupId(), generateGroupNum()));
     // it includes runtime params and tags. Its dag is versioned dag.
     Workflow workflow = overrideWorkflowConfig(workflowDef, runRequest);
     instance.setRuntimeWorkflow(workflow);
@@ -88,6 +91,10 @@ public class WorkflowHelper {
     // update newly created workflow instance
     updateWorkflowInstance(instance, runRequest);
     return instance;
+  }
+
+  private long generateGroupNum() {
+    return (long) (Math.random() * maxGroupNum);
   }
 
   /**
@@ -167,6 +174,7 @@ public class WorkflowHelper {
     summary.setCreationTime(instance.getCreateTime());
     summary.setWorkflowRunId(instance.getWorkflowRunId());
     summary.setCorrelationId(instance.getCorrelationId());
+    summary.setGroupId(instance.getGroupId());
     summary.setWorkflowUuid(instance.getWorkflowUuid());
     if (instance.getRunConfig() != null) {
       summary.setRunPolicy(instance.getRunConfig().getPolicy());
@@ -178,6 +186,7 @@ public class WorkflowHelper {
     summary.setStepRunParams(instance.getStepRunParams());
     summary.setTags(instance.getRuntimeWorkflow().getTags());
     summary.setRuntimeDag(instance.getRuntimeDag());
+    summary.setDag(instance.getRuntimeWorkflow().getDag());
     summary.setCriticality(instance.getRuntimeWorkflow().getCriticality());
     summary.setInstanceStepConcurrency(instance.getRuntimeWorkflow().getInstanceStepConcurrency());
     return summary;

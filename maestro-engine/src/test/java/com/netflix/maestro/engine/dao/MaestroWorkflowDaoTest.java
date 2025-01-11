@@ -112,8 +112,9 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
   public void setUp() {
     publisher = mock(MaestroJobEventPublisher.class);
     triggerClient = mock(TriggerSubscriptionClient.class);
-    workflowDao = new MaestroWorkflowDao(dataSource, MAPPER, config, publisher, triggerClient);
-    instanceDao = new MaestroWorkflowInstanceDao(dataSource, MAPPER, config, publisher);
+    workflowDao =
+        new MaestroWorkflowDao(dataSource, MAPPER, config, publisher, triggerClient, metricRepo);
+    instanceDao = new MaestroWorkflowInstanceDao(dataSource, MAPPER, config, publisher, metricRepo);
     runStrategyDao = new MaestroRunStrategyDao(dataSource, MAPPER, config, publisher, metricRepo);
   }
 
@@ -1132,7 +1133,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
             });
 
     MaestroWorkflowInstanceDao instanceDao =
-        new MaestroWorkflowInstanceDao(dataSource, MAPPER, config, publisher);
+        new MaestroWorkflowInstanceDao(dataSource, MAPPER, config, publisher, metricRepo);
     instanceDao.tryTerminateQueuedInstance(instance, WorkflowInstance.Status.FAILED, "test-reason");
     properties.setRunStrategy(RunStrategy.create("strict_sequential"));
     AssertHelper.assertThrows(

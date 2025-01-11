@@ -13,11 +13,6 @@
 package com.netflix.maestro.engine.tasks;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.run.Workflow;
-import com.netflix.conductor.core.execution.SystemTaskType;
-import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
 import com.netflix.maestro.engine.execution.WorkflowRuntimeSummary;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
@@ -32,6 +27,9 @@ import com.netflix.maestro.engine.utils.StepHelper;
 import com.netflix.maestro.engine.utils.TaskHelper;
 import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.exceptions.MaestroNotFoundException;
+import com.netflix.maestro.flow.models.Flow;
+import com.netflix.maestro.flow.models.Task;
+import com.netflix.maestro.flow.runtime.FlowTask;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.Actions;
 import com.netflix.maestro.models.Constants;
@@ -48,8 +46,6 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Maestro end task is a special gate step with three features.
  *
- * <p>Here, it overrides the default conductor JOIN task to reuse its task mapper.
- *
  * <p>This task includes:
  *
  * <p>1. make the execution following the order defined in the DAG of the Maestro workflow
@@ -65,7 +61,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @SuppressWarnings("PMD.BeanMembersShouldSerialize")
 @Slf4j
-public final class MaestroEndTask extends WorkflowSystemTask {
+public final class MaestroEndTask implements FlowTask {
   private static final long WORKFLOW_LONG_START_DELAY_INTERVAL = 180000;
   private final MaestroWorkflowInstanceDao instanceDao;
   private final MaestroJobEventPublisher publisher;
@@ -80,8 +76,6 @@ public final class MaestroEndTask extends WorkflowSystemTask {
       ObjectMapper objectMapper,
       RollupAggregationHelper rollupAggregationHelper,
       MaestroMetrics metricRepo) {
-    // Overwrite the conductor join task with maestro customized end join logic
-    super(SystemTaskType.JOIN.name());
     this.instanceDao = instanceDao;
     this.publisher = publisher;
     this.objectMapper = objectMapper;
@@ -90,27 +84,21 @@ public final class MaestroEndTask extends WorkflowSystemTask {
   }
 
   @Override
-  public void cancel(Workflow workflow, Task task, WorkflowExecutor executor) {
-    // noop and may add some logging if helpful.
-    metrics.counter("num_of_cancelled_tasks", getClass());
-  }
-
-  @Override
-  public boolean execute(Workflow workflow, Task task, WorkflowExecutor executor) {
+  public boolean execute(Flow flow, Task task) {
     try {
-      return endJoinExecute(workflow, task);
+      return endJoinExecute(flow, task);
     } catch (MaestroInternalError | MaestroNotFoundException e) {
       // if end task failed, it is fatal error, no retry
       task.setStatus(Task.Status.FAILED_WITH_TERMINAL_ERROR);
       task.setReasonForIncompletion(e.getMessage());
       LOG.error(
-          "Error executing Maestro end task: {} in workflow: {}",
+          "Error executing Maestro end task: {} in flow: {}",
           task.getTaskId(),
-          workflow.getWorkflowId(),
+          flow.getFlowId(),
           e);
       return true;
     }
-    // Don't catch unexpected exception and MaestroWorkflowExecutor will handle it.
+    // Don't catch unexpected exception and the flow engine will handle it.
   }
 
   /**
@@ -120,17 +108,18 @@ public final class MaestroEndTask extends WorkflowSystemTask {
    * <p>In the end task output data, it holds workflow runtime summary instead of the step runtime
    * summary
    */
-  private boolean endJoinExecute(Workflow workflow, Task task) {
-    WorkflowSummary summary = StepHelper.retrieveWorkflowSummary(objectMapper, workflow.getInput());
+  private boolean endJoinExecute(Flow flow, Task task) {
+    WorkflowSummary summary = StepHelper.retrieveWorkflowSummary(objectMapper, flow.getInput());
     WorkflowRuntimeSummary runtimeSummary =
         StepHelper.retrieveWorkflowRuntimeSummary(objectMapper, task.getOutputData());
-    Map<String, Task> realTaskMap = TaskHelper.getUserDefinedRealTaskMap(workflow);
+    Map<String, Task> realTaskMap =
+        TaskHelper.getUserDefinedRealTaskMap(flow.getStreamOfAllTasks());
     WorkflowRuntimeOverview newOverview =
         TaskHelper.computeOverview(
             objectMapper, summary, runtimeSummary.getRollupBase(), realTaskMap);
 
     Optional<Boolean> marked =
-        markMaestroWorkflowStartedIfNeeded(workflow, summary, runtimeSummary, newOverview);
+        markMaestroWorkflowStartedIfNeeded(flow, summary, runtimeSummary, newOverview);
     boolean changed = marked.isPresent();
 
     if (marked.orElse(true)) {
@@ -210,12 +199,12 @@ public final class MaestroEndTask extends WorkflowSystemTask {
   }
 
   private Optional<Boolean> markMaestroWorkflowStartedIfNeeded(
-      Workflow workflow,
+      Flow flow,
       WorkflowSummary summary,
       WorkflowRuntimeSummary runtimeSummary,
       WorkflowRuntimeOverview newOverview) {
     if (WorkflowInstance.Status.CREATED.equals(runtimeSummary.getInstanceStatus())) {
-      long startTime = workflow.getTaskByRefName(Constants.DEFAULT_START_STEP_NAME).getStartTime();
+      long startTime = flow.getPrepareTask().getStartTime();
       WorkflowInstance.Status nextStatus = WorkflowInstance.Status.IN_PROGRESS;
 
       WorkflowInstance workflowInstance =
@@ -224,7 +213,7 @@ public final class MaestroEndTask extends WorkflowSystemTask {
 
       runtimeSummary.setRollupBase(rollupAggregationHelper.calculateRollupBase(workflowInstance));
 
-      emitWorkflowDelayMetricWithTimeline(runtimeSummary, summary, getDequeueTime(workflow));
+      emitWorkflowDelayMetricWithTimeline(runtimeSummary, summary, getDequeueTime(flow));
 
       return Optional.of(
           updateMaestroWorkflowInstance(
@@ -233,10 +222,10 @@ public final class MaestroEndTask extends WorkflowSystemTask {
     return Optional.empty();
   }
 
-  private long getDequeueTime(Workflow workflow) {
-    // workflow event field keeps the enqueue time
-    if (workflow.getEvent() != null) {
-      return Long.parseLong(workflow.getEvent());
+  private long getDequeueTime(Flow flow) {
+    // Flow start time is the dequeue time
+    if (flow.getStartTime() > 0) {
+      return flow.getStartTime();
     }
     return System.currentTimeMillis();
   }
@@ -311,11 +300,6 @@ public final class MaestroEndTask extends WorkflowSystemTask {
       return false;
     }
     runtimeSummary.setRuntimeOverview(newOverview);
-    return true;
-  }
-
-  @Override
-  public boolean isAsync() {
     return true;
   }
 }

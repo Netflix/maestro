@@ -13,17 +13,17 @@
 package com.netflix.maestro.engine.utils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.workflow.TaskType;
-import com.netflix.conductor.common.run.Workflow;
-import com.netflix.conductor.metrics.Monitors;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
+import com.netflix.maestro.exceptions.MaestroInternalError;
+import com.netflix.maestro.flow.models.Flow;
+import com.netflix.maestro.flow.models.Task;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.artifact.ForeachArtifact;
 import com.netflix.maestro.models.artifact.SubworkflowArtifact;
 import com.netflix.maestro.models.definition.StepTransition;
+import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.StepRuntimeState;
 import com.netflix.maestro.models.instance.WorkflowRollupOverview;
@@ -38,6 +38,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 
 /** Utility class for maestro task. */
@@ -69,37 +70,37 @@ public final class TaskHelper {
   }
 
   /** utility method to get internal task mapping from workflow data. */
-  public static Map<String, Task> getTaskMap(Workflow workflow) {
-    return workflow.getTasks().stream()
-        .filter(t -> !TaskType.TASK_TYPE_EXCLUSIVE_JOIN.equals(t.getTaskType()) && t.getSeq() >= 0)
+  public static Map<String, Task> getTaskMap(Flow flow) {
+    return flow.getFinishedTasks().stream()
+        .filter(t -> !StepType.JOIN.name().equals(t.getTaskType()) && t.getSeq() >= 0)
         .collect(
             Collectors.toMap(
-                Task::getReferenceTaskName,
+                Task::referenceTaskName,
                 Function.identity(),
                 // it includes retried tasks so pick the last one
                 (task1, task2) -> task2));
   }
 
-  /** utility method to get internal task output data mapping from workflow data. */
-  public static Map<String, Map<String, Object>> getAllStepOutputData(Workflow workflow) {
-    return workflow.getTasks().stream()
+  /** utility method to get internal task output data mapping from internal flow data. */
+  public static Map<String, Map<String, Object>> getAllStepOutputData(Flow flow) {
+    return flow.getFinishedTasks().stream()
         // step should be in terminal state and normal tasks in DAG
         .filter(TaskHelper::isValidTaskWithParamData)
         .collect(
             Collectors.toMap(
-                Task::getReferenceTaskName,
+                Task::referenceTaskName,
                 Task::getOutputData,
                 // it includes retried tasks so pick the last one
                 (task1, task2) -> task2));
   }
 
-  /** utility method to get real maestro task mapping from workflow data. */
-  public static Map<String, Task> getUserDefinedRealTaskMap(Workflow workflow) {
-    return workflow.getTasks().stream()
+  /** utility method to get real maestro task mapping from internal task data. */
+  public static Map<String, Task> getUserDefinedRealTaskMap(Stream<Task> allTasks) {
+    return allTasks
         .filter(TaskHelper::isUserDefinedRealTask)
         .collect(
             Collectors.toMap(
-                Task::getReferenceTaskName,
+                Task::referenceTaskName,
                 Function.identity(),
                 // it includes retried tasks so pick the last one
                 (task1, task2) -> task2));
@@ -265,12 +266,11 @@ public final class TaskHelper {
       allDone = confirmDone(realTaskMap, summary);
     }
 
-    // It's unexpected. Can happen if conductor fails the run before running maestro task logic
+    // It's unexpected. Can happen if the flow fails the run before running maestro task logic
     if (allDone && !isFailed && !isTimeout && !isStopped && !overview.existsCreatedStep()) {
-      LOG.warn(
+      LOG.error(
           "There are no created steps in the workflow [{}] and mark it as failed.",
           summary.getIdentity());
-      Monitors.error(TaskHelper.class.getName(), "checkProgress");
       isFailed = true;
     }
 
@@ -305,8 +305,56 @@ public final class TaskHelper {
     Map<String, Boolean> taskStatusMap =
         realTaskMap.values().stream()
             .filter(t -> t.getStatus().isTerminal()) // ignore non-terminal
-            .collect(
-                Collectors.toMap(Task::getReferenceTaskName, t -> t.getStatus().isSuccessful()));
+            .collect(Collectors.toMap(Task::referenceTaskName, t -> t.getStatus().isSuccessful()));
     return DagHelper.isDone(runtimeDag, taskStatusMap, summary.getRestartConfig());
+  }
+
+  /** From Maestro step instance status to internal flow task status. */
+  public static void deriveTaskStatus(Task task, StepRuntimeSummary runtimeSummary) {
+    switch (runtimeSummary.getRuntimeState().getStatus()) {
+      case NOT_CREATED:
+      case CREATED:
+      case INITIALIZED:
+      case PAUSED:
+      case WAITING_FOR_SIGNALS:
+      case EVALUATING_PARAMS:
+      case WAITING_FOR_PERMITS:
+      case STARTING:
+      case RUNNING:
+      case FINISHING:
+        task.setStatus(Task.Status.IN_PROGRESS);
+        break;
+      case DISABLED:
+      case UNSATISFIED:
+      case SKIPPED:
+      case SUCCEEDED:
+      case COMPLETED_WITH_ERROR:
+        task.setStatus(Task.Status.COMPLETED);
+        break;
+      case USER_FAILED:
+      case PLATFORM_FAILED:
+      case TIMEOUT_FAILED:
+        task.setStatus(Task.Status.FAILED);
+        task.setStartDelayInSeconds(
+            runtimeSummary
+                .getStepRetry()
+                .getNextRetryDelay(runtimeSummary.getRuntimeState().getStatus()));
+        task.setEndTime(runtimeSummary.getRuntimeState().getEndTime());
+        break;
+      case FATALLY_FAILED:
+      case INTERNALLY_FAILED:
+        task.setStatus(Task.Status.FAILED);
+        break;
+      case STOPPED:
+        task.setStatus(Task.Status.CANCELED);
+        break;
+      case TIMED_OUT:
+        task.setStatus(Task.Status.TIMED_OUT);
+        break;
+      default:
+        throw new MaestroInternalError(
+            "Entered an unexpected state [%s] for step %s",
+            runtimeSummary.getRuntimeState().getStatus(), runtimeSummary.getIdentity());
+    }
   }
 }

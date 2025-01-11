@@ -66,7 +66,12 @@ public class MaestroRunStrategyDaoTest extends MaestroDaoBaseTest {
   public void setUp() throws Exception {
     MaestroWorkflowDao workflowDao =
         new MaestroWorkflowDao(
-            dataSource, MAPPER, config, publisher, mock(TriggerSubscriptionClient.class));
+            dataSource,
+            MAPPER,
+            config,
+            publisher,
+            mock(TriggerSubscriptionClient.class),
+            metricRepo);
     WorkflowDefinition definition =
         loadObject(
             "fixtures/workflows/definition/sample-minimal-wf.json", WorkflowDefinition.class);
@@ -77,7 +82,7 @@ public class MaestroRunStrategyDaoTest extends MaestroDaoBaseTest {
     verify(publisher, times(1)).publishOrThrow(any(WorkflowVersionUpdateJobEvent.class), any());
     reset(publisher);
 
-    dao = new MaestroWorkflowInstanceDao(dataSource, MAPPER, config, publisher);
+    dao = new MaestroWorkflowInstanceDao(dataSource, MAPPER, config, publisher, metricRepo);
     runStrategyDao = new MaestroRunStrategyDao(dataSource, MAPPER, config, publisher, metricRepo);
     wfi = loadObject(TEST_WORKFLOW_INSTANCE, WorkflowInstance.class);
     wfi.setWorkflowInstanceId(0L);

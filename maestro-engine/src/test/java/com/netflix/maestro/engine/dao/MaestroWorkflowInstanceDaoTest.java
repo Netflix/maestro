@@ -81,12 +81,17 @@ public class MaestroWorkflowInstanceDaoTest extends MaestroDaoBaseTest {
 
   @Before
   public void setUp() throws Exception {
-    instanceDao = new MaestroWorkflowInstanceDao(dataSource, MAPPER, config, publisher);
+    instanceDao = new MaestroWorkflowInstanceDao(dataSource, MAPPER, config, publisher, metricRepo);
     runStrategyDao = new MaestroRunStrategyDao(dataSource, MAPPER, config, publisher, metricRepo);
 
     MaestroWorkflowDao workflowDao =
         new MaestroWorkflowDao(
-            dataSource, MAPPER, config, publisher, mock(TriggerSubscriptionClient.class));
+            dataSource,
+            MAPPER,
+            config,
+            publisher,
+            mock(TriggerSubscriptionClient.class),
+            metricRepo);
     WorkflowDefinition definition =
         loadObject(
             "fixtures/workflows/definition/sample-minimal-wf.json", WorkflowDefinition.class);

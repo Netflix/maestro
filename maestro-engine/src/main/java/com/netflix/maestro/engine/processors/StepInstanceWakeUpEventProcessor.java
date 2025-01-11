@@ -12,12 +12,13 @@
  */
 package com.netflix.maestro.engine.processors;
 
-import com.netflix.conductor.core.execution.ApplicationException;
-import com.netflix.conductor.core.execution.MaestroWorkflowExecutor;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
 import com.netflix.maestro.engine.jobevents.StepInstanceWakeUpEvent;
+import com.netflix.maestro.engine.transformation.Translator;
 import com.netflix.maestro.exceptions.MaestroRetryableError;
+import com.netflix.maestro.exceptions.MaestroRuntimeException;
+import com.netflix.maestro.flow.engine.FlowExecutor;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.artifact.ForeachArtifact;
 import com.netflix.maestro.models.artifact.SubworkflowArtifact;
@@ -32,14 +33,20 @@ import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-/** Event process to handle {@link StepInstanceWakeUpEvent}. */
+/**
+ * Event process to handle {@link StepInstanceWakeUpEvent}.
+ *
+ * <p>Note that it relies on the flowExecutor to wake up tasks. In the flowExecutor implementation,
+ * it assumes all steps to wakeup are running in the single node. This is based on the fact that all
+ * steps in the uber graph have the same group id.
+ */
 @Slf4j
 @AllArgsConstructor
 public class StepInstanceWakeUpEventProcessor
     implements MaestroEventProcessor<StepInstanceWakeUpEvent> {
-  private final MaestroWorkflowExecutor workflowExecutor;
+  private final FlowExecutor flowExecutor;
+  private final MaestroWorkflowInstanceDao instanceDao;
   private final MaestroStepInstanceDao stepInstanceDao;
-  private final MaestroWorkflowInstanceDao workflowInstanceDao;
 
   /**
    * Get the event and process.
@@ -63,10 +70,8 @@ public class StepInstanceWakeUpEventProcessor
   private void processForStepEntity(StepInstanceWakeUpEvent jobEvent) {
     // handle the simple leaf step case.
     if (jobEvent.getStepType() != null && jobEvent.getStepType().isLeaf()) {
-      if (jobEvent.getStepStatus() != null
-          && jobEvent.getStepStatus().isRetryable()
-          && jobEvent.getStepUuid() != null) {
-        wakeupUnderlyingTask(jobEvent.getStepUuid());
+      if (jobEvent.getStepStatus() != null && jobEvent.getStepStatus().shouldWakeup()) {
+        wakeupUnderlyingTask(jobEvent);
       }
       return;
     }
@@ -86,8 +91,8 @@ public class StepInstanceWakeUpEventProcessor
       return;
     }
     if (stepInstance.getDefinition().getType().isLeaf()) {
-      if (stepInstance.getRuntimeState().getStatus().isRetryable()) {
-        wakeupUnderlyingTask(stepInstance.getStepUuid());
+      if (stepInstance.getRuntimeState().getStatus().shouldWakeup()) {
+        wakeupUnderlyingTask(jobEvent);
       }
       return;
     }
@@ -108,7 +113,8 @@ public class StepInstanceWakeUpEventProcessor
           if (stepInstance.getArtifacts().containsKey(Artifact.Type.FOREACH.key())) {
             ForeachArtifact foreachArtifact =
                 stepInstance.getArtifacts().get(Artifact.Type.FOREACH.key()).asForeach();
-            handleLeafTasksWakeup(foreachArtifact.getForeachOverview().getOverallRollup());
+            handleLeafTasksWakeup(
+                jobEvent.getGroupId(), foreachArtifact.getForeachOverview().getOverallRollup());
             stepTerminalCheck = desiredStatus.isTerminal();
           }
           break;
@@ -116,7 +122,9 @@ public class StepInstanceWakeUpEventProcessor
           if (stepInstance.getArtifacts().containsKey(Artifact.Type.SUBWORKFLOW.key())) {
             SubworkflowArtifact subworkflowArtifact =
                 stepInstance.getArtifacts().get(Artifact.Type.SUBWORKFLOW.key()).asSubworkflow();
-            handleLeafTasksWakeup(subworkflowArtifact.getSubworkflowOverview().getRollupOverview());
+            handleLeafTasksWakeup(
+                jobEvent.getGroupId(),
+                subworkflowArtifact.getSubworkflowOverview().getRollupOverview());
             stepTerminalCheck = desiredStatus.isTerminal();
           }
           break;
@@ -135,20 +143,39 @@ public class StepInstanceWakeUpEventProcessor
     }
   }
 
-  private void wakeupUnderlyingTask(String failedStepUuid) {
+  private void wakeupUnderlyingTask(StepInstanceWakeUpEvent jobEvent) {
+    String flowReference =
+        String.format(
+            Translator.FLOW_REFERENCE_FORMATTER,
+            jobEvent.getWorkflowId(),
+            jobEvent.getWorkflowInstanceId(),
+            jobEvent.getWorkflowRunId());
+    wakeupUnderlyingTask(jobEvent.getGroupId(), flowReference, jobEvent.getStepId());
+  }
+
+  private void wakeupUnderlyingTask(Long groupId, WorkflowRollupOverview.ReferenceEntity entity) {
+    String flowReference =
+        String.format(
+            Translator.FLOW_REFERENCE_FORMATTER,
+            entity.getWorkflowId(),
+            entity.getInstanceId(),
+            entity.getRunId());
+    wakeupUnderlyingTask(groupId, flowReference, entity.getStepId());
+  }
+
+  private void wakeupUnderlyingTask(Long groupId, String flowReference, String stepId) {
     try {
-      workflowExecutor.resetTaskOffset(failedStepUuid);
-    } catch (ApplicationException ex) {
-      // wake up failed, we should retry.
-      throw new MaestroRetryableError(
-          ex, "running into an exception while waking up underlying task, will try again");
+      flowExecutor.wakeUp(groupId, flowReference, stepId);
+    } catch (MaestroRuntimeException e) {
+      LOG.warn("running into an exception while waking up underlying task, will try again", e);
+      throw e; // retry if exception is a MaestroRetryableError
     }
   }
 
   /** Waking up all the leaf steps for a workflow when workflow level user action is requested. */
   private void processForWorkflowEntity(StepInstanceWakeUpEvent jobEvent) {
     WorkflowInstance workflowInstance =
-        workflowInstanceDao.getWorkflowInstance(
+        instanceDao.getWorkflowInstance(
             jobEvent.getWorkflowId(),
             jobEvent.getWorkflowInstanceId(),
             String.valueOf(jobEvent.getWorkflowRunId()),
@@ -162,18 +189,19 @@ public class StepInstanceWakeUpEventProcessor
       return;
     }
 
-    handleLeafTasksWakeup(workflowInstance.getRuntimeOverview().getRollupOverview());
+    handleLeafTasksWakeup(
+        jobEvent.getGroupId(), workflowInstance.getRuntimeOverview().getRollupOverview());
     if (jobEvent.getWorkflowAction().getStatus().isTerminal()) {
       throw new MaestroRetryableError(
           "Current status is not the desired status after action is taking. Will check again.");
     }
   }
 
-  private void handleLeafTasksWakeup(WorkflowRollupOverview overview) {
-    // get all the reference entities for leaf step that has retryable status.
+  private void handleLeafTasksWakeup(Long groupId, WorkflowRollupOverview overview) {
+    // get all the reference entities for leaf step that has shouldWakeup flag.
     Set<WorkflowRollupOverview.ReferenceEntity> retryingLeafRefs =
         overview.getOverview().entrySet().stream()
-            .filter(entry -> entry.getKey().isRetryable())
+            .filter(entry -> entry.getKey().shouldWakeup())
             .map(Map.Entry::getValue)
             .map(WorkflowRollupOverview.CountReference::getRef)
             .map(
@@ -192,22 +220,7 @@ public class StepInstanceWakeUpEventProcessor
             .flatMap(Set::stream)
             .collect(Collectors.toSet());
 
-    // get all the step uuids (task ids) for retryable leaf steps.
-    Set<String> retryableStepUuids =
-        retryingLeafRefs.stream()
-            .map(
-                ref ->
-                    stepInstanceDao
-                        .getStepInstance(
-                            ref.getWorkflowId(),
-                            ref.getInstanceId(),
-                            ref.getRunId(),
-                            ref.getStepId(),
-                            String.valueOf(ref.getAttemptId()))
-                        .getStepUuid())
-            .collect(Collectors.toSet());
-
-    // wake the underlying conductor tasks up.
-    retryableStepUuids.forEach(this::wakeupUnderlyingTask);
+    // wake up the underlying internal flow tasks
+    retryingLeafRefs.forEach(ref -> wakeupUnderlyingTask(groupId, ref));
   }
 }

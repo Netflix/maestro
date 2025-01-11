@@ -55,6 +55,7 @@ import lombok.Data;
       "workflow_instance_id",
       "workflow_run_id",
       "correlation_id",
+      "group_id",
       "creation_time",
       "workflow_uuid",
       "run_policy",
@@ -64,6 +65,7 @@ import lombok.Data;
       "params",
       "tags",
       "runtime_dag",
+      "dag",
       "criticality",
       "instance_step_concurrency"
     },
@@ -80,6 +82,7 @@ public class WorkflowSummary {
   private long workflowInstanceId;
   private long workflowRunId;
   private String correlationId;
+  private Long groupId;
   private Long creationTime;
   @NotNull private String workflowUuid;
 
@@ -103,6 +106,7 @@ public class WorkflowSummary {
   @Valid @TagListConstraint private TagList tags;
 
   private Map<String, StepTransition> runtimeDag; // actual dag used.
+  private Map<String, StepTransition> dag; // full dag.
 
   @Nullable private Criticality criticality;
 

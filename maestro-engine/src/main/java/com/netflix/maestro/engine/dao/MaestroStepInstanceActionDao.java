@@ -13,9 +13,9 @@
 package com.netflix.maestro.engine.dao;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.cockroachdb.CockroachDBConfiguration;
-import com.netflix.conductor.cockroachdb.dao.CockroachDBBaseDAO;
 import com.netflix.maestro.annotations.VisibleForTesting;
+import com.netflix.maestro.database.AbstractDatabaseDao;
+import com.netflix.maestro.database.DatabaseConfiguration;
 import com.netflix.maestro.engine.db.StepAction;
 import com.netflix.maestro.engine.execution.RunRequest;
 import com.netflix.maestro.engine.execution.RunResponse;
@@ -30,6 +30,7 @@ import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.exceptions.MaestroInvalidStatusException;
 import com.netflix.maestro.exceptions.MaestroResourceConflictException;
 import com.netflix.maestro.exceptions.MaestroTimeoutException;
+import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.Actions;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.api.StepInstanceActionResponse;
@@ -67,7 +68,7 @@ import lombok.extern.slf4j.Slf4j;
  * data.
  */
 @Slf4j
-public class MaestroStepInstanceActionDao extends CockroachDBBaseDAO {
+public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
   private static final long ACTION_TIMEOUT = 30 * 1000L; // 30 sec
   private static final long CHECK_INTERVAL = 1000L; // 1 sec
 
@@ -93,10 +94,11 @@ public class MaestroStepInstanceActionDao extends CockroachDBBaseDAO {
   public MaestroStepInstanceActionDao(
       DataSource dataSource,
       ObjectMapper objectMapper,
-      CockroachDBConfiguration config,
+      DatabaseConfiguration config,
       MaestroStepInstanceDao stepInstanceDao,
-      MaestroJobEventPublisher eventPublisher) {
-    super(dataSource, objectMapper, config);
+      MaestroJobEventPublisher eventPublisher,
+      MaestroMetrics metrics) {
+    super(dataSource, objectMapper, config, metrics);
     this.stepInstanceDao = stepInstanceDao;
     this.eventPublisher = eventPublisher;
   }

@@ -16,6 +16,7 @@ import com.netflix.maestro.engine.concurrency.InstanceStepConcurrencyHandler;
 import com.netflix.maestro.engine.concurrency.TagPermitManager;
 import com.netflix.maestro.engine.dao.MaestroRunStrategyDao;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceActionDao;
+import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowDeletionDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
@@ -26,6 +27,7 @@ import com.netflix.maestro.engine.processors.DeleteWorkflowJobProcessor;
 import com.netflix.maestro.engine.processors.PublishJobEventProcessor;
 import com.netflix.maestro.engine.processors.RunWorkflowInstancesJobProcessor;
 import com.netflix.maestro.engine.processors.StartWorkflowJobProcessor;
+import com.netflix.maestro.engine.processors.StepInstanceWakeUpEventProcessor;
 import com.netflix.maestro.engine.processors.TerminateInstancesJobProcessor;
 import com.netflix.maestro.engine.processors.TerminateThenRunInstanceJobProcessor;
 import com.netflix.maestro.engine.publisher.InMemoryMaestroJobEventPublisher;
@@ -33,6 +35,8 @@ import com.netflix.maestro.engine.publisher.MaestroJobEventPublisher;
 import com.netflix.maestro.engine.publisher.MaestroNotificationPublisher;
 import com.netflix.maestro.engine.publisher.NoOpMaestroNotificationPublisher;
 import com.netflix.maestro.engine.utils.WorkflowHelper;
+import com.netflix.maestro.flow.dao.MaestroFlowDao;
+import com.netflix.maestro.flow.engine.FlowExecutor;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.server.interceptor.UserInfoInterceptor;
 import java.util.concurrent.Executors;
@@ -44,6 +48,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/** beans for maestro server related classes. */
 @Configuration
 @Slf4j
 public class MaestroServerConfiguration {
@@ -74,9 +79,12 @@ public class MaestroServerConfiguration {
 
   @Bean
   public RunWorkflowInstancesJobProcessor runWorkflowInstancesJobProcessor(
-      MaestroWorkflowInstanceDao maestroWorkflowInstanceDao, WorkflowRunner workflowRunner) {
+      MaestroWorkflowInstanceDao maestroWorkflowInstanceDao,
+      MaestroFlowDao flowDao,
+      WorkflowRunner workflowRunner) {
     LOG.info("Creating runWorkflowInstancesJobProcessor within Spring boot...");
-    return new RunWorkflowInstancesJobProcessor(maestroWorkflowInstanceDao, workflowRunner);
+    return new RunWorkflowInstancesJobProcessor(
+        maestroWorkflowInstanceDao, flowDao, workflowRunner);
   }
 
   @Bean
@@ -103,6 +111,15 @@ public class MaestroServerConfiguration {
     LOG.info("Creating terminateThenRunInstanceJobProcessor within Spring boot...");
     return new TerminateThenRunInstanceJobProcessor(
         maestroJobEventPublisher, maestroWorkflowInstanceDao, terminateInstancesJobProcessor);
+  }
+
+  @Bean
+  public StepInstanceWakeUpEventProcessor stepInstanceWakeUpEventProcessor(
+      FlowExecutor flowExecutor,
+      MaestroWorkflowInstanceDao instanceDao,
+      MaestroStepInstanceDao stepInstanceDao) {
+    LOG.info("Creating stepInstanceWakeUpEventProcessor within Spring boot...");
+    return new StepInstanceWakeUpEventProcessor(flowExecutor, instanceDao, stepInstanceDao);
   }
 
   @Bean
@@ -146,6 +163,7 @@ public class MaestroServerConfiguration {
       RunWorkflowInstancesJobProcessor runWorkflowInstancesJobProcessor,
       StartWorkflowJobProcessor startWorkflowJobProcessor,
       TerminateInstancesJobProcessor terminateInstancesJobProcessor,
+      StepInstanceWakeUpEventProcessor stepInstanceWakeUpEventProcessor,
       TerminateThenRunInstanceJobProcessor terminateThenRunInstanceJobProcessor,
       PublishJobEventProcessor publishJobEventProcessor,
       @Qualifier(EVENT_QUEUE_QUALIFIER) LinkedBlockingQueue<MaestroJobEvent> queue) {
@@ -156,6 +174,7 @@ public class MaestroServerConfiguration {
         startWorkflowJobProcessor,
         terminateInstancesJobProcessor,
         terminateThenRunInstanceJobProcessor,
+        stepInstanceWakeUpEventProcessor,
         publishJobEventProcessor,
         queue,
         Executors.newFixedThreadPool(1));

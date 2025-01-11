@@ -18,8 +18,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import com.netflix.maestro.engine.MaestroEngineBaseTest;
 import com.netflix.maestro.engine.params.DefaultParamManager;
 import com.netflix.maestro.engine.params.ParamsManager;
@@ -40,6 +38,7 @@ import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.models.parameter.StringMapParamDefinition;
 import com.netflix.maestro.models.timeline.TimelineLogEvent;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -315,7 +314,7 @@ public class StepRuntimeManagerTest extends MaestroEngineBaseTest {
   public void testMergeNestedParamMap() {
     when(this.defaultParamManager.getDefaultStepParams())
         .thenReturn(
-            ImmutableMap.of(
+            Map.of(
                 "nested-default-new",
                 MapParamDefinition.builder()
                     .name("nested-default-new")
@@ -328,8 +327,8 @@ public class StepRuntimeManagerTest extends MaestroEngineBaseTest {
                 MapParamDefinition.builder()
                     .name("nested-common")
                     .value(
-                        Maps.newHashMap(
-                            ImmutableMap.of(
+                        new HashMap<>(
+                            Map.of(
                                 "default-param",
                                 ParamDefinition.buildParamDefinition(
                                     "default-param", "from-default"),
@@ -363,7 +362,7 @@ public class StepRuntimeManagerTest extends MaestroEngineBaseTest {
                 ParamDefinition.buildParamDefinition("test-param", "some-other-default")));
     TypedStep testStep = new TypedStep();
     testStep.setParams(
-        ImmutableMap.of(
+        Map.of(
             "nested-step-new",
             MapParamDefinition.builder()
                 .name("nested-step-new")
@@ -375,8 +374,8 @@ public class StepRuntimeManagerTest extends MaestroEngineBaseTest {
             MapParamDefinition.builder()
                 .name("nested-common")
                 .value(
-                    Maps.newHashMap(
-                        ImmutableMap.of(
+                    new HashMap<>(
+                        Map.of(
                             "step-param",
                             ParamDefinition.buildParamDefinition("step-param", "from-step"),
                             "common-param",
@@ -449,7 +448,7 @@ public class StepRuntimeManagerTest extends MaestroEngineBaseTest {
   public void testMergeNestedStringMap() {
     when(this.defaultParamManager.getDefaultStepParams())
         .thenReturn(
-            ImmutableMap.of(
+            Map.of(
                 "nested-default-new",
                 StringMapParamDefinition.builder()
                     .name("nested-default-new")
@@ -469,7 +468,7 @@ public class StepRuntimeManagerTest extends MaestroEngineBaseTest {
                 ParamDefinition.buildParamDefinition("test-param", "some-other-default")));
     TypedStep testStep = new TypedStep();
     testStep.setParams(
-        ImmutableMap.of(
+        Map.of(
             "nested-step-new",
             StringMapParamDefinition.builder()
                 .name("nested-step-new")

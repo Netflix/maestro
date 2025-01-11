@@ -13,9 +13,13 @@
 package com.netflix.maestro.server.controllers;
 
 import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
+import com.netflix.maestro.models.Actions;
+import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
+import java.util.Map;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +46,13 @@ public class WorkflowInstanceController {
     this.workflowInstanceDao = workflowInstanceDao;
   }
 
+  @GetMapping(value = "/instances/action-map", consumes = MediaType.ALL_VALUE)
+  @Operation(summary = "Get workflow instance status to workflow instance action mapping")
+  public Map<WorkflowInstance.Status, List<Actions.WorkflowInstanceAction>>
+      getWorkflowInstanceActionMap() {
+    return Actions.WORKFLOW_INSTANCE_STATUS_TO_ACTION_MAP;
+  }
+
   @GetMapping(
       value = "/{workflowId}/instances/{workflowInstanceId}/runs/{workflowRun}",
       consumes = MediaType.ALL_VALUE)
@@ -64,5 +75,17 @@ public class WorkflowInstanceController {
     }
 
     return instance;
+  }
+
+  @GetMapping(
+      value = "/{workflowId}/instances/{workflowInstanceId}",
+      consumes = MediaType.ALL_VALUE)
+  @Operation(summary = "Get a workflow instance view by overlaying data from all runs within it")
+  public WorkflowInstance getWorkflowInstanceView(
+      @Valid @NotNull @PathVariable("workflowId") String workflowId,
+      @PathVariable("workflowInstanceId") long workflowInstanceId,
+      @RequestParam(name = "enriched", defaultValue = "true") boolean enriched) {
+    return getWorkflowInstance(
+        workflowId, workflowInstanceId, Constants.LATEST_INSTANCE_RUN, enriched, true);
   }
 }

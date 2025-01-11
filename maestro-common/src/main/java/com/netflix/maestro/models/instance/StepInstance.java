@@ -27,6 +27,7 @@ import com.netflix.maestro.models.definition.StepDependencyType;
 import com.netflix.maestro.models.definition.StepOutputsDefinition;
 import com.netflix.maestro.models.definition.TagList;
 import com.netflix.maestro.models.definition.User;
+import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.models.timeline.Timeline;
 import com.netflix.maestro.validations.TagListConstraint;
@@ -92,6 +93,8 @@ public class StepInstance {
   @Min(1)
   private long workflowVersionId; // version id of baseline workflow
 
+  @NotNull private Long groupId; // the group id to group a set of root workflows together
+
   // required owner from workflow instance properties snapshot.
   @Valid @NotNull private User owner;
 
@@ -122,6 +125,9 @@ public class StepInstance {
   @JsonInclude(JsonInclude.Include.NON_DEFAULT)
   @Valid
   private Timeline timeline;
+
+  @Nullable private Map<String, ParamDefinition> stepRunParams;
+  @Nullable private RestartConfig restartConfig;
 
   /** Enrich step instance data for external API endpoints. */
   @JsonIgnore

@@ -77,9 +77,10 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
 
   @Before
   public void setUp() throws Exception {
-    stepInstanceDao = new MaestroStepInstanceDao(dataSource, MAPPER, config);
+    stepInstanceDao = new MaestroStepInstanceDao(dataSource, MAPPER, config, metricRepo);
     actionDao =
-        new MaestroStepInstanceActionDao(dataSource, MAPPER, config, stepInstanceDao, publisher);
+        new MaestroStepInstanceActionDao(
+            dataSource, MAPPER, config, stepInstanceDao, publisher, metricRepo);
     instance =
         loadObject(
             "fixtures/instances/sample-workflow-instance-created.json", WorkflowInstance.class);
@@ -277,7 +278,8 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
   public void testTryGetActionWithError() throws Exception {
     DataSource dataSource1 = spy(dataSource);
     MaestroStepInstanceActionDao actionDao1 =
-        new MaestroStepInstanceActionDao(dataSource1, MAPPER, config, stepInstanceDao, publisher);
+        new MaestroStepInstanceActionDao(
+            dataSource1, MAPPER, config, stepInstanceDao, publisher, metricRepo);
     doThrow(new RuntimeException("test-exception")).when(dataSource1).getConnection();
 
     WorkflowSummary summary = new WorkflowSummary();

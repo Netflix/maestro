@@ -1,0 +1,38 @@
+{
+  "properties": {
+    "owner": "tester",
+    "run_strategy": "parallel"
+  },
+  "workflow": {
+    "id": "sample-dag-test-2",
+    "name": "Test workflow 02",
+    "description": "Long description about this workflow",
+    "params": {
+      "param1":  {
+        "expression": "return UUID.randomUUID().toString();",
+        "type":  "STRING", "mode": "CONSTANT"},
+      "param2":  {
+        "expression": "return UUID.randomUUID().toString();",
+        "type":  "STRING", "mode": "IMMUTABLE"}
+    },
+    "steps": [
+      {"step": {"id": "job.1", "type": "NoOp", "transition": {"successors": {"job.2": "true", "job.3":  "true"}}}},
+      {"step": {"id": "job.2", "type": "Sleep",
+        "params": {"sleep_seconds": {"value":  30, "type": "LONG"}},
+        "timeout": "100s",
+        "retry_policy": {
+          "timeout_retry_limit": 3,
+          "backoff": {
+            "timeout_retry_backoff_in_secs": 5,
+            "type": "EXPONENTIAL_BACKOFF"
+          }
+        },
+        "transition": {"successors": {"job.4": "true"}}}},
+      {"step": {"id": "job.3", "type": "Sleep",
+        "params": {"sleep_seconds": {"value": 100, "type":  "LONG"}},
+        "transition": {"successors": {"job.4": "true"}}}},
+      {"step": {"id": "job.4", "type": "NoOp", "transition": {"successors": {"job.5": "true"}}}},
+      {"step": {"id": "job.5", "type": "NoOp"}}
+    ]
+  }
+}

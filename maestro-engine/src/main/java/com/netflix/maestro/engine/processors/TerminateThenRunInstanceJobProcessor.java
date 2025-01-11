@@ -25,7 +25,7 @@ import java.util.function.Supplier;
 import lombok.AllArgsConstructor;
 
 /**
- * Processor to consume {@link TerminateThenRunInstanceJobEvent} and terminate conductor workflow
+ * Processor to consume {@link TerminateThenRunInstanceJobEvent} and terminate maestro workflow
  * instances for all cases. It monitors until workflow instances are terminated eventually. Then it
  * runs a new workflow instance.
  */

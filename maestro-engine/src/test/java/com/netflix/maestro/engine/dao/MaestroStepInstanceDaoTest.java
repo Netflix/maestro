@@ -20,11 +20,11 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 
-import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.engine.MaestroTestHelper;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
+import com.netflix.maestro.exceptions.MaestroDatabaseError;
 import com.netflix.maestro.exceptions.MaestroNotFoundException;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.artifact.Artifact;
@@ -71,7 +71,7 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
 
   @Before
   public void setUp() throws Exception {
-    stepDao = new MaestroStepInstanceDao(dataSource, MAPPER, config);
+    stepDao = new MaestroStepInstanceDao(dataSource, MAPPER, config, metricRepo);
     si = loadObject(TEST_STEP_INSTANCE, StepInstance.class);
     stepDao.insertOrUpsertStepInstance(si, false);
   }
@@ -123,8 +123,8 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
   public void testInsertDuplicateStepInstance() {
     AssertHelper.assertThrows(
         "cannot insert the same step instance twice",
-        ApplicationException.class,
-        "BACKEND_ERROR - ERROR: duplicate key value",
+        MaestroDatabaseError.class,
+        "INTERNAL_ERROR - ERROR: duplicate key value",
         () -> stepDao.insertOrUpsertStepInstance(si, false));
   }
 
@@ -337,13 +337,17 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
   }
 
   @Test
-  public void testGetAllLatestStepUuidFromAncestors() throws Exception {
+  public void testGetAllLatestStepFromAncestors() throws Exception {
     si = loadObject("fixtures/instances/sample-step-instance-finishing.json", StepInstance.class);
     stepDao.insertOrUpsertStepInstance(si, true);
+    StepInstance expected = si;
+    expected.setArtifacts(Collections.emptyMap());
     si = loadObject("fixtures/instances/sample-step-instance-failed.json", StepInstance.class);
     stepDao.insertOrUpsertStepInstance(si, true);
-    Map<String, String> res = stepDao.getAllLatestStepUuidFromAncestors("sample-dag-test-3", 1L);
-    assertEquals(Collections.singletonMap("job1", "ff4ccce2-0fda-4882-9cd8-12ff90cb5f02"), res);
+
+    Map<String, StepInstance> res =
+        stepDao.getAllLatestStepFromAncestors("sample-dag-test-3", 1L, List.of("job1"));
+    assertEquals(Collections.singletonMap("job1", expected), res);
   }
 
   @Test
@@ -586,5 +590,26 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
 
     // still 4 artifacts, one of them is empty
     assertEquals(4, artifacts.size());
+  }
+
+  @Test
+  public void testGetStepInstanceViews() throws Exception {
+    StepInstance si1 =
+        loadObject("fixtures/instances/sample-step-instance-finishing.json", StepInstance.class);
+    stepDao.insertOrUpsertStepInstance(si1, true);
+    StepInstance si2 =
+        loadObject("fixtures/instances/sample-step-instance-failed.json", StepInstance.class);
+    stepDao.insertOrUpsertStepInstance(si2, true);
+
+    List<StepInstance> res = stepDao.getStepInstanceViews("sample-dag-test-3", 1L, 1L);
+    assertEquals(1, res.size());
+    assertEquals("ff4ccce2-0fda-4882-9cd8-12ff90cb5f06", res.getFirst().getStepUuid());
+
+    res = stepDao.getStepInstanceViews("sample-dag-test-3", 1L, 2L);
+    assertEquals(1, res.size());
+    assertEquals("ff4ccce2-0fda-4882-9cd8-12ff90cb5f02", res.getFirst().getStepUuid());
+
+    res = stepDao.getStepInstanceViews("sample-dag-test-3", 1L, 3L);
+    assertEquals(0, res.size());
   }
 }

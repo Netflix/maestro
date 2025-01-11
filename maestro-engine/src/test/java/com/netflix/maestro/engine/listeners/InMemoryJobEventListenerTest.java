@@ -32,6 +32,7 @@ import com.netflix.maestro.engine.processors.DeleteWorkflowJobProcessor;
 import com.netflix.maestro.engine.processors.PublishJobEventProcessor;
 import com.netflix.maestro.engine.processors.RunWorkflowInstancesJobProcessor;
 import com.netflix.maestro.engine.processors.StartWorkflowJobProcessor;
+import com.netflix.maestro.engine.processors.StepInstanceWakeUpEventProcessor;
 import com.netflix.maestro.engine.processors.TerminateInstancesJobProcessor;
 import com.netflix.maestro.engine.processors.TerminateThenRunInstanceJobProcessor;
 import java.util.concurrent.ExecutorService;
@@ -48,6 +49,7 @@ public class InMemoryJobEventListenerTest extends MaestroEngineBaseTest {
   @Mock private StartWorkflowJobProcessor startWorkflowJobProcessor;
   @Mock private TerminateInstancesJobProcessor terminateInstancesJobProcessor;
   @Mock private TerminateThenRunInstanceJobProcessor terminateThenRunInstanceJobProcessor;
+  @Mock private StepInstanceWakeUpEventProcessor stepInstanceWakeUpEventProcessor;
   @Mock private PublishJobEventProcessor publishJobEventProcessor;
   @Mock private LinkedBlockingQueue<MaestroJobEvent> queue;
   @Mock private ExecutorService executorService;
@@ -62,6 +64,7 @@ public class InMemoryJobEventListenerTest extends MaestroEngineBaseTest {
             startWorkflowJobProcessor,
             terminateInstancesJobProcessor,
             terminateThenRunInstanceJobProcessor,
+            stepInstanceWakeUpEventProcessor,
             publishJobEventProcessor,
             queue,
             executorService);
@@ -89,11 +92,12 @@ public class InMemoryJobEventListenerTest extends MaestroEngineBaseTest {
     when(event.getType()).thenCallRealMethod();
     jobEventListener.process(event);
     verify(terminateThenRunInstanceJobProcessor, times(1)).process(any());
-
-    event = Mockito.mock(StepInstanceUpdateJobEvent.class);
+    event = Mockito.mock(StepInstanceWakeUpEvent.class);
     when(event.getType()).thenCallRealMethod();
     jobEventListener.process(event);
-    event = Mockito.mock(StepInstanceWakeUpEvent.class);
+    verify(stepInstanceWakeUpEventProcessor, times(1)).process(any());
+
+    event = Mockito.mock(StepInstanceUpdateJobEvent.class);
     when(event.getType()).thenCallRealMethod();
     jobEventListener.process(event);
     event = Mockito.mock(WorkflowInstanceUpdateJobEvent.class);
@@ -102,6 +106,6 @@ public class InMemoryJobEventListenerTest extends MaestroEngineBaseTest {
     event = Mockito.mock(WorkflowVersionUpdateJobEvent.class);
     when(event.getType()).thenCallRealMethod();
     jobEventListener.process(event);
-    verify(publishJobEventProcessor, times(4)).process(any());
+    verify(publishJobEventProcessor, times(3)).process(any());
   }
 }

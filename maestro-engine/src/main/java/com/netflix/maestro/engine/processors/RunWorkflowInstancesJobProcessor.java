@@ -18,20 +18,22 @@ import com.netflix.maestro.engine.jobevents.RunWorkflowInstancesJobEvent;
 import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.exceptions.MaestroNotFoundException;
 import com.netflix.maestro.exceptions.MaestroRetryableError;
+import com.netflix.maestro.flow.dao.MaestroFlowDao;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import java.util.function.Supplier;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Processor to consume {@link RunWorkflowInstancesJobEvent} and kick off conductor workflow
- * instances for all trigger cases. All workflow instances are launched by this processor.
+ * Processor to consume {@link RunWorkflowInstancesJobEvent} and kick off internal flow instances
+ * for all trigger cases. All workflow instances are launched by this processor.
  */
 @Slf4j
 @AllArgsConstructor
 public class RunWorkflowInstancesJobProcessor
     implements MaestroEventProcessor<RunWorkflowInstancesJobEvent> {
   private final MaestroWorkflowInstanceDao instanceDao;
+  private final MaestroFlowDao flowDao;
   private final WorkflowRunner workflowRunner;
 
   @SuppressWarnings({"PMD.AvoidCatchingNPE"})
@@ -49,7 +51,8 @@ public class RunWorkflowInstancesJobProcessor
                         workflowId, instanceRunUuid.getInstanceId(), instanceRunUuid.getRunId());
                 if (instance.getStatus() == WorkflowInstance.Status.CREATED) {
                   if (instanceRunUuid.getUuid().equals(instance.getWorkflowUuid())) {
-                    if (!instanceDao.existWorkflowWithSameUuid(instanceRunUuid.getUuid())) {
+                    if (!flowDao.existFlowWithSameKeys(
+                        instance.getGroupId(), instance.getWorkflowUuid())) {
                       String executionId = runWorkflowInstance(instance);
                       LOG.info(
                           "Run a workflow instance {} with an internal execution_id [{}]",
@@ -57,7 +60,7 @@ public class RunWorkflowInstancesJobProcessor
                           executionId);
                     } else {
                       LOG.warn(
-                          "Workflow instance [{}][{}] has already been executed. Skip it for dedup",
+                          "Workflow instance [{}][{}] has already been executed by flow engine. Skip it for dedup",
                           workflowId,
                           instanceRunUuid);
                     }

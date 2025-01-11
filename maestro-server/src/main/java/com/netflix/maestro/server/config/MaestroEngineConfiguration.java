@@ -22,6 +22,7 @@ import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
 import com.netflix.maestro.engine.eval.ExprEvaluator;
 import com.netflix.maestro.engine.eval.MaestroParamExtensionRepo;
 import com.netflix.maestro.engine.eval.ParamEvaluator;
+import com.netflix.maestro.engine.handlers.StepInstanceActionHandler;
 import com.netflix.maestro.engine.handlers.WorkflowActionHandler;
 import com.netflix.maestro.engine.handlers.WorkflowInstanceActionHandler;
 import com.netflix.maestro.engine.metrics.MaestroMetricRepo;
@@ -42,9 +43,9 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Primary;
 
+/** beans for maestro engine related classes. */
 @Configuration
 @Slf4j
 @EnableCaching
@@ -96,6 +97,15 @@ public class MaestroEngineConfiguration {
   }
 
   @Bean
+  public StepInstanceActionHandler stepInstanceActionHandler(
+      MaestroWorkflowInstanceDao instanceDao,
+      MaestroStepInstanceActionDao actionDao,
+      WorkflowInstanceActionHandler actionHandler) {
+    LOG.info("Creating maestro stepInstanceActionHandler within Spring boot...");
+    return new StepInstanceActionHandler(instanceDao, actionDao, actionHandler);
+  }
+
+  @Bean
   @ConditionalOnProperty(
       value = "maestro.redis.enabled",
       havingValue = "false",
@@ -139,7 +149,6 @@ public class MaestroEngineConfiguration {
   }
 
   @Bean(initMethod = "postConstruct", destroyMethod = "preDestroy")
-  @DependsOn({"lockProvider"})
   public ExprEvaluator exprEvaluator(
       MaestroProperties properties, MaestroParamExtensionRepo extensionRepo) {
     LOG.info("Creating maestro exprEvaluator within Spring boot...");

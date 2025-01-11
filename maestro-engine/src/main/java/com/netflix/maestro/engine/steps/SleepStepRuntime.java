@@ -54,7 +54,7 @@ public class SleepStepRuntime implements StepRuntime {
     if (elapsedTime > sleepTime) {
       return Result.of(State.DONE);
     } else {
-      return Result.of(State.CONTINUE);
+      return Result.of(State.USER_ERROR);
     }
   }
 }

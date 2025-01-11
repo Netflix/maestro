@@ -12,7 +12,6 @@
  */
 package com.netflix.maestro.engine.params;
 
-import com.google.common.collect.ImmutableMap;
 import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.engine.execution.RunRequest;
 import com.netflix.maestro.engine.utils.ObjectHelper;
@@ -59,21 +58,20 @@ public final class ParamsMergeHelper {
 
   /** Allowed update modes for each stage for non system. * */
   private static final Map<ParamSource, Set<ParamMode>> ALLOWED_UPDATE_MODES =
-      new ImmutableMap.Builder<ParamSource, Set<ParamMode>>()
-          .put(ParamSource.DEFINITION, DEFAULT_UPDATE_MODES)
-          .put(ParamSource.FOREACH, DEFAULT_UPDATE_MODES)
-          .put(ParamSource.LAUNCH, DEFAULT_UPDATE_MODES)
-          .put(ParamSource.SIGNAL, DEFAULT_UPDATE_MODES)
-          .put(ParamSource.SUBWORKFLOW, DEFAULT_UPDATE_MODES)
-          .put(ParamSource.TEMPLATE, DEFAULT_UPDATE_MODES)
-          .put(ParamSource.TIME_TRIGGER, DEFAULT_UPDATE_MODES)
-          .put(ParamSource.OUTPUT_PARAMETER, EnumSet.of(ParamMode.MUTABLE))
-          .put(ParamSource.RESTART, RESTART_UPDATE_MODES)
-          .build();
+      Map.of(
+          ParamSource.DEFINITION, DEFAULT_UPDATE_MODES,
+          ParamSource.FOREACH, DEFAULT_UPDATE_MODES,
+          ParamSource.LAUNCH, DEFAULT_UPDATE_MODES,
+          ParamSource.SIGNAL, DEFAULT_UPDATE_MODES,
+          ParamSource.SUBWORKFLOW, DEFAULT_UPDATE_MODES,
+          ParamSource.TEMPLATE, DEFAULT_UPDATE_MODES,
+          ParamSource.TIME_TRIGGER, DEFAULT_UPDATE_MODES,
+          ParamSource.OUTPUT_PARAMETER, EnumSet.of(ParamMode.MUTABLE),
+          ParamSource.RESTART, RESTART_UPDATE_MODES);
 
   /** Mapping of internal param mode to mode. * */
   private static final Map<InternalParamMode, ParamMode> INTERNAL_PARAM_MODE_TO_MODE =
-      ImmutableMap.of(
+      Map.of(
           InternalParamMode.OPTIONAL,
           ParamMode.MUTABLE,
           InternalParamMode.REQUIRED,

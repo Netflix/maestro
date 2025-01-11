@@ -1,12 +1,12 @@
 dependencies {
-    implementation(conductorDep) {
-        exclude group: 'com.google.inject'
-        exclude group: 'com.github.vmg.protogen'
-    }
     implementation zipkinDep
+    implementation jacksonAnnotationsDep
+    implementation jacksonDatabindDep
+    implementation javaxValidationDep
 
     implementation project(':maestro-common')
-    implementation project(':cockroachdb-persistence')
+    implementation project(':maestro-flow')
+    implementation project(':maestro-database')
     implementation project(':netflix-sel')
 
     implementation spectatorApiDep

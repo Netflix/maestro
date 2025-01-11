@@ -13,14 +13,15 @@
 package com.netflix.maestro.engine.dao;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.cockroachdb.CockroachDBConfiguration;
-import com.netflix.conductor.cockroachdb.dao.CockroachDBBaseDAO;
 import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.annotations.SuppressFBWarnings;
+import com.netflix.maestro.database.AbstractDatabaseDao;
+import com.netflix.maestro.database.DatabaseConfiguration;
 import com.netflix.maestro.engine.steps.ForeachStepRuntime;
 import com.netflix.maestro.engine.tasks.MaestroTask;
 import com.netflix.maestro.exceptions.MaestroBadRequestException;
 import com.netflix.maestro.exceptions.MaestroNotFoundException;
+import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.definition.Workflow;
@@ -71,7 +72,7 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressFBWarnings("OBL_UNSATISFIED_OBLIGATION")
 @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
 @Slf4j
-public class MaestroStepBreakpointDao extends CockroachDBBaseDAO {
+public class MaestroStepBreakpointDao extends AbstractDatabaseDao {
   private static final String WORKFLOW_ID = "workflow_id";
   private static final String VERSION = "version";
   private static final String INSTANCE_ID = "instance_id";
@@ -167,20 +168,23 @@ public class MaestroStepBreakpointDao extends CockroachDBBaseDAO {
   public MaestroStepBreakpointDao(
       DataSource dataSource,
       ObjectMapper objectMapper,
-      CockroachDBConfiguration config,
-      MaestroWorkflowDao workflowDao) {
-    super(dataSource, objectMapper, config);
+      DatabaseConfiguration config,
+      MaestroWorkflowDao workflowDao,
+      MaestroMetrics metrics) {
+    super(dataSource, objectMapper, config, metrics);
     this.workflowDao = workflowDao;
     this.batchDeletionLimitSupplier = () -> Constants.BATCH_DELETION_LIMIT;
   }
 
+  // for unit test
   MaestroStepBreakpointDao(
       DataSource dataSource,
       ObjectMapper objectMapper,
-      CockroachDBConfiguration config,
+      DatabaseConfiguration config,
       MaestroWorkflowDao workflowDao,
-      Supplier<Integer> batchDeletionLimitSupplier) {
-    super(dataSource, objectMapper, config);
+      Supplier<Integer> batchDeletionLimitSupplier,
+      MaestroMetrics metrics) {
+    super(dataSource, objectMapper, config, metrics);
     this.workflowDao = workflowDao;
     this.batchDeletionLimitSupplier = batchDeletionLimitSupplier;
   }

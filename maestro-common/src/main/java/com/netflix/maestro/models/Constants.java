@@ -33,10 +33,16 @@ public final class Constants {
   /** Reserved maestro suffix for internal usage. */
   public static final String MAESTRO_SUFFIX = "_maestro";
 
-  /** Maestro conductor proxy task name. */
+  /** Maestro flow engine proxy task name. */
   public static final String MAESTRO_TASK_NAME = "MAESTRO_TASK";
 
-  /** Maestro conductor proxy task name set for user defined step. */
+  /** Maestro flow engine start task name. */
+  public static final String DEFAULT_START_TASK_NAME = MAESTRO_PREFIX + "start";
+
+  /** Maestro flow engine end task name. */
+  public static final String DEFAULT_END_TASK_NAME = MAESTRO_PREFIX + "end";
+
+  /** Maestro internal proxy flow task name set for user defined step. */
   public static final Set<String> USER_DEFINED_TASKS =
       Collections.singleton(Constants.MAESTRO_TASK_NAME);
 
@@ -53,14 +59,8 @@ public final class Constants {
   /** Maestro step instance runtime summary field name. */
   public static final String STEP_RUNTIME_SUMMARY_FIELD = MAESTRO_PREFIX + "step_runtime_summary";
 
-  /** Maestro step instance runtime summary field name. */
-  public static final String DEFAULT_START_STEP_NAME = MAESTRO_PREFIX + "start";
-
-  /** Maestro step instance runtime summary field name. */
-  public static final String DEFAULT_START_FORK_STEP_NAME = MAESTRO_PREFIX + "start_fork";
-
-  /** Maestro step instance runtime summary field name. */
-  public static final String DEFAULT_END_STEP_NAME = MAESTRO_PREFIX + "end";
+  /** All maestro step dependencies field name. */
+  public static final String ALL_STEP_DEPENDENCIES_FIELD = MAESTRO_PREFIX + "all_step_dependencies";
 
   /** Maestro foreach inline workflow prefix. */
   public static final String FOREACH_INLINE_WORKFLOW_PREFIX =
@@ -128,7 +128,7 @@ public final class Constants {
   /**
    * The maximum number of steps defined in workflow definition. Note that this limit can only be
    * bumped up and cannot be decreased as it is related to the pushed data.
-   * <li>Internal conductor DAG engine might not handle too large workflow well.
+   * <li>Internal flow engine might not handle too large workflow well.
    * <li>UI might be slow to render large workflows with too many nodes.
    * <li>Enforce the best practice to avoid a workflow with too many steps hard coded in a single
    *     workflow definition.
@@ -334,13 +334,4 @@ public final class Constants {
 
   /** the number of components existed in an inline workflow id split by _. */
   public static final int INLINE_WORKFLOW_ID_SPLIT_COMPONENT_COUNT = 5;
-
-  /** the time buffer to tell if the current polling call should be treated as the first. */
-  public static final long FIRST_POLL_TIME_BUFFER_IN_MILLIS = 3000L;
-
-  /**
-   * the poll count to tell if the current polling call should be treated as the first. as conductor
-   * update the count twice in one polling, we set it to be 3 so the first two cycles are included.
-   */
-  public static final int FIRST_POLLING_COUNT_LIMIT = 3;
 }

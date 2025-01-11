@@ -27,30 +27,25 @@ maestro:
   cluster:
     name: test
 
-conductor:
+engine:
   configs:
     payload-compression-enabled: true
     payload-compressor-name: gzip
-    # cockroachdb config
-    workflow-cockroachdb-error-retries: 5
-    workflow-cockroachdb-insert-batch-size: 32
-    workflow-cockroachdb-follower-reads-enabled: false
-    workflow-cockroachdb-rewrite-batched-inserts: true
-    workflow-cockroachdb-login-timeout-seconds: 5
-    workflow-cockroachdb-socket-timeout-seconds: 50
-    jdbc-username: maestro
+    # database config
+    workflow-database-error-retries: 5
+    workflow-database-insert-batch-size: 32
+    workflow-database-follower-reads-enabled: false
+    workflow-database-rewrite-batched-inserts: true
+    workflow-database-login-timeout-seconds: 5
+    workflow-database-socket-timeout-seconds: 50
+    jdbc-username: root
     jdbc-url: "jdbc:tc:cockroach:v22.2.19:///maestro_local"
     flyway-enabled: true
-    workflow-cockroachdb-client-name: maestro-local
-    workflow-cockroachdb-connection-pool-size-max: 8
-    workflow-cockroachdb-connection-pool-idle-min: 8
-    workflow-cockroachdb-connection-lifetime-max: 50000
-    workflow-cockroachdb-connection-idle-timeout: 30000
-    # conductor system task worker config
-    workflow-system-task-worker-thread-count: 1
-    workflow-system-task-worker-callback-seconds: 1
-    workflow-system-task-worker-poll-interval: 100
-    workflow-system-task-queue-pollcount: 16
+    workflow-database-client-name: maestro-local
+    workflow-database-connection-pool-size-max: 8
+    workflow-database-connection-pool-idle-min: 8
+    workflow-database-connection-lifetime-max: 50000
+    workflow-database-connection-idle-timeout: 30000
 
 stepruntime:
   env: test

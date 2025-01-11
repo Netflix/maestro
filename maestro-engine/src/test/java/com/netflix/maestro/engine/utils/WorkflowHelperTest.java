@@ -65,7 +65,12 @@ public class WorkflowHelperTest extends MaestroEngineBaseTest {
   public void setup() throws IOException {
     workflowHelper =
         new WorkflowHelper(
-            paramsManager, paramEvaluator, dagTranslator, extensionRepo, maestroJobEventPublisher);
+            paramsManager,
+            paramEvaluator,
+            dagTranslator,
+            extensionRepo,
+            maestroJobEventPublisher,
+            1);
     definition =
         loadObject(
             "fixtures/workflows/definition/sample-minimal-wf.json", WorkflowDefinition.class);

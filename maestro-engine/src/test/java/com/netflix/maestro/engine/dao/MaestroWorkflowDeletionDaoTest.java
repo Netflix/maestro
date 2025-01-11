@@ -46,10 +46,15 @@ public class MaestroWorkflowDeletionDaoTest extends MaestroDaoBaseTest {
 
   @Before
   public void setUp() {
-    deletionDao = new MaestroWorkflowDeletionDao(dataSource, MAPPER, config);
+    deletionDao = new MaestroWorkflowDeletionDao(dataSource, MAPPER, config, metricRepo);
     workflowDao =
         new MaestroWorkflowDao(
-            dataSource, MAPPER, config, publisher, mock(TriggerSubscriptionClient.class));
+            dataSource,
+            MAPPER,
+            config,
+            publisher,
+            mock(TriggerSubscriptionClient.class),
+            metricRepo);
   }
 
   @After

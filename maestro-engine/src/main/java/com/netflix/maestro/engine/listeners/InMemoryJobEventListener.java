@@ -16,12 +16,14 @@ import com.netflix.maestro.engine.jobevents.DeleteWorkflowJobEvent;
 import com.netflix.maestro.engine.jobevents.MaestroJobEvent;
 import com.netflix.maestro.engine.jobevents.RunWorkflowInstancesJobEvent;
 import com.netflix.maestro.engine.jobevents.StartWorkflowJobEvent;
+import com.netflix.maestro.engine.jobevents.StepInstanceWakeUpEvent;
 import com.netflix.maestro.engine.jobevents.TerminateInstancesJobEvent;
 import com.netflix.maestro.engine.jobevents.TerminateThenRunInstanceJobEvent;
 import com.netflix.maestro.engine.processors.DeleteWorkflowJobProcessor;
 import com.netflix.maestro.engine.processors.PublishJobEventProcessor;
 import com.netflix.maestro.engine.processors.RunWorkflowInstancesJobProcessor;
 import com.netflix.maestro.engine.processors.StartWorkflowJobProcessor;
+import com.netflix.maestro.engine.processors.StepInstanceWakeUpEventProcessor;
 import com.netflix.maestro.engine.processors.TerminateInstancesJobProcessor;
 import com.netflix.maestro.engine.processors.TerminateThenRunInstanceJobProcessor;
 import java.util.concurrent.ExecutorService;
@@ -43,6 +45,7 @@ public class InMemoryJobEventListener {
   private final StartWorkflowJobProcessor startWorkflowJobProcessor;
   private final TerminateInstancesJobProcessor terminateInstancesJobProcessor;
   private final TerminateThenRunInstanceJobProcessor terminateThenRunInstanceJobProcessor;
+  private final StepInstanceWakeUpEventProcessor stepInstanceWakeUpEventProcessor;
   private final PublishJobEventProcessor publishJobEventProcessor;
   private final LinkedBlockingQueue<MaestroJobEvent> queue;
   private final ExecutorService executorService;
@@ -56,7 +59,7 @@ public class InMemoryJobEventListener {
             } catch (InterruptedException e) {
               break;
             } catch (RuntimeException e) {
-              LOG.error("Failed to process a maestro job event and discard it");
+              LOG.error("Failed to process a maestro job event and discard it", e);
             }
           }
         });
@@ -99,6 +102,9 @@ public class InMemoryJobEventListener {
       case TERMINATE_THEN_RUN_JOB_EVENT:
         terminateThenRunInstanceJobProcessor.process(
             () -> (TerminateThenRunInstanceJobEvent) maestroJob);
+        break;
+      case STEP_INSTANCE_WAKE_UP_JOB_EVENT:
+        stepInstanceWakeUpEventProcessor.process(() -> (StepInstanceWakeUpEvent) maestroJob);
         break;
       default:
         publishJobEventProcessor.process(() -> maestroJob);

@@ -13,21 +13,7 @@
 package com.netflix.maestro.server.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.cockroachdb.CockroachDBDataSourceProvider;
-import com.netflix.conductor.cockroachdb.dao.CockroachDBEventHandlerDAO;
-import com.netflix.conductor.cockroachdb.dao.CockroachDBIndexDAO;
-import com.netflix.conductor.cockroachdb.dao.CockroachDBMetadataDAO;
-import com.netflix.conductor.cockroachdb.dao.CockroachDBPollDataDAO;
-import com.netflix.conductor.cockroachdb.dao.CockroachDBRateLimitingDAO;
-import com.netflix.conductor.cockroachdb.dao.MaestroCockroachDBExecutionDao;
-import com.netflix.conductor.dao.EventHandlerDAO;
-import com.netflix.conductor.dao.ExecutionDAO;
-import com.netflix.conductor.dao.IndexDAO;
-import com.netflix.conductor.dao.MetadataDAO;
-import com.netflix.conductor.dao.PollDataDAO;
-import com.netflix.conductor.dao.RateLimitingDAO;
-import com.netflix.maestro.engine.compression.GZIPCompressor;
-import com.netflix.maestro.engine.compression.StringCodec;
+import com.netflix.maestro.database.DatabaseSourceProvider;
 import com.netflix.maestro.engine.dao.MaestroRunStrategyDao;
 import com.netflix.maestro.engine.dao.MaestroStepBreakpointDao;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceActionDao;
@@ -38,10 +24,10 @@ import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
 import com.netflix.maestro.engine.dao.OutputDataDao;
 import com.netflix.maestro.engine.publisher.MaestroJobEventPublisher;
 import com.netflix.maestro.engine.utils.TriggerSubscriptionClient;
+import com.netflix.maestro.flow.dao.MaestroFlowDao;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.Constants;
-import com.netflix.maestro.server.properties.ConductorProperties;
-import java.util.Collections;
+import com.netflix.maestro.server.properties.MaestroEngineProperties;
 import javax.sql.DataSource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -52,160 +38,121 @@ import org.springframework.context.annotation.Configuration;
 /** beans for database related classes. */
 @Slf4j
 @Configuration
-@EnableConfigurationProperties(ConductorProperties.class)
+@EnableConfigurationProperties(MaestroEngineProperties.class)
 public class DatabaseConfiguration {
 
-  @Bean(name = "crdbDataSource")
-  public DataSource crdbDataSource(ConductorProperties props) {
-    LOG.info("Creating crdbDataSource within Spring boot...");
-    return new CockroachDBDataSourceProvider(props).get();
+  @Bean(name = "maestroDataSource")
+  public DataSource maestroDataSource(MaestroEngineProperties props) {
+    LOG.info("Creating maestroDataSource within Spring boot...");
+    return new DatabaseSourceProvider(props).get();
   }
 
-  // below are conductor DB DAOs
+  // below are maestro flow DB Daos
   @Bean
-  public MetadataDAO metadataDAO(
+  public MaestroFlowDao maestroFlowDao(
       DataSource crdbDataSource,
-      @Qualifier(ConductorConfiguration.CONDUCTOR_QUALIFIER) ObjectMapper objectMapper,
-      ConductorProperties props) {
-    LOG.info("Creating metadataDAO within Spring boot...");
-    return new CockroachDBMetadataDAO(crdbDataSource, objectMapper, props);
-  }
-
-  @Bean
-  public EventHandlerDAO eventHandlerDAO(
-      DataSource crdbDataSource,
-      @Qualifier(ConductorConfiguration.CONDUCTOR_QUALIFIER) ObjectMapper objectMapper,
-      ConductorProperties props) {
-    LOG.info("Creating eventHandlerDAO within Spring boot...");
-    return new CockroachDBEventHandlerDAO(crdbDataSource, objectMapper, props);
-  }
-
-  @Bean
-  public ExecutionDAO executionDAO(
-      DataSource crdbDataSource,
-      IndexDAO indexDAO,
-      @Qualifier(ConductorConfiguration.CONDUCTOR_QUALIFIER) ObjectMapper objectMapper,
-      StringCodec stringCodec,
-      ConductorProperties props) {
-    LOG.info("Creating executionDAO within Spring boot...");
-    return new MaestroCockroachDBExecutionDao(
-        crdbDataSource, objectMapper, stringCodec, indexDAO, props);
-  }
-
-  @Bean
-  public StringCodec stringCodec() {
-    return new StringCodec(Collections.singletonList(new GZIPCompressor()));
-  }
-
-  @Bean
-  public RateLimitingDAO rateLimitingDAO(
-      DataSource crdbDataSource,
-      @Qualifier(ConductorConfiguration.CONDUCTOR_QUALIFIER) ObjectMapper objectMapper,
-      ConductorProperties props) {
-    LOG.info("Creating rateLimitingDao within Spring boot...");
-    return new CockroachDBRateLimitingDAO(crdbDataSource, objectMapper, props);
-  }
-
-  @Bean
-  public PollDataDAO pollDataDAO(
-      DataSource crdbDataSource,
-      @Qualifier(ConductorConfiguration.CONDUCTOR_QUALIFIER) ObjectMapper objectMapper,
-      ConductorProperties props) {
-    LOG.info("Creating pollDataDAO within Spring boot...");
-    return new CockroachDBPollDataDAO(crdbDataSource, objectMapper, props);
-  }
-
-  @Bean
-  public IndexDAO indexDAO(
-      DataSource crdbDataSource,
-      @Qualifier(ConductorConfiguration.CONDUCTOR_QUALIFIER) ObjectMapper objectMapper,
-      ConductorProperties props) {
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
+      MaestroEngineProperties props,
+      MaestroMetrics metrics) {
     LOG.info("Creating IndexDAO within Spring boot...");
-    return new CockroachDBIndexDAO(crdbDataSource, objectMapper, props);
+    return new MaestroFlowDao(crdbDataSource, objectMapper, props, metrics);
   }
 
   // below are maestro DB Daos
   @Bean
   public MaestroWorkflowDao maestroWorkflowDao(
-      DataSource crdbDataSource,
+      DataSource maestroDataSource,
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
-      ConductorProperties props,
+      MaestroEngineProperties props,
       MaestroJobEventPublisher maestroJobEventPublisher,
-      TriggerSubscriptionClient triggerSubscriptionClient) {
+      TriggerSubscriptionClient triggerSubscriptionClient,
+      MaestroMetrics metrics) {
     LOG.info("Creating maestroWorkflowDao within Spring boot...");
     return new MaestroWorkflowDao(
-        crdbDataSource, objectMapper, props, maestroJobEventPublisher, triggerSubscriptionClient);
+        maestroDataSource,
+        objectMapper,
+        props,
+        maestroJobEventPublisher,
+        triggerSubscriptionClient,
+        metrics);
   }
 
   @Bean
   public MaestroWorkflowDeletionDao maestroWorkflowDeletionDao(
-      DataSource crdbDataSource,
+      DataSource maestroDataSource,
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
-      ConductorProperties props) {
+      MaestroEngineProperties props,
+      MaestroMetrics metrics) {
     LOG.info("Creating maestroWorkflowDeletionDao within Spring boot...");
-    return new MaestroWorkflowDeletionDao(crdbDataSource, objectMapper, props);
+    return new MaestroWorkflowDeletionDao(maestroDataSource, objectMapper, props, metrics);
   }
 
   @Bean
   public MaestroWorkflowInstanceDao maestroWorkflowInstanceDao(
-      DataSource crdbDataSource,
+      DataSource maestroDataSource,
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
-      ConductorProperties props,
-      MaestroJobEventPublisher maestroJobEventPublisher) {
+      MaestroEngineProperties props,
+      MaestroJobEventPublisher maestroJobEventPublisher,
+      MaestroMetrics metrics) {
     LOG.info("Creating maestroWorkflowInstanceDao within Spring boot...");
     return new MaestroWorkflowInstanceDao(
-        crdbDataSource, objectMapper, props, maestroJobEventPublisher);
+        maestroDataSource, objectMapper, props, maestroJobEventPublisher, metrics);
   }
 
   @Bean
   public MaestroRunStrategyDao maestroRunStrategyDao(
       DataSource crdbDataSource,
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
-      ConductorProperties props,
+      MaestroEngineProperties props,
       MaestroJobEventPublisher maestroJobEventPublisher,
-      MaestroMetrics metricRepo) {
+      MaestroMetrics metrics) {
     LOG.info("Creating maestroRunStrategyDao within Spring boot...");
     return new MaestroRunStrategyDao(
-        crdbDataSource, objectMapper, props, maestroJobEventPublisher, metricRepo);
+        crdbDataSource, objectMapper, props, maestroJobEventPublisher, metrics);
   }
 
   @Bean
   public MaestroStepInstanceDao maestroStepInstanceDao(
-      DataSource crdbDataSource,
+      DataSource maestroDataSource,
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
-      ConductorProperties props) {
+      MaestroEngineProperties props,
+      MaestroMetrics metrics) {
     LOG.info("Creating maestroStepInstanceDAO within Spring boot...");
-    return new MaestroStepInstanceDao(crdbDataSource, objectMapper, props);
+    return new MaestroStepInstanceDao(maestroDataSource, objectMapper, props, metrics);
   }
 
   @Bean
   public MaestroStepInstanceActionDao maestroInstanceActionDao(
-      DataSource crdbDataSource,
+      DataSource maestroDataSource,
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
-      ConductorProperties props,
+      MaestroEngineProperties props,
       MaestroStepInstanceDao stepInstanceDao,
-      MaestroJobEventPublisher maestroJobEventPublisher) {
+      MaestroJobEventPublisher maestroJobEventPublisher,
+      MaestroMetrics metrics) {
     LOG.info("Creating maestroInstanceActionDao within Spring boot...");
     return new MaestroStepInstanceActionDao(
-        crdbDataSource, objectMapper, props, stepInstanceDao, maestroJobEventPublisher);
+        maestroDataSource, objectMapper, props, stepInstanceDao, maestroJobEventPublisher, metrics);
   }
 
   @Bean
   public OutputDataDao outputDataDao(
-      DataSource crdbDataSource,
+      DataSource maestroDataSource,
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
-      ConductorProperties props) {
+      MaestroEngineProperties props,
+      MaestroMetrics metrics) {
     LOG.info("Creating outputDataDao within Spring boot...");
-    return new OutputDataDao(crdbDataSource, objectMapper, props);
+    return new OutputDataDao(maestroDataSource, objectMapper, props, metrics);
   }
 
   @Bean
   public MaestroStepBreakpointDao stepBreakpointDao(
-      DataSource crdbDataSource,
+      DataSource maestroDataSource,
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
-      ConductorProperties props,
-      MaestroWorkflowDao workflowDao) {
+      MaestroEngineProperties props,
+      MaestroWorkflowDao workflowDao,
+      MaestroMetrics metrics) {
     LOG.info("Creating maestroStepBreakpointDao within Spring boot...");
-    return new MaestroStepBreakpointDao(crdbDataSource, objectMapper, props, workflowDao);
+    return new MaestroStepBreakpointDao(
+        maestroDataSource, objectMapper, props, workflowDao, metrics);
   }
 }

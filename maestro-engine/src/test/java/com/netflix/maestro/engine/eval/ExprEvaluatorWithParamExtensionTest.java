@@ -15,14 +15,15 @@ package com.netflix.maestro.engine.eval;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-import com.netflix.conductor.cockroachdb.CockroachDBConfiguration;
-import com.netflix.conductor.cockroachdb.CockroachDBDataSourceProvider;
 import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.MaestroBaseTest;
+import com.netflix.maestro.database.DatabaseConfiguration;
+import com.netflix.maestro.database.DatabaseSourceProvider;
 import com.netflix.maestro.engine.MaestroDBTestConfiguration;
 import com.netflix.maestro.engine.MaestroTestHelper;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
+import com.netflix.maestro.engine.metrics.MaestroMetricRepo;
 import com.netflix.maestro.engine.properties.SelProperties;
 import com.netflix.maestro.engine.validations.DryRunValidator;
 import com.netflix.maestro.exceptions.MaestroInvalidExpressionException;
@@ -33,6 +34,7 @@ import com.netflix.maestro.models.parameter.MapParameter;
 import com.netflix.maestro.models.parameter.StringMapParameter;
 import com.netflix.maestro.models.parameter.StringParameter;
 import com.netflix.maestro.models.trigger.SignalTrigger;
+import com.netflix.spectator.api.DefaultRegistry;
 import java.io.IOException;
 import java.util.Collections;
 import javax.sql.DataSource;
@@ -58,9 +60,11 @@ public class ExprEvaluatorWithParamExtensionTest extends MaestroBaseTest {
   @BeforeClass
   public static void init() {
     MaestroBaseTest.init();
-    CockroachDBConfiguration config = new MaestroDBTestConfiguration();
-    dataSource = new CockroachDBDataSourceProvider(config).get();
-    stepDao = new MaestroStepInstanceDao(dataSource, MAPPER, config);
+    DatabaseConfiguration config = new MaestroDBTestConfiguration();
+    dataSource = new DatabaseSourceProvider(config).get();
+    stepDao =
+        new MaestroStepInstanceDao(
+            dataSource, MAPPER, config, new MaestroMetricRepo(new DefaultRegistry()));
     extensionRepo = new MaestroParamExtensionRepo(stepDao, "test", MAPPER);
     exprEvaluator =
         new ExprEvaluator(

@@ -14,17 +14,17 @@ package com.netflix.maestro.engine.handlers;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyMap;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.maestro.engine.MaestroEngineBaseTest;
 import com.netflix.maestro.engine.transformation.WorkflowTranslator;
 import com.netflix.maestro.engine.utils.WorkflowHelper;
+import com.netflix.maestro.flow.engine.FlowExecutor;
 import com.netflix.maestro.models.definition.StepTransition;
 import com.netflix.maestro.models.definition.Workflow;
 import com.netflix.maestro.models.instance.WorkflowInstance;
@@ -37,7 +37,7 @@ import org.mockito.Mock;
 
 public class WorkflowRunnerTest extends MaestroEngineBaseTest {
 
-  @Mock private WorkflowExecutor workflowExecutor;
+  @Mock private FlowExecutor flowExecutor;
   @Mock private WorkflowTranslator translator;
   @Mock private WorkflowHelper workflowHelper;
 
@@ -45,15 +45,15 @@ public class WorkflowRunnerTest extends MaestroEngineBaseTest {
 
   @Before
   public void before() {
-    this.runner = new WorkflowRunner(workflowExecutor, translator, workflowHelper);
-    when(workflowExecutor.startWorkflow(any(), anyMap(), any(), any(), any(), anyMap()))
-        .thenReturn("test-uuid");
+    this.runner = new WorkflowRunner(flowExecutor, translator, workflowHelper);
+    when(flowExecutor.startFlow(anyLong(), any(), any(), any(), anyMap())).thenReturn("test-uuid");
   }
 
   @Test
   public void testStart() {
     WorkflowInstance instance = new WorkflowInstance();
     instance.setWorkflowId("test-workflow");
+    instance.setGroupId(5L);
     instance.setWorkflowVersionId(1);
     instance.setRuntimeWorkflow(mock(Workflow.class));
     instance.setRuntimeDag(Collections.singletonMap("step1", new StepTransition()));
@@ -64,20 +64,14 @@ public class WorkflowRunnerTest extends MaestroEngineBaseTest {
     instance.setStepRunParams(stepRunParams);
     assertEquals("test-uuid", runner.start(instance));
     verify(translator, times(1)).translate(instance);
-    verify(workflowExecutor, times(1))
-        .startWorkflow(any(), anyMap(), any(), any(), anyString(), anyMap());
-  }
-
-  @Test
-  public void testTerminate() {
-    runner.terminate("test-uuid", WorkflowInstance.Status.STOPPED, "test-reason");
-    verify(workflowExecutor, times(1)).terminateWorkflow("test-uuid", "STOPPED-test-reason");
+    verify(flowExecutor, times(1)).startFlow(anyLong(), any(), any(), any(), anyMap());
   }
 
   @Test
   public void testRestart() {
     WorkflowInstance instance = new WorkflowInstance();
     instance.setWorkflowId("test-workflow");
+    instance.setGroupId(5L);
     instance.setWorkflowVersionId(1);
     instance.setRuntimeWorkflow(mock(Workflow.class));
     instance.setRuntimeDag(Collections.singletonMap("step1", new StepTransition()));
@@ -88,7 +82,6 @@ public class WorkflowRunnerTest extends MaestroEngineBaseTest {
     instance.setStepRunParams(stepRunParams);
     assertEquals("test-uuid", runner.restart(instance));
     verify(translator, times(1)).translate(instance);
-    verify(workflowExecutor, times(1))
-        .startWorkflow(any(), anyMap(), any(), any(), anyString(), anyMap());
+    verify(flowExecutor, times(1)).startFlow(anyLong(), any(), any(), any(), anyMap());
   }
 }

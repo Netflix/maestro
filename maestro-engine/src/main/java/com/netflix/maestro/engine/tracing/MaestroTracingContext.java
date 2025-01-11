@@ -100,7 +100,9 @@ public final class MaestroTracingContext {
     String tracingId = toTraceContext().traceIdString();
     if (tracingId != null && !tracingId.isEmpty()) {
       Map<String, Artifact> artifactMap = new LinkedHashMap<>();
-      artifactMap.put("tracing_context", DefaultArtifact.create("tracing_id", tracingId));
+      DefaultArtifact artifact = DefaultArtifact.create("tracing_id", tracingId);
+      artifact.add("context", this);
+      artifactMap.put("tracing_context", artifact);
       return artifactMap;
     }
     return null;

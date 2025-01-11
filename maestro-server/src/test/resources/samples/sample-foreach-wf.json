@@ -1,0 +1,38 @@
+{
+  "properties": {
+    "owner": "tester",
+    "run_strategy": "sequential"
+  },
+  "workflow": {
+    "id": "sample-foreach-wf",
+    "name": "Test foreach workflow",
+    "description": "Long description about this workflow",
+    "params": {
+      "foo":  {
+        "expression": "new DateTime(1569018000000).withZone(DateTimeZone.forID('UTC')).monthOfYear().getAsText();",
+        "type":  "STRING"
+      }
+    },
+    "steps": [
+      {"foreach": {
+        "id": "foreach-job",
+        "params": {"loop_params": {
+          "value": {
+          "i": {
+            "expression": "Util.dateIntsBetween(20200101, 20200110, 1);",
+            "type": "LONG_ARRAY"}
+          },
+          "type": "MAP"
+        }},
+        "steps": [
+          {"step": {"id": "job.1", "type": "NoOp", "transition": {"successors": {"job.5": "true", "job.2":  "true"}}}},
+          {"step": {"id": "job.2", "type": "NoOp", "transition": {"successors": {"job.3": "true", "job.6":  "true"}}}},
+          {"step": {"id": "job.3", "type": "NoOp", "transition": {"successors": {"job.4": "true"}}}},
+          {"step": {"id": "job.4", "type": "NoOp", "transition": {}}},
+          {"step": {"id": "job.5", "type": "NoOp", "transition": {"successors": {"job.3": "true"}}}},
+          {"step": {"id": "job.6", "type": "NoOp", "transition": {"successors": {"job.4": "true"}}}}
+        ]
+      }}
+    ]
+  }
+}

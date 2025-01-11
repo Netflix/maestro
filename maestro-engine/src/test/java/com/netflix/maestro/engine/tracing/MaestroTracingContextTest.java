@@ -58,10 +58,10 @@ public class MaestroTracingContextTest {
                 .parentId(999L)
                 .sampled(true)
                 .build());
+    DefaultArtifact expected =
+        DefaultArtifact.create("tracing_id", "000000000000007b00000000000001c8");
+    expected.add("context", traceContext);
     assertEquals(
-        Collections.singletonMap(
-            "tracing_context",
-            DefaultArtifact.create("tracing_id", "000000000000007b00000000000001c8")),
-        traceContext.toTracingArtifacts());
+        Collections.singletonMap("tracing_context", expected), traceContext.toTracingArtifacts());
   }
 }

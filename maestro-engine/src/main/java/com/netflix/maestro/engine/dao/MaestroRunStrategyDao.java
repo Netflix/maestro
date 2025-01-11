@@ -13,9 +13,9 @@
 package com.netflix.maestro.engine.dao;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.cockroachdb.CockroachDBConfiguration;
-import com.netflix.conductor.cockroachdb.dao.CockroachDBBaseDAO;
 import com.netflix.maestro.annotations.SuppressFBWarnings;
+import com.netflix.maestro.database.AbstractDatabaseDao;
+import com.netflix.maestro.database.DatabaseConfiguration;
 import com.netflix.maestro.engine.db.InstanceRunUuid;
 import com.netflix.maestro.engine.execution.RunRequest;
 import com.netflix.maestro.engine.jobevents.RunWorkflowInstancesJobEvent;
@@ -71,7 +71,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @SuppressFBWarnings("OBL_UNSATISFIED_OBLIGATION")
 @Slf4j
-public class MaestroRunStrategyDao extends CockroachDBBaseDAO {
+public class MaestroRunStrategyDao extends AbstractDatabaseDao {
   private static final String ONE_STRING = "1";
   private static final String TWO_STRING = "2";
   private static final int DO_NOTHING_CODE = 0;
@@ -155,10 +155,10 @@ public class MaestroRunStrategyDao extends CockroachDBBaseDAO {
   public MaestroRunStrategyDao(
       DataSource dataSource,
       ObjectMapper objectMapper,
-      CockroachDBConfiguration config,
+      DatabaseConfiguration config,
       MaestroJobEventPublisher publisher,
       MaestroMetrics metrics) {
-    super(dataSource, objectMapper, config);
+    super(dataSource, objectMapper, config, metrics);
     this.publisher = publisher;
     this.metrics = metrics;
   }
