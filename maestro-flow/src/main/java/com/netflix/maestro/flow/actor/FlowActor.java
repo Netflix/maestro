@@ -105,6 +105,7 @@ final class FlowActor extends BaseActor {
             !isRunning(), "Expect the flow %s to be shutdown but it's not. Retry it", reference());
         return; // short circuit
       }
+      enqueueRetryTasks();
       flow.getRunningTasks().values().forEach(t -> runTask(t, Action.TASK_RESUME));
     } else {
       flow.setPrepareTask(flow.newTask(flow.getFlowDef().getPrepareTask(), true));
@@ -117,6 +118,13 @@ final class FlowActor extends BaseActor {
     schedule(Action.FLOW_TIMEOUT, offset);
 
     post(new Action.FlowReconcile(System.currentTimeMillis()));
+  }
+
+  private void enqueueRetryTasks() {
+    Map<String, Task> lastAttemptMap =
+        flow.getFinishedTasks().stream()
+            .collect(Collectors.toMap(Task::referenceTaskName, t -> t, (first, second) -> second));
+    lastAttemptMap.values().forEach(this::scheduleRetryableTask);
   }
 
   private void reconcile(Action.FlowReconcile action) {
@@ -165,11 +173,7 @@ final class FlowActor extends BaseActor {
       if (!updatedTask.isTerminal()) { // non-critical update
         schedule(Action.FLOW_REFRESH, delayForNext(refreshInterval));
       } else {
-        if (updatedTask.getStatus().isRestartable()) {
-          schedule(
-              new Action.FlowTaskRetry(updatedTask.referenceTaskName()),
-              TimeUnit.SECONDS.toMillis(updatedTask.getStartDelayInSeconds()));
-        }
+        scheduleRetryableTask(updatedTask);
         removeChild(updatedTask.referenceTaskName());
         flow.addFinishedTask(updatedTask);
         decide();
@@ -178,6 +182,22 @@ final class FlowActor extends BaseActor {
       LOG.warn(
           "Flow received a update action for task [{}] but it does not exist. Ignore it",
           updatedTask.referenceTaskName());
+    }
+  }
+
+  private void scheduleRetryableTask(Task task) {
+    if (task.getStatus().isRestartable()) {
+      long delay = TimeUnit.SECONDS.toMillis(task.getStartDelayInSeconds());
+      if (task.getEndTime() == null) {
+        LOG.warn(
+            "Critical warning for an unexpected case: Flow task [{}][{}] has status [{}] but endTime is unset.",
+            reference(),
+            task.referenceTaskName(),
+            task.getStatus());
+      } else {
+        delay = Math.min(0, task.getEndTime() + delay - System.currentTimeMillis());
+      }
+      schedule(new Action.FlowTaskRetry(task.referenceTaskName()), delay);
     }
   }
 
@@ -195,9 +215,7 @@ final class FlowActor extends BaseActor {
       // build a map with step id to the latest task status
       Map<String, Task.Status> taskStatusMap =
           flow.getStreamOfAllTasks()
-              .collect(
-                  Collectors.toMap(
-                      t -> t.getTaskDef().taskReferenceName(), Task::getStatus, (u, v) -> v));
+              .collect(Collectors.toMap(Task::referenceTaskName, Task::getStatus, (u, v) -> v));
       flow.getFlowDef().getTasks().stream()
           .map(t -> nextTask(t, taskStatusMap))
           .filter(Objects::nonNull)

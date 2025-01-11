@@ -89,7 +89,9 @@ final class TaskActor extends BaseActor {
     } else {
       // schedule a task timeout once the task is in executed state
       if (task.getStartTime() != null && task.getTimeoutInMillis() != null) {
-        var offset = task.getStartTime() + task.getTimeoutInMillis() - System.currentTimeMillis();
+        var offset =
+            Math.min(
+                0, task.getStartTime() + task.getTimeoutInMillis() - System.currentTimeMillis());
         schedule(Action.TASK_TIMEOUT, offset);
         task.setTimeoutInMillis(null); // avoid schedule timeout again
       }

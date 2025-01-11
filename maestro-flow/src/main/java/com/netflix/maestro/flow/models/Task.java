@@ -55,6 +55,7 @@ public class Task {
   private int pollCount;
   private Long startTime; // used to record the execution start time
   private Long timeoutInMillis; // keep unset timeout value from maestro engine
+  private Long endTime; // used to record the execution end time
 
   @JsonIgnore
   public String referenceTaskName() {
