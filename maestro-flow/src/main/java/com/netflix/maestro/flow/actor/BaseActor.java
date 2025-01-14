@@ -128,14 +128,14 @@ abstract sealed class BaseActor implements Actor permits GroupActor, FlowActor, 
 
   void checkShutdown() {
     if (noChildActorsRunning()) {
-      shutdownNow();
+      terminateNow();
       if (parent != null) {
         parent.post(Action.FLOW_DOWN);
       }
     }
   }
 
-  void shutdownNow() {
+  void terminateNow() {
     cancelPendingActions();
     running = false;
   }
@@ -176,7 +176,9 @@ abstract sealed class BaseActor implements Actor permits GroupActor, FlowActor, 
         continue;
       }
       try {
-        runForAction(action);
+        if (isRunning()) { // double check to avoid extra run but no guarantee
+          runForAction(action);
+        }
       } catch (RuntimeException e) {
         getLogger()
             .warn(
@@ -205,7 +207,7 @@ abstract sealed class BaseActor implements Actor permits GroupActor, FlowActor, 
               Thread.currentThread(),
               reference(),
               running);
-      shutdownNow();
+      terminateNow();
       return null;
     }
   }

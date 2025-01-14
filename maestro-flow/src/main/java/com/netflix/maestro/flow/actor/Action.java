@@ -25,6 +25,7 @@ public sealed interface Action {
 
   Action GROUP_SHUTDOWN = new GroupShutdown();
 
+  // FlowDown is only to ack Shutdown when the node is down, not for termination
   record FlowDown() implements Action {}
 
   Action FLOW_DOWN = new FlowDown();
@@ -53,6 +54,7 @@ public sealed interface Action {
 
   Action FLOW_SHUTDOWN = new FlowShutdown();
 
+  // TaskDown is only to ack Shutdown when the node is down, not for termination
   record TaskDown() implements Action {}
 
   Action TASK_DOWN = new TaskDown();

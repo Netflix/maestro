@@ -68,8 +68,9 @@ final class TaskActor extends BaseActor {
   private void start(boolean resume) {
     if (!resume) {
       getContext().start(flow, task);
+      postTaskUpdate();
     }
-    post(Action.TASK_PING);
+    schedule(Action.TASK_PING, TimeUnit.SECONDS.toMillis(task.getStartDelayInSeconds()));
   }
 
   private void stop() {
@@ -84,13 +85,13 @@ final class TaskActor extends BaseActor {
   private void execute() {
     boolean changed = getContext().execute(flow, task);
     if (task.getStatus().isTerminal()) {
-      shutdownNow(); // if terminal state, then stop
+      terminateNow(); // if terminal state, then stop
       postTaskUpdate();
     } else {
       // schedule a task timeout once the task is in executed state
       if (task.getStartTime() != null && task.getTimeoutInMillis() != null) {
         var offset =
-            Math.min(
+            Math.max(
                 0, task.getStartTime() + task.getTimeoutInMillis() - System.currentTimeMillis());
         schedule(Action.TASK_TIMEOUT, offset);
         task.setTimeoutInMillis(null); // avoid schedule timeout again
@@ -111,7 +112,7 @@ final class TaskActor extends BaseActor {
   }
 
   private void shutdown() {
-    shutdownNow();
+    terminateNow();
     getParent().post(Action.TASK_DOWN);
   }
 }

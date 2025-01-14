@@ -100,9 +100,12 @@ final class FlowActor extends BaseActor {
     if (initAction.resume()) {
       getContext().resumeFlow(flow);
       if (flow.getStatus().isTerminal()) {
-        checkShutdown();
+        terminateNow();
         Checks.checkTrue(
-            !isRunning(), "Expect the flow %s to be shutdown but it's not. Retry it", reference());
+            !isRunning(),
+            "Expect the flow %s to be terminated but it's not. Retry it",
+            reference());
+        finalized = true;
         return; // short circuit
       }
       enqueueRetryTasks();
@@ -195,7 +198,7 @@ final class FlowActor extends BaseActor {
             task.referenceTaskName(),
             task.getStatus());
       } else {
-        delay = Math.min(0, task.getEndTime() + delay - System.currentTimeMillis());
+        delay = Math.max(0, task.getEndTime() + delay - System.currentTimeMillis());
       }
       schedule(new Action.FlowTaskRetry(task.referenceTaskName()), delay);
     }
@@ -233,11 +236,17 @@ final class FlowActor extends BaseActor {
       } else {
         flow.setStatus(Flow.Status.FAILED);
       }
+      flow.markUpdate();
 
       try {
         getContext().finalCall(flow);
         finalized = true;
-        shutdownNow();
+        terminateNow();
+        // In certain cases, monitor task might decide the flow is finished while there are still
+        // tasks running, e.g., Maestro engine has a special task with step status=NOT_CREATED.
+        // Maestro engine has to make sure it is safe to leave those special tasks running idle.
+        // No waiting but wake up child actors, so they can finish as parent is not running.
+        wakeUpChildActors(Action.TASK_PING);
       } catch (RuntimeException e) {
         LOG.warn(
             "Got an exception during final callback, ignore it and reconciliation will retry ...",
