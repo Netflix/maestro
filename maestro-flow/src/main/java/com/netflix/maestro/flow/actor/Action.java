@@ -67,6 +67,10 @@ public sealed interface Action {
   Action TASK_START = new TaskStart(false);
   Action TASK_RESUME = new TaskStart(true);
 
+  record TaskActivate(boolean active) implements Action {}
+
+  Action TASK_ACTIVATE = new TaskActivate(true);
+
   record TaskStop() implements Action {}
 
   Action TASK_STOP = new TaskStop();

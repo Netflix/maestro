@@ -6,7 +6,20 @@ import lombok.Data;
 import lombok.Getter;
 
 /**
- * Task attempt data model. Business logics are defined over FlowTask interface.
+ * Task attempt data model. Business logics are defined over FlowTask interface. Note that all the
+ * data/state in the task class is local and not thread safe.
+ *
+ * <p>Task active flag is important to support certain cases to run dummy tasks. In those cases, the
+ * dummy task owned by a flow might take actions but should not execute tsk (FlowTask's execute)
+ * because of race conditions. The flow must activate the inactive child task actor first before the
+ * task actor can switch to execute. So those inactive tasks are not real maestro tasks. This is
+ * required to avoid that the child actor runs the business logic but the parent flow is unaware and
+ * decide to finish. Also, the active flag is a local state and not thread safe and can only be
+ * accessed within the actor (e.g. flow owns a list of copied tasks, and it can mutate active flag
+ * for its own snapshots.
+ *
+ * <p>Basic rule: flow actor can only activate a task actor. A task actor can only deactivate itself
+ * and inform its parent flow actor.
  *
  * @author jun-he
  */
@@ -18,7 +31,7 @@ public class Task {
     /** in-progress Status. */
     IN_PROGRESS(false, true, false),
     /** canceled Status. */
-    CANCELED(true, false, false),
+    CANCELED(true, false, true),
     /** failed Status. */
     FAILED(true, false, true),
     /** failed with terminal error Status. */
@@ -52,7 +65,8 @@ public class Task {
   private Map<String, Object> outputData;
   private long startDelayInSeconds; // task polling interval
   private long retryCount;
-  private int pollCount;
+  private int pollCount = 0;
+  private boolean active = true; // flag to indicate if a running task is active or not
   private Long startTime; // used to record the execution start time
   private Long timeoutInMillis; // keep unset timeout value from maestro engine
   private Long endTime; // used to record the execution end time

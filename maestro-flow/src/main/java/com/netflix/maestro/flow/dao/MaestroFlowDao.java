@@ -2,6 +2,7 @@ package com.netflix.maestro.flow.dao;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.database.AbstractDatabaseDao;
+import com.netflix.maestro.exceptions.MaestroRetryableError;
 import com.netflix.maestro.flow.models.Flow;
 import com.netflix.maestro.flow.models.FlowGroup;
 import com.netflix.maestro.flow.properties.FlowEngineProperties;
@@ -36,7 +37,7 @@ public class MaestroFlowDao extends AbstractDatabaseDao {
           + "WHERE heartbeat_ts<(now()-INTERVAL '1 second' * ?) FOR UPDATE SKIP LOCKED LIMIT 1)"
           + "RETURNING group_id,generation";
   private static final String ADD_FLOW_GROUP_QUERY =
-      "INSERT INTO maestro_flow_group (group_id,generation,address) VALUES (?,?,?)";
+      "INSERT INTO maestro_flow_group (group_id,generation,address) VALUES (?,?,?) ON CONFLICT DO NOTHING";
   private static final String GET_FLOW_WITH_SAME_KEYS_QUERY =
       "SELECT 1 FROM maestro_flow WHERE group_id=? AND flow_id=? LIMIT 1";
 
@@ -216,8 +217,10 @@ public class MaestroFlowDao extends AbstractDatabaseDao {
             "insertGroup",
             "Failed to insert the flow group for group id [{}]",
             group.groupId());
-    Checks.checkTrue(
-        res == 1, "Insert flow group row count for [%s] is not 1 but %s", group.groupId(), res);
+    if (res != 1) {
+      throw new MaestroRetryableError(
+          "insertGroup for group [%s] is failed (res=[%s]) and please retry", group.groupId(), res);
+    }
   }
 
   /** Used to get if there is any flow instance with this flow keys. */

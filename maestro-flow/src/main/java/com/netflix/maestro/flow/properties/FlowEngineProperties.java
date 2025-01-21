@@ -14,13 +14,13 @@ public class FlowEngineProperties implements DatabaseConfiguration {
   private static final long MAX_GROUP_NUM_DEFAULT_VALUE = 3;
 
   private static final String ACTOR_RETRY_INTERVAL_PROPERTY_NAME = "actor.retry.interval.millis";
-  private static final long ACTOR_RETRY_INTERVAL_DEFAULT_VALUE = TimeUnit.SECONDS.toMillis(2);
+  private static final long ACTOR_RETRY_INTERVAL_DEFAULT_VALUE = TimeUnit.SECONDS.toMillis(5);
 
   private static final String GROUP_FLOW_FETCH_LIMIT_PROPERTY_NAME = "group.flow.fetch.limit";
   private static final long GROUP_FLOW_FETCH_LIMIT_DEFAULT_VALUE = 100;
 
   private static final String FLOW_REFRESH_INTERVAL_PROPERTY_NAME = "flow.refresh.interval.millis";
-  private static final long FLOW_REFRESH_INTERVAL_DEFAULT_VALUE = TimeUnit.SECONDS.toMillis(5);
+  private static final long FLOW_REFRESH_INTERVAL_DEFAULT_VALUE = TimeUnit.SECONDS.toMillis(3);
 
   private static final String FLOW_RECONCILIATION_INTERVAL_PROPERTY_NAME =
       "flow.reconciliation.interval.millis";

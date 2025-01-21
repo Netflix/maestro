@@ -28,6 +28,10 @@ import org.slf4j.Logger;
  * engine can assume tasks are collocated. Additionally, task actors will pass a small portion of
  * necessary data back for sharing with all other running task actors.
  *
+ * <p>Currently, flow engine supports the retry interval with some small existing issues in wakeup
+ * and timeout. In the future, flow engine should immediately retry and then let maestro engine take
+ * care of retry delay. It will remove FlowTaskRetry and address those related existing issues.
+ *
  * @author jun-he
  */
 @Slf4j
@@ -57,10 +61,10 @@ final class FlowActor extends BaseActor {
     switch (action) {
       case Action.FlowStart fs -> startFlow(fs);
       case Action.FlowReconcile r -> reconcile(r);
-      case Action.FlowRefresh fr -> getContext().refresh(flow);
+      case Action.FlowRefresh fr -> refresh();
       case Action.FlowTaskRetry t -> retryTask(t.taskRefName());
       case Action.TaskUpdate u -> updateFlow(u.updatedTask());
-      case Action.TaskWakeUp w -> wakeUpChildActor(w.taskRef(), new Action.TaskPing());
+      case Action.TaskWakeUp w -> wakeup(w.taskRef());
       case Action.FlowTimeout ft -> timeoutFlow();
       case Action.FlowShutdown sd -> startShutdown(Action.TASK_SHUTDOWN);
       case Action.TaskDown td -> checkShutdown();
@@ -144,6 +148,11 @@ final class FlowActor extends BaseActor {
     return delayInterval + (int) (JITTER * Math.random());
   }
 
+  private void refresh() {
+    getContext().refresh(flow);
+    tryTerminate();
+  }
+
   private void retryTask(String taskRefName) {
     try {
       Task prev =
@@ -159,7 +168,7 @@ final class FlowActor extends BaseActor {
       retryTask.setOutputData(prev.getOutputData());
       retryTask.setRetryCount(prev.getRetryCount() + 1);
       runTask(retryTask, Action.TASK_START);
-    } catch (RuntimeException e) {
+    } catch (RuntimeException e) { // retryTask will not throw exceptions
       LOG.warn("Ignore the exception within retryTask for taskRef [{}] ", taskRefName, e);
     }
   }
@@ -175,6 +184,11 @@ final class FlowActor extends BaseActor {
       flow.updateRunningTask(updatedTask);
       if (!updatedTask.isTerminal()) { // non-critical update
         schedule(Action.FLOW_REFRESH, delayForNext(refreshInterval));
+        if (!updatedTask.isActive()) {
+          schedule(
+              new Action.TaskWakeUp(updatedTask.referenceTaskName()),
+              delayForNext(TimeUnit.SECONDS.toMillis(updatedTask.getStartDelayInSeconds())));
+        }
       } else {
         scheduleRetryableTask(updatedTask);
         removeChild(updatedTask.referenceTaskName());
@@ -204,9 +218,26 @@ final class FlowActor extends BaseActor {
     }
   }
 
+  // This is the best effort. The task actor might not run while flow thinks it's running or the
+  // actor is shutdown. In those cases, missing wakeup will cause the step won't take any action
+  // during retry backoff delay. Callers have to retry for wakeup.
+  private void wakeup(String taskRef) {
+    Task snapshot = flow.getRunningTasks().get(taskRef);
+    if (snapshot == null) {
+      if (dequeRetryAction(taskRef)) {
+        retryTask(taskRef);
+      }
+    } else if (!snapshot.isActive()) {
+      snapshot.setActive(true);
+    }
+    wakeUpChildActor(taskRef, Action.TASK_ACTIVATE);
+  }
+
   private void timeoutFlow() {
     flow.markTimedout();
+    dequeRetryActions().forEach(this::retryTask);
     wakeUpChildActors(Action.TASK_STOP);
+    schedule(Action.FLOW_TIMEOUT, getRetryInterval()); // retry if flow is not timed out
   }
 
   private void decide() {
@@ -227,9 +258,13 @@ final class FlowActor extends BaseActor {
       getContext().refresh(flow);
     }
 
+    tryTerminate();
+  }
+
+  private void tryTerminate() {
     // decide if this flow should be terminated based on the monitor task status
     var status = flow.getMonitorTask().getStatus();
-    LOG.info("Monitor task status is [{}]", status);
+    LOG.info("Monitor task for [{}]'s status is [{}]", reference(), status);
     if (status.isTerminal()) {
       if (status.isSuccessful()) {
         flow.setStatus(Flow.Status.COMPLETED);
@@ -242,10 +277,14 @@ final class FlowActor extends BaseActor {
         getContext().finalCall(flow);
         finalized = true;
         terminateNow();
-        // In certain cases, monitor task might decide the flow is finished while there are still
-        // tasks running, e.g., Maestro engine has a special task with step status=NOT_CREATED.
-        // Maestro engine has to make sure it is safe to leave those special tasks running idle.
-        // No waiting but wake up child actors, so they can finish as parent is not running.
+        // In certain cases, the flow is decided to reach terminal state while inactive or dummy
+        // tasks running, e.g., Maestro engine gate task or task with step status=NOT_CREATED.
+        if (flow.getRunningTasks().values().stream().anyMatch(Task::isActive)) {
+          LOG.debug(
+              "Flow [{}] have active tasks after final callback. Please check it if unexpected",
+              flow);
+        }
+        // Best effort to wake up child actors, so they will finish as parent is not running.
         wakeUpChildActors(Action.TASK_PING);
       } catch (RuntimeException e) {
         LOG.warn(

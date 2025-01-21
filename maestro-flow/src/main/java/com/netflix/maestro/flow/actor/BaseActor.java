@@ -9,6 +9,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
+import java.util.stream.Stream;
 import lombok.Getter;
 import org.slf4j.Logger;
 
@@ -19,6 +20,7 @@ import org.slf4j.Logger;
  */
 abstract sealed class BaseActor implements Actor permits GroupActor, FlowActor, TaskActor {
   private final BlockingQueue<Action> actions = new LinkedBlockingQueue<>();
+  // it may contain finished actions, which will be replaced during schedule() call
   private final Map<Action, ScheduledFuture<?>> scheduledActions = new HashMap<>();
   private final Map<String, BaseActor> childActors = new HashMap<>();
 
@@ -144,8 +146,26 @@ abstract sealed class BaseActor implements Actor permits GroupActor, FlowActor, 
     scheduledActions.values().forEach(f -> f.cancel(true));
   }
 
+  Stream<String> dequeRetryActions() {
+    return scheduledActions.entrySet().stream()
+        .filter(
+            e ->
+                e.getKey() instanceof Action.FlowTaskRetry
+                    && !e.getValue().isDone()
+                    && e.getValue().cancel(false))
+        .map(e -> ((Action.FlowTaskRetry) e.getKey()).taskRefName());
+  }
+
+  boolean dequeRetryAction(String taskRef) {
+    var action = new Action.FlowTaskRetry(taskRef);
+    return scheduledActions.containsKey(action)
+        && !scheduledActions.get(action).isDone()
+        && scheduledActions.get(action).cancel(false);
+  }
+
   void schedule(Action action, long delayInMillis) {
-    if (!isRunning() || scheduledActions.containsKey(action)) {
+    if (!isRunning()
+        || (scheduledActions.containsKey(action) && !scheduledActions.get(action).isDone())) {
       getLogger()
           .debug(
               "skip posting action [{}] as either it's not running or there is already one for [{}]",
@@ -197,7 +217,6 @@ abstract sealed class BaseActor implements Actor permits GroupActor, FlowActor, 
   private Action dequeueAction() {
     try {
       Action action = actions.take();
-      scheduledActions.remove(action);
       getLogger().debug("dequeued an action [{}] for [{}]", action, reference());
       return action;
     } catch (InterruptedException e) {

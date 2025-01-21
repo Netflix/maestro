@@ -142,7 +142,6 @@ public class Flow {
     task.setOutputData(new HashMap<>());
     task.setStartDelayInSeconds(0);
     task.setRetryCount(0);
-    task.setPollCount(0);
     // task startTime should be set when execution start, not creation time
     if (!inline) {
       runningTasks.put(def.taskReferenceName(), task);

@@ -42,6 +42,7 @@ final class TaskActor extends BaseActor {
       case Action.TaskStart s -> start(s.resume());
       case Action.TaskStop ts -> stop();
       case Action.TaskPing p -> execute();
+      case Action.TaskActivate a -> activate();
       case Action.TaskTimeout t -> execute();
       case Action.TaskShutdown d -> shutdown();
       default ->
@@ -65,29 +66,47 @@ final class TaskActor extends BaseActor {
     return LOG;
   }
 
+  // start will initialize any tasks, including active and inactive
   private void start(boolean resume) {
     if (!resume) {
       getContext().start(flow, task);
-      postTaskUpdate();
     }
-    schedule(Action.TASK_PING, TimeUnit.SECONDS.toMillis(task.getStartDelayInSeconds()));
+    post(Action.TASK_PING); // immediately execute over TASK_PING
+  }
+
+  private void activate() {
+    if (!task.isActive()) {
+      task.setActive(true);
+    }
+    execute();
   }
 
   private void stop() {
-    getContext().cancel(flow, task);
-    post(Action.TASK_PING);
+    if (task.isActive()) {
+      getContext().cancel(flow, task);
+      if (task.getStatus().isTerminal()) {
+        terminateNow(); // if terminal state, then stop
+        postTaskUpdate();
+      } else {
+        schedule(Action.TASK_STOP, getRetryInterval()); // schedule a retry
+      }
+    }
   }
 
   /**
    * In NOT_CREATED case, the task actor might run while the parent is not. But the next isRunning
-   * check will discover it as it also checks the parent status.
+   * check will discover it as it also checks the parent status. Maestro engine makes sure to flip
+   * the active flag if the task should not execution (e.g. NOT_CREATED case).
    */
   private void execute() {
-    boolean changed = getContext().execute(flow, task);
+    boolean changed = false;
+    if (task.isActive()) { // execution only for active tasks
+      changed = getContext().execute(flow, task);
+    }
     if (task.getStatus().isTerminal()) {
       terminateNow(); // if terminal state, then stop
-      postTaskUpdate();
-    } else {
+      changed = true;
+    } else if (task.isActive()) {
       // schedule a task timeout once the task is in executed state
       if (task.getStartTime() != null && task.getTimeoutInMillis() != null) {
         var offset =
@@ -96,14 +115,17 @@ final class TaskActor extends BaseActor {
         schedule(Action.TASK_TIMEOUT, offset);
         task.setTimeoutInMillis(null); // avoid schedule timeout again
       }
+      task.incrementPollCount();
+    }
+
+    if (changed) {
+      postTaskUpdate();
+    }
+
+    if (isRunning() && task.isActive()) { // if inactive, rely on flow to periodically wakeup
       // maestro step directly set startDelay to control the delay interval
       schedule(Action.TASK_PING, TimeUnit.SECONDS.toMillis(task.getStartDelayInSeconds()));
-
-      if (changed) {
-        postTaskUpdate();
-      }
     }
-    task.incrementPollCount();
   }
 
   private void postTaskUpdate() {
