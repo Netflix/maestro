@@ -119,3 +119,7 @@ configure([project(':maestro-common'), project(':maestro-engine')]) {
         pmdTestFixtures.enabled = true
     }
 }
+
+configure([project(':maestro-flow'), project(':maestro-database')]) {
+    apply plugin: 'java-library'
+}

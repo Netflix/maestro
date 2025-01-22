@@ -1,0 +1,12 @@
+dependencies {
+    implementation project(':maestro-common')
+    implementation jacksonDatabindDep
+    api hikaricpDep
+    api flywayDep
+
+    testImplementation flywayDep
+    testImplementation testcontainerDep
+    testImplementation postgresqlDep
+    testImplementation hikaricpDep
+    testRuntimeOnly slf4jLog4jDep
+}

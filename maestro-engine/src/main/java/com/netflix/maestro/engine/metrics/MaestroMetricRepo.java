@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.engine.metrics;
 
+import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.utils.Checks;
 import com.netflix.spectator.api.Clock;
 import com.netflix.spectator.api.Counter;

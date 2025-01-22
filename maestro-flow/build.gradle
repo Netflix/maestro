@@ -1,0 +1,7 @@
+dependencies {
+    implementation project(':maestro-database')
+    implementation project(':maestro-common')
+    implementation jacksonDatabindDep
+    implementation jacksonAnnotationsDep
+    api slf4jApiDep
+}

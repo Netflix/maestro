@@ -6,6 +6,7 @@ ext {
     conductorDep = 'com.netflix.conductor:conductor-core:2.31.5'
     hikaricpDep = 'com.zaxxer:HikariCP:4.+'
     flywayDep = 'org.flywaydb:flyway-core:7.6.+'
+    jacksonAnnotationsDep = 'com.fasterxml.jackson.core:jackson-annotations:2.+'
     jacksonDatabindDep = 'com.fasterxml.jackson.core:jackson-databind:2.+'
     jacksonYamlDep = 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.+'
     javaxInjectDep = 'javax.inject:javax.inject:1'
