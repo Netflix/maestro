@@ -19,6 +19,7 @@ import com.netflix.maestro.engine.transformation.Translator;
 import com.netflix.maestro.exceptions.MaestroRetryableError;
 import com.netflix.maestro.exceptions.MaestroRuntimeException;
 import com.netflix.maestro.flow.engine.FlowExecutor;
+import com.netflix.maestro.models.Actions;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.artifact.ForeachArtifact;
 import com.netflix.maestro.models.artifact.SubworkflowArtifact;
@@ -68,6 +69,10 @@ public class StepInstanceWakeUpEventProcessor
    * user action is requested on a step, especially the nested step like foreach and subworkflow.
    */
   private void processForStepEntity(StepInstanceWakeUpEvent jobEvent) {
+    if (jobEvent.getStepAction() == Actions.StepInstanceAction.RESTART) {
+      wakeupUnderlyingTask(jobEvent);
+      return;
+    }
     // handle the simple leaf step case.
     if (jobEvent.getStepType() != null && jobEvent.getStepType().isLeaf()) {
       if (jobEvent.getStepStatus() != null && jobEvent.getStepStatus().shouldWakeup()) {

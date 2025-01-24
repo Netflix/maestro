@@ -67,7 +67,8 @@ public class InMemoryJobEventListenerTest extends MaestroEngineBaseTest {
             stepInstanceWakeUpEventProcessor,
             publishJobEventProcessor,
             queue,
-            executorService);
+            executorService,
+            3000);
   }
 
   @Test

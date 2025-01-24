@@ -11,6 +11,7 @@ import com.netflix.maestro.engine.tasks.MaestroGateTask;
 import com.netflix.maestro.engine.tasks.MaestroStartTask;
 import com.netflix.maestro.engine.tasks.MaestroTask;
 import com.netflix.maestro.engine.transformation.WorkflowTranslator;
+import com.netflix.maestro.engine.utils.RollupAggregationHelper;
 import com.netflix.maestro.engine.utils.WorkflowHelper;
 import com.netflix.maestro.flow.dao.MaestroFlowDao;
 import com.netflix.maestro.flow.engine.ExecutionContext;
@@ -56,10 +57,16 @@ public class MaestroFlowConfiguration {
       MaestroWorkflowInstanceDao instanceDao,
       MaestroStepInstanceDao stepInstanceDao,
       WorkflowTranslator translator,
-      WorkflowHelper workflowHelper) {
+      WorkflowHelper workflowHelper,
+      RollupAggregationHelper rollupAggregationHelper) {
     LOG.info("Creating maestro executionPreparer within Spring boot...");
     return new MaestroExecutionPreparer(
-        instanceDao, stepInstanceDao, translator, workflowHelper, objectMapper);
+        instanceDao,
+        stepInstanceDao,
+        translator,
+        workflowHelper,
+        rollupAggregationHelper,
+        objectMapper);
   }
 
   @Bean(initMethod = "init", destroyMethod = "shutdown")

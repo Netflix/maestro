@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.engine.publisher;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.engine.jobevents.MaestroJobEvent;
 import com.netflix.maestro.models.error.Details;
 import java.util.Optional;
@@ -29,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 public class InMemoryMaestroJobEventPublisher implements MaestroJobEventPublisher {
 
   private final LinkedBlockingQueue<MaestroJobEvent> queue;
+  private final ObjectMapper objectMapper;
 
   /**
    * Publish a maestro job event locally. It should not throw any exception.
@@ -40,9 +42,10 @@ public class InMemoryMaestroJobEventPublisher implements MaestroJobEventPublishe
   @Override
   public Optional<Details> publish(MaestroJobEvent maestroJob, long invisibleMs) {
     try {
-      LOG.info("publish a maestro job event: [{}] with delay [{}]", maestroJob, invisibleMs);
+      MaestroJobEvent cloned = objectMapper.convertValue(maestroJob, MaestroJobEvent.class);
+      LOG.info("publish a maestro job event: [{}] with delay [{}]", cloned, invisibleMs);
       // in memory execution mode, ignore the invisible time
-      queue.put(maestroJob);
+      queue.put(cloned);
       return Optional.empty();
     } catch (Exception e) {
       return Optional.of(Details.create(e, true, "Failed to publish a Maestro job event"));

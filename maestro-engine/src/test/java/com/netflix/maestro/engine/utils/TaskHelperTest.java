@@ -55,13 +55,14 @@ public class TaskHelperTest extends MaestroEngineBaseTest {
     when(task.getSeq()).thenReturn(-1L);
     Assert.assertFalse(TaskHelper.isRealTask(task));
     when(task.getSeq()).thenReturn(1L);
+    when(task.isActive()).thenReturn(false);
     when(task.getOutputData())
         .thenReturn(
             Collections.singletonMap(
                 Constants.STEP_RUNTIME_SUMMARY_FIELD,
                 StepRuntimeSummary.builder().runtimeState(new StepRuntimeState()).build()));
     Assert.assertFalse(TaskHelper.isRealTask(task));
-    when(task.getOutputData()).thenReturn(Collections.emptyMap());
+    when(task.isActive()).thenReturn(true);
     Assert.assertTrue(TaskHelper.isRealTask(task));
   }
 
@@ -69,6 +70,7 @@ public class TaskHelperTest extends MaestroEngineBaseTest {
   public void testIsUserDefinedRealTask() {
     when(task.getTaskType()).thenReturn(Constants.MAESTRO_TASK_NAME);
     when(task.getSeq()).thenReturn(1L);
+    when(task.isActive()).thenReturn(true);
     Assert.assertTrue(TaskHelper.isUserDefinedRealTask(task));
     when(task.getTaskType()).thenReturn("TEST_TASK");
     Assert.assertFalse(TaskHelper.isUserDefinedRealTask(task));
@@ -101,6 +103,7 @@ public class TaskHelperTest extends MaestroEngineBaseTest {
   public void testGetUserDefinedRealTaskMap() {
     when(task.getTaskType()).thenReturn(Constants.MAESTRO_TASK_NAME);
     when(task.referenceTaskName()).thenReturn("test-job");
+    when(task.isActive()).thenReturn(true);
     Assert.assertEquals(
         Collections.singletonMap("test-job", task),
         TaskHelper.getUserDefinedRealTaskMap(Stream.of(task)));

@@ -15,6 +15,7 @@ package com.netflix.maestro.engine.utils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
+import com.netflix.maestro.engine.transformation.Translator;
 import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.flow.models.Flow;
 import com.netflix.maestro.flow.models.Task;
@@ -53,8 +54,7 @@ public final class TaskHelper {
 
   /** Task is a real task instead of a placeholder task for params or restart. */
   static boolean isRealTask(Task task) {
-    return task.getSeq() >= 0
-        && StepHelper.retrieveStepStatus(task.getOutputData()) != StepInstance.Status.NOT_CREATED;
+    return task.getSeq() >= 0 && task.isActive(); // NOT_CREATED steps are all inactive
   }
 
   /** Task is a user defined task type, excluding cloned dummy tasks. */
@@ -339,11 +339,11 @@ public final class TaskHelper {
             runtimeSummary
                 .getStepRetry()
                 .getNextRetryDelay(runtimeSummary.getRuntimeState().getStatus()));
-        task.setEndTime(runtimeSummary.getRuntimeState().getEndTime());
         break;
       case FATALLY_FAILED:
       case INTERNALLY_FAILED:
         task.setStatus(Task.Status.FAILED);
+        task.setStartDelayInSeconds(Translator.DEFAULT_FLOW_TASK_DELAY);
         break;
       case STOPPED:
         task.setStatus(Task.Status.CANCELED);
@@ -355,6 +355,9 @@ public final class TaskHelper {
         throw new MaestroInternalError(
             "Entered an unexpected state [%s] for step %s",
             runtimeSummary.getRuntimeState().getStatus(), runtimeSummary.getIdentity());
+    }
+    if (task.getStatus().isTerminal()) {
+      task.setEndTime(runtimeSummary.getRuntimeState().getEndTime());
     }
   }
 }

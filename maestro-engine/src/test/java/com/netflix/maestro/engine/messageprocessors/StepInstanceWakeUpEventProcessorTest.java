@@ -252,6 +252,25 @@ public class StepInstanceWakeUpEventProcessorTest extends MaestroEngineBaseTest 
   }
 
   @Test
+  public void testStepRestartAction() {
+    event.setEntityType(StepInstanceWakeUpEvent.EntityType.STEP);
+    event.setStepAction(Actions.StepInstanceAction.RESTART);
+    processor.process(() -> event);
+    Mockito.verify(flowExecutor, Mockito.times(1))
+        .wakeUp(12L, "[sample-test-workflow-id][2][3]", stepId);
+    Mockito.verifyNoInteractions(stepInstanceDao);
+    Mockito.verifyNoInteractions(instanceDao);
+    Mockito.reset(flowExecutor);
+
+    setStepInstanceDefinition(StepType.SUBWORKFLOW);
+    processor.process(() -> event);
+    Mockito.verify(flowExecutor, Mockito.times(1))
+        .wakeUp(12L, "[sample-test-workflow-id][2][3]", stepId);
+    Mockito.verifyNoInteractions(stepInstanceDao);
+    Mockito.verifyNoInteractions(instanceDao);
+  }
+
+  @Test
   public void testWorkflowAction() {
     event.setEntityType(StepInstanceWakeUpEvent.EntityType.WORKFLOW);
     event.setWorkflowAction(Actions.WorkflowInstanceAction.UNBLOCK);

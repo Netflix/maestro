@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.server.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.engine.concurrency.InstanceStepConcurrencyHandler;
 import com.netflix.maestro.engine.concurrency.TagPermitManager;
 import com.netflix.maestro.engine.dao.MaestroRunStrategyDao;
@@ -37,8 +38,10 @@ import com.netflix.maestro.engine.publisher.NoOpMaestroNotificationPublisher;
 import com.netflix.maestro.engine.utils.WorkflowHelper;
 import com.netflix.maestro.flow.dao.MaestroFlowDao;
 import com.netflix.maestro.flow.engine.FlowExecutor;
+import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.server.interceptor.UserInfoInterceptor;
+import com.netflix.maestro.server.properties.MaestroEngineProperties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import lombok.extern.slf4j.Slf4j;
@@ -146,9 +149,10 @@ public class MaestroServerConfiguration {
       havingValue = "in-memory",
       matchIfMissing = true)
   public MaestroJobEventPublisher inMemoryMaestroJobEventPublisher(
-      @Qualifier(EVENT_QUEUE_QUALIFIER) LinkedBlockingQueue<MaestroJobEvent> queue) {
+      @Qualifier(EVENT_QUEUE_QUALIFIER) LinkedBlockingQueue<MaestroJobEvent> queue,
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper) {
     LOG.info("Creating inMemoryMaestroJobEventPublisher within Spring boot...");
-    return new InMemoryMaestroJobEventPublisher(queue);
+    return new InMemoryMaestroJobEventPublisher(queue, objectMapper);
   }
 
   @Bean(name = EVENT_QUEUE_QUALIFIER)
@@ -166,7 +170,8 @@ public class MaestroServerConfiguration {
       StepInstanceWakeUpEventProcessor stepInstanceWakeUpEventProcessor,
       TerminateThenRunInstanceJobProcessor terminateThenRunInstanceJobProcessor,
       PublishJobEventProcessor publishJobEventProcessor,
-      @Qualifier(EVENT_QUEUE_QUALIFIER) LinkedBlockingQueue<MaestroJobEvent> queue) {
+      @Qualifier(EVENT_QUEUE_QUALIFIER) LinkedBlockingQueue<MaestroJobEvent> queue,
+      MaestroEngineProperties properties) {
     LOG.info("Creating inMemoryJobEventListener within Spring boot...");
     return new InMemoryJobEventListener(
         deleteWorkflowJobProcessor,
@@ -177,6 +182,7 @@ public class MaestroServerConfiguration {
         stepInstanceWakeUpEventProcessor,
         publishJobEventProcessor,
         queue,
-        Executors.newFixedThreadPool(1));
+        Executors.newFixedThreadPool(1),
+        properties.getActorErrorRetryIntervalInMillis());
   }
 }

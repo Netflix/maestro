@@ -642,7 +642,7 @@ public class MaestroTask implements FlowTask {
           runtimeSummary.getIdentity(),
           workflowSummary.getIdentity(),
           runtimeSummary.getRuntimeState().getStatus().name());
-      configTaskStartDelay(task, runtimeSummary);
+      configTaskStartDelay(task, runtimeSummary, true);
 
       if (isTimeout(runtimeSummary)) {
         handleTimeoutError(workflowSummary, runtimeSummary);
@@ -650,8 +650,11 @@ public class MaestroTask implements FlowTask {
         tryUpdateByAction(workflowSummary, stepDefinition, runtimeSummary);
       }
 
-      if (doExecute(flow, task, workflowSummary, stepDefinition, runtimeSummary)) {
-        return false;
+      boolean inactive = doExecute(flow, task, workflowSummary, stepDefinition, runtimeSummary);
+      configTaskStartDelay(task, runtimeSummary, false);
+      if (inactive) {
+        task.setActive(false);
+        return true;
       }
 
       updateRetryDelayTimeToTimeline(runtimeSummary);
@@ -674,8 +677,12 @@ public class MaestroTask implements FlowTask {
     }
   }
 
-  private void configTaskStartDelay(Task task, StepRuntimeSummary runtimeSummary) {
-    Long callbackInSecs = stepRuntimeCallbackDelayPolicy.getCallBackDelayInSecs(runtimeSummary);
+  private void configTaskStartDelay(
+      Task task, StepRuntimeSummary runtimeSummary, boolean firstCall) {
+    Long callbackInSecs = null;
+    if (firstCall || runtimeSummary.getPendingRecords().isEmpty()) { // no state change
+      callbackInSecs = stepRuntimeCallbackDelayPolicy.getCallBackDelayInSecs(runtimeSummary);
+    }
     if (callbackInSecs != null) {
       LOG.trace(
           "Set an initial customized callback [{}] in seconds for step [{}] with an initial status [{}]",
@@ -822,6 +829,7 @@ public class MaestroTask implements FlowTask {
                             + "because its failure mode is IGNORE_FAILURE."));
                 break;
               } else if (FailureMode.FAIL_IMMEDIATELY == stepDefinition.getFailureMode()) {
+                // todo this should be better handled by the status listener
                 terminateAllSteps(flow, workflowSummary, stepDefinition.getId());
               }
             }
@@ -868,6 +876,7 @@ public class MaestroTask implements FlowTask {
     toTerminate.setWorkflowId(summary.getWorkflowId());
     toTerminate.setWorkflowInstanceId(summary.getWorkflowInstanceId());
     toTerminate.setWorkflowRunId(summary.getWorkflowRunId());
+    toTerminate.setGroupId(summary.getGroupId());
 
     Map<String, Task> realTaskMap =
         TaskHelper.getUserDefinedRealTaskMap(flow.getFinishedTasks().stream());

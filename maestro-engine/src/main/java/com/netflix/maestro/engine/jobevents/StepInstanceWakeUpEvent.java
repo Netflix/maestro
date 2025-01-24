@@ -35,9 +35,9 @@ import lombok.Data;
       "workflow_id",
       "workflow_instance_id",
       "workflow_run_id",
+      "group_id",
       "step_id",
       "step_attempt_id",
-      "step_uuid",
       "step_status",
       "step_type",
       "step_action",
@@ -59,7 +59,6 @@ public class StepInstanceWakeUpEvent implements MaestroJobEvent {
 
   @Nullable private String stepId;
   @Nullable private String stepAttemptId;
-  @Nullable private String stepUuid; // internal UUID to identify this step run
   @Nullable private StepInstance.Status stepStatus;
   @Nullable private StepType stepType;
   @Nullable private Actions.StepInstanceAction stepAction;

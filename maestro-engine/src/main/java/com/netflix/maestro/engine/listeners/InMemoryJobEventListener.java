@@ -26,6 +26,7 @@ import com.netflix.maestro.engine.processors.StartWorkflowJobProcessor;
 import com.netflix.maestro.engine.processors.StepInstanceWakeUpEventProcessor;
 import com.netflix.maestro.engine.processors.TerminateInstancesJobProcessor;
 import com.netflix.maestro.engine.processors.TerminateThenRunInstanceJobProcessor;
+import com.netflix.maestro.exceptions.MaestroRetryableError;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -49,13 +50,21 @@ public class InMemoryJobEventListener {
   private final PublishJobEventProcessor publishJobEventProcessor;
   private final LinkedBlockingQueue<MaestroJobEvent> queue;
   private final ExecutorService executorService;
+  private final long retryIntervalInMillis;
 
   public void postConstruct() {
     executorService.execute(
         () -> {
           while (true) {
             try {
-              process(queue.take());
+              MaestroJobEvent event = queue.take();
+              try {
+                process(event);
+              } catch (MaestroRetryableError e) {
+                LOG.info("InMemoryJobEventListener got an error and will sleep and retry", e);
+                Thread.sleep(retryIntervalInMillis);
+                queue.put(event);
+              }
             } catch (InterruptedException e) {
               break;
             } catch (RuntimeException e) {

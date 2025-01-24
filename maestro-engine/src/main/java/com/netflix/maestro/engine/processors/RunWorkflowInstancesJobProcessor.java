@@ -86,10 +86,11 @@ public class RunWorkflowInstancesJobProcessor
               } catch (NullPointerException e) {
                 // not retryable
                 LOG.error(
-                    "Cannot retry if there is a NullPointerException for workflow {}", workflowId);
+                    "Cannot retry if there is a NullPointerException for workflow [{}]",
+                    workflowId);
                 throw new MaestroInternalError(e, "Something is null");
               } catch (RuntimeException e) {
-                LOG.error("Retry it as getting a runtime error", e);
+                LOG.warn("Retry it as getting a runtime error", e);
                 throw new MaestroRetryableError(
                     e, "Failed to run a workflow and will retry to run it.");
               }

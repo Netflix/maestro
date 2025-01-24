@@ -5,10 +5,12 @@ import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
 import com.netflix.maestro.engine.db.DbOperation;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
+import com.netflix.maestro.engine.execution.WorkflowRuntimeSummary;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
 import com.netflix.maestro.engine.tracing.MaestroTracingContext;
 import com.netflix.maestro.engine.transformation.Translator;
 import com.netflix.maestro.engine.transformation.WorkflowTranslator;
+import com.netflix.maestro.engine.utils.RollupAggregationHelper;
 import com.netflix.maestro.engine.utils.StepHelper;
 import com.netflix.maestro.engine.utils.TaskHelper;
 import com.netflix.maestro.engine.utils.WorkflowHelper;
@@ -41,6 +43,7 @@ public class MaestroExecutionPreparer implements ExecutionPreparer {
   private final MaestroStepInstanceDao stepInstanceDao;
   private final WorkflowTranslator translator;
   private final WorkflowHelper workflowHelper;
+  private final RollupAggregationHelper aggregationHelper;
   private final ObjectMapper objectMapper;
 
   public MaestroExecutionPreparer(
@@ -48,11 +51,13 @@ public class MaestroExecutionPreparer implements ExecutionPreparer {
       MaestroStepInstanceDao stepInstanceDao,
       WorkflowTranslator translator,
       WorkflowHelper workflowHelper,
+      RollupAggregationHelper rollupAggregationHelper,
       ObjectMapper objectMapper) {
     this.instanceDao = instanceDao;
     this.stepInstanceDao = stepInstanceDao;
     this.translator = translator;
     this.workflowHelper = workflowHelper;
+    this.aggregationHelper = rollupAggregationHelper;
     this.objectMapper = objectMapper;
   }
 
@@ -106,6 +111,7 @@ public class MaestroExecutionPreparer implements ExecutionPreparer {
                   if (t.getSeq() >= 0) {
                     t.setSeq(-(t.getSeq() + 1));
                     t.setStatus(Task.Status.SKIPPED);
+                    t.setActive(false);
                   }
                   flow.addFinishedTask(t);
                 });
@@ -117,7 +123,7 @@ public class MaestroExecutionPreparer implements ExecutionPreparer {
    * Implementation to clone a Maestro task.
    *
    * @param task task to clone
-   * @return cloned task objec
+   * @return cloned task object
    */
   @Override
   public Task cloneTask(Task task) {
@@ -170,8 +176,14 @@ public class MaestroExecutionPreparer implements ExecutionPreparer {
       // set prepare task's all step dependencies and also add dummy tasks to the flow
       addExtraTasksAndInput(flow, flow.getPrepareTask());
       // set prepare task start time and status
-      flow.getPrepareTask().setStartTime(instance.getStartTime());
+      flow.getPrepareTask()
+          .setStartTime(
+              instance.getStartTime() == null
+                  ? System.currentTimeMillis()
+                  : instance.getStartTime());
       flow.getPrepareTask().setStatus(Task.Status.COMPLETED);
+
+      resumeMonitorTask(instance, flow.getMonitorTask());
     } else if (instance.getRunStatus() == WorkflowInstance.Status.CREATED) {
       return true;
     } else {
@@ -180,6 +192,20 @@ public class MaestroExecutionPreparer implements ExecutionPreparer {
           flow.getReference(), instance.getRunStatus());
     }
     return false;
+  }
+
+  private void resumeMonitorTask(WorkflowInstance instance, Task task) {
+    if (instance.getRunStatus() != WorkflowInstance.Status.CREATED) {
+      WorkflowRuntimeSummary runtimeSummary = new WorkflowRuntimeSummary();
+      runtimeSummary.updateRuntimeState(
+          WorkflowInstance.Status.IN_PROGRESS,
+          instance.getRuntimeOverview(),
+          instance.getStartTime());
+      runtimeSummary.setRollupBase(aggregationHelper.calculateRollupBase(instance));
+      runtimeSummary.setArtifacts(instance.getArtifacts());
+      runtimeSummary.setTimeline(instance.getTimeline());
+      task.getOutputData().put(Constants.WORKFLOW_RUNTIME_SUMMARY_FIELD, runtimeSummary);
+    }
   }
 
   @SuppressWarnings("checkstyle:MagicNumber")
@@ -249,13 +275,11 @@ public class MaestroExecutionPreparer implements ExecutionPreparer {
     task.getOutputData().put(Constants.STEP_RUNTIME_SUMMARY_FIELD, runtimeSummary);
     task.setStartDelayInSeconds(Translator.DEFAULT_FLOW_TASK_DELAY); // reset it to default
     task.setRetryCount(stepInstance.getStepAttemptId() - 1);
-    task.setPollCount(0);
     task.setStartTime(stepInstance.getRuntimeState().getStartTime());
     task.setEndTime(stepInstance.getRuntimeState().getEndTime());
     // set status and also startDelay for certain failed states
     TaskHelper.deriveTaskStatus(task, runtimeSummary);
     return task;
-    // todo also be able to handle failed but still retrying tasks
   }
 
   private MaestroTracingContext getTracingContext(StepInstance stepInstance) {
