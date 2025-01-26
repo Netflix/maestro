@@ -67,11 +67,13 @@ stepruntime:
       RUNNING:
         default: 3
       WAITING_FOR_PERMITS:
-        default: 3
+        default: 5
       WAITING_FOR_SIGNALS:
-        default: 3
+        default: 5
       PAUSED:
-        default: 3
+        default: 5
+      NOT_CREATED:
+        default: 30
 
 logging:
   level:

@@ -25,18 +25,18 @@ public class FlowEngineProperties implements DatabaseConfiguration {
   private static final String FLOW_RECONCILIATION_INTERVAL_PROPERTY_NAME =
       "flow.reconciliation.interval.millis";
   private static final long FLOW_RECONCILIATION_INTERVAL_DEFAULT_VALUE =
-      TimeUnit.SECONDS.toMillis(15);
+      TimeUnit.SECONDS.toMillis(30);
 
   private static final String GROUP_HEARTBEAT_INTERVAL_PROPERTY_NAME =
       "group.heartbeat.interval.millis";
-  private static final long GROUP_HEARTBEAT_INTERVAL_DEFAULT_VALUE = TimeUnit.SECONDS.toMillis(10);
+  private static final long GROUP_HEARTBEAT_INTERVAL_DEFAULT_VALUE = TimeUnit.SECONDS.toMillis(12);
 
   private static final String EXPIRATION_PROPERTY_NAME = "expiration.secs";
   private static final long EXPIRATION_DEFAULT_VALUE = 60;
 
   private static final String INITIAL_MAINTENANCE_DELAY_PROPERTY_NAME =
       "initial.maintenance.delay.millis";
-  private static final long INITIAL_MAINTENANCE_DELAY_DEFAULT_VALUE = TimeUnit.SECONDS.toMillis(10);
+  private static final long INITIAL_MAINTENANCE_DELAY_DEFAULT_VALUE = TimeUnit.SECONDS.toMillis(5);
 
   private static final String MAINTENANCE_DELAY_PROPERTY_NAME = "maintenance.delay.millis";
   private static final long MAINTENANCE_DELAY_DEFAULT_VALUE = TimeUnit.SECONDS.toMillis(3);
