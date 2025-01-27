@@ -13,12 +13,13 @@
 package com.netflix.maestro.engine.dao;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.cockroachdb.CockroachDBConfiguration;
-import com.netflix.conductor.cockroachdb.dao.CockroachDBBaseDAO;
+import com.netflix.maestro.database.AbstractDatabaseDao;
+import com.netflix.maestro.database.DatabaseConfiguration;
 import com.netflix.maestro.engine.utils.TimeUtils;
 import com.netflix.maestro.exceptions.MaestroNotFoundException;
 import com.netflix.maestro.exceptions.MaestroRetryableError;
 import com.netflix.maestro.exceptions.MaestroTimeoutException;
+import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.timeline.Timeline;
 import com.netflix.maestro.models.timeline.TimelineEvent;
@@ -57,7 +58,7 @@ import lombok.extern.slf4j.Slf4j;
  * <p>If deleting a range of workflow instances, it will delete item 6 to 9.
  */
 @Slf4j
-public class MaestroWorkflowDeletionDao extends CockroachDBBaseDAO {
+public class MaestroWorkflowDeletionDao extends AbstractDatabaseDao {
   private enum Stage {
     DELETING_VERSIONS("DELETE FROM maestro_workflow_version WHERE workflow_id=? LIMIT ?"),
     DELETING_TIMELINE("DELETE FROM maestro_workflow_timeline WHERE workflow_id=? LIMIT ?"),
@@ -135,8 +136,11 @@ public class MaestroWorkflowDeletionDao extends CockroachDBBaseDAO {
           + "= (?,array_cat(timeline,?),CURRENT_TIMESTAMP) WHERE workflow_id=? AND internal_id=?";
 
   public MaestroWorkflowDeletionDao(
-      DataSource dataSource, ObjectMapper objectMapper, CockroachDBConfiguration config) {
-    super(dataSource, objectMapper, config);
+      DataSource dataSource,
+      ObjectMapper objectMapper,
+      DatabaseConfiguration config,
+      MaestroMetrics metrics) {
+    super(dataSource, objectMapper, config, metrics);
   }
 
   /** Check if there is pending deletion for a given workflow id. */

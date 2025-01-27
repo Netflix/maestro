@@ -14,15 +14,16 @@ package com.netflix.maestro.engine.dao;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.cockroachdb.CockroachDBConfiguration;
-import com.netflix.conductor.cockroachdb.dao.CockroachDBBaseDAO;
-import com.netflix.conductor.cockroachdb.util.ResultProcessor;
 import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.annotations.VisibleForTesting;
+import com.netflix.maestro.database.AbstractDatabaseDao;
+import com.netflix.maestro.database.DatabaseConfiguration;
+import com.netflix.maestro.database.utils.ResultProcessor;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
 import com.netflix.maestro.engine.utils.ObjectHelper;
 import com.netflix.maestro.exceptions.MaestroNotFoundException;
+import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.Defaults;
 import com.netflix.maestro.models.artifact.Artifact;
@@ -45,6 +46,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -59,9 +61,13 @@ import javax.sql.DataSource;
  * <p>In the data model, we use `null` to indicate `unset`.
  */
 @SuppressFBWarnings("OBL_UNSATISFIED_OBLIGATION")
-public class MaestroStepInstanceDao extends CockroachDBBaseDAO {
+public class MaestroStepInstanceDao extends AbstractDatabaseDao {
   private static final TypeReference<Map<String, Artifact>> ARTIFACTS_REFERENCE =
-      new TypeReference<Map<String, Artifact>>() {};
+      new TypeReference<>() {};
+  private static final TypeReference<Map<StepOutputsDefinition.StepOutputType, StepOutputs>>
+      OUTPUTS_TYPE_REFERENCE = new TypeReference<>() {};
+  private static final TypeReference<Map<StepDependencyType, StepDependencies>>
+      STEP_DEPENDENCIES_TYPE_REFERENCE = new TypeReference<>() {};
 
   private static final String ADD_STEP_INSTANCE_POSTFIX =
       "INTO maestro_step_instance (instance,runtime_state,dependencies,outputs,artifacts,timeline) VALUES (?,?,?,?,?,?)";
@@ -123,10 +129,14 @@ public class MaestroStepInstanceDao extends CockroachDBBaseDAO {
           + "OVER (PARTITION BY step_id ORDER BY workflow_run_id DESC, step_attempt_id DESC) as status "
           + GET_STEP_FIELD_QUERY_FROM;
 
-  private static final String GET_ALL_LATEST_ATTEMPT_STEP_UUID_QUERY =
-      "SELECT DISTINCT(step_id) as id, first_value(step_uuid) "
-          + "OVER (PARTITION BY step_id ORDER BY workflow_run_id DESC, step_attempt_id DESC) as payload "
-          + GET_STEP_FIELD_QUERY_FROM;
+  private static final String INNER_RANK_QUERY_ALL_FIELD_WITH =
+      "WITH inner_ranked AS (SELECT " + StepInstanceField.ALL.field;
+
+  private static final String GET_ALL_LATEST_ATTEMPT_STEP_QUERY =
+      INNER_RANK_QUERY_ALL_FIELD_WITH
+          + ", ROW_NUMBER() OVER (PARTITION BY step_id ORDER BY workflow_run_id DESC, step_attempt_id DESC) AS rank"
+          + GET_STEP_FIELD_QUERY_FROM
+          + "AND step_id=ANY(?)) SELECT * FROM inner_ranked WHERE rank=1";
 
   private static final String GET_LATEST_ARTIFACT_QUERY_TEMPLATE =
       "SELECT artifacts->'%s' as payload "
@@ -159,12 +169,12 @@ public class MaestroStepInstanceDao extends CockroachDBBaseDAO {
   private static final String GET_UNIQUE_ROWID = "SELECT unique_rowid() as id";
 
   private static final String BATCH_UNION_STATEMENT = "UNION ALL ";
-  private static final TypeReference<Map<StepOutputsDefinition.StepOutputType, StepOutputs>>
-      OUTPUTS_TYPE_REFERENCE =
-          new TypeReference<Map<StepOutputsDefinition.StepOutputType, StepOutputs>>() {};
-  private static final TypeReference<Map<StepDependencyType, StepDependencies>>
-      STEP_DEPENDENCIES_TYPE_REFERENCE =
-          new TypeReference<Map<StepDependencyType, StepDependencies>>() {};
+
+  private static final String GET_STEP_INSTANCE_VIEWS_QUERY =
+      INNER_RANK_QUERY_ALL_FIELD_WITH
+          + ", ROW_NUMBER() OVER (PARTITION BY step_id ORDER BY step_attempt_id DESC) AS rank"
+          + GET_STEP_FIELD_QUERY_FROM
+          + "AND workflow_run_id=?) SELECT * FROM inner_ranked WHERE rank=1";
 
   /**
    * Constructor for Maestro step instance DAO.
@@ -174,8 +184,11 @@ public class MaestroStepInstanceDao extends CockroachDBBaseDAO {
    * @param config configuration
    */
   public MaestroStepInstanceDao(
-      DataSource dataSource, ObjectMapper objectMapper, CockroachDBConfiguration config) {
-    super(dataSource, objectMapper, config);
+      DataSource dataSource,
+      ObjectMapper objectMapper,
+      DatabaseConfiguration config,
+      MaestroMetrics metrics) {
+    super(dataSource, objectMapper, config, metrics);
   }
 
   /**
@@ -921,34 +934,47 @@ public class MaestroStepInstanceDao extends CockroachDBBaseDAO {
   }
 
   /**
-   * Get step ids to its uuid mapping from DB for ancestor run ids of a workflow instance run, i.e.
-   * run_id less than the current run_id. It only considers the latest run's latest step attempt.
+   * Get step ids to its instances mapping from DB for ancestor run ids of a workflow instance run,
+   * i.e. run_id less than the current run_id. It only considers the latest run's latest step
+   * attempt.
    *
    * @param workflowId workflow id
    * @param workflowInstanceId workflow instance id
-   * @return step ids to its uuid mapping
+   * @param stepIds step ids to consider
+   * @return step ids to its latest step attempt mapping
    */
-  public Map<String, String> getAllLatestStepUuidFromAncestors(
-      String workflowId, long workflowInstanceId) {
-    Map<String, String> stepUuids = new HashMap<>();
+  public Map<String, StepInstance> getAllLatestStepFromAncestors(
+      String workflowId, long workflowInstanceId, Collection<String> stepIds) {
     return withMetricLogError(
         () ->
-            withRetryableQuery(
-                GET_ALL_LATEST_ATTEMPT_STEP_UUID_QUERY,
-                stmt -> {
-                  stmt.setString(1, workflowId);
-                  stmt.setLong(2, workflowInstanceId);
-                },
-                result -> {
-                  while (result.next()) {
-                    stepUuids.put(result.getString(ID_COLUMN), result.getString(PAYLOAD_COLUMN));
+            withRetryableTransaction(
+                conn -> {
+                  try (PreparedStatement stmt =
+                      conn.prepareStatement(GET_ALL_LATEST_ATTEMPT_STEP_QUERY)) {
+                    int idx = 0;
+                    stmt.setString(++idx, workflowId);
+                    stmt.setLong(++idx, workflowInstanceId);
+                    stmt.setArray(
+                        ++idx, conn.createArrayOf(ARRAY_TYPE_NAME, stepIds.toArray(new String[0])));
+                    try (ResultSet result = stmt.executeQuery()) {
+                      return getStepIdInstanceMap(result);
+                    }
                   }
-                  return stepUuids;
                 }),
-        "getAllLatestStepUuidFromAncestors",
-        "Failed to get the step ids to latest uuid mapping from workflow instance [{}][{}]",
+        "getAllLatestStepFromAncestors",
+        "Failed to get steps [{}] latest attempt for [{}][{}]",
+        stepIds,
         workflowId,
         workflowInstanceId);
+  }
+
+  private Map<String, StepInstance> getStepIdInstanceMap(ResultSet result) throws SQLException {
+    Map<String, StepInstance> ret = new HashMap<>();
+    while (result.next()) {
+      StepInstance stepInstance = maestroStepFromResult(result);
+      ret.put(stepInstance.getStepId(), stepInstance);
+    }
+    return ret;
   }
 
   /** Get the latest run's subworkflow step artifact from DB for a given instance. */
@@ -1157,5 +1183,40 @@ public class MaestroStepInstanceDao extends CockroachDBBaseDAO {
                 }),
         "getNextUniqueId",
         "Failed to get the next unique id");
+  }
+
+  /**
+   * Get the latest step attempts of all the steps for a given workflow instance run (workflow id,
+   * instance id, run id).
+   *
+   * @param workflowId workflow id
+   * @param workflowInstanceId workflow instance id
+   * @param workflowRunId workflow run id
+   * @return latest step attempts of all the steps
+   */
+  public List<StepInstance> getStepInstanceViews(
+      String workflowId, long workflowInstanceId, long workflowRunId) {
+    List<StepInstance> instances = new ArrayList<>();
+    return withMetricLogError(
+        () ->
+            withRetryableQuery(
+                GET_STEP_INSTANCE_VIEWS_QUERY,
+                stmt -> {
+                  int idx = 0;
+                  stmt.setString(++idx, workflowId);
+                  stmt.setLong(++idx, workflowInstanceId);
+                  stmt.setLong(++idx, workflowRunId);
+                },
+                result -> {
+                  while (result.next()) {
+                    instances.add(maestroStepFromResult(result));
+                  }
+                  return instances;
+                }),
+        "getStepInstanceViews",
+        "Failed to get latest step attempts for workflow instance [{}][{}][{}]",
+        workflowId,
+        workflowInstanceId,
+        workflowRunId);
   }
 }

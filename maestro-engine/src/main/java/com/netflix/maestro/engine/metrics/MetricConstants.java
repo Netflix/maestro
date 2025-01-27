@@ -74,9 +74,8 @@ public class MetricConstants {
   /** Status tag, used by various metrics. */
   public static final String INITIATOR_DEPTH_TAG = "depth";
 
-  /** Metrics for workflowStatusListenerCallback. */
-  public static final String WORKFLOW_STATUS_LISTENER_CALL_BACK_METRIC =
-      "workflow.statuslistener.callback";
+  /** Metrics for MaestroFinalFlowStatusCallback. */
+  public static final String FINAL_FLOW_STATUS_CALL_BACK_METRIC = "final.flow.status.callback";
 
   /** Metrics for step runtime manager terminate exceptions . */
   public static final String STEP_RUNTIME_MANAGER_TERMINATE_EXCEPTION =

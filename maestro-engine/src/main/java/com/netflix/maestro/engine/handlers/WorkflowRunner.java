@@ -12,73 +12,45 @@
  */
 package com.netflix.maestro.engine.handlers;
 
-import static com.netflix.conductor.core.execution.ApplicationException.Code.CONFLICT;
-
-import com.netflix.conductor.core.execution.ApplicationException;
-import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.maestro.engine.transformation.WorkflowTranslator;
 import com.netflix.maestro.engine.utils.WorkflowHelper;
+import com.netflix.maestro.flow.engine.FlowExecutor;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import java.util.Collections;
 import lombok.AllArgsConstructor;
 
-/** Workflow runner to run a maestro workflow in conductor. */
+/** Workflow runner to run a maestro workflow in the internal flow engine. */
 @AllArgsConstructor
 public class WorkflowRunner {
-  private final WorkflowExecutor workflowExecutor;
+  private final FlowExecutor flowExecutor;
   private final WorkflowTranslator translator;
   private final WorkflowHelper workflowHelper;
 
   /**
-   * Run a maestro workflow in conductor.
+   * Run a maestro workflow in maestro flow engine.
    *
    * @param instance Maestro workflow instance.
-   * @return UUID of the conductor workflow instance
+   * @return UUID of the internal flow instance
    */
   public String start(WorkflowInstance instance) {
-    return workflowExecutor.startWorkflow(
+    return flowExecutor.startFlow(
+        instance.getGroupId(),
+        instance.getWorkflowUuid(),
+        instance.getIdentity(),
         translator.translate(instance),
         Collections.singletonMap(
             Constants.WORKFLOW_SUMMARY_FIELD,
-            workflowHelper.createWorkflowSummaryFromInstance(instance)),
-        null,
-        null,
-        String.valueOf(System.currentTimeMillis()), // use event field to keep enqueue time
-        Collections.emptyMap());
+            workflowHelper.createWorkflowSummaryFromInstance(instance)));
   }
 
   /**
-   * Stop a running workflow instance.
-   *
-   * @param executionId internal workflow instance execution id
-   * @param reason reason to stop it.
-   */
-  public void terminate(String executionId, WorkflowInstance.Status status, String reason) {
-    try {
-      workflowExecutor.terminateWorkflow(executionId, status + "-" + reason);
-    } catch (ApplicationException e) {
-      if (e.getCode() != CONFLICT) {
-        throw e;
-      }
-    }
-  }
-
-  /**
-   * Restart a maestro workflow instance in conductor as a new run.
+   * Restart a maestro workflow instance in maestro flow engine as a new run.
    *
    * @param instance Maestro workflow instance.
-   * @return UUID of the conductor workflow instance
+   * @return UUID of the internal flow instance
    */
   public String restart(WorkflowInstance instance) {
-    return workflowExecutor.startWorkflow(
-        translator.translate(instance),
-        Collections.singletonMap(
-            Constants.WORKFLOW_SUMMARY_FIELD,
-            workflowHelper.createWorkflowSummaryFromInstance(instance)),
-        null,
-        null,
-        String.valueOf(System.currentTimeMillis()), // use event field to keep dequeue time
-        Collections.emptyMap());
+    return start(instance);
   }
 }

@@ -73,7 +73,7 @@ public class PublishJobEventProcessorTest extends MaestroEngineBaseTest {
   public void before() throws Exception {
     processor =
         new PublishJobEventProcessor(
-            new WorkflowHelper(null, null, null, null, publisher),
+            new WorkflowHelper(null, null, null, null, publisher, 1),
             eventClient,
             tagPermitManager,
             actionDao,

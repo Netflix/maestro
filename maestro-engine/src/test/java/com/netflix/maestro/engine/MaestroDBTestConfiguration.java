@@ -12,17 +12,10 @@
  */
 package com.netflix.maestro.engine;
 
-import com.netflix.conductor.cockroachdb.CockroachDBConfiguration;
-import com.netflix.conductor.core.config.SystemPropertiesConfiguration;
+import com.netflix.maestro.database.DatabaseConfiguration;
 
 /** Maestro DB configuration for testing. */
-public class MaestroDBTestConfiguration extends SystemPropertiesConfiguration
-    implements CockroachDBConfiguration {
-  @Override
-  public boolean isFollowerReadsEnabled() {
-    return false;
-  }
-
+public class MaestroDBTestConfiguration implements DatabaseConfiguration {
   @Override
   public String getJdbcUrl() {
     return "jdbc:tc:cockroach:v22.2.19:///maestro";

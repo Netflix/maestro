@@ -13,9 +13,6 @@
 package com.netflix.maestro.engine.listeners;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.run.Workflow;
-import com.netflix.conductor.core.execution.WorkflowStatusListener;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
 import com.netflix.maestro.engine.execution.WorkflowRuntimeSummary;
@@ -30,8 +27,10 @@ import com.netflix.maestro.engine.utils.StepHelper;
 import com.netflix.maestro.engine.utils.TaskHelper;
 import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.exceptions.MaestroRetryableError;
+import com.netflix.maestro.flow.models.Flow;
+import com.netflix.maestro.flow.models.Task;
+import com.netflix.maestro.flow.runtime.FinalFlowStatusCallback;
 import com.netflix.maestro.metrics.MaestroMetrics;
-import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.error.Details;
 import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.StepRuntimeState;
@@ -47,12 +46,12 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Maestro workflow status listener implementation. It cleans up all the status inconsistency and
+ * Maestro final flow status callback implementation. It cleans up all the status inconsistency and
  * provides the eventual consistency at the end of the execution with at least once guarantee.
  */
 @Slf4j
 @AllArgsConstructor
-public class MaestroWorkflowStatusListener implements WorkflowStatusListener {
+public class MaestroFinalFlowStatusCallback implements FinalFlowStatusCallback {
   private static final String TYPE_TAG = "type";
   private static final String FAILURE_REASON_PREFIX = WorkflowInstance.Status.FAILED.name() + "-";
 
@@ -64,77 +63,83 @@ public class MaestroWorkflowStatusListener implements WorkflowStatusListener {
   private final MaestroMetrics metrics;
 
   @Override
-  public void onWorkflowCompleted(Workflow workflow) {
-    LOG.trace("Workflow {} is completed", workflow.getWorkflowId());
+  public void onFlowCompleted(Flow flow) {
+    LOG.trace("Flow {} is completed", flow.getFlowId());
     metrics.counter(
-        MetricConstants.WORKFLOW_STATUS_LISTENER_CALL_BACK_METRIC,
+        MetricConstants.FINAL_FLOW_STATUS_CALL_BACK_METRIC,
         getClass(),
         TYPE_TAG,
-        "onWorkflowCompleted");
+        "onFlowCompleted");
   }
 
   @Override
-  public void onWorkflowTerminated(Workflow workflow) {
-    LOG.trace(
-        "Workflow {} is terminated with status {}", workflow.getWorkflowId(), workflow.getStatus());
+  public void onFlowTerminated(Flow flow) {
+    LOG.trace("Flow {} is terminated with status {}", flow.getFlowId(), flow.getStatus());
     metrics.counter(
-        MetricConstants.WORKFLOW_STATUS_LISTENER_CALL_BACK_METRIC,
+        MetricConstants.FINAL_FLOW_STATUS_CALL_BACK_METRIC,
         getClass(),
         TYPE_TAG,
-        "onWorkflowTerminated",
+        "onFlowTerminated",
         MetricConstants.STATUS_TAG,
-        workflow.getStatus().name());
+        flow.getStatus().name());
   }
 
   @Override
-  public void onWorkflowFinalized(Workflow workflow) {
-    WorkflowSummary summary = StepHelper.retrieveWorkflowSummary(objectMapper, workflow.getInput());
-    WorkflowRuntimeSummary runtimeSummary = retrieveWorkflowRuntimeSummary(workflow);
-    String reason = workflow.getReasonForIncompletion();
+  public void onFlowFinalized(Flow flow) {
+    WorkflowSummary summary = StepHelper.retrieveWorkflowSummary(objectMapper, flow.getInput());
+    WorkflowRuntimeSummary runtimeSummary = retrieveWorkflowRuntimeSummary(flow);
+    String reason = flow.getReasonForIncompletion();
     LOG.info(
         "Workflow {} with execution_id [{}] is finalized with internal state [{}] and reason [{}]",
         summary.getIdentity(),
-        workflow.getWorkflowId(),
-        workflow.getStatus(),
+        flow.getFlowId(),
+        flow.getStatus(),
         reason);
     metrics.counter(
-        MetricConstants.WORKFLOW_STATUS_LISTENER_CALL_BACK_METRIC,
+        MetricConstants.FINAL_FLOW_STATUS_CALL_BACK_METRIC,
         getClass(),
         TYPE_TAG,
-        "onWorkflowFinalized",
+        "onFlowFinalized",
         MetricConstants.STATUS_TAG,
-        workflow.getStatus().name());
+        flow.getStatus().name());
 
     if (reason != null
-        && workflow.getStatus() == Workflow.WorkflowStatus.FAILED
+        && flow.getStatus() == Flow.Status.FAILED
         && reason.startsWith(MaestroStartTask.DEDUP_FAILURE_PREFIX)) {
       LOG.info(
-          "Workflow {} with execution_id [{}] has not actually started, thus skip onWorkflowFinalized.",
+          "Workflow {} with execution_id [{}] has not actually started, thus skip onFlowFinalized.",
           summary.getIdentity(),
-          workflow.getWorkflowId());
+          flow.getFlowId());
       return; // special case doing nothing
     }
 
     WorkflowInstance.Status instanceStatus =
         instanceDao.getWorkflowInstanceStatus(
             summary.getWorkflowId(), summary.getWorkflowInstanceId(), summary.getWorkflowRunId());
-    if (instanceStatus == null
-        || (instanceStatus.isTerminal() && workflow.getStatus().isTerminal())) {
+    if (instanceStatus == null || (instanceStatus.isTerminal() && flow.getStatus().isTerminal())) {
       LOG.info(
           "Workflow {} with execution_id [{}] does not exist or already "
-              + "in a terminal state [{}] with internal state [{}], thus skip onWorkflowFinalized.",
+              + "in a terminal state [{}] with internal state [{}], thus skip onFlowFinalized.",
           summary.getIdentity(),
-          workflow.getWorkflowId(),
+          flow.getFlowId(),
           instanceStatus,
-          workflow.getStatus());
+          flow.getStatus());
       return;
     }
 
-    Map<String, Task> realTaskMap = TaskHelper.getUserDefinedRealTaskMap(workflow);
+    LOG.info(
+        "Workflow {} with execution_id [{}] is not in a terminal state [{}] "
+            + "with internal state [{}], thus run onFlowFinalized.",
+        summary.getIdentity(),
+        flow.getFlowId(),
+        instanceStatus,
+        flow.getStatus());
+    Map<String, Task> realTaskMap =
+        TaskHelper.getUserDefinedRealTaskMap(flow.getStreamOfAllTasks());
     // cancel internally failed tasks
     realTaskMap.values().stream()
         .filter(task -> !StepHelper.retrieveStepStatus(task.getOutputData()).isTerminal())
-        .forEach(task -> maestroTask.cancel(workflow, task, null));
+        .forEach(task -> maestroTask.cancel(flow, task));
 
     WorkflowRuntimeOverview overview =
         TaskHelper.computeOverview(
@@ -142,18 +147,18 @@ public class MaestroWorkflowStatusListener implements WorkflowStatusListener {
 
     try {
       validateAndUpdateOverview(overview, summary);
-      switch (workflow.getStatus()) {
+      switch (flow.getStatus()) {
         case TERMINATED: // stopped due to stop request
           if (reason != null && reason.startsWith(FAILURE_REASON_PREFIX)) {
-            update(workflow, WorkflowInstance.Status.FAILED, summary, overview);
+            update(flow, WorkflowInstance.Status.FAILED, summary, overview);
           } else {
-            update(workflow, WorkflowInstance.Status.STOPPED, summary, overview);
+            update(flow, WorkflowInstance.Status.STOPPED, summary, overview);
           }
           break;
         case TIMED_OUT:
-          update(workflow, WorkflowInstance.Status.TIMED_OUT, summary, overview);
+          update(flow, WorkflowInstance.Status.TIMED_OUT, summary, overview);
           break;
-        default: // other status (FAILED, COMPLETED, PAUSED, RUNNING) to be handled here.
+        default: // other status (FAILED, COMPLETED, RUNNING) to be handled here.
           Optional<Task.Status> done =
               TaskHelper.checkProgress(realTaskMap, summary, overview, true);
           switch (done.orElse(Task.Status.IN_PROGRESS)) {
@@ -169,65 +174,64 @@ public class MaestroWorkflowStatusListener implements WorkflowStatusListener {
                 throw new MaestroInternalError(
                     "Invalid status: [%s], expecting a terminal one", nextStatus);
               }
-              update(workflow, nextStatus, summary, overview);
+              update(flow, nextStatus, summary, overview);
               break;
             case FAILED:
             case CANCELED: // due to step failure
-              update(workflow, WorkflowInstance.Status.FAILED, summary, overview);
+              update(flow, WorkflowInstance.Status.FAILED, summary, overview);
               break;
             case TIMED_OUT:
-              update(workflow, WorkflowInstance.Status.TIMED_OUT, summary, overview);
+              update(flow, WorkflowInstance.Status.TIMED_OUT, summary, overview);
               break;
               // all other status are invalid
             default:
               metrics.counter(
-                  MetricConstants.WORKFLOW_STATUS_LISTENER_CALL_BACK_METRIC,
+                  MetricConstants.FINAL_FLOW_STATUS_CALL_BACK_METRIC,
                   getClass(),
                   TYPE_TAG,
-                  "invalidStatusOnWorkflowFinalized");
+                  "invalidStatusOnFlowFinalized");
               throw new MaestroInternalError(
-                  "Invalid status [%s] onWorkflowFinalized", workflow.getStatus());
+                  "Invalid status [%s] onFlowFinalized", flow.getStatus());
           }
           break;
       }
     } catch (MaestroInternalError | IllegalArgumentException e) {
       // non-retryable error and still fail the instance
-      LOG.warn("onWorkflowFinalized is failed with a non-retryable error", e);
+      LOG.warn("onFlowFinalized is failed with a non-retryable error", e);
       metrics.counter(
-          MetricConstants.WORKFLOW_STATUS_LISTENER_CALL_BACK_METRIC,
+          MetricConstants.FINAL_FLOW_STATUS_CALL_BACK_METRIC,
           getClass(),
           TYPE_TAG,
-          "nonRetryableErrorOnWorkflowFinalized");
+          "nonRetryableErrorOnFlowFinalized");
       update(
-          workflow,
+          flow,
           WorkflowInstance.Status.FAILED,
           summary,
           overview,
-          Details.create(
-              e.getMessage(), "onWorkflowFinalized is failed with non-retryable error."));
+          Details.create(e.getMessage(), "onFlowFinalized is failed with non-retryable error."));
     }
   }
 
   private void update(
-      Workflow workflow,
+      Flow flow,
       WorkflowInstance.Status status,
       WorkflowSummary summary,
       WorkflowRuntimeOverview overview) {
-    update(workflow, status, summary, overview, null);
+    update(flow, status, summary, overview, null);
   }
 
   private void update(
-      Workflow workflow,
+      Flow flow,
       WorkflowInstance.Status status,
       WorkflowSummary summary,
       WorkflowRuntimeOverview overview,
       Details errorDetails) {
     long markTime = System.currentTimeMillis();
-    WorkflowRuntimeSummary runtimeSummary = retrieveWorkflowRuntimeSummary(workflow);
+    WorkflowRuntimeSummary runtimeSummary = retrieveWorkflowRuntimeSummary(flow);
     runtimeSummary.addTimeline(
         TimelineLogEvent.info(
             "Workflow instance status is updated to [%s] due to [%s]",
-            status, workflow.getReasonForIncompletion()));
+            status, flow.getReasonForIncompletion()));
     if (errorDetails != null) {
       runtimeSummary.addTimeline(TimelineDetailsEvent.from(errorDetails));
     }
@@ -238,13 +242,13 @@ public class MaestroWorkflowStatusListener implements WorkflowStatusListener {
       LOG.error(
           "Failed when finalizing workflow {} with execution_id [{}] due to {}, Will retry.",
           summary.getIdentity(),
-          workflow.getWorkflowId(),
+          flow.getFlowId(),
           updated.get());
       metrics.counter(
-          MetricConstants.WORKFLOW_STATUS_LISTENER_CALL_BACK_METRIC,
+          MetricConstants.FINAL_FLOW_STATUS_CALL_BACK_METRIC,
           getClass(),
           TYPE_TAG,
-          "failedUpdateOnWorkflowFinalized");
+          "failedUpdateOnFlowFinalized");
       throw new MaestroRetryableError(
           updated.get(), "Failed to update workflow instance: " + summary.getIdentity());
     }
@@ -254,16 +258,16 @@ public class MaestroWorkflowStatusListener implements WorkflowStatusListener {
         "Failed to publish maestro job event when finalizing workflow: " + summary.getIdentity());
 
     metrics.counter(
-        MetricConstants.WORKFLOW_STATUS_LISTENER_CALL_BACK_METRIC,
+        MetricConstants.FINAL_FLOW_STATUS_CALL_BACK_METRIC,
         getClass(),
         TYPE_TAG,
-        "updateOnWorkflowFinalized",
+        "updateOnFlowFinalized",
         MetricConstants.STATUS_TAG,
         status.name());
   }
 
-  private WorkflowRuntimeSummary retrieveWorkflowRuntimeSummary(Workflow workflow) {
-    Task task = workflow.getTaskByRefName(Constants.DEFAULT_END_STEP_NAME);
+  private WorkflowRuntimeSummary retrieveWorkflowRuntimeSummary(Flow flow) {
+    Task task = flow.getMonitorTask();
     if (task == null) {
       return new WorkflowRuntimeSummary();
     }
@@ -285,10 +289,10 @@ public class MaestroWorkflowStatusListener implements WorkflowStatusListener {
           stats,
           summary.getIdentity());
       metrics.counter(
-          MetricConstants.WORKFLOW_STATUS_LISTENER_CALL_BACK_METRIC,
+          MetricConstants.FINAL_FLOW_STATUS_CALL_BACK_METRIC,
           getClass(),
           TYPE_TAG,
-          "nonTerminalStatusOnWorkflowFinalized");
+          "nonTerminalStatusOnFlowFinalized");
       throw new MaestroRetryableError(
           "Final workflow %s step status is invalid and will retry termination.",
           summary.getIdentity());
@@ -302,10 +306,10 @@ public class MaestroWorkflowStatusListener implements WorkflowStatusListener {
           overview.getStepOverview(),
           summary.getIdentity());
       metrics.counter(
-          MetricConstants.WORKFLOW_STATUS_LISTENER_CALL_BACK_METRIC,
+          MetricConstants.FINAL_FLOW_STATUS_CALL_BACK_METRIC,
           getClass(),
           TYPE_TAG,
-          "inconsistentStatsOnWorkflowFinalized");
+          "inconsistentStatsOnFlowFinalized");
     }
     overview.setStepOverview(stats);
   }

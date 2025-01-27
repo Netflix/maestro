@@ -14,8 +14,8 @@ package com.netflix.maestro.engine.dao;
 
 import static org.junit.Assert.assertEquals;
 
-import com.netflix.conductor.cockroachdb.CockroachDBConfiguration;
-import com.netflix.conductor.cockroachdb.CockroachDBDataSourceProvider;
+import com.netflix.maestro.database.DatabaseConfiguration;
+import com.netflix.maestro.database.DatabaseSourceProvider;
 import com.netflix.maestro.engine.MaestroDBTestConfiguration;
 import com.netflix.maestro.engine.MaestroEngineBaseTest;
 import com.netflix.maestro.models.definition.WorkflowDefinition;
@@ -25,14 +25,14 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 public abstract class MaestroDaoBaseTest extends MaestroEngineBaseTest {
-  protected static CockroachDBConfiguration config;
+  protected static DatabaseConfiguration config;
   protected static DataSource dataSource;
 
   @BeforeClass
   public static void init() {
     MaestroEngineBaseTest.init();
     config = new MaestroDBTestConfiguration();
-    dataSource = new CockroachDBDataSourceProvider(config).get();
+    dataSource = new DatabaseSourceProvider(config).get();
   }
 
   @AfterClass

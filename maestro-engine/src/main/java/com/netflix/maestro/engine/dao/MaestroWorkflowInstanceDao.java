@@ -13,10 +13,10 @@
 package com.netflix.maestro.engine.dao;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.cockroachdb.CockroachDBConfiguration;
-import com.netflix.conductor.cockroachdb.dao.CockroachDBBaseDAO;
 import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.annotations.VisibleForTesting;
+import com.netflix.maestro.database.AbstractDatabaseDao;
+import com.netflix.maestro.database.DatabaseConfiguration;
 import com.netflix.maestro.engine.db.ForeachIterationOverview;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
 import com.netflix.maestro.engine.jobevents.RunWorkflowInstancesJobEvent;
@@ -28,6 +28,7 @@ import com.netflix.maestro.engine.utils.ObjectHelper;
 import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.exceptions.MaestroNotFoundException;
 import com.netflix.maestro.exceptions.MaestroRetryableError;
+import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.Actions;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.User;
@@ -65,7 +66,7 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressFBWarnings("OBL_UNSATISFIED_OBLIGATION")
 @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
 @Slf4j
-public class MaestroWorkflowInstanceDao extends CockroachDBBaseDAO {
+public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
   private static final String SINGLE_PLACE_HOLDER = "?,";
   private static final String DOUBLE_PLACE_HOLDER = "?,?,";
   private static final String QUAD_PLACE_HOLDER = "?,?,?,?,";
@@ -143,10 +144,6 @@ public class MaestroWorkflowInstanceDao extends CockroachDBBaseDAO {
 
   private static final String GET_LATEST_WORKFLOW_INSTANCE_STATUS_QUERY =
       String.format(GET_WORKFLOW_INSTANCE_FIELDS_TEMPLATE, STATUS_COLUMN, LATEST_RUN_CONDITION);
-
-  // note that this is a workaround as conductor does not support dedup key for idempotency.
-  private static final String GET_WORKFLOW_WITH_SAME_UUID_QUERY =
-      "SELECT 1 FROM workflow_instance@name_status_index WHERE workflow_name=? LIMIT 1";
 
   private static final String UPDATE_INSTANCE_FAILED_STATUS =
       "UPDATE maestro_workflow_instance@workflow_status_index SET (status) = ('FAILED_2') "
@@ -233,9 +230,10 @@ public class MaestroWorkflowInstanceDao extends CockroachDBBaseDAO {
   public MaestroWorkflowInstanceDao(
       DataSource dataSource,
       ObjectMapper objectMapper,
-      CockroachDBConfiguration config,
-      MaestroJobEventPublisher publisher) {
-    super(dataSource, objectMapper, config);
+      DatabaseConfiguration config,
+      MaestroJobEventPublisher publisher,
+      MaestroMetrics metrics) {
+    super(dataSource, objectMapper, config, metrics);
     this.publisher = publisher;
   }
 
@@ -249,8 +247,7 @@ public class MaestroWorkflowInstanceDao extends CockroachDBBaseDAO {
   /**
    * The instance list has already been sized to fit into the batch size limit. max insertion is 10.
    *
-   * <p>Have to build batch query because executeBatch won't work in this case, which is mentioned
-   * in https://github.com/cockroachdb/docs/issues/3578#issuecomment-415881382
+   * <p>It explicitly builds batch query because executeBatch won't work in some cases
    */
   private int[] insertMaestroWorkflowInstances(Connection conn, List<WorkflowInstance> instances)
       throws SQLException {
@@ -298,7 +295,7 @@ public class MaestroWorkflowInstanceDao extends CockroachDBBaseDAO {
   private void publishRunInstancesJobEvent(RunWorkflowInstancesJobEvent startInstances) {
     publisher.publishOrThrow(
         startInstances, "Failed sending job events to run workflow instances, will retry.");
-    startInstances.getInstanceRunUuids().clear();
+    startInstances.getInstanceRunUuids().clear(); // be careful if startInstances object is reused
   }
 
   /**
@@ -474,8 +471,8 @@ public class MaestroWorkflowInstanceDao extends CockroachDBBaseDAO {
                 tryUpdateAncestorRunsStatus(
                     conn,
                     workflowId,
-                    instances.get(0).getWorkflowInstanceId(),
-                    instances.get(instances.size() - 1));
+                    instances.getFirst().getWorkflowInstanceId(),
+                    instances.getLast());
                 return insertMaestroWorkflowInstances(conn, instances);
               });
       LOG.debug(
@@ -495,7 +492,7 @@ public class MaestroWorkflowInstanceDao extends CockroachDBBaseDAO {
     } catch (RuntimeException e) {
       LOG.warn(
           "Failed to create workflow instance batch (starting at {}) for workflow [{}] due to",
-          instances.get(0).getWorkflowInstanceId(),
+          instances.getFirst().getWorkflowInstanceId(),
           workflowId,
           e);
       return Optional.of(
@@ -563,19 +560,6 @@ public class MaestroWorkflowInstanceDao extends CockroachDBBaseDAO {
         "tryUnblockFailedWorkflowInstances",
         "Failed to try to unblock the failed workflow instances for workflow id[{}]",
         workflowId);
-  }
-
-  /** Used to get if there is any conductor workflow instance with this maestro workflow uuid. */
-  public boolean existWorkflowWithSameUuid(String uuid) {
-    return withMetricLogError(
-        () ->
-            withRetryableQuery(
-                GET_WORKFLOW_WITH_SAME_UUID_QUERY,
-                stmt -> stmt.setString(1, uuid),
-                ResultSet::next),
-        "existWorkflowWithSameUuid",
-        "Failed to check the existence of the workflow instance for uuid [{}]",
-        uuid);
   }
 
   /**

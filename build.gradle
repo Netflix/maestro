@@ -64,7 +64,7 @@ allprojects {
     }
 }
 
-configure(allprojects - project(':cockroachdb-persistence') - project(':netflix-sel')) {
+configure(allprojects - project(':netflix-sel')) {
     apply plugin: 'checkstyle'
     apply plugin: 'pmd'
     apply plugin: 'com.github.spotbugs'

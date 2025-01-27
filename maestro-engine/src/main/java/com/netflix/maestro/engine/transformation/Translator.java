@@ -19,14 +19,14 @@ package com.netflix.maestro.engine.transformation;
  * @param <R> Destination data model type.
  */
 public interface Translator<T, R> {
-  /** conductor retry limit. */
-  int CONDUCTOR_RETRY_NUM = 999;
+  /** flow engine task default polling interval in seconds. */
+  int DEFAULT_FLOW_TASK_DELAY = 0;
 
-  /** conductor default retry delay in seconds. */
-  int CONDUCTOR_RETRY_DELAY = 1;
+  /** flow engine task default reconciliation interval in seconds. */
+  int DEFAULT_FLOW_TASK_RECONCILIATION_INTERVAL = 60;
 
-  /** conductor response timeout limit. */
-  long CONDUCTOR_RESPONSE_TIMEOUT = 24 * 60 * 60;
+  /** flow reference formatter to convert workflow identifier to a flow reference. */
+  String FLOW_REFERENCE_FORMATTER = "[%s][%s][%s]";
 
   /**
    * Translate function.

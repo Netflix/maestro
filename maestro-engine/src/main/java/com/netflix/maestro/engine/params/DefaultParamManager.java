@@ -34,8 +34,7 @@ public class DefaultParamManager {
   private static final String DRY_RUN_PARAMS_FILE = "defaultparams/default-dry-run-params.yaml";
 
   private final ObjectMapper objectMapper;
-  private final TypeReference<Map<String, ParamDefinition>> typeRef =
-      new TypeReference<Map<String, ParamDefinition>>() {};
+  private final TypeReference<Map<String, ParamDefinition>> typeRef = new TypeReference<>() {};
   private Map<String, ParamDefinition> defaultSystemParams;
   private Map<String, ParamDefinition> defaultStepParams;
   private Map<String, Map<String, ParamDefinition>> defaultTypeParams;

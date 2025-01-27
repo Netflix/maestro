@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.models.events.StepInstanceStatusChangeEvent;
 import com.netflix.maestro.models.instance.StepInstance;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.validation.Valid;
@@ -99,7 +100,7 @@ public class StepInstanceUpdateJobEvent implements MaestroJobEvent {
     event.stepUuid = instance.getStepUuid();
     event.correlationId = instance.getCorrelationId();
     event.stepInstanceId = instance.getStepInstanceId();
-    event.pendingRecords = pendingEvents;
+    event.pendingRecords = new ArrayList<>(pendingEvents); // make a copy
     event.syncTime = System.currentTimeMillis();
     return event;
   }

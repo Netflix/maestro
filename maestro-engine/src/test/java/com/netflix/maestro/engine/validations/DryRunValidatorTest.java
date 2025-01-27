@@ -66,7 +66,7 @@ public class DryRunValidatorTest extends MaestroEngineBaseTest {
     stepRuntimeMap.put(StepType.SLEEP, new SleepStepRuntime());
     stepRuntimeMap.put(StepType.NOOP, new NoOpStepRuntime());
     WorkflowHelper workflowHelper =
-        new WorkflowHelper(paramsManager, paramEvaluator, dagTranslator, extensionRepo, null);
+        new WorkflowHelper(paramsManager, paramEvaluator, dagTranslator, extensionRepo, null, 1);
     dryRunValidator =
         new DryRunValidator(stepRuntimeMap, defaultParamsManager, paramsManager, workflowHelper);
   }

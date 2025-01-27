@@ -12,23 +12,23 @@
  */
 package com.netflix.maestro.server.properties;
 
-import com.netflix.maestro.engine.properties.MaestroConductorProperties;
+import com.netflix.maestro.flow.properties.FlowEngineProperties;
 import java.util.Locale;
 import java.util.Map;
 import lombok.AllArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.ConstructorBinding;
 
-/** Conductor configuration properties. */
+/** Flow related Maestro engine configuration properties. */
 @AllArgsConstructor
 @ConstructorBinding
-@ConfigurationProperties(prefix = "conductor")
-public class ConductorProperties extends MaestroConductorProperties {
+@ConfigurationProperties(prefix = "engine")
+public class MaestroEngineProperties extends FlowEngineProperties {
 
   private final Map<String, String> configs;
 
   /**
-   * Get conductor properties from Spring boot configs.
+   * Get Maestro flow properties from Spring boot configs.
    *
    * @param name Name of the property
    * @param defaultValue Default value when not specified

@@ -21,15 +21,16 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.run.Workflow;
 import com.netflix.maestro.engine.MaestroEngineBaseTest;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
+import com.netflix.maestro.flow.models.Flow;
+import com.netflix.maestro.flow.models.FlowDef;
+import com.netflix.maestro.flow.models.Task;
+import com.netflix.maestro.flow.models.TaskDef;
+import com.netflix.maestro.models.Constants;
+import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.StepRuntimeState;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,7 +43,7 @@ public class MaestroGateTaskTest extends MaestroEngineBaseTest {
   @Mock private MaestroStepInstanceDao stepInstanceDao;
 
   private MaestroGateTask gateTask;
-  private Workflow workflow;
+  private Flow flow;
   private Task joinTask;
 
   @Before
@@ -50,27 +51,28 @@ public class MaestroGateTaskTest extends MaestroEngineBaseTest {
     gateTask = new MaestroGateTask(stepInstanceDao, MAPPER);
 
     joinTask = new Task();
-    joinTask.setInputData(Collections.singletonMap("joinOn", Collections.singletonList("job1")));
+    TaskDef taskDef =
+        new TaskDef("#job2", StepType.JOIN.name(), null, Collections.singletonList("job1"));
+    joinTask.setTaskDef(taskDef);
     joinTask.setTaskId("test-join-id");
-    joinTask.setReferenceTaskName("#job2");
 
     Task task1 = new Task();
     task1.setStatus(Task.Status.FAILED);
     task1.setTaskId("test-join-id");
-    task1.setReferenceTaskName("job1");
-    task1.setWorkflowTask(new WorkflowTask());
+    TaskDef taskDef1 = new TaskDef("job1", Constants.MAESTRO_TASK_NAME, null, null);
+    task1.setTaskDef(taskDef1);
 
-    workflow = new Workflow();
-    workflow.setWorkflowId("testWorkflowId");
-    workflow.setStatus(Workflow.WorkflowStatus.RUNNING);
-    WorkflowDef def = new WorkflowDef();
-    workflow.setWorkflowDefinition(def);
+    flow = new Flow(1, "testWorkflowId", 1, 12345, "ref");
+    flow.setStatus(Flow.Status.RUNNING);
+    FlowDef def = new FlowDef();
+    flow.setFlowDef(def);
     Map<String, Object> summary = new HashMap<>();
     summary.put("workflow_id", "testWorkflowId");
     summary.put("workflow_instance_id", 123);
     summary.put("workflow_run_id", 1);
-    workflow.setInput(Collections.singletonMap("maestro_workflow_summary", summary));
-    workflow.setTasks(Arrays.asList(task1, joinTask));
+    flow.setInput(Collections.singletonMap("maestro_workflow_summary", summary));
+    flow.addFinishedTask(task1);
+    flow.updateRunningTask(joinTask);
   }
 
   @Test
@@ -80,7 +82,7 @@ public class MaestroGateTaskTest extends MaestroEngineBaseTest {
     when(stepInstanceDao.getStepStates(anyString(), anyLong(), anyLong(), anyList()))
         .thenReturn(Collections.singletonMap("job1", state));
 
-    assertTrue(gateTask.execute(workflow, joinTask, null));
+    assertTrue(gateTask.execute(flow, joinTask));
     assertEquals(Task.Status.FAILED, joinTask.getStatus());
   }
 
@@ -91,7 +93,7 @@ public class MaestroGateTaskTest extends MaestroEngineBaseTest {
     when(stepInstanceDao.getStepStates(anyString(), anyLong(), anyLong(), anyList()))
         .thenReturn(Collections.singletonMap("job1", state));
 
-    assertFalse(gateTask.execute(workflow, joinTask, null));
+    assertFalse(gateTask.execute(flow, joinTask));
     assertNull(joinTask.getStatus());
   }
 }

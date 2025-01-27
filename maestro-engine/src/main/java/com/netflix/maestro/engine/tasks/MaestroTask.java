@@ -13,10 +13,6 @@
 package com.netflix.maestro.engine.tasks;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.run.Workflow;
-import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.annotations.VisibleForTesting;
 import com.netflix.maestro.engine.concurrency.InstanceStepConcurrencyHandler;
@@ -28,6 +24,7 @@ import com.netflix.maestro.engine.db.StepAction;
 import com.netflix.maestro.engine.eval.InstanceWrapper;
 import com.netflix.maestro.engine.eval.MaestroParamExtensionRepo;
 import com.netflix.maestro.engine.eval.ParamEvaluator;
+import com.netflix.maestro.engine.execution.StepRuntimeCallbackDelayPolicy;
 import com.netflix.maestro.engine.execution.StepRuntimeManager;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.engine.execution.StepSyncManager;
@@ -47,6 +44,9 @@ import com.netflix.maestro.engine.utils.StepHelper;
 import com.netflix.maestro.engine.utils.TaskHelper;
 import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.exceptions.MaestroRetryableError;
+import com.netflix.maestro.flow.models.Flow;
+import com.netflix.maestro.flow.models.Task;
+import com.netflix.maestro.flow.runtime.FlowTask;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.Actions;
 import com.netflix.maestro.models.Constants;
@@ -56,7 +56,6 @@ import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.definition.StepDependenciesDefinition;
 import com.netflix.maestro.models.definition.StepDependencyType;
 import com.netflix.maestro.models.definition.StepOutputsDefinition;
-import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.Tag;
 import com.netflix.maestro.models.error.Details;
 import com.netflix.maestro.models.instance.RestartConfig;
@@ -64,7 +63,6 @@ import com.netflix.maestro.models.instance.RunPolicy;
 import com.netflix.maestro.models.instance.StepDependencies;
 import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.StepInstanceTransition;
-import com.netflix.maestro.models.instance.StepRuntimeState;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.instance.WorkflowRuntimeOverview;
 import com.netflix.maestro.models.parameter.BooleanParameter;
@@ -84,19 +82,19 @@ import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Maestro task implementation, which is a proxy to bridge maestro and conductor.
+ * Maestro task implementation, which is a proxy to bridge maestro engine and maestro flow.
  *
- * <p>It is responsible to retrieve Maestro data model from conductor data and pass it to Maestro
- * step runtime.
+ * <p>It is responsible to retrieve Maestro data model from maestro internal flow data and pass it
+ * to Maestro step runtime.
  *
- * <p>It encapsulates conductor engine execution model. Thus, all maestro step runtime will be
- * independent of the conductor.
+ * <p>It encapsulates Maestro internal flow engine execution model. Thus, all maestro step runtime
+ * will be independent of the maestro flow engine.
  *
  * <p>It also handles the at-least once step status change publishing and the maestro step instance
  * data update and persistence.
  */
 @Slf4j
-public class MaestroTask extends WorkflowSystemTask {
+public class MaestroTask implements FlowTask {
   private static final Set<String> RETRYABLE_SQL_ERROR_STATES = Collections.singleton("08006");
   private static final Set<String> RETRYABLE_SQL_ERROR_MSGS =
       Collections.singleton("Connection is closed");
@@ -111,6 +109,7 @@ public class MaestroTask extends WorkflowSystemTask {
   private final MaestroStepInstanceActionDao actionDao;
   private final TagPermitManager tagPermitAcquirer;
   private final InstanceStepConcurrencyHandler instanceStepConcurrencyHandler;
+  private final StepRuntimeCallbackDelayPolicy stepRuntimeCallbackDelayPolicy;
   private final MaestroMetrics metrics;
   private final MaestroTracingManager tracingManager;
   private final MaestroParamExtensionRepo paramExtensionRepo;
@@ -127,10 +126,10 @@ public class MaestroTask extends WorkflowSystemTask {
       MaestroStepInstanceActionDao actionDao,
       TagPermitManager tagPermitAcquirer,
       InstanceStepConcurrencyHandler instanceStepConcurrencyHandler,
+      StepRuntimeCallbackDelayPolicy stepRuntimeCallbackDelayPolicy,
       MaestroMetrics metricRepo,
       @Nullable MaestroTracingManager tracingManager,
       @Nullable MaestroParamExtensionRepo extensionRepo) {
-    super(Constants.MAESTRO_TASK_NAME);
     this.stepRuntimeManager = stepRuntimeManager;
     this.stepSyncManager = stepSyncManager;
     this.paramEvaluator = paramEvaluator;
@@ -141,6 +140,7 @@ public class MaestroTask extends WorkflowSystemTask {
     this.actionDao = actionDao;
     this.tagPermitAcquirer = tagPermitAcquirer;
     this.instanceStepConcurrencyHandler = instanceStepConcurrencyHandler;
+    this.stepRuntimeCallbackDelayPolicy = stepRuntimeCallbackDelayPolicy;
     this.metrics = metricRepo;
     this.tracingManager = tracingManager;
     if (tracingManager == null) {
@@ -150,21 +150,21 @@ public class MaestroTask extends WorkflowSystemTask {
   }
 
   @Override
-  public void start(Workflow workflow, Task task, WorkflowExecutor executor) {
+  public void start(Flow flow, Task task) {
     try {
       Step stepDefinition = StepHelper.retrieveStepDefinition(objectMapper, task.getInputData());
       WorkflowSummary workflowSummary =
-          StepHelper.retrieveWorkflowSummary(objectMapper, workflow.getInput());
+          StepHelper.retrieveWorkflowSummary(objectMapper, flow.getInput());
       Map<StepDependencyType, StepDependencies> dependencies =
-          StepHelper.getStepDependencies(workflow, stepDefinition.getId(), objectMapper);
+          StepHelper.getStepDependencies(flow, stepDefinition.getId(), objectMapper);
       StepRuntimeSummary runtimeSummary =
           createStepRuntimeSummary(task, stepDefinition, workflowSummary, dependencies);
       task.getOutputData().put(Constants.STEP_RUNTIME_SUMMARY_FIELD, runtimeSummary);
-      task.setStartDelayInSeconds(Translator.CONDUCTOR_RETRY_DELAY); // reset it to default
+      task.setStartDelayInSeconds(Translator.DEFAULT_FLOW_TASK_DELAY); // reset it to default
       LOG.info(
-          "Created a step instance {} for workflow instance [{}] with status [{}]",
+          "Created a step instance {} for flow instance [{}] with status [{}]",
           runtimeSummary.getIdentity(),
-          workflow.getWorkflowName(),
+          flow.getFlowId(),
           runtimeSummary.getRuntimeState().getStatus().name());
 
       if (stepDefinition.getType().isLeaf()
@@ -180,7 +180,7 @@ public class MaestroTask extends WorkflowSystemTask {
                     details));
       }
     } catch (Exception e) {
-      handleUnexpectedException(workflow, task, e);
+      handleUnexpectedException(flow, task, e);
     }
   }
 
@@ -275,18 +275,16 @@ public class MaestroTask extends WorkflowSystemTask {
    * final workflow level termination to record this kind of error. Error info will be logged in
    * maestro workflow instance db.
    */
-  private void handleUnexpectedException(Workflow workflow, Task task, Exception e) {
+  private void handleUnexpectedException(Flow flow, Task task, Exception e) {
     task.setStatus(Task.Status.FAILED_WITH_TERMINAL_ERROR);
     task.setReasonForIncompletion(
         String.format(
-            "Step [%s] got an unexpected exception: %s",
-            task.getReferenceTaskName(), e.getMessage()));
+            "Step [%s] got an unexpected exception: %s", task.referenceTaskName(), e.getMessage()));
     LOG.error(
-        "Terminate Maestro step [{}] for the task [{}] in workflow [{}][{}], getting an exception",
-        task.getReferenceTaskName(),
+        "Terminate Maestro step [{}] for the task [{}] in flow [{}], getting an exception",
+        task.referenceTaskName(),
         task.getTaskId(),
-        workflow.getWorkflowName(),
-        workflow.getWorkflowId(),
+        flow.getFlowId(),
         e);
     metrics.counter(
         "handle_unexpected_exception_in_maestro_task",
@@ -296,13 +294,12 @@ public class MaestroTask extends WorkflowSystemTask {
   }
 
   private boolean initializeAndSendOutputSignals(
-      Workflow workflow,
+      Flow flow,
       Step stepDefinition,
       WorkflowSummary workflowSummary,
       StepRuntimeSummary runtimeSummary) {
     try {
-      Map<String, Map<String, Object>> allStepOutputData =
-          TaskHelper.getAllStepOutputData(workflow);
+      Map<String, Map<String, Object>> allStepOutputData = TaskHelper.getAllStepOutputData(flow);
 
       initializeOutputSignals(allStepOutputData, stepDefinition, workflowSummary, runtimeSummary);
 
@@ -319,14 +316,13 @@ public class MaestroTask extends WorkflowSystemTask {
   }
 
   private boolean initialize(
-      Workflow workflow,
+      Flow flow,
       Task task,
       Step stepDefinition,
       WorkflowSummary workflowSummary,
       StepRuntimeSummary runtimeSummary) {
     try {
-      Map<String, Map<String, Object>> allStepOutputData =
-          TaskHelper.getAllStepOutputData(workflow);
+      Map<String, Map<String, Object>> allStepOutputData = TaskHelper.getAllStepOutputData(flow);
 
       if (isStepSatisfied(allStepOutputData, runtimeSummary)
           && !isStepSkipped(workflowSummary, runtimeSummary)
@@ -336,10 +332,9 @@ public class MaestroTask extends WorkflowSystemTask {
       }
     } catch (Exception e) {
       LOG.warn(
-          "Failed to initialize Maestro step for the task [{}] in workflow [{}][{}], get an exception:",
+          "Failed to initialize Maestro step for the task [{}] in flow [{}], get an exception:",
           task.getTaskId(),
-          workflow.getWorkflowName(),
-          workflow.getWorkflowId(),
+          flow.getFlowId(),
           e);
       runtimeSummary.markInternalError(e, tracingManager);
     }
@@ -347,14 +342,13 @@ public class MaestroTask extends WorkflowSystemTask {
   }
 
   private boolean evaluateParams(
-      Workflow workflow,
+      Flow flow,
       Task task,
       Step stepDefinition,
       WorkflowSummary workflowSummary,
       StepRuntimeSummary runtimeSummary) {
     try {
-      Map<String, Map<String, Object>> allStepOutputData =
-          TaskHelper.getAllStepOutputData(workflow);
+      Map<String, Map<String, Object>> allStepOutputData = TaskHelper.getAllStepOutputData(flow);
 
       Map<String, Parameter> allStepParams =
           stepRuntimeManager.getAllParams(stepDefinition, workflowSummary, runtimeSummary);
@@ -381,10 +375,9 @@ public class MaestroTask extends WorkflowSystemTask {
       throw mre;
     } catch (Exception e) {
       LOG.warn(
-          "Failed to evaluate Maestro step params for the task [{}] in workflow [{}][{}], get an exception:",
+          "Failed to evaluate Maestro step params for the task [{}] in flow [{}], get an exception:",
           task.getTaskId(),
-          workflow.getWorkflowName(),
-          workflow.getWorkflowId(),
+          flow.getFlowId(),
           e);
       runtimeSummary.markInternalError(e, tracingManager);
       return false;
@@ -636,10 +629,10 @@ public class MaestroTask extends WorkflowSystemTask {
   }
 
   @Override
-  public boolean execute(Workflow workflow, Task task, WorkflowExecutor executor) {
+  public boolean execute(Flow flow, Task task) {
     try {
       WorkflowSummary workflowSummary =
-          StepHelper.retrieveWorkflowSummary(objectMapper, workflow.getInput());
+          StepHelper.retrieveWorkflowSummary(objectMapper, flow.getInput());
       Step stepDefinition = StepHelper.retrieveStepDefinition(objectMapper, task.getInputData());
       StepRuntimeSummary runtimeSummary =
           StepHelper.retrieveRuntimeSummary(objectMapper, task.getOutputData());
@@ -649,6 +642,7 @@ public class MaestroTask extends WorkflowSystemTask {
           runtimeSummary.getIdentity(),
           workflowSummary.getIdentity(),
           runtimeSummary.getRuntimeState().getStatus().name());
+      configTaskStartDelay(task, runtimeSummary, true);
 
       if (isTimeout(runtimeSummary)) {
         handleTimeoutError(workflowSummary, runtimeSummary);
@@ -656,8 +650,11 @@ public class MaestroTask extends WorkflowSystemTask {
         tryUpdateByAction(workflowSummary, stepDefinition, runtimeSummary);
       }
 
-      if (doExecute(workflow, task, workflowSummary, stepDefinition, runtimeSummary)) {
-        return false;
+      boolean inactive = doExecute(flow, task, workflowSummary, stepDefinition, runtimeSummary);
+      configTaskStartDelay(task, runtimeSummary, false);
+      if (inactive) {
+        task.setActive(false);
+        return true;
       }
 
       updateRetryDelayTimeToTimeline(runtimeSummary);
@@ -672,12 +669,29 @@ public class MaestroTask extends WorkflowSystemTask {
       return false;
     } catch (Exception e) {
       if (isRetryableError(e)) {
-        LOG.warn(
-            "Caught a SQLException for workflow [{}] and will retry", workflow.getWorkflowId(), e);
+        LOG.warn("Caught a SQLException for flow [{}] and will retry", flow.getFlowId(), e);
         return false;
       }
-      handleUnexpectedException(workflow, task, e);
+      handleUnexpectedException(flow, task, e);
       return true; // swallow exception and fail the workflow
+    }
+  }
+
+  private void configTaskStartDelay(
+      Task task, StepRuntimeSummary runtimeSummary, boolean firstCall) {
+    Long callbackInSecs = null;
+    if (firstCall || runtimeSummary.getPendingRecords().isEmpty()) { // no state change
+      callbackInSecs = stepRuntimeCallbackDelayPolicy.getCallBackDelayInSecs(runtimeSummary);
+    }
+    if (callbackInSecs != null) {
+      LOG.trace(
+          "Set an initial customized callback [{}] in seconds for step [{}] with an initial status [{}]",
+          callbackInSecs,
+          runtimeSummary.getIdentity(),
+          runtimeSummary.getRuntimeState().getStatus());
+      task.setStartDelayInSeconds(callbackInSecs);
+    } else {
+      task.setStartDelayInSeconds(Translator.DEFAULT_FLOW_TASK_DELAY);
     }
   }
 
@@ -707,38 +721,14 @@ public class MaestroTask extends WorkflowSystemTask {
     return false;
   }
 
-  /**
-   * If a step is in first polling, the state machine is short circuit to move forward as much as
-   * possible to save the bootstrap delays.
-   */
-  private boolean isFirstPolling(Task task, StepRuntimeSummary runtimeSummary) {
-    StepRuntimeState state = runtimeSummary.getRuntimeState();
-    boolean isFirst =
-        (runtimeSummary.getType() == StepType.SUBWORKFLOW
-                || runtimeSummary.getType() == StepType.FOREACH)
-            && state.getStatus() == StepInstance.Status.CREATED
-            && state.getCreateTime() != null
-            && System.currentTimeMillis() - state.getCreateTime()
-                < Constants.FIRST_POLL_TIME_BUFFER_IN_MILLIS
-            && task.getPollCount() <= Constants.FIRST_POLLING_COUNT_LIMIT;
-    if (isFirst) {
-      LOG.info(
-          "Execute a step instance {} for the first time, which has a status [{}]",
-          runtimeSummary.getIdentity(),
-          state.getStatus().name());
-    }
-    return isFirst;
-  }
-
   /** Executes the step instance. It returns true, if the task is in dummy run mode. */
   private boolean doExecute(
-      Workflow workflow,
+      Flow flow,
       Task task,
       WorkflowSummary workflowSummary,
       Step stepDefinition,
       StepRuntimeSummary runtimeSummary) {
     boolean doneWithExecute = false;
-    boolean isFirstPolling = isFirstPolling(task, runtimeSummary);
     while (!doneWithExecute) {
       try {
         switch (runtimeSummary.getRuntimeState().getStatus()) {
@@ -747,8 +737,7 @@ public class MaestroTask extends WorkflowSystemTask {
             return true;
           case CREATED:
             doneWithExecute =
-                initialize(workflow, task, stepDefinition, workflowSummary, runtimeSummary);
-            doneWithExecute = !isFirstPolling && doneWithExecute;
+                initialize(flow, task, stepDefinition, workflowSummary, runtimeSummary);
             break;
           case INITIALIZED:
             if (stepBreakpointDao.createPausedStepAttemptIfNeeded(
@@ -794,13 +783,13 @@ public class MaestroTask extends WorkflowSystemTask {
             break;
           case EVALUATING_PARAMS:
             doneWithExecute =
-                evaluateParams(workflow, task, stepDefinition, workflowSummary, runtimeSummary);
-            doneWithExecute = !isFirstPolling && doneWithExecute;
+                evaluateParams(flow, task, stepDefinition, workflowSummary, runtimeSummary);
             break;
           case WAITING_FOR_PERMITS:
             if (permitsReady(workflowSummary, runtimeSummary)) {
               // If all required tag permits are acquired, then transition to starting.
               runtimeSummary.markStarting(tracingManager);
+              task.setStartTime(runtimeSummary.getRuntimeState().getStartTime());
             } else {
               doneWithExecute = true;
             }
@@ -817,7 +806,7 @@ public class MaestroTask extends WorkflowSystemTask {
             outputDataManager.validateAndMergeOutputParams(runtimeSummary);
 
             if (initializeAndSendOutputSignals(
-                workflow, stepDefinition, workflowSummary, runtimeSummary)) {
+                flow, stepDefinition, workflowSummary, runtimeSummary)) {
               runtimeSummary.markTerminated(StepInstance.Status.SUCCEEDED, tracingManager);
             }
             break;
@@ -826,7 +815,7 @@ public class MaestroTask extends WorkflowSystemTask {
           case SKIPPED:
           case SUCCEEDED:
           case COMPLETED_WITH_ERROR:
-            evaluateNextConditionParams(workflow, stepDefinition, runtimeSummary);
+            evaluateNextConditionParams(flow, stepDefinition, runtimeSummary);
             doneWithExecute = true;
             break;
           case FATALLY_FAILED: // Failure mode only applies to FATALLY_FAILED
@@ -840,7 +829,8 @@ public class MaestroTask extends WorkflowSystemTask {
                             + "because its failure mode is IGNORE_FAILURE."));
                 break;
               } else if (FailureMode.FAIL_IMMEDIATELY == stepDefinition.getFailureMode()) {
-                terminateAllSteps(workflow, workflowSummary, stepDefinition.getId());
+                // todo this should be better handled by the status listener
+                terminateAllSteps(flow, workflowSummary, stepDefinition.getId());
               }
             }
             // fall through, otherwise
@@ -859,18 +849,16 @@ public class MaestroTask extends WorkflowSystemTask {
         }
       } catch (MaestroRetryableError error) {
         LOG.warn(
-            "Got a MaestroRetryableError for the task [{}] in workflow [{}][{}], ",
+            "Got a MaestroRetryableError for the task [{}] in flow [{}], ",
             task.getTaskId(),
-            workflow.getWorkflowName(),
-            workflow.getWorkflowId(),
+            flow.getFlowId(),
             error);
         throw error;
       } catch (Exception e) {
         LOG.warn(
-            "Fatally failed to execute Maestro step for the task [{}] in workflow [{}][{}], get an exception:",
+            "Fatally failed to execute Maestro step for the task [{}] in flow [{}], get an exception:",
             task.getTaskId(),
-            workflow.getWorkflowName(),
-            workflow.getWorkflowId(),
+            flow.getFlowId(),
             e);
         runtimeSummary.markInternalError(e, tracingManager);
         doneWithExecute = false; // the next while loop will handle it.
@@ -883,13 +871,15 @@ public class MaestroTask extends WorkflowSystemTask {
    * Stop all the steps in this workflow instance. If writing actions to DB failed, it throws a
    * retryable error.
    */
-  private void terminateAllSteps(Workflow workflow, WorkflowSummary summary, String stepId) {
+  private void terminateAllSteps(Flow flow, WorkflowSummary summary, String stepId) {
     WorkflowInstance toTerminate = new WorkflowInstance();
     toTerminate.setWorkflowId(summary.getWorkflowId());
     toTerminate.setWorkflowInstanceId(summary.getWorkflowInstanceId());
     toTerminate.setWorkflowRunId(summary.getWorkflowRunId());
+    toTerminate.setGroupId(summary.getGroupId());
 
-    Map<String, Task> realTaskMap = TaskHelper.getUserDefinedRealTaskMap(workflow);
+    Map<String, Task> realTaskMap =
+        TaskHelper.getUserDefinedRealTaskMap(flow.getFinishedTasks().stream());
     // passing rollupBase as null because this overview is used to terminate steps
     // and thus having steps from prev runs is useless
     WorkflowRuntimeOverview overview =
@@ -933,10 +923,10 @@ public class MaestroTask extends WorkflowSystemTask {
   }
 
   private void evaluateNextConditionParams(
-      Workflow workflow, Step stepDefinition, StepRuntimeSummary runtimeSummary) {
-    Map<String, Map<String, Object>> allStepOutputData = TaskHelper.getAllStepOutputData(workflow);
+      Flow flow, Step stepDefinition, StepRuntimeSummary runtimeSummary) {
+    Map<String, Map<String, Object>> allStepOutputData = TaskHelper.getAllStepOutputData(flow);
     WorkflowSummary workflowSummary =
-        StepHelper.retrieveWorkflowSummary(objectMapper, workflow.getInput());
+        StepHelper.retrieveWorkflowSummary(objectMapper, flow.getInput());
 
     boolean isSatisfied =
         runtimeSummary.getParams().get(Constants.STEP_SATISFIED_FIELD).asBoolean();
@@ -1000,7 +990,7 @@ public class MaestroTask extends WorkflowSystemTask {
     } else {
       runtimeSummary.cleanUp();
       // update task status only if sync succeeds.
-      deriveTaskStatus(task, runtimeSummary);
+      TaskHelper.deriveTaskStatus(task, runtimeSummary);
     }
     task.getOutputData().put(Constants.STEP_RUNTIME_SUMMARY_FIELD, runtimeSummary);
   }
@@ -1024,6 +1014,7 @@ public class MaestroTask extends WorkflowSystemTask {
     if (stepSummary.getDbOperation() != DbOperation.UPDATE) {
       Step stepDefinition = StepHelper.retrieveStepDefinition(objectMapper, task.getInputData());
       stepInstance.setWorkflowVersionId(workflowSummary.getWorkflowVersionId());
+      stepInstance.setGroupId(workflowSummary.getGroupId());
       stepInstance.setOwner(workflowSummary.getRunProperties().getOwner());
       stepInstance.setDefinition(stepDefinition);
       stepInstance.setTags(stepSummary.getTags());
@@ -1036,6 +1027,8 @@ public class MaestroTask extends WorkflowSystemTask {
       stepInstance.setOutputs(stepSummary.getOutputs());
       stepInstance.setArtifacts(stepSummary.getArtifacts());
       stepInstance.setTimeline(stepSummary.getTimeline());
+      stepInstance.setStepRunParams(stepSummary.getStepRunParams());
+      stepInstance.setRestartConfig(stepSummary.getRestartConfig());
     }
     return stepInstance;
   }
@@ -1057,65 +1050,17 @@ public class MaestroTask extends WorkflowSystemTask {
     }
   }
 
-  /** From Maestro step instance status to conductor task status. */
-  private void deriveTaskStatus(Task task, StepRuntimeSummary runtimeSummary) {
-    switch (runtimeSummary.getRuntimeState().getStatus()) {
-      case NOT_CREATED:
-      case CREATED:
-      case INITIALIZED:
-      case PAUSED:
-      case WAITING_FOR_SIGNALS:
-      case EVALUATING_PARAMS:
-      case WAITING_FOR_PERMITS:
-      case STARTING:
-      case RUNNING:
-      case FINISHING:
-        task.setStatus(Task.Status.IN_PROGRESS);
-        break;
-      case DISABLED:
-      case UNSATISFIED:
-      case SKIPPED:
-      case SUCCEEDED:
-      case COMPLETED_WITH_ERROR:
-        task.setStatus(Task.Status.COMPLETED);
-        break;
-      case USER_FAILED:
-      case PLATFORM_FAILED:
-      case TIMEOUT_FAILED:
-        task.setStatus(Task.Status.FAILED);
-        task.setStartDelayInSeconds(
-            runtimeSummary
-                .getStepRetry()
-                .getNextRetryDelay(runtimeSummary.getRuntimeState().getStatus()));
-        break;
-      case FATALLY_FAILED:
-      case INTERNALLY_FAILED:
-        task.setStatus(Task.Status.FAILED);
-        break;
-      case STOPPED:
-        task.setStatus(Task.Status.CANCELED);
-        break;
-      case TIMED_OUT:
-        task.setStatus(Task.Status.TIMED_OUT);
-        break;
-      default:
-        throw new MaestroInternalError(
-            "Entered an unexpected state [%s] for step %s",
-            runtimeSummary.getRuntimeState().getStatus(), runtimeSummary.getIdentity());
-    }
-  }
-
   /**
-   * Cancel conductor task execution. Throw exceptions if failed and then will be retried.
+   * Logic to be executed when cancelling internal flow task execution. Throw exceptions if failed
+   * and then will be retried.
    *
-   * @param workflow Workflow for which the task is being started
+   * @param flow flow for which the task is being started
    * @param task Instance of the Task
-   * @param executor Workflow Executor
    */
   @Override
-  public void cancel(Workflow workflow, Task task, WorkflowExecutor executor) {
+  public void cancel(Flow flow, Task task) {
     WorkflowSummary workflowSummary =
-        StepHelper.retrieveWorkflowSummary(objectMapper, workflow.getInput());
+        StepHelper.retrieveWorkflowSummary(objectMapper, flow.getInput());
 
     StepRuntimeSummary runtimeSummary;
     try {
@@ -1125,7 +1070,7 @@ public class MaestroTask extends WorkflowSystemTask {
       return;
     }
 
-    if (workflow.getStatus() == Workflow.WorkflowStatus.TIMED_OUT) {
+    if (flow.getStatus() == Flow.Status.TIMED_OUT) {
       terminate(workflowSummary, runtimeSummary, StepInstance.Status.TIMED_OUT);
     } else {
       terminate(workflowSummary, runtimeSummary, StepInstance.Status.STOPPED);
@@ -1163,10 +1108,5 @@ public class MaestroTask extends WorkflowSystemTask {
           e);
       throw e;
     }
-  }
-
-  @Override
-  public boolean isAsync() {
-    return true;
   }
 }

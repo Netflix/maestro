@@ -112,7 +112,12 @@ public class WorkflowActionHandlerTest extends MaestroEngineBaseTest {
     this.workflowHelper =
         spy(
             new WorkflowHelper(
-                paramsManager, evaluator, dagTranslator, extensionRepo, maestroJobEventPublisher));
+                paramsManager,
+                evaluator,
+                dagTranslator,
+                extensionRepo,
+                maestroJobEventPublisher,
+                1));
     this.actionHandler =
         new WorkflowActionHandler(
             workflowDao, instanceDao, runStrategyDao, dryRunValidator, this.workflowHelper);

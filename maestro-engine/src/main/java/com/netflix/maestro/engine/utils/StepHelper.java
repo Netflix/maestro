@@ -12,15 +12,13 @@
  */
 package com.netflix.maestro.engine.utils;
 
-import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.common.run.Workflow;
 import com.netflix.maestro.engine.execution.RunRequest;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.engine.execution.WorkflowRuntimeSummary;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
-import com.netflix.maestro.engine.tasks.MaestroStartTask;
+import com.netflix.maestro.flow.models.Flow;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.definition.StepDependencyType;
@@ -40,7 +38,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import lombok.Getter;
 
 /** Utility class for step. */
 @SuppressWarnings("unchecked")
@@ -49,8 +46,7 @@ public final class StepHelper {
   private static final String STATUS_FIELD = "status";
   private static final String TRANSITION_FIELD = "transition";
   private static final TypeReference<Map<String, Map<StepDependencyType, StepDependencies>>>
-      ALL_STEP_DEPENDENCIES_REFERENCE =
-          new TypeReference<Map<String, Map<StepDependencyType, StepDependencies>>>() {};
+      ALL_STEP_DEPENDENCIES_REFERENCE = new TypeReference<>() {};
   private static final String CONVERT_FIELD_ERROR = "Cannot find field [%s] in the data";
 
   private StepHelper() {}
@@ -66,24 +62,6 @@ public final class StepHelper {
       return step.getName();
     } else {
       return step.getId();
-    }
-  }
-
-  /**
-   * Wrap a step for JSON serialization.
-   *
-   * @param step given step object
-   * @return wrapped step
-   */
-  public static StepWrapper wrap(Step step) {
-    return new StepWrapper(step);
-  }
-
-  public static class StepWrapper {
-    @JsonValue @Getter private final Step step;
-
-    StepWrapper(Step step) {
-      this.step = step;
     }
   }
 
@@ -141,16 +119,13 @@ public final class StepHelper {
 
   /** utility to get the step dependencies summaries of a stepId. */
   public static Map<StepDependencyType, StepDependencies> getStepDependencies(
-      Workflow workflow, String stepId, ObjectMapper objectMapper) {
-    if (workflow
-        .getTaskByRefName(Constants.DEFAULT_START_STEP_NAME)
-        .getOutputData()
-        .containsKey(MaestroStartTask.ALL_STEP_DEPENDENCIES)) {
+      Flow flow, String stepId, ObjectMapper objectMapper) {
+    if (flow.getPrepareTask().getOutputData().containsKey(Constants.ALL_STEP_DEPENDENCIES_FIELD)) {
       Map<String, Map<StepDependencyType, StepDependencies>> allStepDependencies =
           convertField(
               objectMapper,
-              workflow.getTaskByRefName(Constants.DEFAULT_START_STEP_NAME).getOutputData(),
-              MaestroStartTask.ALL_STEP_DEPENDENCIES,
+              flow.getPrepareTask().getOutputData(),
+              Constants.ALL_STEP_DEPENDENCIES_FIELD,
               ALL_STEP_DEPENDENCIES_REFERENCE);
       if (allStepDependencies != null) {
         return allStepDependencies.get(stepId);
@@ -207,12 +182,12 @@ public final class StepHelper {
    */
   public static StepInstanceTransition retrieveStepTransition(
       ObjectMapper objectMapper, Map<String, Object> data) {
+    Object value = data.getOrDefault(Constants.STEP_RUNTIME_SUMMARY_FIELD, Collections.emptyMap());
+    if (value instanceof StepRuntimeSummary) {
+      return ((StepRuntimeSummary) value).getTransition();
+    }
     return convertField(
-        objectMapper,
-        (Map<String, Object>)
-            data.getOrDefault(Constants.STEP_RUNTIME_SUMMARY_FIELD, Collections.emptyMap()),
-        TRANSITION_FIELD,
-        StepInstanceTransition.class);
+        objectMapper, (Map<String, Object>) value, TRANSITION_FIELD, StepInstanceTransition.class);
   }
 
   /** Create workflow run requests within subworkflow and foreach steps. */
@@ -252,6 +227,7 @@ public final class StepHelper {
         .currentPolicy(workflowSummary.getRunPolicy()) // default and might be updated
         .runtimeTags(tags)
         .correlationId(workflowSummary.getCorrelationId())
+        .groupId(workflowSummary.getGroupId())
         .instanceStepConcurrency(workflowSummary.getInstanceStepConcurrency()) // pass it down
         .runParams(runParams)
         .restartConfig(
@@ -280,8 +256,11 @@ public final class StepHelper {
    */
   private static <T> T convertField(
       ObjectMapper objectMapper, Map<String, Object> data, String fieldName, Class<T> clazz) {
-    return objectMapper.convertValue(
-        Checks.notNull(data.get(fieldName), CONVERT_FIELD_ERROR, fieldName), clazz);
+    Object value = Checks.notNull(data.get(fieldName), CONVERT_FIELD_ERROR, fieldName);
+    if (clazz.isInstance(value)) {
+      return (T) value;
+    }
+    return objectMapper.convertValue(value, clazz);
   }
 
   /**

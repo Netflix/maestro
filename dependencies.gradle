@@ -3,7 +3,6 @@
  */
 ext {
     lombokDep = 'org.projectlombok:lombok:1.+'
-    conductorDep = 'com.netflix.conductor:conductor-core:2.31.5'
     hikaricpDep = 'com.zaxxer:HikariCP:4.+'
     flywayDep = 'org.flywaydb:flyway-core:7.6.+'
     jacksonAnnotationsDep = 'com.fasterxml.jackson.core:jackson-annotations:2.+'

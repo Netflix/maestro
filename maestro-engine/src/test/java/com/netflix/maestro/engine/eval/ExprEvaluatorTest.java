@@ -18,9 +18,9 @@ import static org.junit.Assert.assertEquals;
 import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.engine.MaestroEngineBaseTest;
 import com.netflix.maestro.exceptions.MaestroInvalidExpressionException;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Collections;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
 public class ExprEvaluatorTest extends MaestroEngineBaseTest {
@@ -52,7 +52,10 @@ public class ExprEvaluatorTest extends MaestroEngineBaseTest {
   @Test
   public void testTimeApis() {
     long expected =
-        new DateTime(2005, 3, 26, 20, 0, 0, 0, DateTimeZone.UTC).plusHours(2).getMillis();
+        ZonedDateTime.of(2005, 3, 26, 20, 0, 0, 0, ZoneId.of("UTC"))
+            .plusHours(2)
+            .toInstant()
+            .toEpochMilli();
     assertEquals(
         expected,
         evaluator.eval(

@@ -13,10 +13,11 @@
 package com.netflix.maestro.engine.dao;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.cockroachdb.CockroachDBConfiguration;
-import com.netflix.conductor.cockroachdb.dao.CockroachDBBaseDAO;
+import com.netflix.maestro.database.AbstractDatabaseDao;
+import com.netflix.maestro.database.DatabaseConfiguration;
 import com.netflix.maestro.engine.dto.ExternalJobType;
 import com.netflix.maestro.engine.dto.OutputData;
+import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.utils.Checks;
 import java.sql.ResultSet;
@@ -25,7 +26,7 @@ import java.util.Optional;
 import javax.sql.DataSource;
 
 /** DAO for saving and retrieving output data. */
-public class OutputDataDao extends CockroachDBBaseDAO {
+public class OutputDataDao extends AbstractDatabaseDao {
   private static final String GET_OUTPUT_DATA_JOB_QUERY =
       "SELECT payload, create_ts, modify_ts from output_data "
           + "WHERE external_job_id = ? AND external_job_type = ? LIMIT 1";
@@ -34,8 +35,11 @@ public class OutputDataDao extends CockroachDBBaseDAO {
 
   /** Constructor for OutputDataDAO. */
   public OutputDataDao(
-      DataSource dataSource, ObjectMapper objectMapper, CockroachDBConfiguration config) {
-    super(dataSource, objectMapper, config);
+      DataSource dataSource,
+      ObjectMapper objectMapper,
+      DatabaseConfiguration config,
+      MaestroMetrics metrics) {
+    super(dataSource, objectMapper, config, metrics);
   }
 
   /**

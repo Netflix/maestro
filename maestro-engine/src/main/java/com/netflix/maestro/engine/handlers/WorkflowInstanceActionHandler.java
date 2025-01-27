@@ -51,8 +51,8 @@ public class WorkflowInstanceActionHandler {
   /**
    * Stop the given non-terminal workflow instance's latest in-progress run. It is possible to stop
    * a given instance multiple times due to the processing delay. The stop call is idempotent and
-   * should be fine. It might be asynchronous if conductor is running it as conductor termination is
-   * asynchronous.
+   * should be fine. It might be asynchronous if the internal flow is running it as the flow
+   * termination is asynchronous.
    *
    * <p>Note that re-run can only happen if all instance runs are in terminal states to avoid any
    * race condition.
@@ -74,7 +74,7 @@ public class WorkflowInstanceActionHandler {
   /**
    * Kill/fail the given non-terminal workflow instance's latest in-progress run. It is possible to
    * kill a given instance multiple times due to the processing delay. The kill call is idempotent
-   * and should be fine. It might be asynchronous if conductor is running it as conductor
+   * and should be fine. It might be asynchronous if the internal flow is running it as the flow
    * termination is asynchronous.
    *
    * <p>Note that re-run can only happen if all instance runs are in terminal states to avoid any
@@ -97,7 +97,8 @@ public class WorkflowInstanceActionHandler {
   /**
    * Stop the given non-terminal workflow instance run. It is possible to stop a given instance
    * multiple times due to the processing delay. The stop call is idempotent and should be fine. It
-   * might be asynchronous if conductor is running it as conductor termination is asynchronous.
+   * might be asynchronous if the internal flow is running it as the flow termination is
+   * asynchronous.
    *
    * <p>Note that re-run can only happen if all instance runs are in terminal states to avoid any
    * race condition.
@@ -116,7 +117,8 @@ public class WorkflowInstanceActionHandler {
   /**
    * Kill/fail the given non-terminal workflow instance run. It is possible to kill a given instance
    * multiple times due to the processing delay. The kill call is idempotent and should be fine. It
-   * might be asynchronous if conductor is running it as conductor termination is asynchronous.
+   * might be asynchronous if the internal flow is running it as the flow termination is
+   * asynchronous.
    *
    * <p>Note that re-run can only happen if all instance runs are in terminal states to avoid any
    * race condition.
@@ -190,7 +192,7 @@ public class WorkflowInstanceActionHandler {
           instance.getIdentity(), instance.getStatus(), action.getStatus());
     }
 
-    // this is asynchronous as conductor termination is asynchronous.
+    // this is asynchronous as flow termination is asynchronous.
     Checks.notNull(
         instance.getExecutionId(),
         "workflow instance %s execution_id cannot be null",

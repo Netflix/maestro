@@ -14,12 +14,12 @@ package com.netflix.maestro.engine.dao;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.cockroachdb.CockroachDBConfiguration;
-import com.netflix.conductor.cockroachdb.dao.CockroachDBBaseDAO;
-import com.netflix.conductor.cockroachdb.util.StatementPreparer;
 import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.annotations.VisibleForTesting;
+import com.netflix.maestro.database.AbstractDatabaseDao;
+import com.netflix.maestro.database.DatabaseConfiguration;
+import com.netflix.maestro.database.utils.StatementPreparer;
 import com.netflix.maestro.engine.db.PropertiesUpdate;
 import com.netflix.maestro.engine.db.PropertiesUpdate.Type;
 import com.netflix.maestro.engine.dto.MaestroWorkflow;
@@ -34,6 +34,7 @@ import com.netflix.maestro.exceptions.InvalidWorkflowVersionException;
 import com.netflix.maestro.exceptions.MaestroNotFoundException;
 import com.netflix.maestro.exceptions.MaestroPreconditionFailedException;
 import com.netflix.maestro.exceptions.MaestroUnprocessableEntityException;
+import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.Defaults;
 import com.netflix.maestro.models.api.WorkflowOverviewResponse;
@@ -80,7 +81,7 @@ import lombok.extern.slf4j.Slf4j;
 // mute the false positive error due to https://github.com/spotbugs/spotbugs/issues/293
 @SuppressFBWarnings("OBL_UNSATISFIED_OBLIGATION")
 @Slf4j
-public class MaestroWorkflowDao extends CockroachDBBaseDAO {
+public class MaestroWorkflowDao extends AbstractDatabaseDao {
   private static final String WORKFLOW_ID_COLUMN = "workflow_id";
   private static final String PROPERTIES_COLUMN = "properties_snapshot";
   private static final String METADATA_COLUMN = "metadata";
@@ -150,7 +151,7 @@ public class MaestroWorkflowDao extends CockroachDBBaseDAO {
           + "FROM maestro_workflow WHERE workflow_id=?";
 
   private static final TypeReference<Map<String, Long>> STATUS_STATS_REFERENCE =
-      new TypeReference<Map<String, Long>>() {};
+      new TypeReference<>() {};
 
   private static final String GET_INSTANCE_COUNT_BY_STATUS_QUERY_PREFIX =
       "SELECT status, count(*) as cnt FROM maestro_workflow_instance@workflow_status_index WHERE workflow_id=? ";
@@ -206,10 +207,11 @@ public class MaestroWorkflowDao extends CockroachDBBaseDAO {
   public MaestroWorkflowDao(
       DataSource dataSource,
       ObjectMapper objectMapper,
-      CockroachDBConfiguration config,
+      DatabaseConfiguration config,
       MaestroJobEventPublisher publisher,
-      TriggerSubscriptionClient subscriptionClient) {
-    super(dataSource, objectMapper, config);
+      TriggerSubscriptionClient subscriptionClient,
+      MaestroMetrics metrics) {
+    super(dataSource, objectMapper, config, metrics);
     this.publisher = publisher;
     this.subscriptionClient = subscriptionClient;
   }
@@ -1384,9 +1386,7 @@ public class MaestroWorkflowDao extends CockroachDBBaseDAO {
             () ->
                 getPayloads(
                     GET_WORKFLOW_TIMELINE_QUERY,
-                    stmt -> {
-                      stmt.setString(1, workflowId);
-                    },
+                    stmt -> stmt.setString(1, workflowId),
                     WorkflowVersionUpdateJobEvent.class),
             "getWorkflowTimeline",
             "Failed getting timeline events for workflow id [{}]",
@@ -1418,10 +1418,10 @@ public class MaestroWorkflowDao extends CockroachDBBaseDAO {
     Map<String, MaestroWorkflow> idToWorkflow = new HashMap<>();
     // pick the first and last workflow version to limit the scanner on workflow's.
     if (!workflowVersions.isEmpty()) {
-      String firstWorkflowID = workflowVersions.get(0).getMetadata().getWorkflowId();
+      String firstWorkflowId = workflowVersions.getFirst().getMetadata().getWorkflowId();
       withRetryableQuery(
           GET_MAESTRO_WORKFLOW,
-          stmt -> stmt.setString(1, firstWorkflowID),
+          stmt -> stmt.setString(1, firstWorkflowId),
           rs -> {
             while (rs.next()) {
               MaestroWorkflow wf = maestroWorkflowFromResult(rs);

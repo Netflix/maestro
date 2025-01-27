@@ -12,24 +12,20 @@
  */
 package com.netflix.maestro.engine.transformation;
 
-import com.netflix.conductor.common.metadata.tasks.TaskDef;
-import com.netflix.conductor.common.metadata.workflow.TaskType;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.maestro.engine.utils.StepHelper;
+import com.netflix.maestro.flow.models.TaskDef;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.Defaults;
 import com.netflix.maestro.models.definition.AbstractStep;
 import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.utils.Checks;
 import java.util.Collections;
-import java.util.UUID;
 import lombok.NoArgsConstructor;
 
-/** Step translator to transform maestro step to conductor WorkflowTask. */
+/** Step translator to transform maestro step to internal flow TaskDef. */
 @NoArgsConstructor
-public class StepTranslator implements Translator<Step, WorkflowTask> {
+public class StepTranslator implements Translator<Step, TaskDef> {
   @Override
-  public WorkflowTask translate(Step step) {
+  public TaskDef translate(Step step) {
     Checks.notNull(step, "Cannot find step in the definition");
     switch (step.getType()) {
       case JOIN:
@@ -48,44 +44,21 @@ public class StepTranslator implements Translator<Step, WorkflowTask> {
     }
   }
 
-  private WorkflowTask createMaestroGateTask(JoinStep step) {
-    WorkflowTask task = new WorkflowTask();
-    task.setType(TaskType.TASK_TYPE_EXCLUSIVE_JOIN);
-    task.setName(UUID.randomUUID().toString());
-    task.setDescription(step.getDescription());
-    task.setTaskReferenceName(step.getId());
-    task.setJoinOn(step.getJoinOn());
-    return task;
+  private TaskDef createMaestroGateTask(JoinStep step) {
+    return new TaskDef(step.getId(), step.getType().name(), null, step.getJoinOn());
   }
 
-  private WorkflowTask createMaestroTask(AbstractStep step) {
+  private TaskDef createMaestroTask(AbstractStep step) {
     if (step.getParams() == null) {
       step.setParams(Collections.emptyMap());
     }
-    WorkflowTask task = new WorkflowTask();
-    task.setType(Constants.MAESTRO_TASK_NAME);
-    task.setName(UUID.randomUUID().toString());
-    task.setDescription(step.getDescription());
-    task.setTaskReferenceName(step.getId());
-    task.setTaskDefinition(createMaestroTaskDef(step));
     if (step.getFailureMode() == null) { // if unset, using the default
       step.setFailureMode(Defaults.DEFAULT_FAILURE_MODE);
     }
-    task.setInputParameters(
-        Collections.singletonMap(Constants.STEP_DEFINITION_FIELD, StepHelper.wrap(step)));
-    return task;
-  }
-
-  private TaskDef createMaestroTaskDef(AbstractStep step) {
-    TaskDef taskDef = new TaskDef();
-    taskDef.setName(step.getId());
-    taskDef.setConcurrentExecLimit(0); // not using conductor step concurrency feature
-    taskDef.setTimeoutPolicy(TaskDef.TimeoutPolicy.RETRY);
-    taskDef.setTimeoutSeconds(0); // Not using conductor step timeout
-    taskDef.setRetryLogic(TaskDef.RetryLogic.CUSTOM);
-    taskDef.setRetryCount(CONDUCTOR_RETRY_NUM); // use a super large number
-    taskDef.setRetryDelaySeconds(CONDUCTOR_RETRY_DELAY);
-    taskDef.setResponseTimeoutSeconds(CONDUCTOR_RESPONSE_TIMEOUT);
-    return taskDef;
+    return new TaskDef(
+        step.getId(),
+        Constants.MAESTRO_TASK_NAME,
+        Collections.singletonMap(Constants.STEP_DEFINITION_FIELD, step),
+        null);
   }
 }

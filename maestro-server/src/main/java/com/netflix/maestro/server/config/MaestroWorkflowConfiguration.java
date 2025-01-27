@@ -12,13 +12,9 @@
  */
 package com.netflix.maestro.server.config;
 
-import static com.netflix.maestro.models.Constants.MAESTRO_QUALIFIER;
-
 import brave.Span;
 import brave.Tracer;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.maestro.engine.concurrency.InstanceStepConcurrencyHandler;
 import com.netflix.maestro.engine.concurrency.TagPermitManager;
 import com.netflix.maestro.engine.dao.MaestroStepBreakpointDao;
@@ -59,10 +55,13 @@ import com.netflix.maestro.engine.utils.RollupAggregationHelper;
 import com.netflix.maestro.engine.utils.WorkflowEnrichmentHelper;
 import com.netflix.maestro.engine.utils.WorkflowHelper;
 import com.netflix.maestro.engine.validations.DryRunValidator;
+import com.netflix.maestro.flow.engine.FlowExecutor;
+import com.netflix.maestro.flow.runtime.ExecutionPreparer;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.parameter.Parameter;
+import com.netflix.maestro.server.properties.MaestroEngineProperties;
 import com.netflix.maestro.server.properties.StepRuntimeProperties;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -181,11 +180,11 @@ public class MaestroWorkflowConfiguration {
 
   @Bean
   public WorkflowRunner workflowRunner(
-      WorkflowExecutor workflowExecutor,
+      FlowExecutor flowExecutor,
       WorkflowTranslator workflowTranslator,
       WorkflowHelper workflowHelper) {
     LOG.info("Creating Maestro WorkflowRunner within Spring boot...");
-    return new WorkflowRunner(workflowExecutor, workflowTranslator, workflowHelper);
+    return new WorkflowRunner(flowExecutor, workflowTranslator, workflowHelper);
   }
 
   @Bean
@@ -201,10 +200,16 @@ public class MaestroWorkflowConfiguration {
       ParamEvaluator paramEvaluator,
       DagTranslator dagTranslator,
       MaestroParamExtensionRepo paramExtensionRepo,
-      MaestroJobEventPublisher maestroJobEventPublisher) {
+      MaestroJobEventPublisher maestroJobEventPublisher,
+      MaestroEngineProperties properties) {
     LOG.info("Creating WorkflowHelper via spring boot...");
     return new WorkflowHelper(
-        paramsManager, paramEvaluator, dagTranslator, paramExtensionRepo, maestroJobEventPublisher);
+        paramsManager,
+        paramEvaluator,
+        dagTranslator,
+        paramExtensionRepo,
+        maestroJobEventPublisher,
+        properties.getMaxGroupNum());
   }
 
   @Bean
@@ -244,6 +249,7 @@ public class MaestroWorkflowConfiguration {
       MaestroStepInstanceActionDao actionDao,
       TagPermitManager tagPermitAcquirer,
       InstanceStepConcurrencyHandler instanceStepConcurrencyHandler,
+      StepRuntimeCallbackDelayPolicy stepRuntimeCallbackDelayPolicy,
       MaestroMetrics metricRepo,
       MaestroTracingManager tracingManager,
       MaestroParamExtensionRepo extensionRepo) {
@@ -259,6 +265,7 @@ public class MaestroWorkflowConfiguration {
         actionDao,
         tagPermitAcquirer,
         instanceStepConcurrencyHandler,
+        stepRuntimeCallbackDelayPolicy,
         metricRepo,
         tracingManager,
         extensionRepo);
@@ -267,28 +274,25 @@ public class MaestroWorkflowConfiguration {
   @Bean
   public MaestroStartTask maestroStartTask(
       MaestroWorkflowInstanceDao instanceDao,
-      MaestroStepInstanceDao stepInstanceDao,
-      ExecutionDAO executionDao,
-      @Qualifier(MAESTRO_QUALIFIER) ObjectMapper objectMapper) {
+      ExecutionPreparer executionPreparer,
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper) {
     LOG.info("Creating Maestro startTask within Spring boot...");
-    return new MaestroStartTask(instanceDao, stepInstanceDao, executionDao, objectMapper);
+    return new MaestroStartTask(instanceDao, executionPreparer, objectMapper);
   }
 
   @Bean
-  @DependsOn({"TaskMappers"})
   public MaestroGateTask maestroGateTask(
       MaestroStepInstanceDao stepInstanceDao,
-      @Qualifier(MAESTRO_QUALIFIER) ObjectMapper objectMapper) {
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper) {
     LOG.info("Creating Maestro gateTask within Spring boot...");
     return new MaestroGateTask(stepInstanceDao, objectMapper);
   }
 
   @Bean
-  @DependsOn({"TaskMappers"})
   public MaestroEndTask maestroEndTask(
       MaestroWorkflowInstanceDao instanceDao,
       MaestroJobEventPublisher maestroJobEventPublisher,
-      @Qualifier(MAESTRO_QUALIFIER) ObjectMapper objectMapper,
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
       RollupAggregationHelper rollupAggregationHelper,
       MaestroMetrics metricRepo) {
     LOG.info("Creating Maestro endTask within Spring boot...");

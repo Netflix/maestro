@@ -12,7 +12,6 @@
  */
 package com.netflix.maestro.engine.params;
 
-import com.google.common.base.Strings;
 import com.netflix.maestro.engine.dao.OutputDataDao;
 import com.netflix.maestro.engine.dto.ExternalJobType;
 import com.netflix.maestro.engine.dto.OutputData;
@@ -35,10 +34,9 @@ public class OutputDataManager {
       Optional<OutputData> outputDataOpt =
           outputDataDao.getOutputDataForExternalJob(externalJobId.get(), ExternalJobType.TITUS);
       outputDataOpt.ifPresent(
-          outputData -> {
-            ParamsMergeHelper.mergeOutputDataParams(
-                runtimeSummary.getParams(), outputData.getParams());
-          });
+          outputData ->
+              ParamsMergeHelper.mergeOutputDataParams(
+                  runtimeSummary.getParams(), outputData.getParams()));
     }
   }
 
@@ -46,7 +44,7 @@ public class OutputDataManager {
     Map<String, Artifact> artifacts = runtimeSummary.getArtifacts();
     if (artifacts.containsKey(Artifact.Type.TITUS.key())) {
       String titusJobId = artifacts.get(Artifact.Type.TITUS.key()).asTitus().getTitusTaskId();
-      if (!Strings.isNullOrEmpty(titusJobId)) {
+      if (titusJobId != null && !titusJobId.isEmpty()) {
         return Optional.of(titusJobId);
       }
     }

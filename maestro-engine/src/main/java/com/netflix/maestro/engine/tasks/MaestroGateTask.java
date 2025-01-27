@@ -13,15 +13,14 @@
 package com.netflix.maestro.engine.tasks;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.run.Workflow;
-import com.netflix.conductor.core.execution.SystemTaskType;
-import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
+import com.netflix.maestro.engine.transformation.Translator;
 import com.netflix.maestro.engine.utils.StepHelper;
 import com.netflix.maestro.engine.utils.TaskHelper;
+import com.netflix.maestro.flow.models.Flow;
+import com.netflix.maestro.flow.models.Task;
+import com.netflix.maestro.flow.runtime.FlowTask;
 import com.netflix.maestro.models.instance.StepRuntimeState;
 import java.util.List;
 import java.util.Map;
@@ -31,46 +30,40 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Maestro Gate task is a gate step to wait for upstream joinOn steps complete. It makes the
  * execution following the order defined in the DAG of the Maestro workflow definition.
- *
- * <p>It's implementation is similar to Conductor Join task. We override the default conductor one
- * to optimize the logic for maestro.
- *
- * <p>Here, we overwrite the default conductor EXCLUSIVE_JOIN task to reuse its task mapper.
  */
 @Slf4j
-public class MaestroGateTask extends WorkflowSystemTask {
+public class MaestroGateTask implements FlowTask {
 
   private final MaestroStepInstanceDao stepInstanceDao;
   private final ObjectMapper objectMapper;
 
   /** Constructor. */
   public MaestroGateTask(MaestroStepInstanceDao stepInstanceDao, ObjectMapper objectMapper) {
-    // Overwrite the conductor exclusive join task with maestro optimized gate join logic
-    super(SystemTaskType.EXCLUSIVE_JOIN.name());
     this.stepInstanceDao = stepInstanceDao;
     this.objectMapper = objectMapper;
   }
 
   /**
    * The execution is not expected to throw an exception. If it happens, the exception will be
-   * handled by the upstream caller (i.e. MaestroWorkflowExecutor will retry).
+   * handled by the upstream caller (i.e. the flow engine will retry).
    */
   @Override
-  public boolean execute(Workflow workflow, Task task, WorkflowExecutor executor) {
-    Map<String, Task> taskMap = TaskHelper.getTaskMap(workflow);
+  public boolean execute(Flow flow, Task task) {
+    Map<String, Task> taskMap = TaskHelper.getTaskMap(flow);
     Optional<Task.Status> done = executeJoin(task, taskMap);
-    if (done.isPresent() && confirmDone(workflow, task)) { // update task status if it is done
+    if (done.isPresent() && confirmDone(flow, task)) { // update task status if it is done
       task.setStatus(done.get());
       return true;
     }
+    task.setStartDelayInSeconds(Translator.DEFAULT_FLOW_TASK_RECONCILIATION_INTERVAL);
     return false;
   }
 
-  private boolean confirmDone(Workflow workflow, Task task) {
+  private boolean confirmDone(Flow flow, Task task) {
     List<String> joinOn = getJoinOnSteps(task);
     LOG.debug("Confirming steps [{}] are actually completed.", joinOn);
     WorkflowSummary workflowSummary =
-        StepHelper.retrieveWorkflowSummary(objectMapper, workflow.getInput());
+        StepHelper.retrieveWorkflowSummary(objectMapper, flow.getInput());
 
     Map<String, StepRuntimeState> status =
         stepInstanceDao.getStepStates(
@@ -81,7 +74,7 @@ public class MaestroGateTask extends WorkflowSystemTask {
     for (String joinOnRef : joinOn) {
       StepRuntimeState state = status.get(joinOnRef);
       if (state == null || !state.getStatus().isComplete()) {
-        LOG.info(
+        LOG.warn(
             "Steps [{}] is not completed yet although the task status is done. Will try the task [{}] again.",
             joinOnRef,
             task.getTaskId());
@@ -93,9 +86,9 @@ public class MaestroGateTask extends WorkflowSystemTask {
   }
 
   /**
-   * Optimized conductor join task logic for maestro.
+   * Check if pre-requisite tasks are all done.
    *
-   * @param task conductor task
+   * @param task flow task
    * @param taskMap task mapper
    * @return either failed or completed status, empty means forked jobs are still running
    */
@@ -111,7 +104,7 @@ public class MaestroGateTask extends WorkflowSystemTask {
         break;
       }
       Task.Status taskStatus = forkedTask.getStatus();
-      hasFailures = !taskStatus.isSuccessful() && !forkedTask.getWorkflowTask().isOptional();
+      hasFailures = !taskStatus.isSuccessful();
       if (!taskStatus.isTerminal()) {
         allDone = false;
       }
@@ -121,7 +114,7 @@ public class MaestroGateTask extends WorkflowSystemTask {
     }
     LOG.trace(
         "Gate task {} is blocked by its joinOn tasks: {} with result allDone: {}, hasFailures: {}",
-        task.getReferenceTaskName(),
+        task.referenceTaskName(),
         joinOn,
         allDone,
         hasFailures);
@@ -135,8 +128,7 @@ public class MaestroGateTask extends WorkflowSystemTask {
     return Optional.empty();
   }
 
-  @SuppressWarnings("unchecked")
   private List<String> getJoinOnSteps(Task task) {
-    return (List<String>) task.getInputData().get("joinOn");
+    return task.getTaskDef().joinOn();
   }
 }
