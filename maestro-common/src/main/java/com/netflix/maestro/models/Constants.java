@@ -148,7 +148,7 @@ public final class Constants {
   public static final int MAX_PLATFORM_RETRY_LIMIT_SECS = 24 * 3600; // 1 day
 
   /** maximum retry wait limit for timeout errors. */
-  public static final int MAX_TIMEOUT_RETRY_LIMIT_SECS = 24 * 3600; // 1 days
+  public static final int MAX_TIMEOUT_RETRY_LIMIT_SECS = 24 * 3600; // 1 day
 
   /** Max timeout limit in milliseconds. */
   public static final long MAX_TIME_OUT_LIMIT_IN_MILLIS = TimeUnit.DAYS.toMillis(120); // 120 days
@@ -316,7 +316,7 @@ public final class Constants {
   /** Workflow create request data size limit used for validation. */
   public static final String WORKFLOW_CREATE_REQUEST_DATA_SIZE_LIMIT = "256KB";
 
-  /** params' total size (in JSON format) limit for a workflow instance or a step instance. */
+  /** param's total size (in JSON format) limit for a workflow instance or a step instance. */
   public static final int JSONIFIED_PARAMS_STRING_SIZE_LIMIT = 750000;
 
   /** Defines limit for the query for step attempt state view. */

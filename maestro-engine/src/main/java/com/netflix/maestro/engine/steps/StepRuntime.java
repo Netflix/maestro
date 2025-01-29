@@ -118,7 +118,7 @@ public interface StepRuntime {
    * Customized step execution logic.
    *
    * <p>While the step status is RUNNING, the code in execute() will be called periodically with a
-   * preset polling interval. Additionally, if the execution throws an exception, the execute will
+   * preset polling interval. Additionally, if the execution throws an exception, the execution will
    * be retried as another step instance run.
    *
    * <p>The input data are a copy of the original summary data. Any changes on them will be

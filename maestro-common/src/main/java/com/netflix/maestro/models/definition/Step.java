@@ -50,7 +50,7 @@ public interface Step {
   /** Get step type. */
   StepType getType();
 
-  /** Get step sub type. */
+  /** Get step subtype. */
   default String getSubType() {
     return null;
   }

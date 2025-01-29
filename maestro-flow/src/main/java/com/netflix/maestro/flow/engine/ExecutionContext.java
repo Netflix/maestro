@@ -216,7 +216,7 @@ public class ExecutionContext {
     } catch (MaestroNotFoundException nfe) {
       LOG.info("cannot find the reference flow: {}. Ignore it.", flow.getReference(), nfe);
     } catch (RuntimeException e) {
-      LOG.warn("got an exceptino for resuming flow for {} and will retry", flow.getReference(), e);
+      LOG.warn("got an exception for resuming flow for {} and will retry", flow.getReference(), e);
       throw new MaestroRetryableError(e, "retry resuming flow due to an exception");
     }
   }

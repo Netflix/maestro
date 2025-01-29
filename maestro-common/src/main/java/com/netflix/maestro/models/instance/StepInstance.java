@@ -275,9 +275,9 @@ public class StepInstance {
     /** Step is disabled at workflow instance start time, terminal state. */
     DISABLED(true, true, false, false),
     /**
-     * Step should not run and user logic does not run. Maestro runs over this step when its if
-     * condition is false or the workflow is already failed when failure mode is FAIL_AFTER_RUNNING.
-     * Users can discard steps with this status. terminal state.
+     * Step should not run and user logic does not run. Maestro runs over this step when condition
+     * is false or the workflow is already failed when failure mode is FAIL_AFTER_RUNNING. Users can
+     * discard steps with this status. terminal state.
      */
     UNSATISFIED(true, true, false, false),
     /** Step is skipped by users at runtime, terminal state. */
