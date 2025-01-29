@@ -1,0 +1,67 @@
+{
+  "properties": {
+    "owner": "tester"
+  },
+  "is_active": true,
+  "workflow": {
+    "id": "sample-nested-subworkflow-foreach-wf",
+    "steps": [{
+      "subworkflow": {
+        "id": "sub-step1",
+        "sync": true,
+        "params": {
+          "subworkflow_id": {
+            "value": "sample-foreach-wf",
+            "type": "STRING"
+          },
+          "subworkflow_version": {
+            "value": "latest",
+            "type": "STRING"
+          },
+          "param3": {
+            "value": {"foo": "bar"},
+            "type": "STRING_MAP"
+          }
+        }
+      }},
+      {
+        "subworkflow": {
+          "id": "sub-step2",
+          "sync": true,
+          "params": {
+            "subworkflow_id": {
+              "value": "sample-foreach-wf",
+              "type": "STRING"
+            },
+            "subworkflow_version": {
+              "value": "latest",
+              "type": "STRING"
+            },
+            "param2": {
+              "value": {"foo": "bar"},
+              "type": "STRING_MAP"
+            }
+          }
+        }},
+      {
+        "subworkflow": {
+          "id": "sub-step3",
+          "sync": true,
+          "params": {
+            "subworkflow_id": {
+              "value": "sample-foreach-wf",
+              "type": "STRING"
+            },
+            "subworkflow_version": {
+              "value": "latest",
+              "type": "STRING"
+            },
+            "param3": {
+              "value": {"foo": "bar"},
+              "type": "STRING_MAP"
+            }
+          }
+        }}
+    ]
+  }
+}

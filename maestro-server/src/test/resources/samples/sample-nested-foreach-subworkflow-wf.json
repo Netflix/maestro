@@ -1,0 +1,72 @@
+{
+  "properties": {
+    "owner": "tester",
+    "run_strategy": "parallel"
+  },
+  "is_active": true,
+  "workflow": {
+    "id": "sample-nested-foreach-subworkflow-wf",
+    "steps": [{
+      "foreach": {
+        "id": "foreach-step1",
+        "concurrency": 2,
+        "params": {
+          "param1": {
+            "value": ["a", "b"],
+            "type": "String_array"
+          },
+          "loop_params": {
+            "value": {
+              "i" : {
+                "value": [1, 2, 3],
+                "type": "long_array",
+                "validator": "param!=null && param.size() > 2", "mode": "mutable"
+              },
+              "j" : {
+                "expression": "param1;", "type": "STRING_ARRAY", "validator": "param!=null && param.size() > 2"
+              }
+            },
+            "type": "MAP"
+          }
+        },
+        "steps": [
+          {
+            "step": {
+              "id": "job1",
+              "type": "NoOp",
+              "tags": [
+                "NoOp"
+              ],
+              "params": {
+                "param2": {
+                  "expression": "i + j;", "type": "STRING", "mode": "mutable"
+                }
+              },
+              "transition": {"successors": {"sub-step2": "true"}},
+              "retry_policy": {}
+            }
+          },
+          {
+            "subworkflow": {
+              "id": "sub-step2",
+              "sync": true,
+              "params": {
+                "subworkflow_id": {
+                  "value": "sample-dag-test-3",
+                  "type": "STRING"
+                },
+                "subworkflow_version": {
+                  "value": "latest",
+                  "type": "STRING"
+                },
+                "param1": {
+                  "value": {"foo": "bar"},
+                  "type": "STRING_MAP"
+                }
+              }
+            }}
+        ]
+      }
+    }]
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "properties": {
+    "owner": "tester",
+    "run_strategy": {
+      "rule": "parallel",
+      "workflow_concurrency": 5
+    },
+    "step_concurrency": 20
+  },
+  "workflow": {
+    "id": "sample-dag-test-8",
+    "name": "Test workflow 08",
+    "description": "Long description about this workflow",
+    "params": {"x": {"value": 5, "type":  "LONG"},
+      "base_workflow_timeout": {"value": "20 minutes", "type":  "STRING"}},
+    "steps": [
+      {"step": {"id": "job.1", "type": "NoOp",
+        "timeout": "${base_workflow_timeout}",
+        "transition": {"successors": {"job.3": "x > 10", "job.4": "x > 10"}}}},
+      {"step": {"id": "job.2", "type": "NoOp",
+        "transition": {"successors": {"job.4": "x > 3"}}}},
+      {"step": {"id": "job.3", "type": "NoOp",
+        "transition": {"successors": {"job.4": "x > 10"}}}},
+      {"step": {"id": "job.4", "type": "NoOp",
+        "transition": {"successors": {"job.5": "true"}}}},
+      {"step": {"id": "job.5", "type": "NoOp", "transition": {}}}
+    ]
+  }
+}

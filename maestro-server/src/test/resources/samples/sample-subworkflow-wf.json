@@ -1,0 +1,124 @@
+{
+  "properties": {
+    "owner": "tester"
+  },
+  "is_active": true,
+  "workflow": {
+    "id": "sample-subworkflow-wf",
+    "instance_step_concurrency": 3,
+    "steps": [{
+      "subworkflow": {
+        "id": "job1",
+        "params": {
+          "subworkflow_id": {
+            "value": "sample-dag-test-3",
+            "type": "STRING"
+          },
+          "subworkflow_version": {
+            "value": "latest",
+            "type": "STRING"
+          },
+          "param1": {
+            "value": {"foo": "bar"},
+            "type": "STRING_MAP"
+          }
+        }
+      }},
+      {
+        "subworkflow": {
+          "id": "job2",
+          "sync": true,
+          "params": {
+            "subworkflow_id": {
+              "value": "sample-dag-test-3",
+              "type": "STRING"
+            },
+            "subworkflow_version": {
+              "value": "latest",
+              "type": "STRING"
+            },
+            "param1": {
+              "value": {"foo": "bar"},
+              "type": "STRING_MAP"
+            }
+          }
+        }},
+      {
+        "subworkflow": {
+          "id": "job3",
+          "sync": false,
+          "params": {
+            "subworkflow_id": {
+              "value": "sample-dag-test-3",
+              "type": "STRING"
+            },
+            "subworkflow_version": {
+              "value": "latest",
+              "type": "STRING"
+            },
+            "param1": {
+              "value": {"foo": "bar"},
+              "type": "STRING_MAP"
+            }
+          }
+        }},
+      {
+        "subworkflow": {
+          "id": "job4",
+          "sync": true,
+          "explicit_params": false,
+          "params": {
+            "subworkflow_id": {
+              "value": "sample-dag-test-3",
+              "type": "STRING"
+            },
+            "subworkflow_version": {
+              "value": "latest",
+              "type": "STRING"
+            },
+            "param1": {
+              "value": {"foo": "bar"},
+              "type": "STRING_MAP"
+            }
+          }
+        }},
+      {
+        "subworkflow": {
+          "id": "job5",
+          "sync": true,
+          "explicit_params": true,
+          "params": {
+            "subworkflow_id": {
+              "value": "sample-dag-test-3",
+              "type": "STRING"
+            },
+            "subworkflow_version": {
+              "value": "latest",
+              "type": "STRING"
+            },
+            "param1": {
+              "value": {"foo": "bar"},
+              "type": "STRING_MAP"
+            }
+          }
+        }},{
+        "subworkflow": {
+          "id": "job6",
+          "sync": true,
+          "params": {
+            "subworkflow_id": {
+              "value": "sample-dag-test-3",
+              "type": "STRING"
+            },
+            "subworkflow_version": {
+              "value": "latest",
+              "type": "STRING"
+            },
+            "param1": {
+              "value": {"foo": "bar"},
+              "type": "STRING_MAP"
+            }
+          }
+        }}]
+  }
+}

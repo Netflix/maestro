@@ -1,0 +1,28 @@
+{
+  "properties": {
+    "owner": "tester"
+  },
+  "is_active": true,
+  "workflow": {
+    "id": "sample-nested-subworkflow-wf",
+    "steps": [{
+      "subworkflow": {
+        "id": "sub-step1",
+        "sync": true,
+        "params": {
+          "subworkflow_id": {
+            "value": "sample-subworkflow-wf",
+            "type": "STRING"
+          },
+          "subworkflow_version": {
+            "value": "latest",
+            "type": "STRING"
+          },
+          "param1": {
+            "value": {"foo": "bar"},
+            "type": "STRING_MAP"
+          }
+        }
+      }}]
+  }
+}

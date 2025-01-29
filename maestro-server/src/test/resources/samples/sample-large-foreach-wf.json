@@ -1,0 +1,61 @@
+{
+  "properties": {
+    "owner": "tester"
+  },
+  "is_active": true,
+  "workflow": {
+    "id": "sample-large-foreach-wf",
+    "steps": [{
+      "foreach": {
+        "id": "job1",
+        "concurrency": 100,
+        "params": {
+          "param1": {
+            "value": ["a", "b", "c"],
+            "type": "String_array"
+          },
+          "loop_params": {
+            "value": {
+              "i" : {
+                "expression": "Util.dateIntsBetween(20200101, 20210101, 1);",
+                "type": "long_array",
+                "validator": "param!=null && param.size() > 2", "mode": "mutable"
+              },
+              "j" : {
+                "expression": "param1;", "type": "STRING_ARRAY", "validator": "param!=null && param.size() > 2"
+              }
+            },
+            "type": "MAP"
+          }
+        },
+        "steps": [
+          {
+            "step": {
+              "id": "job2",
+              "type": "NoOp",
+              "tags": [
+                "NoOp"
+              ],
+              "params": {
+                "param2": {
+                  "expression": "i + j;", "type": "STRING", "mode": "mutable"
+                }
+              },
+              "transition": {"successors": {"job.2": "true"}},
+              "retry_policy": {}
+            }
+          },
+          {
+            "step": {
+              "id": "job.2",
+              "type": "Sleep",
+              "params": {
+                "sleep_seconds":  {"expression": "1 * 1;", "type":  "LONG"}
+              }
+            }
+          }
+        ]
+      }
+    }]
+  }
+}
