@@ -7,7 +7,7 @@ provides a fully managed workflow-as-a-service (WAAS) to the data platform users
 It serves thousands of users, including data scientists, data engineers, machine learning engineers,
 software engineers, content producers, and business analysts, for various use cases.
 It schedules hundreds of thousands of workflows, millions of jobs every day
-and operate with a strict SLO even when there are spikes in the traffic.
+and operates with a strict SLO even when there are spikes in the traffic.
 Maestro is highly scalable and extensible to support existing and new use cases and offers enhanced usability to end users.
 
 You can read more details about it in our latest [blog post](https://netflixtechblog.com/maestro-netflixs-workflow-orchestrator-ee13a06f9c78).
