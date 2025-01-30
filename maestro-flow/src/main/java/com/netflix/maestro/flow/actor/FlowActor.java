@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 
@@ -76,8 +77,9 @@ final class FlowActor extends BaseActor {
 
   @Override
   void afterRunning() {
+    getMetrics()
+        .counter("num_of_finished_flows", getClass(), "finalized", String.valueOf(finalized));
     if (finalized) {
-      getMetrics().counter("num_of_finished_flows", getClass());
       getContext().deleteFlow(flow);
       LOG.info("Flow for {} is deleted as it finishes.", reference());
     }
@@ -337,5 +339,23 @@ final class FlowActor extends BaseActor {
     var cloned = getContext().cloneTask(task);
     var actor = new TaskActor(cloned, flow, this, getContext());
     runActionFor(actor, initAction);
+  }
+
+  private Stream<String> dequeRetryActions() {
+    return getScheduledActions().entrySet().stream()
+        .filter(
+            e ->
+                e.getKey() instanceof Action.FlowTaskRetry
+                    && !e.getValue().isDone()
+                    && e.getValue().cancel(false))
+        .map(e -> ((Action.FlowTaskRetry) e.getKey()).taskRefName());
+  }
+
+  private boolean dequeRetryAction(String taskRef) {
+    var scheduledActions = getScheduledActions();
+    var action = new Action.FlowTaskRetry(taskRef);
+    return scheduledActions.containsKey(action)
+        && !scheduledActions.get(action).isDone()
+        && scheduledActions.get(action).cancel(false);
   }
 }

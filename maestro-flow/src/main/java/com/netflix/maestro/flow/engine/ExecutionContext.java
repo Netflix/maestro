@@ -101,11 +101,14 @@ public class ExecutionContext {
       prepare.setStartTime(System.currentTimeMillis());
       flowTaskMap.get(prepare.getTaskType()).execute(flow, prepare);
       if (!prepare.getStatus().isTerminal()) {
+        LOG.info("prepare task for flow [{}] is not done yet, will retry", flow.getReference());
         throw new MaestroRetryableError("prepare task is not done yet, will retry");
       } else {
         flow.setReasonForIncompletion(prepare.getReasonForIncompletion());
         flow.markUpdate();
       }
+    } catch (MaestroRetryableError mre) {
+      throw mre;
     } catch (RuntimeException e) {
       LOG.warn("prepare task in flow {} throws an error, will retry it", flow.getReference(), e);
       throw new MaestroRetryableError(e, "retry prepare task due to an exception");
@@ -213,7 +216,7 @@ public class ExecutionContext {
     } catch (MaestroNotFoundException nfe) {
       LOG.info("cannot find the reference flow: {}. Ignore it.", flow.getReference(), nfe);
     } catch (RuntimeException e) {
-      LOG.warn("got an exceptino for resuming flow for {} and will retry", flow.getReference(), e);
+      LOG.warn("got an exception for resuming flow for {} and will retry", flow.getReference(), e);
       throw new MaestroRetryableError(e, "retry resuming flow due to an exception");
     }
   }

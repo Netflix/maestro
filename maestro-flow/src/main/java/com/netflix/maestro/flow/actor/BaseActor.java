@@ -1,6 +1,7 @@
 package com.netflix.maestro.flow.actor;
 
 import com.netflix.maestro.annotations.Nullable;
+import com.netflix.maestro.annotations.VisibleForTesting;
 import com.netflix.maestro.flow.engine.ExecutionContext;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import java.util.HashMap;
@@ -9,7 +10,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
-import java.util.stream.Stream;
 import lombok.Getter;
 import org.slf4j.Logger;
 
@@ -120,21 +120,22 @@ abstract sealed class BaseActor implements Actor permits GroupActor, FlowActor, 
   }
 
   void startShutdown(Action action) {
-    if (childActors.isEmpty()) {
-      checkShutdown();
-    } else {
+    if (!checkShutdown()) {
       cancelPendingActions();
       wakeUpChildActors(action);
     }
   }
 
-  void checkShutdown() {
+  // return true if shutdown is finished, otherwise false
+  boolean checkShutdown() {
     if (noChildActorsRunning()) {
       terminateNow();
       if (parent != null) {
         parent.post(Action.FLOW_DOWN);
       }
+      return true;
     }
+    return false;
   }
 
   void terminateNow() {
@@ -142,25 +143,8 @@ abstract sealed class BaseActor implements Actor permits GroupActor, FlowActor, 
     running = false;
   }
 
-  void cancelPendingActions() {
+  private void cancelPendingActions() {
     scheduledActions.values().forEach(f -> f.cancel(true));
-  }
-
-  Stream<String> dequeRetryActions() {
-    return scheduledActions.entrySet().stream()
-        .filter(
-            e ->
-                e.getKey() instanceof Action.FlowTaskRetry
-                    && !e.getValue().isDone()
-                    && e.getValue().cancel(false))
-        .map(e -> ((Action.FlowTaskRetry) e.getKey()).taskRefName());
-  }
-
-  boolean dequeRetryAction(String taskRef) {
-    var action = new Action.FlowTaskRetry(taskRef);
-    return scheduledActions.containsKey(action)
-        && !scheduledActions.get(action).isDone()
-        && scheduledActions.get(action).cancel(false);
   }
 
   void schedule(Action action, long delayInMillis) {
@@ -229,5 +213,15 @@ abstract sealed class BaseActor implements Actor permits GroupActor, FlowActor, 
       terminateNow();
       return null;
     }
+  }
+
+  @VisibleForTesting
+  Map<Action, ScheduledFuture<?>> getScheduledActions() {
+    return scheduledActions;
+  }
+
+  @VisibleForTesting
+  BlockingQueue<Action> getActions() {
+    return actions;
   }
 }

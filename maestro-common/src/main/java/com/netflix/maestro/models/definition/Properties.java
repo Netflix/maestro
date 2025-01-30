@@ -31,7 +31,7 @@ import lombok.Data;
  *
  * <p>If unset (null value), means there is no change for this field.
  *
- * <p>Properties changes are kept separately and can evolve independently from the workflow version
+ * <p>Properties changes are kept separately and can evolve independently of the workflow version
  * changes.
  */
 @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)

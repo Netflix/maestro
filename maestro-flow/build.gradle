@@ -4,4 +4,10 @@ dependencies {
     implementation jacksonDatabindDep
     implementation jacksonAnnotationsDep
     api slf4jApiDep
+
+    testImplementation junitDep
+    testImplementation mockitoCoreDep
+    testImplementation testcontainerDep
+    testImplementation postgresqlDep
+    testImplementation(testFixtures(project(':maestro-common')))
 }

@@ -34,7 +34,7 @@ public class StepDependenciesDefinition {
   /** param name for step dependency name. */
   public static final String STEP_DEPENDENCY_NAME = "name";
 
-  /** param name for step dependency sub type, like input_table, input_s3. */
+  /** param name for step dependency subtype, like input_table, input_s3. */
   public static final String STEP_DEPENDENCY_SUB_TYPE = "_step_dependency_sub_type";
 
   private final List<MapParamDefinition> definitions;

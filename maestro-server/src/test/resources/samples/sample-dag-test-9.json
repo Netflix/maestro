@@ -1,0 +1,29 @@
+{
+  "properties": {
+    "owner": "tester",
+    "run_strategy": {
+      "rule": "last_only",
+      "workflow_concurrency": 1
+    },
+    "step_concurrency": 20
+  },
+  "git_info": {"branch": "foo"},
+  "workflow": {
+    "id": "sample-dag-test-9",
+    "name": "Test workflow 09",
+    "description": "Long description about this workflow",
+    "steps": [
+      {"step": {"id": "job.1", "name": "a","description":"b", "type": "NoOp",
+        "transition": {"successors": {"job.2": "true", "job.3": "true"}}}},
+      {"step": {"id": "job.2", "type": "NoOp",
+        "transition": {"successors": {"job.4": "true", "job.5": "true", "job.6": "true"}}}},
+      {"step": {"id": "job.3", "type": "NoOp", "transition": {"successors": {"job.8": "true"}}}},
+      {"step": {"id": "job.4", "type": "NoOp", "transition": {"successors": {"job.7": "true"}}}},
+      {"step": {"id": "job.5", "type": "NoOp", "transition": {"successors": {"job.7": "true"}}}},
+      {"step": {"id": "job.6", "type": "NoOp", "transition": {"successors": {"job.7": "true"}}}},
+      {"step": {"id": "job.7", "type": "NoOp", "transition": {"successors": {"job.9": "true"}}}},
+      {"step": {"id": "job.8", "type": "NoOp", "transition": {"successors": {"job.9": "true"}}}},
+      {"step": {"id": "job.9", "type": "NoOp"}}
+    ]
+  }
+}

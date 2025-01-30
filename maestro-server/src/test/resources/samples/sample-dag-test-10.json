@@ -1,0 +1,180 @@
+{
+  "properties": {
+    "owner": "tester",
+    "run_strategy": "parallel",
+    "step_concurrency": 20,
+    "alerting": {
+      "emails": [
+        "test+alertconfig_default1@netflix.com",
+        "${foo}+alertconfig_default2@netflix.com"
+      ],
+      "tct": {
+        "completed_by_hour": 1,
+        "tz": "UTC"
+      }
+    }
+  },
+  "workflow": {
+    "id": "sample-dag-test-10",
+    "name": "Test workflow 10",
+    "description": "Long description about this workflow",
+    "timeout": 100,
+    "tags": [
+      {
+        "name": "tester",
+        "namespace": "system"
+      },
+      "test",
+      {
+        "name": "foo"
+      }
+    ],
+    "params": {
+      "foo": {
+        "expression": "'bar1';",
+        "type": "STRING"
+      }
+    },
+    "steps": [
+      {
+        "step": {
+          "id": "job1",
+          "type": "Sleep",
+          "transition": {
+            "successors": {
+              "job.2": "true",
+              "job3": "true"
+            }
+          },
+          "tags": [
+            {
+              "name": "Sleep",
+              "namespace": "system"
+            },
+            "job1"
+          ],
+          "params": {
+            "sleep_seconds": {
+              "value": 1,
+              "type": "LONG"
+            }
+          },
+          "failure_mode": "ignore_failure",
+          "retry_policy": {
+            "error_retry_limit": 10,
+            "platform_retry_limit": 10,
+            "backoff": {
+              "error_retry_backoff_in_secs": 1,
+              "platform_retry_backoff_in_secs": 1,
+              "type": "FIXED_BACKOFF"
+            }
+          },
+          "dependencies": {
+            "SIGNAL": {
+              "definitions": [
+                {
+                  "value": {
+                    "name": {
+                      "value": "signal_a",
+                      "type": "STRING"
+                    },
+                    "_step_dependency_sub_type": {
+                      "value": "input_signal",
+                      "type": "STRING"
+                    },
+                    "foo": {
+                      "type": "SIGNAL",
+                      "parameter": {
+                        "value": "bar",
+                        "type": "STRING",
+                        "mode": "mutable"
+                      },
+                      "operator": "="
+                    }
+                  },
+                  "type": "MAP"
+                }
+              ],
+              "type": "SIGNAL"
+            }
+          }
+        }
+      },
+      {
+        "step": {
+          "id": "job.2",
+          "type": "Sleep",
+          "transition": {
+            "successors": {
+              "job4": "true"
+            }
+          },
+          "params": {
+            "param1": {
+              "expression": "sleep_seconds + '1';",
+              "type": "STRING"
+            },
+            "param2": {
+              "value": "${job1__sleep_seconds} + 1",
+              "type": "STRING"
+            },
+            "sleep_seconds": {
+              "expression": "job3__sleep_seconds + 1;",
+              "type": "LONG"
+            }
+          },
+          "failure_mode": "fail_after_running",
+          "retry_policy": {
+            "error_retry_limit": 10,
+            "platform_retry_limit": 10,
+            "backoff": {
+              "error_retry_backoff_in_secs": 1,
+              "platform_retry_backoff_in_secs": 1,
+              "type": "FIXED_BACKOFF"
+            }
+          }
+        }
+      },
+      {
+        "step": {
+          "id": "job3",
+          "type": "Sleep",
+          "transition": {
+            "successors": {
+              "job4": "true",
+              "job.2": "true"
+            }
+          },
+          "params": {
+            "sleep_seconds": {
+              "value": 1,
+              "type": "LONG"
+            }
+          },
+          "failure_mode": "fail_immediately",
+          "retry_policy": {
+            "error_retry_limit": 10,
+            "platform_retry_limit": 10,
+            "backoff": {
+              "error_retry_backoff_in_secs": 1,
+              "platform_retry_backoff_in_secs": 1,
+              "type": "FIXED_BACKOFF"
+            }
+          }
+        }
+      },
+      {
+        "step": {
+          "id": "job4",
+          "type": "Sleep",
+          "params": {
+            "sleep_seconds": {
+              "value": 1,
+              "type": "LONG"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

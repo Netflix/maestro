@@ -100,7 +100,7 @@ public final class IdHelper {
    * 11) vs 9 (base62: 9) -> 211 vs 19.
    *
    * @param value value to encode
-   * @param isOrdered should the output encoded string perserve the ordering. True for rangeKey case
+   * @param isOrdered should the output encoded string preserve the ordering. True for rangeKey case
    *     and false for hashKey.
    * @return encoded base62 string
    */

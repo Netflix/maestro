@@ -1,11 +1,12 @@
 package com.netflix.maestro.flow.dao;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.maestro.annotations.VisibleForTesting;
 import com.netflix.maestro.database.AbstractDatabaseDao;
+import com.netflix.maestro.database.DatabaseConfiguration;
 import com.netflix.maestro.exceptions.MaestroRetryableError;
 import com.netflix.maestro.flow.models.Flow;
 import com.netflix.maestro.flow.models.FlowGroup;
-import com.netflix.maestro.flow.properties.FlowEngineProperties;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.utils.Checks;
 import java.sql.ResultSet;
@@ -40,13 +41,15 @@ public class MaestroFlowDao extends AbstractDatabaseDao {
       "INSERT INTO maestro_flow_group (group_id,generation,address) VALUES (?,?,?) ON CONFLICT DO NOTHING";
   private static final String GET_FLOW_WITH_SAME_KEYS_QUERY =
       "SELECT 1 FROM maestro_flow WHERE group_id=? AND flow_id=? LIMIT 1";
+  private static final String REMOVE_GROUP_QUERY =
+      "DELETE FROM maestro_flow_group WHERE group_id=?";
 
   public MaestroFlowDao(
       DataSource dataSource,
       ObjectMapper objectMapper,
-      FlowEngineProperties properties,
+      DatabaseConfiguration config,
       MaestroMetrics metrics) {
-    super(dataSource, objectMapper, properties, metrics);
+    super(dataSource, objectMapper, config, metrics);
   }
 
   /**
@@ -238,5 +241,14 @@ public class MaestroFlowDao extends AbstractDatabaseDao {
         "Failed to check the existence of the flow instance [{}][{}]",
         groupId,
         flowId);
+  }
+
+  @VisibleForTesting
+  void deleteGroup(long groupId) {
+    withMetricLogError(
+        () -> withRetryableUpdate(REMOVE_GROUP_QUERY, stmt -> stmt.setLong(1, groupId)),
+        "deleteGroup",
+        "Failed to delete the group for the groupId [{}]",
+        groupId);
   }
 }

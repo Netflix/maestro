@@ -100,7 +100,7 @@ public class TimelineLogEvent implements TimelineEvent {
     return TimelineLogEvent.builder().level(Level.DEBUG).message(template, args).build();
   }
 
-  /** static method to generate a info level {@link TimelineLogEvent}. */
+  /** static method to generate an info level {@link TimelineLogEvent}. */
   @JsonIgnore
   public static TimelineLogEvent info(String template, Object... args) {
     return TimelineLogEvent.builder().level(Level.INFO).message(template, args).build();
@@ -112,7 +112,7 @@ public class TimelineLogEvent implements TimelineEvent {
     return TimelineLogEvent.builder().level(Level.WARN).message(template, args).build();
   }
 
-  /** static method to generate a error level {@link TimelineLogEvent}. */
+  /** static method to generate an error level {@link TimelineLogEvent}. */
   @JsonIgnore
   public static TimelineLogEvent error(String template, Object... args) {
     return TimelineLogEvent.builder().level(Level.ERROR).message(template, args).build();

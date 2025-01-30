@@ -15,7 +15,7 @@ import lombok.Getter;
  * task actor can switch to execute. So those inactive tasks are not real maestro tasks. This is
  * required to avoid that the child actor runs the business logic but the parent flow is unaware and
  * decide to finish. Also, the active flag is a local state and not thread safe and can only be
- * accessed within the actor (e.g. flow owns a list of copied tasks, and it can mutate active flag
+ * accessed within the actor, e.g. flow owns a list of copied tasks, and it can mutate active flag
  * for its own snapshots.
  *
  * <p>Basic rule: flow actor can only activate a task actor. A task actor can only deactivate itself

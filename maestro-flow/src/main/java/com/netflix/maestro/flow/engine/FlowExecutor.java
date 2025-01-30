@@ -163,10 +163,12 @@ public class FlowExecutor {
   }
 
   /** Wake up a flow or a task. */
-  public void wakeUp(Long groupId, String flowReference, String taskReference) {
+  public boolean wakeUp(Long groupId, String flowReference, String taskReference) {
     Actor groupActor = groupActors.get(groupId);
     if (groupActor != null && groupActor.isRunning()) {
       groupActor.post(new Action.FlowWakeUp(flowReference, taskReference));
+      return true;
     }
+    return false;
   }
 }

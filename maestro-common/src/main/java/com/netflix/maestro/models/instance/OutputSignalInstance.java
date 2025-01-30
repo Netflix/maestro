@@ -29,6 +29,6 @@ import lombok.NoArgsConstructor;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class OutputSignalInstance {
   private String outputSignalInstanceId;
-  // announced time will be null if its a duplicate signal
+  // announced time will be null if it is a duplicate signal
   private Long announcedTime;
 }

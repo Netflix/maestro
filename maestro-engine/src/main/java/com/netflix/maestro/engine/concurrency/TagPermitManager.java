@@ -46,7 +46,7 @@ public interface TagPermitManager {
     }
   }
 
-  /** acquire permits for every tag in tagList for a given a uuid (e.g. step uuid). */
+  /** acquire permits for every tag in tagList for a given an uuid (e.g. step uuid). */
   Status acquire(List<Tag> tagsList, String uuid);
 
   /**

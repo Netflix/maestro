@@ -1,0 +1,77 @@
+{
+  "properties": {
+    "owner": "tester"
+  },
+  "is_active": true,
+  "workflow": {
+    "id": "sample-nested-foreach-wf",
+    "steps": [{
+      "foreach": {
+        "id": "foreach-job",
+        "concurrency": 2,
+        "params": {
+          "param1": {
+            "value": ["a", "b"],
+            "type": "String_array"
+          },
+          "loop_params": {
+            "value": {
+              "i" : {
+                "value": [1, 2, 3],
+                "type": "long_array",
+                "validator": "param!=null && param.size() > 2", "mode": "mutable"
+              },
+              "j" : {
+                "expression": "param1;", "type": "STRING_ARRAY", "validator": "param!=null && param.size() > 2"
+              }
+            },
+            "type": "MAP"
+          }
+        },
+        "steps": [
+          {
+            "foreach": {
+              "id": "job1",
+              "concurrency": 3,
+              "params": {
+                "param2": {
+                  "expression": "i + 2;", "type": "LONG", "mode": "mutable"
+                },
+                "loop_params": {
+                  "value": {
+                    "x" : {
+                      "expression": "Util.intsBetween(1, i, 1);",
+                      "type": "long_array"
+                    }
+                  },
+                  "type": "MAP"
+                }
+              },
+              "steps": [
+                {
+                  "step": {
+                    "id": "job.1",
+                    "type": "Sleep",
+                    "params": {
+                      "sleep_seconds":  {"expression": "x * 5;", "type":  "LONG"}
+                    }
+                  }
+                }
+              ],
+              "transition": {"successors": {"job.2": "true"}}
+            }
+          },
+          {
+            "step": {
+              "id": "job.2",
+              "type": "Sleep",
+              "params": {
+                "sleep_seconds":  {"expression": "i * 10;", "type":  "LONG"}
+              }
+            }
+          }
+        ]
+      }
+    }]
+  }
+}
