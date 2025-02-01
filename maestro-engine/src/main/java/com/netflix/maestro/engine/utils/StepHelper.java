@@ -12,7 +12,6 @@
  */
 package com.netflix.maestro.engine.utils;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.engine.execution.RunRequest;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
@@ -45,8 +44,6 @@ public final class StepHelper {
   private static final String RUNTIME_STATE_FIELD = "runtime_state";
   private static final String STATUS_FIELD = "status";
   private static final String TRANSITION_FIELD = "transition";
-  private static final TypeReference<Map<String, Map<StepDependencyType, StepDependencies>>>
-      ALL_STEP_DEPENDENCIES_REFERENCE = new TypeReference<>() {};
   private static final String CONVERT_FIELD_ERROR = "Cannot find field [%s] in the data";
 
   private StepHelper() {}
@@ -96,16 +93,6 @@ public final class StepHelper {
   }
 
   /**
-   * Utility method to retrieve step definition from the key-value data.
-   *
-   * @param data all data in a map
-   * @return a step definition object
-   */
-  public static Step retrieveStepDefinition(ObjectMapper objectMapper, Map<String, Object> data) {
-    return convertField(objectMapper, data, Constants.STEP_DEFINITION_FIELD, Step.class);
-  }
-
-  /**
    * Utility method to retrieve step runtime summary from the key-value data.
    *
    * @param data all data in a map
@@ -119,17 +106,12 @@ public final class StepHelper {
 
   /** utility to get the step dependencies summaries of a stepId. */
   public static Map<StepDependencyType, StepDependencies> getStepDependencies(
-      Flow flow, String stepId, ObjectMapper objectMapper) {
+      Flow flow, String stepId) {
     if (flow.getPrepareTask().getOutputData().containsKey(Constants.ALL_STEP_DEPENDENCIES_FIELD)) {
-      Map<String, Map<StepDependencyType, StepDependencies>> allStepDependencies =
-          convertField(
-              objectMapper,
-              flow.getPrepareTask().getOutputData(),
-              Constants.ALL_STEP_DEPENDENCIES_FIELD,
-              ALL_STEP_DEPENDENCIES_REFERENCE);
-      if (allStepDependencies != null) {
-        return allStepDependencies.get(stepId);
-      }
+      var allStepDependencies =
+          (Map<String, Map<StepDependencyType, StepDependencies>>)
+              flow.getPrepareTask().getOutputData().get(Constants.ALL_STEP_DEPENDENCIES_FIELD);
+      return allStepDependencies.get(stepId);
     }
     return null;
   }
@@ -227,7 +209,7 @@ public final class StepHelper {
         .currentPolicy(workflowSummary.getRunPolicy()) // default and might be updated
         .runtimeTags(tags)
         .correlationId(workflowSummary.getCorrelationId())
-        .groupId(workflowSummary.getGroupId())
+        .maxGroupNum(workflowSummary.getMaxGroupNum())
         .instanceStepConcurrency(workflowSummary.getInstanceStepConcurrency()) // pass it down
         .runParams(runParams)
         .restartConfig(
@@ -261,24 +243,6 @@ public final class StepHelper {
       return (T) value;
     }
     return objectMapper.convertValue(value, clazz);
-  }
-
-  /**
-   * Utility method to convert an object in the field of the data to a given class reference type.
-   *
-   * @param data map of all data
-   * @param fieldName map key to get the specific info
-   * @param typeReference typeReference to convert
-   * @param <T> Type of converted object
-   * @return a converted object
-   */
-  private static <T> T convertField(
-      ObjectMapper objectMapper,
-      Map<String, Object> data,
-      String fieldName,
-      TypeReference<T> typeReference) {
-    return objectMapper.convertValue(
-        Checks.notNull(data.get(fieldName), CONVERT_FIELD_ERROR, fieldName), typeReference);
   }
 
   /** Returns the step type info - if subType is available, return it, else the step type. */

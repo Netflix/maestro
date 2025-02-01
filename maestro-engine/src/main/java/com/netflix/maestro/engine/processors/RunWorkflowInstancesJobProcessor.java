@@ -20,6 +20,7 @@ import com.netflix.maestro.exceptions.MaestroNotFoundException;
 import com.netflix.maestro.exceptions.MaestroRetryableError;
 import com.netflix.maestro.flow.dao.MaestroFlowDao;
 import com.netflix.maestro.models.instance.WorkflowInstance;
+import com.netflix.maestro.utils.IdHelper;
 import java.util.function.Supplier;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,7 +53,7 @@ public class RunWorkflowInstancesJobProcessor
                 if (instance.getStatus() == WorkflowInstance.Status.CREATED) {
                   if (instanceRunUuid.getUuid().equals(instance.getWorkflowUuid())) {
                     if (!flowDao.existFlowWithSameKeys(
-                        instance.getGroupId(), instance.getWorkflowUuid())) {
+                        IdHelper.deriveGroupId(instance), instance.getWorkflowUuid())) {
                       String executionId = runWorkflowInstance(instance);
                       LOG.info(
                           "Run a workflow instance {} with an internal execution_id [{}]",

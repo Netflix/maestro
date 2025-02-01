@@ -56,7 +56,7 @@ public class RunRequest {
 
   @Nullable private final List<Tag> runtimeTags;
   @Nullable private final String correlationId;
-  @Nullable private final Long groupId;
+  @Nullable private final Long maxGroupNum;
   @Nullable private final Long instanceStepConcurrency; // null means unset and disabled
   @Nullable private final Map<String, ParamDefinition> runParams;
   @Nullable private final Map<String, Map<String, ParamDefinition>> stepRunParams;
@@ -71,7 +71,7 @@ public class RunRequest {
     Checks.checkTrue(
         config != null && !ObjectHelper.isCollectionEmptyOrNull(config.getRestartPath()),
         "Cannot get restart info in empty restart configuration");
-    return config.getRestartPath().get(config.getRestartPath().size() - 1);
+    return config.getRestartPath().getLast();
   }
 
   /** Static util method to extract the second to the last node from the restart path. */
@@ -121,7 +121,7 @@ public class RunRequest {
     if (restartConfig != null) {
       // still along restart path and not reach the downstream
       if (currentStepId.equals(getRestartStepId()) && restartConfig.getRestartPath().size() > 1) {
-        restartConfig.getRestartPath().remove(restartConfig.getRestartPath().size() - 1);
+        restartConfig.getRestartPath().removeLast();
         validateIdentity(toRestart);
         if (restartConfig.getRestartPath().size() == 1) {
           this.currentPolicy = restartConfig.getRestartPolicy();

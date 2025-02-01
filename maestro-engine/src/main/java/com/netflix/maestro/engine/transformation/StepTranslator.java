@@ -55,10 +55,6 @@ public class StepTranslator implements Translator<Step, TaskDef> {
     if (step.getFailureMode() == null) { // if unset, using the default
       step.setFailureMode(Defaults.DEFAULT_FAILURE_MODE);
     }
-    return new TaskDef(
-        step.getId(),
-        Constants.MAESTRO_TASK_NAME,
-        Collections.singletonMap(Constants.STEP_DEFINITION_FIELD, step),
-        null);
+    return new TaskDef(step.getId(), Constants.MAESTRO_TASK_NAME, null, null);
   }
 }

@@ -54,7 +54,7 @@ import lombok.Getter;
       "correlation_id",
       "step_instance_id",
       "workflow_version_id",
-      "group_id",
+      "max_group_num",
       "owner",
       "definition",
       "tags",
@@ -96,7 +96,8 @@ public class StepInstance {
   @Min(1)
   private long workflowVersionId; // version id of baseline workflow
 
-  @NotNull private Long groupId; // the group id to group a set of root workflows together
+  @Min(1)
+  private long maxGroupNum; // used to decide the group id for this specific instance tree
 
   // required owner from workflow instance properties snapshot.
   @Valid @NotNull private User owner;

@@ -59,33 +59,34 @@ public class RunWorkflowInstancesJobProcessorTest extends MaestroEngineBaseTest 
     when(workflowRunner.start(instance1)).thenReturn("a");
     when(workflowRunner.start(instance2)).thenReturn("b");
     when(workflowRunner.start(instance3)).thenReturn("c");
-    when(instance1.getGroupId()).thenReturn(1L);
-    when(instance2.getGroupId()).thenReturn(2L);
-    when(instance3.getGroupId()).thenReturn(3L);
+    when(instance1.getMaxGroupNum()).thenReturn(1L);
+    when(instance2.getMaxGroupNum()).thenReturn(2L);
+    when(instance3.getMaxGroupNum()).thenReturn(3L);
+    when(instance1.getIdentity()).thenReturn("[" + workflowId + "][1][1]");
+    when(instance2.getIdentity()).thenReturn("[" + workflowId + "][2][1]");
+    when(instance3.getIdentity()).thenReturn("[" + workflowId + "][3][1]");
   }
 
   @Test
   public void testLaunchWorkflowInstances() {
+    when(flowDao.existFlowWithSameKeys(anyLong(), any())).thenReturn(false);
     when(instance1.getStatus()).thenReturn(WorkflowInstance.Status.CREATED);
     when(instance1.getWorkflowUuid()).thenReturn("uuid1");
     when(instance1.isFreshRun()).thenReturn(true);
-    when(flowDao.existFlowWithSameKeys(instance1.getGroupId(), instance1.getWorkflowUuid()))
-        .thenReturn(false);
     when(instance2.getStatus()).thenReturn(WorkflowInstance.Status.CREATED);
     when(instance2.getWorkflowUuid()).thenReturn("uuid2");
     when(instance2.isFreshRun()).thenReturn(true);
-    when(flowDao.existFlowWithSameKeys(instance2.getGroupId(), instance2.getWorkflowUuid()))
-        .thenReturn(false);
     when(instance3.getStatus()).thenReturn(WorkflowInstance.Status.CREATED);
     when(instance3.getWorkflowUuid()).thenReturn("uuid3");
     when(instance3.isFreshRun()).thenReturn(true);
-    when(flowDao.existFlowWithSameKeys(instance3.getGroupId(), instance3.getWorkflowUuid()))
-        .thenReturn(false);
     jobProcessor.process(() -> jobEvent);
     verify(workflowRunner, times(1)).start(instance1);
     verify(workflowRunner, times(1)).start(instance2);
     verify(workflowRunner, times(1)).start(instance3);
     verify(flowDao, times(3)).existFlowWithSameKeys(anyLong(), anyString());
+    verify(flowDao, times(1)).existFlowWithSameKeys(0L, instance1.getWorkflowUuid());
+    verify(flowDao, times(1)).existFlowWithSameKeys(1L, instance2.getWorkflowUuid());
+    verify(flowDao, times(1)).existFlowWithSameKeys(1L, instance3.getWorkflowUuid());
     verify(workflowRunner, times(3)).start(any());
   }
 
@@ -96,16 +97,16 @@ public class RunWorkflowInstancesJobProcessorTest extends MaestroEngineBaseTest 
     when(instance2.getWorkflowUuid()).thenReturn("uuid-not-match");
     when(instance3.getStatus()).thenReturn(WorkflowInstance.Status.CREATED);
     when(instance3.getWorkflowUuid()).thenReturn("uuid3");
-    when(flowDao.existFlowWithSameKeys(3, "uuid3")).thenReturn(true);
+    when(flowDao.existFlowWithSameKeys(anyLong(), any())).thenReturn(true);
     jobProcessor.process(() -> jobEvent);
     verify(instance1, times(0)).getWorkflowUuid();
-    verify(flowDao, times(0)).existFlowWithSameKeys(1, "uuid1");
+    verify(flowDao, times(0)).existFlowWithSameKeys(0, "uuid1");
     verify(workflowRunner, times(0)).start(instance1);
     verify(instance2, times(2)).getWorkflowUuid();
-    verify(flowDao, times(0)).existFlowWithSameKeys(2, "uuid2");
+    verify(flowDao, times(0)).existFlowWithSameKeys(1, "uuid2");
     verify(workflowRunner, times(0)).start(instance2);
     verify(instance3, times(2)).getWorkflowUuid();
-    verify(flowDao, times(1)).existFlowWithSameKeys(3, "uuid3");
+    verify(flowDao, times(1)).existFlowWithSameKeys(1, "uuid3");
     verify(workflowRunner, times(0)).start(instance3);
     verify(flowDao, times(1)).existFlowWithSameKeys(anyLong(), anyString());
     verify(workflowRunner, times(0)).start(any());
