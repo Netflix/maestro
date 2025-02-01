@@ -62,6 +62,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 
@@ -610,6 +611,7 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
     summary.setWorkflowId(stepInstance.getWorkflowId());
     summary.setWorkflowInstanceId(stepInstance.getWorkflowInstanceId());
     summary.setWorkflowRunId(stepInstance.getWorkflowRunId());
+    summary.setMaxGroupNum(10);
     Optional<StepAction> stepAction = actionDao.tryGetAction(summary, "job1");
     Assert.assertTrue(stepAction.isPresent());
     stepAction.ifPresent(
@@ -634,7 +636,10 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
           Assert.assertEquals(STOP, action.getAction());
           Assert.assertEquals(user, action.getUser());
         });
-    Mockito.verify(publisher, Mockito.times(2)).publish(any(StepInstanceWakeUpEvent.class));
+    var event = ArgumentCaptor.forClass(StepInstanceWakeUpEvent.class);
+    Mockito.verify(publisher, Mockito.times(2)).publish(event.capture());
+    Assert.assertEquals(8, event.getAllValues().getFirst().getMaxGroupNum());
+    Assert.assertEquals(10, event.getAllValues().getLast().getMaxGroupNum());
   }
 
   @Test

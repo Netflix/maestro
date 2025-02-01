@@ -5,6 +5,7 @@
   "workflow_name": "Test workflow 01",
   "workflow_instance_id": 1,
   "workflow_run_id": 1,
+  "max_group_num": 5,
   "initiator": {"type": "MANUAL"},
   "criticality": "CRITICAL",
   "run_policy": "START_FRESH_NEW_RUN",
@@ -456,5 +457,22 @@
         "job.2"
       ]
     }
+  },
+  "step_map": {
+    "job1": {"step": {
+      "id": "job1", "type": "Sleep", "params": {
+        "sleep_seconds":  {"value": 15, "type":  "LONG"},
+        "cpu": {"value": 2, "type":  "DOUBLE"},
+        "memory": {"value": "10.229999999999", "type":  "DOUBLE"},
+        "monitor": {"value": 1.00000000000001, "type":  "DOUBLE"}
+      }}},
+   "job.2": {"step": {
+      "id": "job.2", "type": "NoOp", "params": {
+        "param1":  {"value": [15, 16], "type":  "DOUBLE_ARRAY"},
+        "param2":  {"value": ["12.3", "45"], "type":  "DOUBLE_ARRAY"},
+        "param3":  {"value": ["10.229999999999", 1.00000000000001], "type":  "DOUBLE_ARRAY"},
+        "param4":  {"expression": "return new double[]{1.2, 3.45};", "type":  "DOUBLE_ARRAY"},
+        "param5":  {"expression": "return new double[]{1.229999999999, 3.00000000000001};", "type":  "DOUBLE_ARRAY"}
+     }}}
   }
 }

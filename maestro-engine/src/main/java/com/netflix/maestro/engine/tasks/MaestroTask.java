@@ -152,11 +152,11 @@ public class MaestroTask implements FlowTask {
   @Override
   public void start(Flow flow, Task task) {
     try {
-      Step stepDefinition = StepHelper.retrieveStepDefinition(objectMapper, task.getInputData());
       WorkflowSummary workflowSummary =
           StepHelper.retrieveWorkflowSummary(objectMapper, flow.getInput());
+      Step stepDefinition = getStepDefinition(task.referenceTaskName(), workflowSummary);
       Map<StepDependencyType, StepDependencies> dependencies =
-          StepHelper.getStepDependencies(flow, stepDefinition.getId(), objectMapper);
+          StepHelper.getStepDependencies(flow, stepDefinition.getId());
       StepRuntimeSummary runtimeSummary =
           createStepRuntimeSummary(task, stepDefinition, workflowSummary, dependencies);
       task.getOutputData().put(Constants.STEP_RUNTIME_SUMMARY_FIELD, runtimeSummary);
@@ -182,6 +182,10 @@ public class MaestroTask implements FlowTask {
     } catch (Exception e) {
       handleUnexpectedException(flow, task, e);
     }
+  }
+
+  private Step getStepDefinition(String stepId, WorkflowSummary workflowSummary) {
+    return workflowSummary.getStepMap().get(stepId);
   }
 
   private StepRuntimeSummary createStepRuntimeSummary(
@@ -633,7 +637,7 @@ public class MaestroTask implements FlowTask {
     try {
       WorkflowSummary workflowSummary =
           StepHelper.retrieveWorkflowSummary(objectMapper, flow.getInput());
-      Step stepDefinition = StepHelper.retrieveStepDefinition(objectMapper, task.getInputData());
+      Step stepDefinition = getStepDefinition(task.referenceTaskName(), workflowSummary);
       StepRuntimeSummary runtimeSummary =
           StepHelper.retrieveRuntimeSummary(objectMapper, task.getOutputData());
 
@@ -876,7 +880,7 @@ public class MaestroTask implements FlowTask {
     toTerminate.setWorkflowId(summary.getWorkflowId());
     toTerminate.setWorkflowInstanceId(summary.getWorkflowInstanceId());
     toTerminate.setWorkflowRunId(summary.getWorkflowRunId());
-    toTerminate.setGroupId(summary.getGroupId());
+    toTerminate.setMaxGroupNum(summary.getMaxGroupNum());
 
     Map<String, Task> realTaskMap =
         TaskHelper.getUserDefinedRealTaskMap(flow.getFinishedTasks().stream());
@@ -1012,9 +1016,9 @@ public class MaestroTask implements FlowTask {
     stepInstance.setStepInstanceId(stepSummary.getStepInstanceId());
 
     if (stepSummary.getDbOperation() != DbOperation.UPDATE) {
-      Step stepDefinition = StepHelper.retrieveStepDefinition(objectMapper, task.getInputData());
+      Step stepDefinition = getStepDefinition(stepSummary.getStepId(), workflowSummary);
       stepInstance.setWorkflowVersionId(workflowSummary.getWorkflowVersionId());
-      stepInstance.setGroupId(workflowSummary.getGroupId());
+      stepInstance.setMaxGroupNum(workflowSummary.getMaxGroupNum());
       stepInstance.setOwner(workflowSummary.getRunProperties().getOwner());
       stepInstance.setDefinition(stepDefinition);
       stepInstance.setTags(stepSummary.getTags());

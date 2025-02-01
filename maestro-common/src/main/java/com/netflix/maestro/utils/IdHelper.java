@@ -15,6 +15,7 @@ package com.netflix.maestro.utils;
 import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.Workflow;
+import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.trigger.TriggerUuids;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
@@ -119,5 +120,25 @@ public final class IdHelper {
       sb.reverse();
     }
     return sb.toString();
+  }
+
+  /**
+   * Return the group id for given workflow instance. It should be deterministically and evenly
+   * distributed.
+   */
+  public static long deriveGroupId(WorkflowInstance instance) {
+    return deriveGroupId(instance.getIdentity(), instance.getMaxGroupNum());
+  }
+
+  public static long deriveGroupId(String groupingKey, long maxGroupNum) {
+    if (maxGroupNum <= 0) { // default groupId to 0 for backward compatibility
+      return 0;
+    }
+    long ret = groupingKey.hashCode() % maxGroupNum;
+    if (ret < 0) {
+      return ret + maxGroupNum;
+    } else {
+      return ret;
+    }
   }
 }

@@ -22,6 +22,7 @@ import com.netflix.maestro.engine.params.ParamsManager;
 import com.netflix.maestro.engine.publisher.MaestroJobEventPublisher;
 import com.netflix.maestro.engine.transformation.DagTranslator;
 import com.netflix.maestro.models.Constants;
+import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.definition.TagList;
 import com.netflix.maestro.models.definition.Workflow;
 import com.netflix.maestro.models.error.Details;
@@ -33,6 +34,7 @@ import com.netflix.maestro.models.timeline.TimelineDetailsEvent;
 import com.netflix.maestro.utils.Checks;
 import com.netflix.maestro.utils.DurationParser;
 import com.netflix.maestro.utils.IdHelper;
+import com.netflix.maestro.utils.MapHelper;
 import java.util.Collections;
 import java.util.Map;
 import lombok.AllArgsConstructor;
@@ -82,8 +84,8 @@ public class WorkflowHelper {
     // set correlation id if request contains it, otherwise, update it later inside DAO
     instance.setCorrelationId(runRequest.getCorrelationId());
     instance.setRunProperties(runProperties);
-    // set the group id for the fresh new workflow instance
-    instance.setGroupId(ObjectHelper.valueOrDefault(runRequest.getGroupId(), generateGroupNum()));
+    // set the current max group num for the fresh new workflow instance
+    instance.setMaxGroupNum(ObjectHelper.valueOrDefault(runRequest.getMaxGroupNum(), maxGroupNum));
     // it includes runtime params and tags. Its dag is versioned dag.
     Workflow workflow = overrideWorkflowConfig(workflowDef, runRequest);
     instance.setRuntimeWorkflow(workflow);
@@ -91,10 +93,6 @@ public class WorkflowHelper {
     // update newly created workflow instance
     updateWorkflowInstance(instance, runRequest);
     return instance;
-  }
-
-  private long generateGroupNum() {
-    return (long) (Math.random() * maxGroupNum);
   }
 
   /**
@@ -174,7 +172,7 @@ public class WorkflowHelper {
     summary.setCreationTime(instance.getCreateTime());
     summary.setWorkflowRunId(instance.getWorkflowRunId());
     summary.setCorrelationId(instance.getCorrelationId());
-    summary.setGroupId(instance.getGroupId());
+    summary.setMaxGroupNum(instance.getMaxGroupNum());
     summary.setWorkflowUuid(instance.getWorkflowUuid());
     if (instance.getRunConfig() != null) {
       summary.setRunPolicy(instance.getRunConfig().getPolicy());
@@ -186,7 +184,9 @@ public class WorkflowHelper {
     summary.setStepRunParams(instance.getStepRunParams());
     summary.setTags(instance.getRuntimeWorkflow().getTags());
     summary.setRuntimeDag(instance.getRuntimeDag());
-    summary.setDag(instance.getRuntimeWorkflow().getDag());
+    summary.setStepMap(
+        instance.getRuntimeWorkflow().getSteps().stream()
+            .collect(MapHelper.toListMap(Step::getId, s -> s)));
     summary.setCriticality(instance.getRuntimeWorkflow().getCriticality());
     summary.setInstanceStepConcurrency(instance.getRuntimeWorkflow().getInstanceStepConcurrency());
     return summary;

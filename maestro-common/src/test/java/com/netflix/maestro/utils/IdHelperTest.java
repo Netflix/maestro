@@ -13,6 +13,7 @@
 package com.netflix.maestro.utils;
 
 import com.netflix.maestro.models.definition.Workflow;
+import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.trigger.CronTimeTrigger;
 import com.netflix.maestro.models.trigger.SignalTrigger;
 import com.netflix.maestro.models.trigger.TriggerUuids;
@@ -70,5 +71,21 @@ public class IdHelperTest {
     Assert.assertEquals("44C92", IdHelper.rangeKey(1000000L));
     Assert.assertEquals("BAzL8n0Y58m7", IdHelper.rangeKey(Long.MAX_VALUE));
     Assert.assertTrue(IdHelper.rangeKey(1000000L).compareTo(IdHelper.rangeKey(Long.MAX_VALUE)) < 0);
+  }
+
+  @Test
+  public void testDeriveGroupId() {
+    WorkflowInstance instance = new WorkflowInstance();
+    instance.setWorkflowId("sample-dag-test-1");
+    instance.setWorkflowInstanceId(12);
+    instance.setWorkflowRunId(2);
+    Assert.assertEquals(0, IdHelper.deriveGroupId(instance));
+
+    instance.setMaxGroupNum(10);
+    Assert.assertEquals(5, IdHelper.deriveGroupId(instance));
+
+    Assert.assertEquals(0, IdHelper.deriveGroupId("test-key", 3));
+    Assert.assertTrue("negative-test".hashCode() < 0);
+    Assert.assertEquals(2, IdHelper.deriveGroupId("negative-test", 3));
   }
 }
