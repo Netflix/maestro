@@ -18,7 +18,7 @@ import com.netflix.maestro.engine.jobevents.StepInstanceWakeUpEvent;
 import com.netflix.maestro.engine.transformation.Translator;
 import com.netflix.maestro.exceptions.MaestroRetryableError;
 import com.netflix.maestro.exceptions.MaestroRuntimeException;
-import com.netflix.maestro.flow.engine.FlowExecutor;
+import com.netflix.maestro.flow.runtime.FlowOperation;
 import com.netflix.maestro.models.Actions;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.artifact.ForeachArtifact;
@@ -27,6 +27,9 @@ import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.instance.WorkflowRollupOverview;
 import com.netflix.maestro.utils.Checks;
+import com.netflix.maestro.utils.IdHelper;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -45,7 +48,7 @@ import lombok.extern.slf4j.Slf4j;
 @AllArgsConstructor
 public class StepInstanceWakeUpEventProcessor
     implements MaestroEventProcessor<StepInstanceWakeUpEvent> {
-  private final FlowExecutor flowExecutor;
+  private final FlowOperation flowOperation;
   private final MaestroWorkflowInstanceDao instanceDao;
   private final MaestroStepInstanceDao stepInstanceDao;
 
@@ -119,7 +122,7 @@ public class StepInstanceWakeUpEventProcessor
             ForeachArtifact foreachArtifact =
                 stepInstance.getArtifacts().get(Artifact.Type.FOREACH.key()).asForeach();
             handleLeafTasksWakeup(
-                jobEvent.getGroupId(), foreachArtifact.getForeachOverview().getOverallRollup());
+                jobEvent.getMaxGroupNum(), foreachArtifact.getForeachOverview().getOverallRollup());
             stepTerminalCheck = desiredStatus.isTerminal();
           }
           break;
@@ -128,7 +131,7 @@ public class StepInstanceWakeUpEventProcessor
             SubworkflowArtifact subworkflowArtifact =
                 stepInstance.getArtifacts().get(Artifact.Type.SUBWORKFLOW.key()).asSubworkflow();
             handleLeafTasksWakeup(
-                jobEvent.getGroupId(),
+                jobEvent.getMaxGroupNum(),
                 subworkflowArtifact.getSubworkflowOverview().getRollupOverview());
             stepTerminalCheck = desiredStatus.isTerminal();
           }
@@ -155,24 +158,24 @@ public class StepInstanceWakeUpEventProcessor
             jobEvent.getWorkflowId(),
             jobEvent.getWorkflowInstanceId(),
             jobEvent.getWorkflowRunId());
-    wakeupUnderlyingTask(jobEvent.getGroupId(), flowReference, jobEvent.getStepId());
+    wakeupUnderlyingTask(jobEvent.getMaxGroupNum(), flowReference, jobEvent.getStepId());
   }
 
-  private void wakeupUnderlyingTask(Long groupId, WorkflowRollupOverview.ReferenceEntity entity) {
-    String flowReference =
-        String.format(
-            Translator.FLOW_REFERENCE_FORMATTER,
-            entity.getWorkflowId(),
-            entity.getInstanceId(),
-            entity.getRunId());
-    wakeupUnderlyingTask(groupId, flowReference, entity.getStepId());
-  }
-
-  private void wakeupUnderlyingTask(Long groupId, String flowReference, String stepId) {
+  private void wakeupUnderlyingTask(long maxGroupNum, String flowReference, String stepId) {
+    long groupId = IdHelper.deriveGroupId(flowReference, maxGroupNum);
     try {
-      flowExecutor.wakeUp(groupId, flowReference, stepId);
+      boolean done = flowOperation.wakeUp(groupId, flowReference, stepId);
+      if (!done) {
+        throw new MaestroRetryableError(
+            "The underlying task [%s] in flow [%s] for group [%s] is not woken up successfully. Will try again.",
+            stepId, flowReference, groupId);
+      }
     } catch (MaestroRuntimeException e) {
-      LOG.warn("running into an exception while waking up underlying task, will try again", e);
+      LOG.info(
+          "running into an exception while waking up underlying task [{}][{}][{}], will try again",
+          groupId,
+          flowReference,
+          stepId);
       throw e; // retry if exception is a MaestroRetryableError
     }
   }
@@ -195,14 +198,14 @@ public class StepInstanceWakeUpEventProcessor
     }
 
     handleLeafTasksWakeup(
-        jobEvent.getGroupId(), workflowInstance.getRuntimeOverview().getRollupOverview());
+        jobEvent.getMaxGroupNum(), workflowInstance.getRuntimeOverview().getRollupOverview());
     if (jobEvent.getWorkflowAction().getStatus().isTerminal()) {
       throw new MaestroRetryableError(
           "Current status is not the desired status after action is taking. Will check again.");
     }
   }
 
-  private void handleLeafTasksWakeup(Long groupId, WorkflowRollupOverview overview) {
+  private void handleLeafTasksWakeup(long maxGroupNum, WorkflowRollupOverview overview) {
     // get all the reference entities for leaf step that has shouldWakeup flag.
     Set<WorkflowRollupOverview.ReferenceEntity> retryingLeafRefs =
         overview.getOverview().entrySet().stream()
@@ -225,7 +228,44 @@ public class StepInstanceWakeUpEventProcessor
             .flatMap(Set::stream)
             .collect(Collectors.toSet());
 
-    // wake up the underlying internal flow tasks
-    retryingLeafRefs.forEach(ref -> wakeupUnderlyingTask(groupId, ref));
+    wakeupUnderlyingFlows(maxGroupNum, retryingLeafRefs);
+  }
+
+  private void wakeupUnderlyingFlows(
+      long maxGroupNum, Set<WorkflowRollupOverview.ReferenceEntity> entities) {
+    var groupedRefs = new HashMap<Long, Set<String>>();
+    entities.forEach(
+        ref -> {
+          String flowReference =
+              String.format(
+                  Translator.FLOW_REFERENCE_FORMATTER,
+                  ref.getWorkflowId(),
+                  ref.getInstanceId(),
+                  ref.getRunId());
+          long groupId = IdHelper.deriveGroupId(flowReference, maxGroupNum);
+          if (!groupedRefs.containsKey(groupId)) {
+            groupedRefs.put(groupId, new HashSet<>());
+          }
+          groupedRefs.get(groupId).add(flowReference);
+        });
+
+    // todo if too many groups, we can use parallel() to speed up
+    groupedRefs.forEach(
+        (groupId, refs) -> {
+          try {
+            boolean done = flowOperation.wakeUp(groupId, refs);
+            if (!done) {
+              throw new MaestroRetryableError(
+                  "Underlying flows [%s] for group [%s] are not woken up successfully. Will try again.",
+                  refs, groupId);
+            }
+          } catch (MaestroRuntimeException e) {
+            LOG.info(
+                "running into an exception while waking up underlying flows [{}][{}], will try again",
+                groupId,
+                refs);
+            throw e; // retry if exception is a MaestroRetryableError
+          }
+        });
   }
 }

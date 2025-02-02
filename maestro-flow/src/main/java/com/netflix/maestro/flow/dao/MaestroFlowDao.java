@@ -8,7 +8,6 @@ import com.netflix.maestro.exceptions.MaestroRetryableError;
 import com.netflix.maestro.flow.models.Flow;
 import com.netflix.maestro.flow.models.FlowGroup;
 import com.netflix.maestro.metrics.MaestroMetrics;
-import com.netflix.maestro.utils.Checks;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +22,8 @@ public class MaestroFlowDao extends AbstractDatabaseDao {
 
   private static final String ADD_FLOW_QUERY =
       "INSERT INTO maestro_flow (group_id,flow_id,generation,start_time,reference) "
-          + "SELECT ?,?,?,?,? FROM maestro_flow_group WHERE group_id=? AND generation=?";
+          + "SELECT ?,?,?,?,? FROM maestro_flow_group WHERE group_id=? AND generation=? "
+          + "ON CONFLICT DO NOTHING";
   private static final String REMOVE_FLOW_QUERY =
       "DELETE FROM maestro_flow WHERE group_id=? AND flow_id=?";
   private static final String CLAIM_AND_RETURN_FLOWS_QUERY =
@@ -32,6 +32,8 @@ public class MaestroFlowDao extends AbstractDatabaseDao {
           + "ORDER BY flow_id ASC LIMIT ?) RETURNING flow_id,start_time,reference";
   private static final String HEARTBEAT_QUERY =
       "UPDATE maestro_flow_group SET heartbeat_ts=now() WHERE group_id=? AND generation=?";
+  private static final String RELEASE_GROUP_QUERY =
+      "UPDATE maestro_flow_group SET heartbeat_ts='1970-01-01' AT TIME ZONE 'UTC' WHERE group_id=? AND generation=?";
   private static final String CLAIM_FLOW_GROUP_QUERY =
       "UPDATE maestro_flow_group SET (heartbeat_ts,generation,address)=(now(),generation+1,?) "
           + "WHERE group_id=(SELECT group_id FROM maestro_flow_group "
@@ -43,6 +45,8 @@ public class MaestroFlowDao extends AbstractDatabaseDao {
       "SELECT 1 FROM maestro_flow WHERE group_id=? AND flow_id=? LIMIT 1";
   private static final String REMOVE_GROUP_QUERY =
       "DELETE FROM maestro_flow_group WHERE group_id=?";
+  private static final String GET_GROUP_QUERY =
+      "SELECT generation,address,heartbeat_ts FROM maestro_flow_group WHERE group_id=?";
 
   public MaestroFlowDao(
       DataSource dataSource,
@@ -79,8 +83,11 @@ public class MaestroFlowDao extends AbstractDatabaseDao {
             "insertFlow",
             "Failed to insert the flow for the reference [{}]",
             flow.getReference());
-    Checks.checkTrue(
-        res == 1, "Insert flow row count for [%s] is not 1 but %s", flow.getReference(), res);
+    if (res != 1) {
+      throw new MaestroRetryableError(
+          "insertFlow for flow [%s] is failed (res=[%s]) and please retry",
+          flow.getReference(), res);
+    }
   }
 
   /**
@@ -149,6 +156,23 @@ public class MaestroFlowDao extends AbstractDatabaseDao {
         idCursor);
   }
 
+  /** Used to get if there is any flow instance with this flow keys. */
+  public boolean existFlowWithSameKeys(long groupId, String flowId) {
+    return withMetricLogError(
+        () ->
+            withRetryableQuery(
+                GET_FLOW_WITH_SAME_KEYS_QUERY,
+                stmt -> {
+                  stmt.setLong(1, groupId);
+                  stmt.setString(2, flowId);
+                },
+                ResultSet::next),
+        "existFlowWithSameKeys",
+        "Failed to check the existence of the flow instance [{}][{}]",
+        groupId,
+        flowId);
+  }
+
   /**
    * It heartbeats to keep the ownership of the flow group. It also detects if the ownership is lost
    * unexpectedly. It returns the flag (if the ownership is valid) to the caller.
@@ -170,6 +194,21 @@ public class MaestroFlowDao extends AbstractDatabaseDao {
             "heartbeatGroup",
             "Failed to heartbeat the flow group for [{}]",
             group.groupId());
+  }
+
+  public void releaseGroup(FlowGroup group) {
+    withMetricLogError(
+        () ->
+            withRetryableUpdate(
+                RELEASE_GROUP_QUERY,
+                stmt -> {
+                  int idx = 0;
+                  stmt.setLong(++idx, group.groupId());
+                  stmt.setLong(++idx, group.generation());
+                }),
+        "releaseGroup",
+        "Failed to release the flow group for [{}]",
+        group);
   }
 
   /**
@@ -226,21 +265,27 @@ public class MaestroFlowDao extends AbstractDatabaseDao {
     }
   }
 
-  /** Used to get if there is any flow instance with this flow keys. */
-  public boolean existFlowWithSameKeys(long groupId, String flowId) {
+  // return null if not found and then run it locally
+  public FlowGroup getGroup(long groupId) {
     return withMetricLogError(
         () ->
             withRetryableQuery(
-                GET_FLOW_WITH_SAME_KEYS_QUERY,
-                stmt -> {
-                  stmt.setLong(1, groupId);
-                  stmt.setString(2, flowId);
-                },
-                ResultSet::next),
-        "existFlowWithSameKeys",
-        "Failed to check the existence of the flow instance [{}][{}]",
-        groupId,
-        flowId);
+                GET_GROUP_QUERY,
+                stmt -> stmt.setLong(1, groupId),
+                result -> {
+                  if (result.next()) {
+                    int idx = 0;
+                    return new FlowGroup(
+                        groupId,
+                        result.getLong(++idx),
+                        result.getString(++idx),
+                        result.getTimestamp(++idx).getTime());
+                  }
+                  return null;
+                }),
+        "getGroup",
+        "Failed to get the group for the groupId [{}]",
+        groupId);
   }
 
   @VisibleForTesting

@@ -50,6 +50,7 @@ public class GroupActorTest extends ActorBaseTest {
     groupActor.beforeRunning();
     verify(context, times(1)).schedule(any(), anyLong());
     assertEquals(Set.of(Action.GROUP_HEARTBEAT), groupActor.getScheduledActions().keySet());
+    verify(metrics, times(1)).counter("num_of_running_groups", GroupActor.class);
   }
 
   @Test
@@ -132,6 +133,8 @@ public class GroupActorTest extends ActorBaseTest {
     verify(context, times(1)).heartbeatGroup(any());
     verify(context, times(1)).schedule(any(), anyLong());
     assertEquals(Set.of(Action.GROUP_HEARTBEAT), groupActor.getScheduledActions().keySet());
+    verify(metrics, times(1))
+        .gauge("current_running_groups", 1.0, GroupActor.class, "group", "group-1");
   }
 
   @Test
@@ -161,6 +164,13 @@ public class GroupActorTest extends ActorBaseTest {
         MaestroUnprocessableEntityException.class,
         "Unexpected action: [TaskDown[]] for FlowGroup [group-1]",
         () -> groupActor.runForAction(Action.TASK_DOWN));
+  }
+
+  @Test
+  public void testAfterRunning() {
+    groupActor.afterRunning();
+    verify(context, times(1)).releaseGroup(any());
+    verify(metrics, times(1)).counter("num_of_finished_groups", GroupActor.class);
   }
 
   @Test

@@ -83,10 +83,6 @@ public class MaestroExecutionPreparerTest extends MaestroEngineBaseTest {
     flow.setInput(Map.of(Constants.WORKFLOW_SUMMARY_FIELD, workflowSummary));
     flow.setFlowDef(new FlowDef());
     flow.getFlowDef().setTasks(List.of(List.of(new TaskDef("task1", "noop", null, null))));
-    //    flow.getFlowDef().setPrepareTask(new TaskDef("prepare", "noop", null, null));
-    //    flow.getFlowDef().setMonitorTask(new TaskDef("monitor", "noop", null, null));
-    //    flow.setStatus(Flow.Status.RUNNING);
-    //    flow.setUpdateTime(flow.getStartTime());
     task = flow.newTask(new TaskDef("task1", "noop", null, null), true);
   }
 

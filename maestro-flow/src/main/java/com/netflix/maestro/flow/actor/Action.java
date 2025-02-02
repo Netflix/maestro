@@ -1,5 +1,6 @@
 package com.netflix.maestro.flow.actor;
 
+import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.flow.models.Flow;
 import com.netflix.maestro.flow.models.Task;
 
@@ -30,7 +31,7 @@ public sealed interface Action {
 
   Action FLOW_DOWN = new FlowDown();
 
-  record FlowWakeUp(String flowReference, String taskRef) implements Action {}
+  record FlowWakeUp(String flowReference, @Nullable String taskRef) implements Action {}
 
   // actions for flow actors
   record FlowStart(boolean resume) implements Action {}
@@ -59,7 +60,7 @@ public sealed interface Action {
 
   Action TASK_DOWN = new TaskDown();
 
-  record TaskWakeUp(String taskRef) implements Action {}
+  record TaskWakeUp(@Nullable String taskRef) implements Action {}
 
   // actions for task actors
   record TaskStart(boolean resume) implements Action {}

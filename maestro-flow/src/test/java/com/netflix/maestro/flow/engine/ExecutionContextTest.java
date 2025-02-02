@@ -290,4 +290,10 @@ public class ExecutionContextTest extends FlowBaseTest {
     context.heartbeatGroup(group);
     verify(flowDao, times(1)).heartbeatGroup(group);
   }
+
+  @Test
+  public void testReleaseGroup() {
+    context.releaseGroup(group);
+    verify(flowDao, times(1)).releaseGroup(group);
+  }
 }

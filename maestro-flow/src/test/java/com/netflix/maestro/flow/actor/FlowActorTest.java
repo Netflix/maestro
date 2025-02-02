@@ -333,6 +333,35 @@ public class FlowActorTest extends ActorBaseTest {
     verify(future, times(1)).cancel(false);
     verifyActions(flowActor.getChild("task1"), Action.TASK_START, Action.TASK_ACTIVATE);
     assertTrue(flowActor.containsChild("task1"));
+    verify(context, times(1)).getMetrics();
+    verify(metrics, times(1)).counter("num_of_wakeup_flows", FlowActor.class, "forall", "false");
+  }
+
+  @Test
+  public void testTaskWakeUpForAllFlowTasks() {
+    var future = Mockito.mock(ScheduledFuture.class);
+    when(context.schedule(any(), anyLong())).thenReturn(future);
+    when(future.cancel(false)).thenReturn(true);
+
+    Task task1 = flow.newTask(new TaskDef("task1", "noop", null, null), false);
+    task1.setStatus(Task.Status.FAILED);
+    task1.setStartDelayInSeconds(3000);
+    flow.addFinishedTask(task1);
+    Task task2 = flow.newTask(new TaskDef("task2", "noop", null, null), false);
+    task2.setStatus(Task.Status.IN_PROGRESS);
+    flow.updateRunningTask(task2);
+    flowActor.runForAction(Action.FLOW_RESUME);
+    assertFalse(flowActor.containsChild("task1"));
+    assertTrue(flowActor.containsChild("task2"));
+
+    flowActor.runForAction(new Action.TaskWakeUp(null));
+    verify(future, times(1)).cancel(false);
+    verifyActions(flowActor.getChild("task1"), Action.TASK_START, Action.TASK_PING);
+    verifyActions(flowActor.getChild("task2"), Action.TASK_RESUME, Action.TASK_PING);
+    assertTrue(flowActor.containsChild("task1"));
+    assertTrue(flowActor.containsChild("task2"));
+    verify(context, times(1)).getMetrics();
+    verify(metrics, times(1)).counter("num_of_wakeup_flows", FlowActor.class, "forall", "true");
   }
 
   @Test
