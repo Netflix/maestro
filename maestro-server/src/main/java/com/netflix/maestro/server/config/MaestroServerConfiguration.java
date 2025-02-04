@@ -37,7 +37,7 @@ import com.netflix.maestro.engine.publisher.MaestroNotificationPublisher;
 import com.netflix.maestro.engine.publisher.NoOpMaestroNotificationPublisher;
 import com.netflix.maestro.engine.utils.WorkflowHelper;
 import com.netflix.maestro.flow.dao.MaestroFlowDao;
-import com.netflix.maestro.flow.engine.FlowExecutor;
+import com.netflix.maestro.flow.runtime.FlowOperation;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.server.interceptor.UserInfoInterceptor;
@@ -118,11 +118,11 @@ public class MaestroServerConfiguration {
 
   @Bean
   public StepInstanceWakeUpEventProcessor stepInstanceWakeUpEventProcessor(
-      FlowExecutor flowExecutor,
+      FlowOperation flowOperation,
       MaestroWorkflowInstanceDao instanceDao,
       MaestroStepInstanceDao stepInstanceDao) {
     LOG.info("Creating stepInstanceWakeUpEventProcessor within Spring boot...");
-    return new StepInstanceWakeUpEventProcessor(flowExecutor, instanceDao, stepInstanceDao);
+    return new StepInstanceWakeUpEventProcessor(flowOperation, instanceDao, stepInstanceDao);
   }
 
   @Bean

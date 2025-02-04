@@ -97,6 +97,18 @@ public class MaestroFlowDaoTest extends FlowBaseTest {
   }
 
   @Test
+  public void testInsertFlowRetry() {
+    Flow flow = createFlow();
+    dao.insertFlow(flow);
+    AssertHelper.assertThrows(
+        "should throw and retry",
+        MaestroRetryableError.class,
+        "insertFlow for flow [test-flow-ref] is failed (res=[0])",
+        () -> dao.insertFlow(flow));
+    dao.deleteFlow(flow);
+  }
+
+  @Test
   public void testDeleteFlow() {
     Flow flow = createFlow();
     dao.insertFlow(flow);
@@ -119,9 +131,29 @@ public class MaestroFlowDaoTest extends FlowBaseTest {
   }
 
   @Test
+  public void testExistFlowWithSameKeys() {
+    Flow flow = createFlow();
+    dao.insertFlow(flow);
+    assertTrue(dao.existFlowWithSameKeys(10, "test-flow-id"));
+    assertFalse(dao.existFlowWithSameKeys(2, "test-flow-id"));
+    assertFalse(dao.existFlowWithSameKeys(10, "test-flow-id2"));
+    dao.deleteFlow(flow);
+  }
+
+  @Test
   public void testHeartbeatGroup() {
     assertTrue(dao.heartbeatGroup(group));
     assertFalse(dao.heartbeatGroup(new FlowGroup(10, 2, "testAddress")));
+  }
+
+  @Test
+  public void testReleaseGroup() {
+    dao.releaseGroup(group);
+    FlowGroup actual = dao.getGroup(group.groupId());
+    assertEquals(0, actual.heartbeatTs());
+    dao.deleteGroup(group.groupId());
+    dao.releaseGroup(group);
+    assertNull(dao.getGroup(group.groupId()));
   }
 
   @Test
@@ -147,12 +179,12 @@ public class MaestroFlowDaoTest extends FlowBaseTest {
   }
 
   @Test
-  public void testExistFlowWithSameKeys() {
-    Flow flow = createFlow();
-    dao.insertFlow(flow);
-    assertTrue(dao.existFlowWithSameKeys(10, "test-flow-id"));
-    assertFalse(dao.existFlowWithSameKeys(2, "test-flow-id"));
-    assertFalse(dao.existFlowWithSameKeys(10, "test-flow-id2"));
-    dao.deleteFlow(flow);
+  public void testGetGroup() {
+    FlowGroup actual = dao.getGroup(group.groupId());
+    assertEquals(10, actual.groupId());
+    assertEquals(1, actual.generation());
+    assertEquals("testAddress", actual.address());
+    assertTrue(actual.heartbeatTs() > 0);
+    assertNull(dao.getGroup(2));
   }
 }

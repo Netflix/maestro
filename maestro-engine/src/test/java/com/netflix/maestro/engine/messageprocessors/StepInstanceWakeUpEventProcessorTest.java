@@ -12,6 +12,9 @@
  */
 package com.netflix.maestro.engine.messageprocessors;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+
 import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.engine.MaestroEngineBaseTest;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
@@ -19,7 +22,7 @@ import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
 import com.netflix.maestro.engine.jobevents.StepInstanceWakeUpEvent;
 import com.netflix.maestro.engine.processors.StepInstanceWakeUpEventProcessor;
 import com.netflix.maestro.exceptions.MaestroRetryableError;
-import com.netflix.maestro.flow.engine.FlowExecutor;
+import com.netflix.maestro.flow.runtime.FlowOperation;
 import com.netflix.maestro.models.Actions;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.artifact.ForeachArtifact;
@@ -33,13 +36,14 @@ import com.netflix.maestro.models.instance.WorkflowRollupOverview;
 import com.netflix.maestro.models.instance.WorkflowRuntimeOverview;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 
 public class StepInstanceWakeUpEventProcessorTest extends MaestroEngineBaseTest {
-  @Mock private FlowExecutor flowExecutor;
+  @Mock private FlowOperation flowOperation;
   @Mock private MaestroStepInstanceDao stepInstanceDao;
   @Mock private MaestroWorkflowInstanceDao instanceDao;
   @Mock private StepInstance stepInstance;
@@ -57,7 +61,7 @@ public class StepInstanceWakeUpEventProcessorTest extends MaestroEngineBaseTest 
   private final long workflowInstanceId = 2;
   private final long workflowRunId = 3;
   private final String stepAttemptId = "2";
-  private final Long groupId = 12L;
+  private final long maxGroupNum = 12L;
   private final String stepId = "sample-test-step-id";
   private StepInstanceWakeUpEventProcessor processor;
   private WorkflowRollupOverview overview;
@@ -70,14 +74,14 @@ public class StepInstanceWakeUpEventProcessorTest extends MaestroEngineBaseTest 
 
   @Before
   public void before() {
-    processor = new StepInstanceWakeUpEventProcessor(flowExecutor, instanceDao, stepInstanceDao);
+    processor = new StepInstanceWakeUpEventProcessor(flowOperation, instanceDao, stepInstanceDao);
     event = new StepInstanceWakeUpEvent();
     event.setWorkflowId(workflowId);
     event.setWorkflowInstanceId(workflowInstanceId);
     event.setWorkflowRunId(workflowRunId);
     event.setStepId(stepId);
     event.setStepAttemptId(stepAttemptId);
-    event.setGroupId(groupId);
+    event.setMaxGroupNum(maxGroupNum);
     Mockito.when(
             stepInstanceDao.getStepInstance(
                 workflowId, workflowInstanceId, workflowRunId, stepId, stepAttemptId))
@@ -95,6 +99,8 @@ public class StepInstanceWakeUpEventProcessorTest extends MaestroEngineBaseTest 
                 workflowId, workflowInstanceId, String.valueOf(workflowRunId), false))
         .thenReturn(workflowInstance);
     setupInstanceBase();
+    Mockito.when(flowOperation.wakeUp(anyLong(), any())).thenReturn(true);
+    Mockito.when(flowOperation.wakeUp(anyLong(), any(), any())).thenReturn(true);
   }
 
   private void setupInstanceBase() {
@@ -102,9 +108,9 @@ public class StepInstanceWakeUpEventProcessorTest extends MaestroEngineBaseTest 
     Mockito.when(stepInstance.getRuntimeState()).thenReturn(stepRuntimeState);
     Mockito.when(stepInstance.getArtifacts()).thenReturn(artifactMap);
     Mockito.when(stepInstance.getStepId()).thenReturn(stepId);
-    Mockito.when(stepInstance.getGroupId()).thenReturn(groupId);
+    Mockito.when(stepInstance.getMaxGroupNum()).thenReturn(maxGroupNum);
     Mockito.when(stepInstance.getStepAttemptId()).thenReturn(Long.valueOf(stepAttemptId));
-    Mockito.when(foreachStepInstance.getGroupId()).thenReturn(groupId);
+    Mockito.when(foreachStepInstance.getMaxGroupNum()).thenReturn(maxGroupNum);
   }
 
   private void setStepInstanceDefinition(StepType type) {
@@ -122,7 +128,7 @@ public class StepInstanceWakeUpEventProcessorTest extends MaestroEngineBaseTest 
     event.setStepStatus(StepInstance.Status.FATALLY_FAILED);
     processor.process(() -> event);
     Mockito.verifyNoInteractions(stepInstanceDao);
-    Mockito.verifyNoInteractions(flowExecutor);
+    Mockito.verifyNoInteractions(flowOperation);
     Mockito.verifyNoInteractions(instanceDao);
   }
 
@@ -133,10 +139,19 @@ public class StepInstanceWakeUpEventProcessorTest extends MaestroEngineBaseTest 
     event.setStepStatus(StepInstance.Status.PLATFORM_FAILED);
     processor.process(() -> event);
 
-    Mockito.verify(flowExecutor, Mockito.times(1))
-        .wakeUp(12L, "[sample-test-workflow-id][2][3]", stepId);
+    Mockito.verify(flowOperation, Mockito.times(1))
+        .wakeUp(2, "[sample-test-workflow-id][2][3]", stepId);
     Mockito.verifyNoInteractions(stepInstanceDao);
     Mockito.verifyNoInteractions(instanceDao);
+
+    Mockito.when(flowOperation.wakeUp(anyLong(), any(), any())).thenReturn(false);
+    AssertHelper.assertThrows(
+        "Underlying task is not woken up and should retry",
+        MaestroRetryableError.class,
+        "group [2] is not woken up successfully. Will try again",
+        () -> processor.process(() -> event));
+    Mockito.verify(flowOperation, Mockito.times(2))
+        .wakeUp(2, "[sample-test-workflow-id][2][3]", stepId);
   }
 
   @Test
@@ -146,8 +161,8 @@ public class StepInstanceWakeUpEventProcessorTest extends MaestroEngineBaseTest 
     setStepInstanceRuntimeState(StepInstance.Status.PLATFORM_FAILED);
     processor.process(() -> event);
 
-    Mockito.verify(flowExecutor, Mockito.times(1))
-        .wakeUp(12L, "[sample-test-workflow-id][2][3]", stepId);
+    Mockito.verify(flowOperation, Mockito.times(1))
+        .wakeUp(2, "[sample-test-workflow-id][2][3]", stepId);
     Mockito.verify(stepInstanceDao, Mockito.times(1))
         .getStepInstance(workflowId, workflowInstanceId, workflowRunId, stepId, stepAttemptId);
     Mockito.verifyNoInteractions(instanceDao);
@@ -164,7 +179,7 @@ public class StepInstanceWakeUpEventProcessorTest extends MaestroEngineBaseTest 
     Mockito.verify(stepInstanceDao, Mockito.times(1))
         .getStepInstance(workflowId, workflowInstanceId, workflowRunId, stepId, stepAttemptId);
     Mockito.verifyNoInteractions(instanceDao);
-    Mockito.verifyNoInteractions(flowExecutor);
+    Mockito.verifyNoInteractions(flowOperation);
   }
 
   @Test
@@ -178,7 +193,7 @@ public class StepInstanceWakeUpEventProcessorTest extends MaestroEngineBaseTest 
     Mockito.verify(stepInstanceDao, Mockito.times(1))
         .getStepInstance(workflowId, workflowInstanceId, workflowRunId, stepId, stepAttemptId);
     Mockito.verifyNoInteractions(instanceDao);
-    Mockito.verifyNoInteractions(flowExecutor);
+    Mockito.verifyNoInteractions(flowOperation);
   }
 
   @Test
@@ -210,8 +225,8 @@ public class StepInstanceWakeUpEventProcessorTest extends MaestroEngineBaseTest 
     Mockito.verify(stepInstanceDao, Mockito.times(1))
         .getStepInstance(workflowId, workflowInstanceId, workflowRunId, stepId, stepAttemptId);
     Mockito.verifyNoInteractions(instanceDao);
-    Mockito.verify(flowExecutor, Mockito.times(1))
-        .wakeUp(groupId, "[sample-test-foreach-workflow-id][1][4]", foreachStepId);
+    Mockito.verify(flowOperation, Mockito.times(1))
+        .wakeUp(3, Set.of("[sample-test-foreach-workflow-id][1][4]"));
   }
 
   @Test
@@ -247,8 +262,17 @@ public class StepInstanceWakeUpEventProcessorTest extends MaestroEngineBaseTest 
     Mockito.verify(stepInstanceDao, Mockito.times(1))
         .getStepInstance(workflowId, workflowInstanceId, workflowRunId, stepId, stepAttemptId);
     Mockito.verifyNoInteractions(instanceDao);
-    Mockito.verify(flowExecutor, Mockito.times(1))
-        .wakeUp(groupId, "[sample-test-foreach-workflow-id][1][4]", foreachStepId);
+    Mockito.verify(flowOperation, Mockito.times(1))
+        .wakeUp(3, Set.of("[sample-test-foreach-workflow-id][1][4]"));
+
+    Mockito.when(flowOperation.wakeUp(anyLong(), any())).thenReturn(false);
+    AssertHelper.assertThrows(
+        "Underlying flow is not woken up and should retry",
+        MaestroRetryableError.class,
+        "group [3] are not woken up successfully. Will try again",
+        () -> processor.process(() -> event));
+    Mockito.verify(flowOperation, Mockito.times(2))
+        .wakeUp(3, Set.of("[sample-test-foreach-workflow-id][1][4]"));
   }
 
   @Test
@@ -256,16 +280,17 @@ public class StepInstanceWakeUpEventProcessorTest extends MaestroEngineBaseTest 
     event.setEntityType(StepInstanceWakeUpEvent.EntityType.STEP);
     event.setStepAction(Actions.StepInstanceAction.RESTART);
     processor.process(() -> event);
-    Mockito.verify(flowExecutor, Mockito.times(1))
-        .wakeUp(12L, "[sample-test-workflow-id][2][3]", stepId);
+    Mockito.verify(flowOperation, Mockito.times(1))
+        .wakeUp(2, "[sample-test-workflow-id][2][3]", stepId);
     Mockito.verifyNoInteractions(stepInstanceDao);
     Mockito.verifyNoInteractions(instanceDao);
-    Mockito.reset(flowExecutor);
+    Mockito.reset(flowOperation);
 
+    Mockito.when(flowOperation.wakeUp(anyLong(), any(), any())).thenReturn(true);
     setStepInstanceDefinition(StepType.SUBWORKFLOW);
     processor.process(() -> event);
-    Mockito.verify(flowExecutor, Mockito.times(1))
-        .wakeUp(12L, "[sample-test-workflow-id][2][3]", stepId);
+    Mockito.verify(flowOperation, Mockito.times(1))
+        .wakeUp(2, "[sample-test-workflow-id][2][3]", stepId);
     Mockito.verifyNoInteractions(stepInstanceDao);
     Mockito.verifyNoInteractions(instanceDao);
   }
@@ -291,8 +316,8 @@ public class StepInstanceWakeUpEventProcessorTest extends MaestroEngineBaseTest 
 
     Mockito.verify(instanceDao, Mockito.times(1))
         .getWorkflowInstance(workflowId, workflowInstanceId, String.valueOf(workflowRunId), false);
-    Mockito.verify(flowExecutor, Mockito.times(1))
-        .wakeUp(groupId, "[sample-test-foreach-workflow-id][1][4]", foreachStepId);
+    Mockito.verify(flowOperation, Mockito.times(1))
+        .wakeUp(3, Set.of("[sample-test-foreach-workflow-id][1][4]"));
   }
 
   @Test
@@ -320,7 +345,16 @@ public class StepInstanceWakeUpEventProcessorTest extends MaestroEngineBaseTest 
 
     Mockito.verify(instanceDao, Mockito.times(1))
         .getWorkflowInstance(workflowId, workflowInstanceId, String.valueOf(workflowRunId), false);
-    Mockito.verify(flowExecutor, Mockito.times(1))
-        .wakeUp(groupId, "[sample-test-foreach-workflow-id][1][4]", foreachStepId);
+    Mockito.verify(flowOperation, Mockito.times(1))
+        .wakeUp(3, Set.of("[sample-test-foreach-workflow-id][1][4]"));
+
+    Mockito.when(flowOperation.wakeUp(anyLong(), any())).thenReturn(false);
+    AssertHelper.assertThrows(
+        "Underlying flow is not woken up and should retry",
+        MaestroRetryableError.class,
+        "group [3] are not woken up successfully. Will try again",
+        () -> processor.process(() -> event));
+    Mockito.verify(flowOperation, Mockito.times(2))
+        .wakeUp(3, Set.of("[sample-test-foreach-workflow-id][1][4]"));
   }
 }

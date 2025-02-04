@@ -263,4 +263,9 @@ public class ExecutionContext {
       Runtime.getRuntime().halt(Constants.INVALID_OWNERSHIP_EXIT_CODE);
     }
   }
+
+  public void releaseGroup(FlowGroup group) {
+    LOG.info("Release the flow group: [{}]", group);
+    flowDao.releaseGroup(group);
+  }
 }

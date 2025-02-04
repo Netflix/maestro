@@ -14,16 +14,17 @@ package com.netflix.maestro.engine.handlers;
 
 import com.netflix.maestro.engine.transformation.WorkflowTranslator;
 import com.netflix.maestro.engine.utils.WorkflowHelper;
-import com.netflix.maestro.flow.engine.FlowExecutor;
+import com.netflix.maestro.flow.runtime.FlowOperation;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.instance.WorkflowInstance;
+import com.netflix.maestro.utils.IdHelper;
 import java.util.Collections;
 import lombok.AllArgsConstructor;
 
 /** Workflow runner to run a maestro workflow in the internal flow engine. */
 @AllArgsConstructor
 public class WorkflowRunner {
-  private final FlowExecutor flowExecutor;
+  private final FlowOperation flowOperation;
   private final WorkflowTranslator translator;
   private final WorkflowHelper workflowHelper;
 
@@ -34,8 +35,8 @@ public class WorkflowRunner {
    * @return UUID of the internal flow instance
    */
   public String start(WorkflowInstance instance) {
-    return flowExecutor.startFlow(
-        instance.getGroupId(),
+    return flowOperation.startFlow(
+        IdHelper.deriveGroupId(instance),
         instance.getWorkflowUuid(),
         instance.getIdentity(),
         translator.translate(instance),

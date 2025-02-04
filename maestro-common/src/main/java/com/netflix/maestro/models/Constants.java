@@ -53,9 +53,6 @@ public final class Constants {
   public static final String WORKFLOW_RUNTIME_SUMMARY_FIELD =
       MAESTRO_PREFIX + "workflow_runtime_summary";
 
-  /** Maestro step definition field name. */
-  public static final String STEP_DEFINITION_FIELD = MAESTRO_PREFIX + "step_definition";
-
   /** Maestro step instance runtime summary field name. */
   public static final String STEP_RUNTIME_SUMMARY_FIELD = MAESTRO_PREFIX + "step_runtime_summary";
 

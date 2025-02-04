@@ -85,7 +85,7 @@ public class MaestroExecutionPreparer implements ExecutionPreparer {
     }
 
     if (!summary.isFreshRun() && summary.getRunPolicy() != RunPolicy.RESTART_FROM_BEGINNING) {
-      Set<String> stepIds = new HashSet<>(summary.getDag().keySet());
+      Set<String> stepIds = new HashSet<>(summary.getStepMap().keySet());
       flow.getFlowDef().getTasks().stream()
           .flatMap(tasks -> tasks.stream().map(TaskDef::taskReferenceName))
           .forEach(stepIds::remove);

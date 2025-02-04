@@ -619,7 +619,7 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
     stepInstance.setWorkflowInstanceId(summary.getWorkflowInstanceId());
     stepInstance.setWorkflowRunId(summary.getWorkflowRunId());
     stepInstance.setStepId(stepId);
-    stepInstance.setGroupId(summary.getGroupId());
+    stepInstance.setMaxGroupNum(summary.getMaxGroupNum());
     StepAction stepAction = StepAction.createTerminate(action, stepInstance, user, reason, false);
 
     upsertActions(
@@ -668,7 +668,7 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
                           stepInstanceAction, stepInstance, user, reason, true);
                   return toJson(stepAction);
                 })
-            .collect(Collectors.toList());
+            .toList();
 
     // batch upsert them into DB.
     String workflowIdentity = instance.getIdentity();

@@ -1,5 +1,6 @@
 package com.netflix.maestro.flow.actor;
 
+import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.exceptions.MaestroNotFoundException;
 import com.netflix.maestro.exceptions.MaestroResourceConflictException;
 import com.netflix.maestro.exceptions.MaestroUnprocessableEntityException;
@@ -223,7 +224,13 @@ final class FlowActor extends BaseActor {
   // This is the best effort. The task actor might not run while flow thinks it's running or the
   // actor is shutdown. In those cases, missing wakeup will cause the step won't take any action
   // during retry backoff delay. Callers have to retry for wakeup.
-  private void wakeup(String taskRef) {
+  private void wakeup(@Nullable String taskRef) {
+    getMetrics()
+        .counter("num_of_wakeup_flows", getClass(), "forall", taskRef == null ? "true" : "false");
+    if (taskRef == null) { // wakeup all tasks if taskRef is null
+      wakeupAll();
+      return;
+    }
     Task snapshot = flow.getRunningTasks().get(taskRef);
     if (snapshot == null) {
       if (dequeRetryAction(taskRef)) {
@@ -233,6 +240,12 @@ final class FlowActor extends BaseActor {
       snapshot.setActive(true);
     }
     wakeUpChildActor(taskRef, Action.TASK_ACTIVATE);
+  }
+
+  // wake up all tasks but do not activate inactive tasks
+  private void wakeupAll() {
+    dequeRetryActions().forEach(this::retryTask);
+    wakeUpChildActors(Action.TASK_PING);
   }
 
   private void timeoutFlow() {

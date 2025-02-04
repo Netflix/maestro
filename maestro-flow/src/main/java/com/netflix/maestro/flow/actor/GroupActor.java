@@ -19,8 +19,8 @@ import org.slf4j.Logger;
  * flow actor.
  *
  * <p>Future work: 1. when heartbeat we can also add a cleanup here to delete group if it is larger
- * than total_group plus idle for quite a while; 2. when exiting, if group id is bigger than
- * total_group number and also no flows in that group, we can delete this group from the table.
+ * than max_group plus idle for quite a while; 2. when exiting, if group id is bigger than max_group
+ * number and also no flows in that group, we can delete this group from the table.
  *
  * @author jun-he
  */
@@ -45,6 +45,7 @@ final class GroupActor extends BaseActor {
 
   @Override
   void beforeRunning() {
+    getMetrics().counter("num_of_running_groups", getClass());
     schedule(Action.GROUP_HEARTBEAT, heartbeatInterval);
   }
 
@@ -64,13 +65,12 @@ final class GroupActor extends BaseActor {
     }
   }
 
-  /**
-   * The group ownership is released after expiration period. An improvement here is to set
-   * appropriate heartbeat_ts to proactively release the ownership. Will consider it if we see any
-   * issue during cluster rotation.
-   */
+  /** The group ownership is released after group actor finishes running. */
   @Override
-  void afterRunning() {}
+  void afterRunning() {
+    getContext().releaseGroup(group);
+    getMetrics().counter("num_of_finished_groups", getClass());
+  }
 
   @Override
   String reference() {
@@ -123,6 +123,7 @@ final class GroupActor extends BaseActor {
 
   private void heartbeat() {
     LOG.debug("Heartbeat the group: [{}]", group);
+    getMetrics().gauge("current_running_groups", 1.0, getClass(), "group", reference());
     cleanupChildActors(); // cleanup finished flows
     getContext().heartbeatGroup(group);
     schedule(Action.GROUP_HEARTBEAT, heartbeatInterval);

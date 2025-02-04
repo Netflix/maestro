@@ -1,5 +1,6 @@
 package com.netflix.maestro.flow.engine;
 
+import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.flow.Constants;
 import com.netflix.maestro.flow.actor.Action;
 import com.netflix.maestro.flow.actor.Actor;
@@ -37,6 +38,7 @@ public class FlowExecutor {
   private final ExecutionContext context;
   private final long initialDelay;
   private final long delay;
+  private final long groupNumPerNode;
   private final String address;
 
   /** Constructor. */
@@ -44,6 +46,7 @@ public class FlowExecutor {
     this.context = context;
     this.initialDelay = context.getProperties().getInitialMaintenanceDelayInMillis();
     this.delay = context.getProperties().getMaintenanceDelayInMillis();
+    this.groupNumPerNode = context.getProperties().getGroupNumPerNode();
     this.address = context.getProperties().getEngineAddress();
   }
 
@@ -62,18 +65,25 @@ public class FlowExecutor {
    * This method periodically get non-heartbeat flow groups from the db and claim it. Each node is
    * expected to manage a reasonable number (e.g. less than 10) of groups. No need to create many
    * groups as a group can include as many as running maestro flow instances. Group helps spread the
-   * load into the whole cluster with minimal maintenance cost, e.g. heartbeat. If we set
-   * total_group = number of nodes, then we cannot add new nodes into the cluster without changing
-   * the total_group configuration. But note that group number is not fixed, which is different from
-   * sharing. We can freely increase or reduce the total_group number without moving the existing
-   * flows. The total_group change only affects the new flow instances. Existing flows will continue
-   * to work as they are assigned an immutable group id at the beginning. So if the maestro cluster
-   * does not enable auto-scaling, we can simply set total_group = number of nodes. Otherwise, we
-   * should leave spaces for auto-scaling. Then new nodes can ask to take the ownership a group from
-   * existing nodes.
+   * load into the whole cluster with minimal maintenance cost, e.g. heartbeat. We should set
+   * max_group_num <= group_num_per_node * number of nodes. When we need to add more nodes, we
+   * should adjust max_group_num and group_num_per_node for new nodes before adding them into the
+   * cluster. To improve the resiliency, we might add a bit more nodes. Note that those
+   * configurations can be inconsistent across the cluster. It won't affect each execution as the
+   * group id has been decided when the instance is created. Also note that max_group_num is not
+   * fixed, which is different from sharing. We can freely increase or reduce the max_group_num
+   * number without moving the existing flows. The max_group_num change only affects the new flow
+   * instances. Existing flows will continue to work as they are assigned a decided group id at the
+   * beginning. So if the maestro cluster does not enable auto-scaling, we can simply set `max_group
+   * = 1x or 2x of number of nodes`. Otherwise, we should leave spaces for auto-scaling. Then new
+   * nodes can ask to take the ownership a group from existing nodes.
    */
   private void maintenance() {
     LOG.trace("[{}] tries to claim a group...", address);
+    if (groupActors.size() >= groupNumPerNode) {
+      LOG.trace("[{}] has enough groups, no need to claim more", address);
+      return;
+    }
     try {
       FlowGroup group = context.claimGroup();
       if (group != null) {
@@ -162,8 +172,16 @@ public class FlowExecutor {
     }
   }
 
-  /** Wake up a flow or a task. */
-  public boolean wakeUp(Long groupId, String flowReference, String taskReference) {
+  /**
+   * Wake up a flow or a task.
+   *
+   * @param groupId group id to group flow instances
+   * @param flowReference flow reference
+   * @param taskReference task reference. If it is null, it wakes up all the tasks in the flow.
+   * @return true if the flow or task is woken up successfully, otherwise, false. The caller can
+   *     retry based on the returned result.
+   */
+  public boolean wakeUp(long groupId, String flowReference, @Nullable String taskReference) {
     Actor groupActor = groupActors.get(groupId);
     if (groupActor != null && groupActor.isRunning()) {
       groupActor.post(new Action.FlowWakeUp(flowReference, taskReference));

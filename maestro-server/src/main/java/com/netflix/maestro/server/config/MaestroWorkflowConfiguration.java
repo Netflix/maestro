@@ -55,8 +55,8 @@ import com.netflix.maestro.engine.utils.RollupAggregationHelper;
 import com.netflix.maestro.engine.utils.WorkflowEnrichmentHelper;
 import com.netflix.maestro.engine.utils.WorkflowHelper;
 import com.netflix.maestro.engine.validations.DryRunValidator;
-import com.netflix.maestro.flow.engine.FlowExecutor;
 import com.netflix.maestro.flow.runtime.ExecutionPreparer;
+import com.netflix.maestro.flow.runtime.FlowOperation;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.StepType;
@@ -180,11 +180,11 @@ public class MaestroWorkflowConfiguration {
 
   @Bean
   public WorkflowRunner workflowRunner(
-      FlowExecutor flowExecutor,
+      FlowOperation flowOperation,
       WorkflowTranslator workflowTranslator,
       WorkflowHelper workflowHelper) {
     LOG.info("Creating Maestro WorkflowRunner within Spring boot...");
-    return new WorkflowRunner(flowExecutor, workflowTranslator, workflowHelper);
+    return new WorkflowRunner(flowOperation, workflowTranslator, workflowHelper);
   }
 
   @Bean

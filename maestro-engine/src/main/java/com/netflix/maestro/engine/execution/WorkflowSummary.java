@@ -22,6 +22,7 @@ import com.netflix.maestro.engine.utils.ObjectHelper;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.Defaults;
 import com.netflix.maestro.models.definition.Criticality;
+import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.definition.StepTransition;
 import com.netflix.maestro.models.definition.Tag;
 import com.netflix.maestro.models.definition.TagList;
@@ -55,7 +56,7 @@ import lombok.Data;
       "workflow_instance_id",
       "workflow_run_id",
       "correlation_id",
-      "group_id",
+      "max_group_num",
       "creation_time",
       "workflow_uuid",
       "run_policy",
@@ -65,7 +66,7 @@ import lombok.Data;
       "params",
       "tags",
       "runtime_dag",
-      "dag",
+      "step_map",
       "criticality",
       "instance_step_concurrency"
     },
@@ -82,7 +83,7 @@ public class WorkflowSummary {
   private long workflowInstanceId;
   private long workflowRunId;
   private String correlationId;
-  private Long groupId;
+  private long maxGroupNum;
   private Long creationTime;
   @NotNull private String workflowUuid;
 
@@ -106,7 +107,7 @@ public class WorkflowSummary {
   @Valid @TagListConstraint private TagList tags;
 
   private Map<String, StepTransition> runtimeDag; // actual dag used.
-  private Map<String, StepTransition> dag; // full dag.
+  private Map<String, Step> stepMap; // all steps in the full dag.
 
   @Nullable private Criticality criticality;
 
