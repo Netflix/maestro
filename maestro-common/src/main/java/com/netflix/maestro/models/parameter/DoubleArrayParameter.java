@@ -96,4 +96,9 @@ public final class DoubleArrayParameter extends AbstractParameter {
     }
     return builder.value(ParamHelper.toDecimalArray(getName(), evaluatedResult)).build();
   }
+
+  @Override
+  public double[] getLiteralValue() {
+    return ParamHelper.toDoubleArray(getName(), getValue());
+  }
 }

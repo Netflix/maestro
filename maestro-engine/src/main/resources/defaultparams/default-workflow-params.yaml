@@ -73,6 +73,30 @@ DERIVED_RUN_DATE_UTC_MINUS_ONE:
     '
   mode: MUTABLE_ON_START
   type: STRING
+DERIVED_RUN_DATE_UTC_PLUS_ONE:
+  expression: '
+    DateTime utcNow = new DateTime(DERIVED_RUN_TS);
+    DateTime localNow = utcNow.withZone(DateTimeZone.forID("UTC"));
+    localNow.plusDays(1).toString("yyyyMMdd");
+  '
+  mode: MUTABLE_ON_START
+  type: STRING
+DERIVED_RUN_DATE_UTC_MINUS_ONE_HOUR:
+  expression: '
+    DateTime utcNow = new DateTime(DERIVED_RUN_TS);
+    DateTime localNow = utcNow.withZone(DateTimeZone.forID("UTC"));
+    localNow.minusHours(1).toString("yyyyMMdd");
+  '
+  mode: MUTABLE_ON_START
+  type: STRING
+DERIVED_RUN_DATE_UTC_PLUS_ONE_HOUR:
+  expression: '
+    DateTime utcNow = new DateTime(DERIVED_RUN_TS);
+    DateTime localNow = utcNow.withZone(DateTimeZone.forID("UTC"));
+    localNow.plusHours(1).toString("yyyyMMdd");
+  '
+  mode: MUTABLE_ON_START
+  type: STRING
 DERIVED_RUN_HOUR_US_PACIFIC:
   expression: '
     DateTime utcNow = new DateTime(DERIVED_RUN_TS);
@@ -87,6 +111,22 @@ DERIVED_RUN_HOUR_UTC:
     DateTime localNow = utcNow.withZone(DateTimeZone.forID("UTC"));
     localNow.toString("HH");
     '
+  mode: MUTABLE_ON_START
+  type: STRING
+DERIVED_RUN_HOUR_UTC_MINUS_ONE_HOUR:
+  expression: '
+    DateTime utcNow = new DateTime(DERIVED_RUN_TS);
+    DateTime localNow = utcNow.withZone(DateTimeZone.forID("UTC"));
+    localNow.minusHours(1).toString("HH");
+  '
+  mode: MUTABLE_ON_START
+  type: STRING
+DERIVED_RUN_HOUR_UTC_PLUS_ONE_HOUR:
+  expression: '
+    DateTime utcNow = new DateTime(DERIVED_RUN_TS);
+    DateTime localNow = utcNow.withZone(DateTimeZone.forID("UTC"));
+    localNow.plusHours(1).toString("HH");
+  '
   mode: MUTABLE_ON_START
   type: STRING
 LOCAL_RUN_DATE:

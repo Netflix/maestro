@@ -98,7 +98,7 @@ public final class LiteralEvaluator {
             throw e;
           }
         default:
-          return param.getValue();
+          return param.getLiteralValue();
       }
     } else {
       return param.getEvaluatedResult();

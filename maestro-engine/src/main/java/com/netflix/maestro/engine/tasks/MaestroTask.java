@@ -306,9 +306,6 @@ public class MaestroTask implements FlowTask {
       Map<String, Map<String, Object>> allStepOutputData = TaskHelper.getAllStepOutputData(flow);
 
       initializeOutputSignals(allStepOutputData, stepDefinition, workflowSummary, runtimeSummary);
-
-      return runtimeSummary.getOutputs() == null
-          || signalHandler.sendOutputSignals(workflowSummary, runtimeSummary);
     } catch (Exception e) {
       LOG.error(
           "Failed to evaluate Maestro params for output signals for {}{} due to error:",
@@ -317,6 +314,8 @@ public class MaestroTask implements FlowTask {
           e);
       throw e;
     }
+    return runtimeSummary.getOutputs() == null
+        || signalHandler.sendOutputSignals(workflowSummary, runtimeSummary);
   }
 
   private boolean initialize(

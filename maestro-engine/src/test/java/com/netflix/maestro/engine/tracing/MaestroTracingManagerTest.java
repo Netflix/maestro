@@ -65,7 +65,7 @@ public class MaestroTracingManagerTest {
             .spanId(30L)
             .parentSpanId(200L)
             .build();
-    when(mockTracer.joinSpan(defaultContext.toTraceContext())).thenReturn(mockSpan);
+    when(mockTracer.toSpan(defaultContext.toTraceContext())).thenReturn(mockSpan);
     when(mockSpan.context()).thenReturn(defaultContext.toTraceContext());
   }
 
