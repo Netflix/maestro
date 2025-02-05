@@ -92,4 +92,9 @@ public final class DoubleParameter extends AbstractParameter {
     }
     return builder.value(new BigDecimal(String.valueOf(evaluatedResult))).build();
   }
+
+  @Override
+  public Double getLiteralValue() {
+    return getValue().doubleValue();
+  }
 }

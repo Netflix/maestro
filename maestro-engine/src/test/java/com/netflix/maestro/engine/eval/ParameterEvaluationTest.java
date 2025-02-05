@@ -217,10 +217,15 @@ public class ParameterEvaluationTest extends MaestroEngineBaseTest {
         15L, stepParams.get("sleep_seconds").asLongParam().getEvaluatedResult().longValue());
     assertEquals("15", stepParams.get("sleep_seconds").getEvaluatedResultString());
     assertEquals((Double) 2.0, stepParams.get("cpu").getEvaluatedResult());
+    assertEquals(2.0, (Double) stepParams.get("cpu").getLiteralValue(), 0.00000000000000);
     assertEquals("2.0", stepParams.get("cpu").getEvaluatedResultString());
     assertEquals((Double) 10.229999999999, stepParams.get("memory").getEvaluatedResult());
+    assertEquals(
+        10.229999999999, (Double) stepParams.get("memory").getLiteralValue(), 0.00000000000000);
     assertEquals("10.229999999999", stepParams.get("memory").getEvaluatedResultString());
     assertEquals((Double) 1.00000000000001, stepParams.get("monitor").getEvaluatedResult());
+    assertEquals(
+        1.00000000000001, (Double) stepParams.get("monitor").getLiteralValue(), 0.00000000000000);
     assertEquals("1.00000000000001", stepParams.get("monitor").getEvaluatedResultString());
   }
 
@@ -235,10 +240,22 @@ public class ParameterEvaluationTest extends MaestroEngineBaseTest {
     assertArrayEquals(
         new double[] {15, 16}, stepParams.get("param1").asDoubleArray(), 0.00000000000000);
     assertArrayEquals(
+        new double[] {15, 16},
+        (double[]) stepParams.get("param1").getLiteralValue(),
+        0.00000000000000);
+    assertArrayEquals(
         new double[] {12.3, 45.0}, stepParams.get("param2").asDoubleArray(), 0.00000000000000);
+    assertArrayEquals(
+        new double[] {12.3, 45.0},
+        (double[]) stepParams.get("param2").getLiteralValue(),
+        0.00000000000000);
     assertArrayEquals(
         new double[] {10.229999999999, 1.00000000000001},
         stepParams.get("param3").asDoubleArray(),
+        0.00000000000000);
+    assertArrayEquals(
+        new double[] {10.229999999999, 1.00000000000001},
+        (double[]) stepParams.get("param3").getLiteralValue(),
         0.00000000000000);
     assertArrayEquals(
         new double[] {1.2, 3.45}, stepParams.get("param4").asDoubleArray(), 0.00000000000000);

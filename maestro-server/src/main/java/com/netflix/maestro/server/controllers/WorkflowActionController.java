@@ -83,6 +83,8 @@ public class WorkflowActionController {
         .currentPolicy(RunPolicy.START_FRESH_NEW_RUN)
         .runParams(ObjectHelper.valueOrDefault(request.getRunParams(), new LinkedHashMap<>()))
         .persistFailedRun(request.isPersistFailedRun())
+        .runtimeTags(request.getRuntimeTags())
+        .artifacts(request.getArtifacts()) // todo restart unable to keep input artifacts
         .build();
   }
 

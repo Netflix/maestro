@@ -101,6 +101,12 @@ public interface Parameter {
     return getEvaluatedTime() != null;
   }
 
+  /** Get the literal value derived from a parameter's value field. */
+  @JsonIgnore
+  default Object getLiteralValue() {
+    return getValue();
+  }
+
   /** preprocessing the parameters in instances by validating result and setting name. */
   static Map<String, Parameter> preprocessInstanceParams(Map<String, Parameter> params) {
     if (params != null) {

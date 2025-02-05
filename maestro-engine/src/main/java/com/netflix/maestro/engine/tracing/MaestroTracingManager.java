@@ -120,7 +120,7 @@ public abstract class MaestroTracingManager {
 
   private Span getSpan(MaestroTracingContext tracingContext) {
     TraceContext context = tracingContext.toTraceContext();
-    return tracer.joinSpan(context);
+    return tracer.toSpan(context);
   }
 
   /**

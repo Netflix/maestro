@@ -26,6 +26,7 @@ import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.models.parameter.StringArrayParameter;
 import com.netflix.maestro.models.parameter.StringMapParameter;
 import com.netflix.maestro.models.parameter.StringParameter;
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -335,5 +336,17 @@ public class LiteralEvaluatorTest extends MaestroEngineBaseTest {
     // string interpolation has no effect
     Object result = LiteralEvaluator.eval(param, params);
     Assert.assertEquals(1L, result);
+
+    param = DoubleParameter.builder().name("test").value(new BigDecimal("1.0")).build();
+    result = LiteralEvaluator.eval(param, params);
+    Assert.assertEquals(1.0, (Double) result, 0.00000000000000);
+
+    param =
+        DoubleArrayParameter.builder()
+            .name("test")
+            .value(new BigDecimal[] {new BigDecimal("1.0")})
+            .build();
+    result = LiteralEvaluator.eval(param, params);
+    Assert.assertArrayEquals(new double[] {1.0}, (double[]) result, 0.00000000000000);
   }
 }
