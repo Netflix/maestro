@@ -62,7 +62,7 @@ public abstract class AbstractStep implements Step {
 
   @Getter(onMethod = @__({@Override}))
   @TimeoutConstraint
-  private Duration timeout;
+  private ParsableLong timeout;
 
   @Valid
   private Map<StepDependencyType, @StepDependenciesDefinitionConstraint StepDependenciesDefinition>

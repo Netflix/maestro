@@ -17,7 +17,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import javax.validation.Valid;
+import com.netflix.maestro.validations.RetryPolicyConstraint;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -57,6 +57,6 @@ public final class TypedStep extends AbstractStep {
 
   @JsonProperty
   @Getter(onMethod = @__({@Override}))
-  @Valid
+  @RetryPolicyConstraint
   private RetryPolicy retryPolicy;
 }

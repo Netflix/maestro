@@ -45,7 +45,7 @@ public interface Step {
   TagList getTags();
 
   /** Get step timeout in seconds. */
-  Duration getTimeout();
+  ParsableLong getTimeout();
 
   /** Get step type. */
   StepType getType();

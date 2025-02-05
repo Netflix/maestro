@@ -235,9 +235,9 @@ public class StepInstance {
     public static StepRetry from(@Nullable RetryPolicy policy) {
       RetryPolicy retryPolicy = RetryPolicy.tryMergeWithDefault(policy);
       StepRetry stepRetry = new StepRetry();
-      stepRetry.errorRetryLimit = retryPolicy.getErrorRetryLimit();
-      stepRetry.platformRetryLimit = retryPolicy.getPlatformRetryLimit();
-      stepRetry.timeoutRetryLimit = retryPolicy.getTimeoutRetryLimit();
+      stepRetry.errorRetryLimit = retryPolicy.getErrorRetryLimit().getLong();
+      stepRetry.platformRetryLimit = retryPolicy.getPlatformRetryLimit().getLong();
+      stepRetry.timeoutRetryLimit = retryPolicy.getTimeoutRetryLimit().getLong();
       stepRetry.retryable = true;
       stepRetry.backoff = retryPolicy.getBackoff();
       return stepRetry;

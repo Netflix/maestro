@@ -12,12 +12,12 @@
  */
 package com.netflix.maestro.models.trigger;
 
-import com.netflix.maestro.models.definition.Duration;
+import com.netflix.maestro.models.definition.ParsableLong;
 import com.netflix.maestro.validations.TimeoutConstraint;
 import javax.validation.Valid;
 import lombok.Data;
 
 @Data
 public abstract class TimeTriggerWithJitter implements TimeTrigger {
-  @Valid @TimeoutConstraint private Duration fuzzyMaxDelay;
+  @Valid @TimeoutConstraint private ParsableLong fuzzyMaxDelay;
 }

@@ -1,0 +1,31 @@
+
+{
+  "step": {
+    "id": "job1",
+    "transition": {
+      "successors": {
+        "job.2": "true",
+        "job3": "true"
+      }
+    },
+    "type": "Sleep",
+    "timeout": "10 minutes",
+    "retry_policy": {
+      "error_retry_limit": "$foo",
+      "platform_retry_limit": "$bar",
+      "timeout_retry_limit": "$bat",
+      "backoff": {
+        "error_retry_backoff_in_secs": "${far}",
+        "error_retry_exponent": "${bat}",
+        "error_retry_limit_in_secs": "${baz}",
+        "platform_retry_backoff_in_secs": "${far}",
+        "platform_retry_exponent": "${bat}",
+        "platform_retry_limit_in_secs": "${baz}",
+        "timeout_retry_backoff_in_secs": "${far}",
+        "timeout_retry_exponent": "${bat}",
+        "timeout_retry_limit_in_secs": "${baz}",
+        "type": "EXPONENTIAL_BACKOFF"
+      }
+    }
+  }
+}

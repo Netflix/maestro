@@ -18,6 +18,7 @@ import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.MaestroBaseTest;
 import com.netflix.maestro.exceptions.MaestroInvalidStatusException;
 import com.netflix.maestro.models.Defaults;
+import com.netflix.maestro.models.definition.ParsableLong;
 import com.netflix.maestro.models.definition.RetryPolicy;
 import java.util.Arrays;
 import org.assertj.core.api.Assertions;
@@ -55,9 +56,9 @@ public class StepInstanceTest extends MaestroBaseTest {
     StepInstance.StepRetry retry = StepInstance.StepRetry.from(policyBuilder.build());
     // All default values.
     assertEquals(
-        Defaults.DEFAULT_RETRY_POLICY.getErrorRetryLimit().longValue(), retry.getErrorRetryLimit());
+        Defaults.DEFAULT_RETRY_POLICY.getErrorRetryLimit().getLong(), retry.getErrorRetryLimit());
     assertEquals(
-        Defaults.DEFAULT_RETRY_POLICY.getPlatformRetryLimit().longValue(),
+        Defaults.DEFAULT_RETRY_POLICY.getPlatformRetryLimit().getLong(),
         retry.getPlatformRetryLimit());
     assertEquals(RetryPolicy.BackoffPolicyType.EXPONENTIAL_BACKOFF, retry.getBackoff().getType());
     RetryPolicy.ExponentialBackoff ebackOff = (RetryPolicy.ExponentialBackoff) retry.getBackoff();
@@ -82,34 +83,34 @@ public class StepInstanceTest extends MaestroBaseTest {
     // Randomly set some values for exponential backoff.
     RetryPolicy.ExponentialBackoff configuredBackoff =
         RetryPolicy.ExponentialBackoff.builder()
-            .platformRetryLimitInSecs(360L)
-            .errorRetryExponent(4)
-            .errorRetryLimitInSecs(200L)
+            .platformRetryLimitInSecs(ParsableLong.of(360L))
+            .errorRetryExponent(ParsableLong.of(4))
+            .errorRetryLimitInSecs(ParsableLong.of(200L))
             .build();
     policyBuilder.backoff(configuredBackoff);
     retry = StepInstance.StepRetry.from(policyBuilder.build());
-    assertEquals(retry.getBackoff().getType(), RetryPolicy.BackoffPolicyType.EXPONENTIAL_BACKOFF);
+    assertEquals(RetryPolicy.BackoffPolicyType.EXPONENTIAL_BACKOFF, retry.getBackoff().getType());
     ebackOff = (RetryPolicy.ExponentialBackoff) retry.getBackoff();
     assertEquals(
         ebackOff.getErrorRetryBackoffInSecs(),
         Defaults.DEFAULT_EXPONENTIAL_BACK_OFF.getErrorRetryBackoffInSecs());
-    assertEquals(200L, ebackOff.getErrorRetryLimitInSecs().longValue());
-    assertEquals(4, ebackOff.getErrorRetryExponent().intValue());
+    assertEquals(200L, ebackOff.getErrorRetryLimitInSecs().getLong());
+    assertEquals(4, ebackOff.getErrorRetryExponent().asInt());
     assertEquals(
         ebackOff.getPlatformRetryBackoffInSecs(),
         Defaults.DEFAULT_EXPONENTIAL_BACK_OFF.getPlatformRetryBackoffInSecs());
-    assertEquals(360L, ebackOff.getPlatformRetryLimitInSecs().longValue());
+    assertEquals(360L, ebackOff.getPlatformRetryLimitInSecs().getLong());
     assertEquals(
         ebackOff.getPlatformRetryExponent(),
         Defaults.DEFAULT_EXPONENTIAL_BACK_OFF.getPlatformRetryExponent());
     // Randomly set some values for fixed backoff.
     RetryPolicy.FixedBackoff configuredFixedBackoff =
-        RetryPolicy.FixedBackoff.builder().errorRetryBackoffInSecs(12L).build();
+        RetryPolicy.FixedBackoff.builder().errorRetryBackoffInSecs(ParsableLong.of(12L)).build();
     policyBuilder.backoff(configuredFixedBackoff);
     retry = StepInstance.StepRetry.from(policyBuilder.build());
     assertEquals(retry.getBackoff().getType(), RetryPolicy.BackoffPolicyType.FIXED_BACKOFF);
     RetryPolicy.FixedBackoff fixedBackoff = (RetryPolicy.FixedBackoff) retry.getBackoff();
-    assertEquals(12L, fixedBackoff.getErrorRetryBackoffInSecs().longValue());
+    assertEquals(12L, fixedBackoff.getErrorRetryBackoffInSecs().getLong());
     assertEquals(
         Defaults.DEFAULT_FIXED_BACK_OFF.getPlatformRetryBackoffInSecs(),
         fixedBackoff.getPlatformRetryBackoffInSecs());
@@ -121,37 +122,37 @@ public class StepInstanceTest extends MaestroBaseTest {
     RetryPolicy.ExponentialBackoff eBackoff = Defaults.DEFAULT_EXPONENTIAL_BACK_OFF;
     retry.setBackoff(eBackoff);
     assertEquals(
-        eBackoff.getPlatformRetryBackoffInSecs().intValue(),
+        eBackoff.getPlatformRetryBackoffInSecs().asInt(),
         retry.getNextRetryDelay(StepInstance.Status.PLATFORM_FAILED));
     retry.incrementByStatus(StepInstance.Status.PLATFORM_FAILED);
     assertEquals(
-        eBackoff.getPlatformRetryBackoffInSecs() * 2L,
+        eBackoff.getPlatformRetryBackoffInSecs().asInt() * 2L,
         retry.getNextRetryDelay(StepInstance.Status.PLATFORM_FAILED));
     retry.incrementByStatus(StepInstance.Status.PLATFORM_FAILED);
     assertEquals(
-        eBackoff.getPlatformRetryBackoffInSecs() * 4L,
+        eBackoff.getPlatformRetryBackoffInSecs().asInt() * 4L,
         retry.getNextRetryDelay(StepInstance.Status.PLATFORM_FAILED));
     retry.incrementByStatus(StepInstance.Status.PLATFORM_FAILED);
     assertEquals(
-        eBackoff.getPlatformRetryBackoffInSecs() * 8L,
+        eBackoff.getPlatformRetryBackoffInSecs().asInt() * 8L,
         retry.getNextRetryDelay(StepInstance.Status.PLATFORM_FAILED));
     retry.incrementByStatus(StepInstance.Status.PLATFORM_FAILED);
     assertEquals(
-        eBackoff.getPlatformRetryBackoffInSecs() * 16L,
+        eBackoff.getPlatformRetryBackoffInSecs().asInt() * 16L,
         retry.getNextRetryDelay(StepInstance.Status.PLATFORM_FAILED));
     retry.incrementByStatus(StepInstance.Status.PLATFORM_FAILED);
     assertEquals(
-        eBackoff.getPlatformRetryBackoffInSecs() * 32L,
-        retry.getNextRetryDelay(StepInstance.Status.PLATFORM_FAILED));
-    retry.incrementByStatus(StepInstance.Status.PLATFORM_FAILED);
-    // Max limit reached for wait.
-    assertEquals(
-        eBackoff.getPlatformRetryLimitInSecs().intValue(),
+        eBackoff.getPlatformRetryBackoffInSecs().asInt() * 32L,
         retry.getNextRetryDelay(StepInstance.Status.PLATFORM_FAILED));
     retry.incrementByStatus(StepInstance.Status.PLATFORM_FAILED);
     // Max limit reached for wait.
     assertEquals(
-        eBackoff.getPlatformRetryLimitInSecs().longValue(),
+        eBackoff.getPlatformRetryLimitInSecs().asInt(),
+        retry.getNextRetryDelay(StepInstance.Status.PLATFORM_FAILED));
+    retry.incrementByStatus(StepInstance.Status.PLATFORM_FAILED);
+    // Max limit reached for wait.
+    assertEquals(
+        eBackoff.getPlatformRetryLimitInSecs().getLong(),
         retry.getNextRetryDelay(StepInstance.Status.PLATFORM_FAILED));
   }
 
@@ -161,29 +162,29 @@ public class StepInstanceTest extends MaestroBaseTest {
     RetryPolicy.ExponentialBackoff eBackoff = Defaults.DEFAULT_EXPONENTIAL_BACK_OFF;
     retry.setBackoff(eBackoff);
     assertEquals(
-        eBackoff.getErrorRetryBackoffInSecs().longValue(),
+        eBackoff.getErrorRetryBackoffInSecs().getLong(),
         retry.getNextRetryDelay(StepInstance.Status.USER_FAILED));
     retry.incrementByStatus(StepInstance.Status.USER_FAILED);
     assertEquals(
-        eBackoff.getErrorRetryBackoffInSecs() * 2L,
+        eBackoff.getErrorRetryBackoffInSecs().asInt() * 2L,
         retry.getNextRetryDelay(StepInstance.Status.USER_FAILED));
     retry.incrementByStatus(StepInstance.Status.USER_FAILED);
     assertEquals(
-        eBackoff.getErrorRetryBackoffInSecs() * 4L,
+        eBackoff.getErrorRetryBackoffInSecs().asInt() * 4L,
         retry.getNextRetryDelay(StepInstance.Status.USER_FAILED));
     retry.incrementByStatus(StepInstance.Status.USER_FAILED);
     assertEquals(
-        eBackoff.getErrorRetryBackoffInSecs() * 8L,
-        retry.getNextRetryDelay(StepInstance.Status.USER_FAILED));
-    // Max limit reached for wait.
-    retry.incrementByStatus(StepInstance.Status.USER_FAILED);
-    assertEquals(
-        eBackoff.getErrorRetryLimitInSecs().longValue(),
+        eBackoff.getErrorRetryBackoffInSecs().asInt() * 8L,
         retry.getNextRetryDelay(StepInstance.Status.USER_FAILED));
     // Max limit reached for wait.
     retry.incrementByStatus(StepInstance.Status.USER_FAILED);
     assertEquals(
-        eBackoff.getErrorRetryLimitInSecs().longValue(),
+        eBackoff.getErrorRetryLimitInSecs().getLong(),
+        retry.getNextRetryDelay(StepInstance.Status.USER_FAILED));
+    // Max limit reached for wait.
+    retry.incrementByStatus(StepInstance.Status.USER_FAILED);
+    assertEquals(
+        eBackoff.getErrorRetryLimitInSecs().getLong(),
         retry.getNextRetryDelay(StepInstance.Status.USER_FAILED));
   }
 
@@ -193,23 +194,23 @@ public class StepInstanceTest extends MaestroBaseTest {
     RetryPolicy.FixedBackoff fixedBackoff = Defaults.DEFAULT_FIXED_BACK_OFF;
     retry.setBackoff(fixedBackoff);
     assertEquals(
-        fixedBackoff.getPlatformRetryBackoffInSecs().longValue(),
+        fixedBackoff.getPlatformRetryBackoffInSecs().getLong(),
         retry.getNextRetryDelay(StepInstance.Status.PLATFORM_FAILED));
     retry.incrementByStatus(StepInstance.Status.PLATFORM_FAILED);
     assertEquals(
-        fixedBackoff.getPlatformRetryBackoffInSecs().longValue(),
+        fixedBackoff.getPlatformRetryBackoffInSecs().getLong(),
         retry.getNextRetryDelay(StepInstance.Status.PLATFORM_FAILED));
     retry.incrementByStatus(StepInstance.Status.PLATFORM_FAILED);
     assertEquals(
-        fixedBackoff.getPlatformRetryBackoffInSecs().longValue(),
+        fixedBackoff.getPlatformRetryBackoffInSecs().getLong(),
         retry.getNextRetryDelay(StepInstance.Status.PLATFORM_FAILED));
     retry.incrementByStatus(StepInstance.Status.PLATFORM_FAILED);
     assertEquals(
-        fixedBackoff.getPlatformRetryBackoffInSecs().longValue(),
+        fixedBackoff.getPlatformRetryBackoffInSecs().getLong(),
         retry.getNextRetryDelay(StepInstance.Status.PLATFORM_FAILED));
     retry.incrementByStatus(StepInstance.Status.PLATFORM_FAILED);
     assertEquals(
-        fixedBackoff.getPlatformRetryBackoffInSecs().longValue(),
+        fixedBackoff.getPlatformRetryBackoffInSecs().getLong(),
         retry.getNextRetryDelay(StepInstance.Status.PLATFORM_FAILED));
   }
 
@@ -219,23 +220,23 @@ public class StepInstanceTest extends MaestroBaseTest {
     RetryPolicy.FixedBackoff fixedBackoff = Defaults.DEFAULT_FIXED_BACK_OFF;
     retry.setBackoff(fixedBackoff);
     assertEquals(
-        fixedBackoff.getErrorRetryBackoffInSecs().intValue(),
+        fixedBackoff.getErrorRetryBackoffInSecs().asInt(),
         retry.getNextRetryDelay(StepInstance.Status.USER_FAILED));
     retry.incrementByStatus(StepInstance.Status.USER_FAILED);
     assertEquals(
-        fixedBackoff.getErrorRetryBackoffInSecs().intValue(),
+        fixedBackoff.getErrorRetryBackoffInSecs().asInt(),
         retry.getNextRetryDelay(StepInstance.Status.USER_FAILED));
     retry.incrementByStatus(StepInstance.Status.USER_FAILED);
     assertEquals(
-        fixedBackoff.getErrorRetryBackoffInSecs().intValue(),
+        fixedBackoff.getErrorRetryBackoffInSecs().asInt(),
         retry.getNextRetryDelay(StepInstance.Status.USER_FAILED));
     retry.incrementByStatus(StepInstance.Status.USER_FAILED);
     assertEquals(
-        fixedBackoff.getErrorRetryBackoffInSecs().intValue(),
+        fixedBackoff.getErrorRetryBackoffInSecs().asInt(),
         retry.getNextRetryDelay(StepInstance.Status.USER_FAILED));
     retry.incrementByStatus(StepInstance.Status.USER_FAILED);
     assertEquals(
-        fixedBackoff.getErrorRetryBackoffInSecs().intValue(),
+        fixedBackoff.getErrorRetryBackoffInSecs().asInt(),
         retry.getNextRetryDelay(StepInstance.Status.USER_FAILED));
   }
 

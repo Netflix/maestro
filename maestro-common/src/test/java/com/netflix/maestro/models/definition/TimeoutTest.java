@@ -14,7 +14,6 @@ package com.netflix.maestro.models.definition;
 
 import static org.junit.Assert.assertEquals;
 
-import com.fasterxml.jackson.databind.node.TextNode;
 import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.MaestroBaseTest;
 import com.netflix.maestro.models.parameter.ParamDefinition;
@@ -42,9 +41,9 @@ public class TimeoutTest extends MaestroBaseTest {
 
   @Data
   private static class Timeouts {
-    Duration timeout1;
-    Duration timeout2;
-    Duration timeout3;
+    ParsableLong timeout1;
+    ParsableLong timeout2;
+    ParsableLong timeout3;
   }
 
   @Test
@@ -74,55 +73,43 @@ public class TimeoutTest extends MaestroBaseTest {
   public void testValidDuration() {
     assertEquals(
         7200000L,
-        DurationParser.getDurationWithParamInMillis(
-            new Duration(new TextNode("2 hours")), paramMapper));
+        DurationParser.getDurationWithParamInMillis(ParsableLong.of("2 hours"), paramMapper));
+    assertEquals(
+        7200000L, DurationParser.getDurationWithParamInMillis(ParsableLong.of("2h"), paramMapper));
     assertEquals(
         7200000L,
-        DurationParser.getDurationWithParamInMillis(new Duration(new TextNode("2h")), paramMapper));
+        DurationParser.getDurationWithParamInMillis(ParsableLong.of("2 hour"), paramMapper));
     assertEquals(
         7200000L,
-        DurationParser.getDurationWithParamInMillis(
-            new Duration(new TextNode("2 hour")), paramMapper));
+        DurationParser.getDurationWithParamInMillis(ParsableLong.of("2hour"), paramMapper));
     assertEquals(
-        7200000L,
-        DurationParser.getDurationWithParamInMillis(
-            new Duration(new TextNode("2hour")), paramMapper));
-    assertEquals(
-        300000L,
-        DurationParser.getDurationWithParamInMillis(
-            new Duration(new TextNode("300s")), paramMapper));
+        300000L, DurationParser.getDurationWithParamInMillis(ParsableLong.of("300s"), paramMapper));
     assertEquals(
         180000L,
-        DurationParser.getDurationWithParamInMillis(
-            new Duration(new TextNode("3 minutes")), paramMapper));
+        DurationParser.getDurationWithParamInMillis(ParsableLong.of("3 minutes"), paramMapper));
     assertEquals(
         2000L,
         DurationParser.getDurationWithParamInMillis(
-            new Duration(new TextNode("2000 milliseconds")), paramMapper));
+            ParsableLong.of("2000 milliseconds"), paramMapper));
     assertEquals(
         86400000L,
-        DurationParser.getDurationWithParamInMillis(
-            new Duration(new TextNode("1 days")), paramMapper));
+        DurationParser.getDurationWithParamInMillis(ParsableLong.of("1 days"), paramMapper));
     assertEquals(
         86400000L,
-        DurationParser.getDurationWithParamInMillis(
-            new Duration(new TextNode("1 day")), paramMapper));
+        DurationParser.getDurationWithParamInMillis(ParsableLong.of("1 day"), paramMapper));
     assertEquals(
         86400000L,
-        DurationParser.getDurationWithParamInMillis(
-            new Duration(new TextNode("1 d")), paramMapper));
+        DurationParser.getDurationWithParamInMillis(ParsableLong.of("1 d"), paramMapper));
     assertEquals(
         90061001,
         DurationParser.getDurationWithParamInMillis(
-            new Duration(new TextNode("1 d 1 h 1 min 1s 1ms")), paramMapper));
+            ParsableLong.of("1 d 1 h 1 min 1s 1ms"), paramMapper));
     assertEquals(
         90061001,
         DurationParser.getDurationWithParamInMillis(
-            new Duration(new TextNode("1d 1h 1min 1s 1ms")), paramMapper));
+            ParsableLong.of("1d 1h 1min 1s 1ms"), paramMapper));
     assertEquals(
-        3600000,
-        DurationParser.getDurationWithParamInMillis(
-            new Duration(new TextNode("3600")), paramMapper));
+        3600000, DurationParser.getDurationWithParamInMillis(ParsableLong.of("3600"), paramMapper));
   }
 
   @Test
@@ -132,8 +119,6 @@ public class TimeoutTest extends MaestroBaseTest {
           "those are invalid cases",
           IllegalArgumentException.class,
           "cannot be non-positive or more than system limit: 120 days",
-          () ->
-              DurationParser.getDurationWithParamInMillis(
-                  new Duration(new TextNode(s)), paramMapper));
+          () -> DurationParser.getDurationWithParamInMillis(ParsableLong.of(s), paramMapper));
   }
 }

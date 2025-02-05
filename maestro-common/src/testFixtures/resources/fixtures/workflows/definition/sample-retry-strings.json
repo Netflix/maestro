@@ -1,0 +1,5 @@
+{
+  "number1": "${foo}",
+  "number2": "bar",
+  "number3": "1+4"
+}

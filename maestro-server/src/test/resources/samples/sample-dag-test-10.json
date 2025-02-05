@@ -31,7 +31,23 @@
     ],
     "params": {
       "foo": {
-        "expression": "'bar1';",
+        "value": 3,
+        "type": "LONG"
+      },
+      "far": {
+        "expression": "return 100;",
+        "type": "LONG"
+      },
+      "bar": {
+        "value": 10,
+        "type": "LONG"
+      },
+      "bat": {
+        "value": "2",
+        "type": "STRING"
+      },
+      "baz": {
+        "expression": "'1800'",
         "type": "STRING"
       }
     },
@@ -128,7 +144,7 @@
             "error_retry_limit": 10,
             "platform_retry_limit": 10,
             "backoff": {
-              "error_retry_backoff_in_secs": 1,
+              "error_retry_backoff_in_secs": "${fat}",
               "platform_retry_backoff_in_secs": 1,
               "type": "FIXED_BACKOFF"
             }
@@ -151,14 +167,23 @@
               "type": "LONG"
             }
           },
+          "timeout": "${bar}s",
           "failure_mode": "fail_immediately",
           "retry_policy": {
-            "error_retry_limit": 10,
-            "platform_retry_limit": 10,
+            "error_retry_limit": "$foo",
+            "platform_retry_limit": "$bar",
+            "timeout_retry_limit": "$bat",
             "backoff": {
-              "error_retry_backoff_in_secs": 1,
-              "platform_retry_backoff_in_secs": 1,
-              "type": "FIXED_BACKOFF"
+              "error_retry_backoff_in_secs": "${far}",
+              "error_retry_exponent": "${bat}",
+              "error_retry_limit_in_secs": "${baz}",
+              "platform_retry_backoff_in_secs": "${far}",
+              "platform_retry_exponent": "${bat}",
+              "platform_retry_limit_in_secs": "${baz}",
+              "timeout_retry_backoff_in_secs": "${far}",
+              "timeout_retry_exponent": "${bat}",
+              "timeout_retry_limit_in_secs": "${baz}",
+              "type": "EXPONENTIAL_BACKOFF"
             }
           }
         }
