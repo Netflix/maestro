@@ -38,8 +38,13 @@ import lombok.Getter;
 @Getter
 @EqualsAndHashCode
 public class RetryPolicy {
+  /** Retry limit for user errors. */
   private final ParsableLong errorRetryLimit;
+
+  /** Retry limit for platform errors. */
   private final ParsableLong platformRetryLimit;
+
+  /** Retry limit for timeout errors. */
   private final ParsableLong timeoutRetryLimit;
 
   /** Backoff strategy. */

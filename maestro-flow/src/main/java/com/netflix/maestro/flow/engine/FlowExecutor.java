@@ -80,7 +80,9 @@ public class FlowExecutor {
    */
   private void maintenance() {
     LOG.trace("[{}] tries to claim a group...", address);
-    if (groupActors.size() >= groupNumPerNode) {
+    int groupNum = groupActors.size();
+    context.getMetrics().gauge("num_of_groups", groupNum, getClass());
+    if (groupNum >= groupNumPerNode) {
       LOG.trace("[{}] has enough groups, no need to claim more", address);
       return;
     }

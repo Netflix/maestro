@@ -20,7 +20,6 @@ import com.netflix.maestro.models.definition.ParsableLong;
 import com.netflix.maestro.models.definition.RetryPolicy;
 import java.util.Set;
 import javax.validation.ConstraintViolation;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class RetryPolicyConstraintTest extends BaseConstraintTest {
@@ -98,7 +97,7 @@ public class RetryPolicyConstraintTest extends BaseConstraintTest {
                 ParsableLong.of(1L),
                 ParsableLong.of(1L)));
     assertEquals(1, violations.size());
-    Assert.assertEquals(
+    assertEquals(
         "RetryPolicy: error_retry_limit value [-1] cannot be negative or more than system limit: 99",
         violations.iterator().next().getMessage());
 
@@ -112,7 +111,7 @@ public class RetryPolicyConstraintTest extends BaseConstraintTest {
                 ParsableLong.of(1L),
                 ParsableLong.of(1L)));
     assertEquals(1, violations.size());
-    Assert.assertEquals(
+    assertEquals(
         "RetryPolicy: platform_retry_limit value [100] cannot be negative or more than system limit: 99",
         violations.iterator().next().getMessage());
 
@@ -125,7 +124,7 @@ public class RetryPolicyConstraintTest extends BaseConstraintTest {
                 ParsableLong.of(1L),
                 ParsableLong.of(1L),
                 ParsableLong.of(1L)));
-    Assert.assertEquals(
+    assertEquals(
         "RetryPolicy: timeout_retry_limit has an invalid value [bar] with an error: For input string: \"bar\"",
         violations.iterator().next().getMessage());
 
@@ -138,7 +137,7 @@ public class RetryPolicyConstraintTest extends BaseConstraintTest {
                 ParsableLong.of(1L),
                 ParsableLong.of("1"),
                 ParsableLong.of(1L + Integer.MAX_VALUE)));
-    Assert.assertEquals(
+    assertEquals(
         "RetryPolicy: backoff.timeout_retry_backoff_in_secs value [2147483648] cannot be negative or more than system limit: 86400",
         violations.iterator().next().getMessage());
   }

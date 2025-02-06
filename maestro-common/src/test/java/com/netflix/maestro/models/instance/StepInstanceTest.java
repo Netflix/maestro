@@ -108,7 +108,7 @@ public class StepInstanceTest extends MaestroBaseTest {
         RetryPolicy.FixedBackoff.builder().errorRetryBackoffInSecs(ParsableLong.of(12L)).build();
     policyBuilder.backoff(configuredFixedBackoff);
     retry = StepInstance.StepRetry.from(policyBuilder.build());
-    assertEquals(retry.getBackoff().getType(), RetryPolicy.BackoffPolicyType.FIXED_BACKOFF);
+    assertEquals(RetryPolicy.BackoffPolicyType.FIXED_BACKOFF, retry.getBackoff().getType());
     RetryPolicy.FixedBackoff fixedBackoff = (RetryPolicy.FixedBackoff) retry.getBackoff();
     assertEquals(12L, fixedBackoff.getErrorRetryBackoffInSecs().getLong());
     assertEquals(

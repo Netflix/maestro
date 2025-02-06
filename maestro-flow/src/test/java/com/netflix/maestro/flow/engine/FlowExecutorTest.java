@@ -66,6 +66,7 @@ public class FlowExecutorTest extends ActorBaseTest {
     executor.init();
     verify(context, timeout(500).times(0)).claimGroup();
     verify(context, timeout(500).times(0)).run(any());
+    verify(metrics, timeout(500).times(1)).gauge("num_of_groups", 0, FlowExecutor.class);
   }
 
   @Test

@@ -20,7 +20,7 @@ import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.Parameter;
 import java.util.function.Function;
 
-/** Utility class to parse retries numbers. * */
+/** Utility class to parse retry policy. * */
 public final class RetryPolicyParser {
   private static final String PARAM_NAME = "retries_str";
   private static final String BACKOFF_ERROR_RETRY_BACKOFF_IN_SECS =
