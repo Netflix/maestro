@@ -14,6 +14,7 @@ package com.netflix.maestro.engine.params;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 
@@ -28,15 +29,20 @@ import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.exceptions.MaestroValidationException;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.artifact.Artifact;
+import com.netflix.maestro.models.artifact.DynamicOutputArtifact;
 import com.netflix.maestro.models.artifact.TitusArtifact;
+import com.netflix.maestro.models.definition.StepOutputsDefinition;
 import com.netflix.maestro.models.parameter.InternalParamMode;
 import com.netflix.maestro.models.parameter.LongParameter;
+import com.netflix.maestro.models.parameter.MapParameter;
 import com.netflix.maestro.models.parameter.ParamMode;
 import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.models.parameter.StringParameter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.Before;
@@ -51,8 +57,7 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
   private Map<String, Artifact> artifacts;
   private OutputData outputData;
   private final String titusTaskId = "t1234";
-  private final TypeReference<Map<String, Parameter>> paramMap =
-      new TypeReference<Map<String, Parameter>>() {};
+  private final TypeReference<Map<String, Parameter>> paramMap = new TypeReference<>() {};
 
   @Before
   public void before() throws JsonProcessingException {
@@ -100,15 +105,18 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
 
   @Test
   public void testMissingJobIdArtifact() {
-    outputDataManager.validateAndMergeOutputParams(runtimeSummary);
+    outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
     assertTrue(runtimeSummary.getParams().isEmpty());
+    assertTrue(runtimeSummary.getArtifacts().isEmpty());
   }
 
   @Test
   public void testMissingOutputParams() {
     runtimeSummary = runtimeSummaryBuilder().artifacts(artifacts).build();
-    outputDataManager.validateAndMergeOutputParams(runtimeSummary);
+    outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
     assertTrue(runtimeSummary.getParams().isEmpty());
+    assertEquals(1, runtimeSummary.getArtifacts().size());
+    assertTrue(runtimeSummary.getArtifacts().containsKey(Artifact.Type.TITUS.key()));
   }
 
   @Test
@@ -119,7 +127,7 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
         "throws validation error if output param not defined",
         MaestroValidationException.class,
         "Invalid output parameter [str_param], not defined in params",
-        () -> outputDataManager.validateAndMergeOutputParams(runtimeSummary));
+        () -> outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary));
   }
 
   @Test
@@ -142,7 +150,7 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
         "throws validation error if mismatched types",
         MaestroValidationException.class,
         "ParameterDefinition type mismatch name [str_param] from [STRING] != to [LONG]",
-        () -> outputDataManager.validateAndMergeOutputParams(runtimeSummary));
+        () -> outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary));
   }
 
   @Test
@@ -167,7 +175,7 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
         "throws validation error if MUTABLE_ON_START mode",
         MaestroValidationException.class,
         "Cannot modify param with mode [MUTABLE_ON_START] for parameter [str_param]",
-        () -> outputDataManager.validateAndMergeOutputParams(runtimeSummary));
+        () -> outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary));
   }
 
   @Test
@@ -193,7 +201,7 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
         "throws validation error if RESERVED mode",
         MaestroValidationException.class,
         "Cannot modify param with mode [CONSTANT] for parameter [str_param]",
-        () -> outputDataManager.validateAndMergeOutputParams(runtimeSummary));
+        () -> outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary));
   }
 
   @Test
@@ -210,7 +218,7 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
             .build());
     setupOutputDataDao();
     runtimeSummary = runtimeSummaryBuilder().artifacts(artifacts).params(runtimeParams).build();
-    outputDataManager.validateAndMergeOutputParams(runtimeSummary);
+    outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
     assertEquals("hello", runtimeSummary.getParams().get("str_param").asString());
   }
 
@@ -231,7 +239,7 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
             new HashMap<>());
     setupOutputDataDao();
     runtimeSummary = runtimeSummaryBuilder().artifacts(artifacts).params(runtimeParams).build();
-    outputDataManager.validateAndMergeOutputParams(runtimeSummary);
+    outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
     long[] expectedLongArray = {4L, 5L, 6L};
     assertEquals("goodbye", runtimeSummary.getParams().get("str_param").asString());
     assertArrayEquals(
@@ -242,5 +250,69 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
     assertArrayEquals(
         new String[] {"p1", "p2", "p3"},
         (String[]) runtimeSummary.getParams().get("map_param").asMap().get("table_name"));
+  }
+
+  @Test
+  public void testOutputArtifacts() {
+    List<MapParameter> signals = new ArrayList<>();
+    long currentTs = System.currentTimeMillis();
+    String timestampStr = "timestamp";
+    for (int i = 0; i < 2; ++i)
+      signals.add(
+          MapParameter.builder()
+              .name("mapParam")
+              .evaluatedResult(Map.of("name", "table_" + i, timestampStr, currentTs))
+              .evaluatedTime(System.currentTimeMillis())
+              .build());
+    DynamicOutputArtifact signalsArtifact = new DynamicOutputArtifact();
+    signalsArtifact.setOutputs(Map.of(StepOutputsDefinition.StepOutputType.SIGNAL, signals));
+    OutputData outputData =
+        new OutputData(
+            ExternalJobType.TITUS,
+            titusTaskId,
+            "wfid",
+            System.currentTimeMillis(),
+            System.currentTimeMillis(),
+            Collections.emptyMap(),
+            Map.of(Artifact.Type.DYNAMIC_OUTPUT.key(), signalsArtifact));
+    when(outputDataDao.getOutputDataForExternalJob(titusTaskId, ExternalJobType.TITUS))
+        .thenReturn(Optional.of(outputData));
+
+    Map<String, Artifact> existingArtifacts = new HashMap<>(artifacts);
+    runtimeSummary = runtimeSummaryBuilder().artifacts(existingArtifacts).build();
+    outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
+
+    assertEquals(2, runtimeSummary.getArtifacts().size());
+    DynamicOutputArtifact dynamicOutputArtifact =
+        runtimeSummary.getArtifacts().get(Artifact.Type.DYNAMIC_OUTPUT.key()).asDynamicOutput();
+    assertEquals(1, dynamicOutputArtifact.getOutputs().size());
+    assertEquals(
+        2,
+        dynamicOutputArtifact.getOutputs().get(StepOutputsDefinition.StepOutputType.SIGNAL).size());
+    for (MapParameter signal : dynamicOutputArtifact.getOutputSignals()) {
+      assertEquals(currentTs, (long) signal.getEvaluatedResult().get(timestampStr));
+    }
+  }
+
+  @Test
+  public void testOutputNullableParamsAndArtifacts() {
+    OutputData outputData =
+        new OutputData(
+            ExternalJobType.TITUS,
+            titusTaskId,
+            "wfid",
+            System.currentTimeMillis(),
+            System.currentTimeMillis(),
+            null,
+            null);
+    when(outputDataDao.getOutputDataForExternalJob(titusTaskId, ExternalJobType.TITUS))
+        .thenReturn(Optional.of(outputData));
+
+    Map<String, Artifact> existingArtifacts = new HashMap<>(artifacts);
+    runtimeSummary = runtimeSummaryBuilder().artifacts(existingArtifacts).build();
+    outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
+    assertEquals(1, runtimeSummary.getArtifacts().size());
+    assertFalse(runtimeSummary.getArtifacts().containsKey(Artifact.Type.DYNAMIC_OUTPUT.key()));
+    assertTrue(runtimeSummary.getParams().isEmpty());
   }
 }

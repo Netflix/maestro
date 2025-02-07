@@ -424,7 +424,7 @@ public class ParamsManager {
   public static Map<StepOutputsDefinition.StepOutputType, List<MapParameter>>
       getStepOutputsParameters(Collection<StepOutputsDefinition> outputs) {
     if (ObjectHelper.isCollectionEmptyOrNull(outputs)) {
-      return Collections.emptyMap();
+      return new LinkedHashMap<>();
     }
     return outputs.stream()
         .collect(

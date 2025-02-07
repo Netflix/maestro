@@ -28,15 +28,23 @@ public class OutputDataManager {
   private OutputDataDao outputDataDao;
 
   /** Merge back output parameters updated by step into params space along with validation. */
-  public void validateAndMergeOutputParams(StepRuntimeSummary runtimeSummary) {
+  public void validateAndMergeOutputParamsAndArtifacts(StepRuntimeSummary runtimeSummary) {
     Optional<String> externalJobId = extractExternalJobId(runtimeSummary);
     if (externalJobId.isPresent()) {
       Optional<OutputData> outputDataOpt =
           outputDataDao.getOutputDataForExternalJob(externalJobId.get(), ExternalJobType.TITUS);
       outputDataOpt.ifPresent(
-          outputData ->
+          outputData -> {
+            // merge output params if any.
+            if (outputData.getParams() != null) {
               ParamsMergeHelper.mergeOutputDataParams(
-                  runtimeSummary.getParams(), outputData.getParams()));
+                  runtimeSummary.getParams(), outputData.getParams());
+            }
+            // merge output artifacts if any.
+            if (outputData.getArtifacts() != null) {
+              runtimeSummary.mergeRuntimeUpdate(null, outputData.getArtifacts());
+            }
+          });
     }
   }
 
