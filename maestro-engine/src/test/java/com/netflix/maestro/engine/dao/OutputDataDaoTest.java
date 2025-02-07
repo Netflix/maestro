@@ -16,6 +16,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -26,6 +27,7 @@ import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.engine.dto.ExternalJobType;
 import com.netflix.maestro.engine.dto.OutputData;
 import com.netflix.maestro.models.Constants;
+import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.definition.WorkflowDefinition;
 import com.netflix.maestro.models.parameter.Parameter;
 import java.io.IOException;
@@ -41,6 +43,7 @@ public class OutputDataDaoTest extends MaestroDaoBaseTest {
   private static final String EXT_JOB_ID = "JOB_123";
   private OutputDataDao dao;
   private Map<String, Parameter> params;
+  private Map<String, Artifact> artifacts;
 
   @Before
   public void setUp() throws IOException {
@@ -48,6 +51,10 @@ public class OutputDataDaoTest extends MaestroDaoBaseTest {
     WorkflowDefinition definition =
         loadObject("fixtures/parameters/sample-wf-notebook.json", WorkflowDefinition.class);
     params = toParameters(definition.getWorkflow().getParams());
+    artifacts =
+        Map.of(
+            Artifact.Type.DYNAMIC_OUTPUT.key(),
+            loadObject("fixtures/artifact/sample-dynamic-output-artifact.json", Artifact.class));
   }
 
   @Test
@@ -79,8 +86,8 @@ public class OutputDataDaoTest extends MaestroDaoBaseTest {
   }
 
   @Test(expected = IllegalArgumentException.class)
-  public void testValidateParamListEmpty() {
-    OutputData param =
+  public void testValidateParamsAndArtifactsEmpty() {
+    OutputData data =
         new OutputData(
             JOB_TYPE,
             EXT_JOB_ID,
@@ -89,18 +96,18 @@ public class OutputDataDaoTest extends MaestroDaoBaseTest {
             System.currentTimeMillis(),
             new HashMap<>(),
             new HashMap<>());
-    dao.insertOrUpdateOutputData(param);
+    dao.insertOrUpdateOutputData(data);
   }
 
   @Test
-  public void testCreateAndUpsert() {
-    addOutputData(EXT_JOB_ID);
+  public void testCreateAndUpsertParams() {
+    addOutputData(params, null);
 
     Optional<OutputData> outputDataOpt = dao.getOutputDataForExternalJob(EXT_JOB_ID, JOB_TYPE);
     assertTrue(outputDataOpt.isPresent());
     OutputData paramResult = outputDataOpt.get();
 
-    verifyExpectedDTOs(paramResult, EXT_JOB_ID);
+    verifyExpectedDTOs(paramResult);
 
     assertFalse(dao.getOutputDataForExternalJob("invalid", JOB_TYPE).isPresent());
 
@@ -111,23 +118,68 @@ public class OutputDataDaoTest extends MaestroDaoBaseTest {
     assertEquals(paramResult.getCreateTime(), paramResult2.getCreateTime());
     assertNotEquals(paramResult.getModifyTime(), paramResult2.getModifyTime());
     assertEquals(paramResult.getParams(), paramResult2.getParams());
+    assertNull(paramResult2.getArtifacts());
   }
 
-  private void addOutputData(String externalJobId) {
-    OutputData param =
+  @Test
+  public void testCreateAndUpsertArtifacts() {
+    addOutputData(null, artifacts);
+
+    Optional<OutputData> outputDataOpt = dao.getOutputDataForExternalJob(EXT_JOB_ID, JOB_TYPE);
+    assertTrue(outputDataOpt.isPresent());
+    OutputData created = outputDataOpt.get();
+    assertEquals(EXT_JOB_ID, created.getExternalJobId());
+    assertEquals(JOB_TYPE, created.getExternalJobType());
+    assertEquals(WORKFLOW_ID, created.getWorkflowId());
+    assertEquals(1, created.getArtifacts().size());
+    assertNotNull(created.getCreateTime());
+    assertNotNull(created.getModifyTime());
+
+    // Check Upsert
+    dao.insertOrUpdateOutputData(created);
+
+    OutputData updated = dao.getOutputDataForExternalJob(EXT_JOB_ID, JOB_TYPE).get();
+    assertEquals(created.getCreateTime(), updated.getCreateTime());
+    assertNotEquals(created.getModifyTime(), updated.getModifyTime());
+    assertEquals(created.getArtifacts(), updated.getArtifacts());
+    assertNull(updated.getParams());
+  }
+
+  @Test
+  public void testCreateAndUpsertBoth() {
+    addOutputData(params, artifacts);
+
+    Optional<OutputData> outputDataOpt = dao.getOutputDataForExternalJob(EXT_JOB_ID, JOB_TYPE);
+    assertTrue(outputDataOpt.isPresent());
+    OutputData created = outputDataOpt.get();
+    verifyExpectedDTOs(created);
+    assertEquals(1, created.getArtifacts().size());
+
+    // Check Upsert
+    dao.insertOrUpdateOutputData(created);
+
+    OutputData updated = dao.getOutputDataForExternalJob(EXT_JOB_ID, JOB_TYPE).get();
+    assertEquals(created.getCreateTime(), updated.getCreateTime());
+    assertNotEquals(created.getModifyTime(), updated.getModifyTime());
+    assertEquals(created.getParams(), updated.getParams());
+    assertEquals(created.getArtifacts(), updated.getArtifacts());
+  }
+
+  private void addOutputData(Map<String, Parameter> params, Map<String, Artifact> artifacts) {
+    OutputData data =
         new OutputData(
             JOB_TYPE,
-            externalJobId,
+            OutputDataDaoTest.EXT_JOB_ID,
             WORKFLOW_ID,
             System.currentTimeMillis(),
             System.currentTimeMillis(),
             params,
-            new HashMap<>());
-    dao.insertOrUpdateOutputData(param);
+            artifacts);
+    dao.insertOrUpdateOutputData(data);
   }
 
-  private void verifyExpectedDTOs(OutputData paramResult, String externalJobId) {
-    assertEquals(externalJobId, paramResult.getExternalJobId());
+  private void verifyExpectedDTOs(OutputData paramResult) {
+    assertEquals(OutputDataDaoTest.EXT_JOB_ID, paramResult.getExternalJobId());
     assertEquals(JOB_TYPE, paramResult.getExternalJobType());
     assertEquals(WORKFLOW_ID, paramResult.getWorkflowId());
     assertEquals(3, paramResult.getParams().size());

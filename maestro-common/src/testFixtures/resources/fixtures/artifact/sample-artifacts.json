@@ -79,6 +79,37 @@
         }
       },
       "type": "FOREACH"
+    },
+    "maestro_dynamic_output": {
+      "outputs": {
+        "SIGNAL": [
+          {
+            "value": {
+              "name": {
+                "value": "demo_table",
+                "type": "STRING"
+              },
+              "timestamp": {
+                "value": 1536787990,
+                "type": "LONG"
+              }
+            },
+            "type": "MAP",
+            "evaluated_result": {
+              "name": "demo_table",
+              "timestamp": 1536787990
+            },
+            "evaluated_time": 1625871404000
+          }
+        ]
+      },
+      "info": {
+        "timestamp": 1609272999666,
+        "type": "LOG",
+        "level": "INFO",
+        "message": "sample info log"
+      },
+      "type": "DYNAMIC_OUTPUT"
     }
   }
 }

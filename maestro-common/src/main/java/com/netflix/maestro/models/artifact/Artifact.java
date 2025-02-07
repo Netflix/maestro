@@ -28,7 +28,8 @@ import com.netflix.maestro.models.Constants;
   @JsonSubTypes.Type(name = "SUBWORKFLOW", value = SubworkflowArtifact.class),
   @JsonSubTypes.Type(name = "FOREACH", value = ForeachArtifact.class),
   @JsonSubTypes.Type(name = "TITUS", value = TitusArtifact.class),
-  @JsonSubTypes.Type(name = "NOTEBOOK", value = NotebookArtifact.class)
+  @JsonSubTypes.Type(name = "NOTEBOOK", value = NotebookArtifact.class),
+  @JsonSubTypes.Type(name = "DYNAMIC_OUTPUT", value = DynamicOutputArtifact.class)
 })
 public interface Artifact {
   /** Get artifact type info. */
@@ -45,7 +46,9 @@ public interface Artifact {
     /** titus artifact. */
     TITUS(Constants.MAESTRO_PREFIX + "titus"),
     /** notebook artifact. */
-    NOTEBOOK(Constants.MAESTRO_PREFIX + "notebook");
+    NOTEBOOK(Constants.MAESTRO_PREFIX + "notebook"),
+    /** dynamic output artifact. */
+    DYNAMIC_OUTPUT(Constants.MAESTRO_PREFIX + "dynamic_output");
 
     private final String key;
 
@@ -101,5 +104,15 @@ public interface Artifact {
    */
   default NotebookArtifact asNotebook() {
     throw new MaestroInternalError("Artifact type [%s] cannot be used as NOTEBOOK", getType());
+  }
+
+  /**
+   * get DynamicOutput type artifact.
+   *
+   * @return concrete artifact object.
+   */
+  default DynamicOutputArtifact asDynamicOutput() {
+    throw new MaestroInternalError(
+        "Artifact type [%s] cannot be used as DYNAMIC_OUTPUT", getType());
   }
 }

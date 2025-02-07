@@ -51,6 +51,7 @@ import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.Actions;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.Defaults;
+import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.definition.FailureMode;
 import com.netflix.maestro.models.definition.RetryPolicy;
 import com.netflix.maestro.models.definition.Step;
@@ -75,6 +76,7 @@ import com.netflix.maestro.utils.MapHelper;
 import com.netflix.maestro.utils.RetryPolicyParser;
 import java.sql.SQLException;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -306,7 +308,6 @@ public class MaestroTask implements FlowTask {
       StepRuntimeSummary runtimeSummary) {
     try {
       Map<String, Map<String, Object>> allStepOutputData = TaskHelper.getAllStepOutputData(flow);
-
       initializeOutputSignals(allStepOutputData, stepDefinition, workflowSummary, runtimeSummary);
     } catch (Exception e) {
       LOG.error(
@@ -397,18 +398,30 @@ public class MaestroTask implements FlowTask {
     Map<String, Parameter> allStepParams = runtimeSummary.getParams();
     Map<StepOutputsDefinition.StepOutputType, StepOutputsDefinition> stepOutputs =
         stepDefinition.getOutputs();
-    if (stepOutputs != null) {
-      Map<StepOutputsDefinition.StepOutputType, List<MapParameter>> stepOutputsParameters =
-          ParamsManager.getStepOutputsParameters(stepOutputs.values());
-      if (!stepOutputsParameters.isEmpty()) {
-        paramEvaluator.evaluateStepDependenciesOrOutputsParameters(
-            allStepOutputData,
-            workflowSummary.getParams(),
-            allStepParams,
-            stepOutputsParameters.values(),
-            runtimeSummary.getStepId());
-        runtimeSummary.initializeOutputs(stepOutputsParameters);
+    Map<StepOutputsDefinition.StepOutputType, List<MapParameter>> stepOutputsParameters =
+        stepOutputs == null
+            ? new LinkedHashMap<>()
+            : ParamsManager.getStepOutputsParameters(stepOutputs.values());
+    Artifact artifact = runtimeSummary.getArtifacts().get(Artifact.Type.DYNAMIC_OUTPUT.key());
+    if (artifact != null) {
+      if (artifact.asDynamicOutput().getInfo() != null) {
+        runtimeSummary.addTimeline(artifact.asDynamicOutput().getInfo());
       }
+      if (artifact.asDynamicOutput().getOutputSignals() != null) {
+        // merge dynamic output's MapParameter list into stepOutputsParameters
+        stepOutputsParameters
+            .computeIfAbsent(StepOutputsDefinition.StepOutputType.SIGNAL, k -> new ArrayList<>())
+            .addAll(artifact.asDynamicOutput().getOutputSignals());
+      }
+    }
+    if (!stepOutputsParameters.isEmpty()) {
+      paramEvaluator.evaluateStepDependenciesOrOutputsParameters(
+          allStepOutputData,
+          workflowSummary.getParams(),
+          allStepParams,
+          stepOutputsParameters.values(),
+          runtimeSummary.getStepId());
+      runtimeSummary.initializeOutputs(stepOutputsParameters);
     }
   }
 
@@ -638,6 +651,7 @@ public class MaestroTask implements FlowTask {
             case BYPASS_STEP_DEPENDENCIES:
               if (status != StepInstance.Status.WAITING_FOR_SIGNALS) {
                 LOG.info("Ignore bypass dependency action as current status is: {}", status);
+                // todo better to delete byPassStepDependencies action
               } else {
                 runtimeSummary.byPassStepDependencies(action.getUser(), action.getCreateTime());
                 // skip adding the timeline info for action as its already taken care in the
@@ -832,7 +846,7 @@ public class MaestroTask implements FlowTask {
                 stepRuntimeManager.execute(workflowSummary, stepDefinition, runtimeSummary);
             break;
           case FINISHING:
-            outputDataManager.validateAndMergeOutputParams(runtimeSummary);
+            outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
 
             if (initializeAndSendOutputSignals(
                 flow, stepDefinition, workflowSummary, runtimeSummary)) {

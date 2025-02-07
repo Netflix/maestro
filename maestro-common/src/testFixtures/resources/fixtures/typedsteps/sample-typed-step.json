@@ -65,7 +65,7 @@
                 "type": "STRING"
               },
               "name": {
-                "value": "out",
+                "value": "table_0",
                 "type": "STRING"
               }
             },

@@ -1,0 +1,186 @@
+{
+  "step_id": "job1",
+  "step_name": "step1",
+  "step_instance_id": 123,
+  "step_attempt_id": 1,
+  "step_instance_uuid": "bar",
+  "type": "subworkflow",
+  "step_run_params": {
+    "foo": {
+      "value": "bar",
+      "type": "STRING",
+      "mode": "mutable"
+    }
+  },
+  "params": {
+    "param1": {
+      "value": "foo",
+      "type": "STRING",
+      "evaluated_result": "foo",
+      "evaluated_time": 1608171805392
+    }
+  },
+  "step_retry": {
+    "error_retries": 0,
+    "error_retry_limit": 2,
+    "platform_retries": 0,
+    "platform_retry_limit": 10,
+    "manual_retries": 0,
+    "retryable": true
+  },
+  "synced": true,
+  "runtime_state": {
+    "status": "FINISHING",
+    "end_time": 1608171805401,
+    "modify_time": 1608171805401
+  },
+  "timeline": [
+    {
+      "timestamp": 1609272999666,
+      "type": "LOG",
+      "level": "INFO",
+      "message": "hello"
+    }
+  ],
+  "pending_records": [
+    {
+      "event_time": 1608171805401,
+      "new_status": "FINISHING",
+      "old_status": "RUNNING"
+    }
+  ],
+  "artifacts": {
+    "maestro_subworkflow": {
+      "subworkflow_id": "test-subwf",
+      "subworkflow_version_id": 1,
+      "subworkflow_instance_id": 1,
+      "subworkflow_run_id": 1,
+      "subworkflow_uuid": "foo-bar",
+      "subworkflow_overview": {
+        "step_overview": {
+          "SUCCEEDED": 1
+        },
+        "total_step_count": 1
+      },
+      "type": "SUBWORKFLOW"
+    },
+    "maestro_dynamic_output": {
+      "outputs": {
+        "SIGNAL": [
+          {
+            "value": {
+              "name": {
+                "value": "table_1",
+                "type": "STRING"
+              },
+              "timestamp": {
+                "value": 1536787990,
+                "type": "LONG"
+              },
+              "is_iceberg": {
+                "value": true,
+                "type": "BOOLEAN"
+              },
+              "nested_map": {
+                "type": "MAP",
+                "value": {
+                  "nested_string_map": {
+                    "type": "STRING_MAP",
+                    "value": {
+                      "foo": "bar"
+                    }
+                  },
+                  "nested_string_array": {
+                    "type": "STRING_ARRAY",
+                    "value": [
+                      "a",
+                      "b",
+                      "c"
+                    ]
+                  },
+                  "nested_long_array": {
+                    "type": "LONG_ARRAY",
+                    "value": [
+                      1,
+                      2,
+                      3
+                    ]
+                  },
+                  "nested_double_array": {
+                    "type": "DOUBLE_ARRAY",
+                    "value": [
+                      1.1,
+                      2.2,
+                      3.3
+                    ]
+                  },
+                  "nested_boolean_array": {
+                    "type": "BOOLEAN_ARRAY",
+                    "value": [
+                      true,
+                      false,
+                      true
+                    ]
+                  }
+                }
+              }
+            },
+            "type": "MAP",
+            "evaluated_result": {
+              "name": "table_1",
+              "timestamp": 1536787990,
+              "is_iceberg": true,
+              "nested_map": {
+                "nested_string_map": {
+                  "foo": "bar"
+                },
+                "nested_string_array": [
+                  "a",
+                  "b",
+                  "c"
+                ],
+                "nested_long_array": [
+                  1,
+                  2,
+                  3
+                ],
+                "nested_double_array": [
+                  1.1,
+                  2.2,
+                  3.3
+                ],
+                "nested_boolean_array": [
+                  true,
+                  false,
+                  true
+                ]
+              }
+            },
+            "evaluated_time": 1625871404000
+          },
+          {
+            "value": {
+              "name": {
+                "value": "table_2",
+                "type": "STRING"
+              },
+              "timestamp": {
+                "value": 1536787990,
+                "type": "LONG"
+              }
+            },
+            "type": "MAP",
+            "evaluated_result": {
+              "name": "table_2",
+              "timestamp": 1536787990
+            },
+            "evaluated_time": 1625871404000
+          }
+        ]
+      },
+      "type": "DYNAMIC_OUTPUT"
+    }
+  },
+  "dependencies": {
+  }
+}

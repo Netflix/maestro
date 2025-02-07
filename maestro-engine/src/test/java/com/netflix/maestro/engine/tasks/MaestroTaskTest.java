@@ -19,10 +19,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.netflix.maestro.engine.MaestroEngineBaseTest;
+import com.netflix.maestro.engine.dao.MaestroStepInstanceActionDao;
 import com.netflix.maestro.engine.db.DbOperation;
+import com.netflix.maestro.engine.execution.StepRuntimeCallbackDelayPolicy;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
 import com.netflix.maestro.engine.jobevents.StepInstanceUpdateJobEvent;
+import com.netflix.maestro.engine.params.OutputDataManager;
 import com.netflix.maestro.flow.models.Flow;
 import com.netflix.maestro.flow.models.Task;
 import com.netflix.maestro.models.Constants;
@@ -30,8 +33,10 @@ import com.netflix.maestro.models.Defaults;
 import com.netflix.maestro.models.definition.ParsableLong;
 import com.netflix.maestro.models.definition.RetryPolicy;
 import com.netflix.maestro.models.definition.Step;
+import com.netflix.maestro.models.definition.StepOutputsDefinition;
 import com.netflix.maestro.models.instance.RestartConfig;
 import com.netflix.maestro.models.instance.RunPolicy;
+import com.netflix.maestro.models.instance.SignalStepOutputs;
 import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.StepRuntimeState;
 import com.netflix.maestro.models.timeline.Timeline;
@@ -40,8 +45,10 @@ import com.netflix.maestro.models.timeline.TimelineLogEvent;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -311,6 +318,18 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
 
   private StepInstance.StepRetry initializeStepRetry(
       boolean withParams, WorkflowSummary workflowSummary) throws Exception {
+    Step stepDef =
+        withParams
+            ? loadObject("fixtures/typedsteps/sample-step-with-param-retries.json", Step.class)
+            : loadObject("fixtures/typedsteps/sample-step-with-retries.json", Step.class);
+    StepRuntimeSummary runtimeSummary =
+        createAndRunMaestroTask(false, stepDef, null, workflowSummary);
+    return runtimeSummary.getStepRetry();
+  }
+
+  private StepRuntimeSummary createAndRunMaestroTask(
+      boolean started, Step stepDef, StepRuntimeSummary input, WorkflowSummary workflowSummary)
+      throws Exception {
     maestroTask =
         new MaestroTask(
             null,
@@ -318,23 +337,19 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
             paramEvaluator,
             MAPPER,
             null,
+            mock(OutputDataManager.class),
+            null,
+            mock(MaestroStepInstanceActionDao.class),
             null,
             null,
-            null,
-            null,
-            null,
-            null,
+            mock(StepRuntimeCallbackDelayPolicy.class),
             metricRepo,
             null,
             paramExtensionRepo);
-    // Step definition with or without retry parameters.
-    Step stepDef =
-        withParams
-            ? loadObject("fixtures/typedsteps/sample-step-with-param-retries.json", Step.class)
-            : loadObject("fixtures/typedsteps/sample-step-with-retries.json", Step.class);
     Task task = mock(Task.class);
     when(task.referenceTaskName()).thenReturn("job1");
     Map<String, Object> runtimeSummaryMap = new HashMap<>();
+    runtimeSummaryMap.put(Constants.STEP_RUNTIME_SUMMARY_FIELD, input);
     when(task.getOutputData()).thenReturn(runtimeSummaryMap);
 
     Flow flow = mock(Flow.class);
@@ -345,10 +360,97 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
     when(flow.getInput()).thenReturn(Map.of(Constants.WORKFLOW_SUMMARY_FIELD, workflowSummary));
     when(flow.getPrepareTask()).thenReturn(task);
 
-    // Start Maestro task
-    maestroTask.start(flow, task);
+    if (started) {
+      Assert.assertTrue(maestroTask.execute(flow, task));
+    } else {
+      maestroTask.start(flow, task);
+    }
+    return (StepRuntimeSummary) runtimeSummaryMap.get(Constants.STEP_RUNTIME_SUMMARY_FIELD);
+  }
+
+  @Test
+  public void testNoDynamicOutputInStepOutputs() throws Exception {
+    Step stepDef = loadObject("fixtures/typedsteps/sample-typed-step.json", Step.class);
+    StepRuntimeSummary input =
+        loadObject("fixtures/execution/sample-step-runtime-summary.json", StepRuntimeSummary.class);
     StepRuntimeSummary runtimeSummary =
-        (StepRuntimeSummary) runtimeSummaryMap.get(Constants.STEP_RUNTIME_SUMMARY_FIELD);
-    return runtimeSummary.getStepRetry();
+        createAndRunMaestroTask(true, stepDef, input, new WorkflowSummary());
+
+    // verify there is only one static signal
+    SignalStepOutputs outputs =
+        runtimeSummary
+            .getOutputs()
+            .get(StepOutputsDefinition.StepOutputType.SIGNAL)
+            .asSignalStepOutputs();
+    Assert.assertEquals(1, outputs.getOutputs().size());
+  }
+
+  @Test
+  public void testOnlyDynamicOutputInStepOutputs() throws Exception {
+    Step stepDef = loadObject("fixtures/typedsteps/sample-step-with-retries.json", Step.class);
+    StepRuntimeSummary input =
+        loadObject(
+            "fixtures/execution/sample-step-runtime-summary-with-dynamic-output.json",
+            StepRuntimeSummary.class);
+    StepRuntimeSummary runtimeSummary =
+        createAndRunMaestroTask(true, stepDef, input, new WorkflowSummary());
+
+    // verify there are two dynamic signals
+    SignalStepOutputs outputs =
+        runtimeSummary
+            .getOutputs()
+            .get(StepOutputsDefinition.StepOutputType.SIGNAL)
+            .asSignalStepOutputs();
+    Assert.assertEquals(2, outputs.getOutputs().size());
+    Set<String> dynamicOutputNames = new HashSet<>();
+    for (SignalStepOutputs.SignalStepOutput output : outputs.getOutputs()) {
+      String tableName = output.getParam().getValue().get("name").getValue();
+      dynamicOutputNames.add(tableName);
+    }
+    Assert.assertEquals(Set.of("table_1", "table_2"), dynamicOutputNames);
+  }
+
+  @Test
+  public void testOutputInStepOutputs() throws Exception {
+    Step stepDef = loadObject("fixtures/typedsteps/sample-typed-step.json", Step.class);
+    StepRuntimeSummary input =
+        loadObject(
+            "fixtures/execution/sample-step-runtime-summary-with-dynamic-output.json",
+            StepRuntimeSummary.class);
+    StepRuntimeSummary runtimeSummary =
+        createAndRunMaestroTask(true, stepDef, input, new WorkflowSummary());
+
+    // verify there are 3 output signals:  1 static + 2 dynamic
+    SignalStepOutputs outputs =
+        runtimeSummary
+            .getOutputs()
+            .get(StepOutputsDefinition.StepOutputType.SIGNAL)
+            .asSignalStepOutputs();
+    Assert.assertEquals(3, outputs.getOutputs().size());
+    boolean[] signalFound = new boolean[] {false, false, false}; // static, dynamic_1, dynamic_2
+    for (SignalStepOutputs.SignalStepOutput output : outputs.getOutputs()) {
+      String tableName = output.getParam().getValue().get("name").getValue();
+      if (tableName.startsWith("table_")) {
+        int index = Integer.parseInt(tableName.substring(6));
+        signalFound[index] = true;
+      }
+      if (tableName.equals("table_1")) {
+        Map<String, Object> evaluated = output.getParam().getEvaluatedResult();
+        Assert.assertTrue((Boolean) evaluated.get("is_iceberg"));
+        Map<String, Object> nestedMap = (Map<String, Object>) evaluated.get("nested_map");
+        Assert.assertArrayEquals(
+            new String[] {"a", "b", "c"}, (String[]) nestedMap.get("nested_string_array"));
+        Assert.assertArrayEquals(new long[] {1, 2, 3}, (long[]) nestedMap.get("nested_long_array"));
+        Assert.assertArrayEquals(
+            new boolean[] {true, false, true}, (boolean[]) nestedMap.get("nested_boolean_array"));
+        Assert.assertArrayEquals(
+            new double[] {1.1, 2.2, 3.3}, (double[]) nestedMap.get("nested_double_array"), 0.001);
+        Map<String, String> nestedStringMap =
+            (Map<String, String>) nestedMap.get("nested_string_map");
+        Assert.assertEquals(1, nestedStringMap.size());
+        Assert.assertEquals("bar", nestedStringMap.get("foo"));
+      }
+    }
+    Assert.assertArrayEquals(new boolean[] {true, true, true}, signalFound);
   }
 }
