@@ -1,0 +1,5 @@
+{
+  "error_retry_limit": "10",
+  "platform_retry_limit": "3",
+  "timeout_retry_limit": "1"
+}

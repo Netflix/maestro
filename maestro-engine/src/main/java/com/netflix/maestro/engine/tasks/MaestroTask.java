@@ -52,6 +52,7 @@ import com.netflix.maestro.models.Actions;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.Defaults;
 import com.netflix.maestro.models.definition.FailureMode;
+import com.netflix.maestro.models.definition.RetryPolicy;
 import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.definition.StepDependenciesDefinition;
 import com.netflix.maestro.models.definition.StepDependencyType;
@@ -71,6 +72,7 @@ import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.models.timeline.TimelineLogEvent;
 import com.netflix.maestro.utils.DurationParser;
 import com.netflix.maestro.utils.MapHelper;
+import com.netflix.maestro.utils.RetryPolicyParser;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.util.Collections;
@@ -198,7 +200,7 @@ public class MaestroTask implements FlowTask {
     long stepInstanceId;
     Map<StepDependencyType, StepDependencies> dependenciesToUse;
     if (task.getRetryCount() == 0) { // this is a new start
-      stepRetry = StepInstance.StepRetry.from(stepDefinition.getRetryPolicy());
+      stepRetry = initializeStepRetry(stepDefinition, workflowSummary);
       stepInstanceId = task.getSeq(); // may have a gap but increasing monotonically
       dependenciesToUse = dependencies;
 
@@ -426,6 +428,7 @@ public class MaestroTask implements FlowTask {
     metrics.timer(MetricConstants.STEP_INITIALIZE_DELAY_METRIC, stepInitDelay, getClass());
   }
 
+  // only support workflow level params in timeout
   private void initializeTimeout(
       Step stepDefinition, WorkflowSummary workflowSummary, StepRuntimeSummary runtimeSummary) {
     if (stepDefinition.getTimeout() != null) {
@@ -437,6 +440,29 @@ public class MaestroTask implements FlowTask {
                       p, workflowSummary.getParams(), workflowSummary.getIdentity(), false));
       runtimeSummary.setTimeoutInMillis(timeout);
     }
+  }
+
+  // only support workflow level params in retry policy
+  private StepInstance.StepRetry initializeStepRetry(
+      Step stepDefinition, WorkflowSummary workflowSummary) {
+    RetryPolicy retryPolicy = null;
+    if (stepDefinition.getRetryPolicy() != null) {
+      try {
+        retryPolicy =
+            RetryPolicyParser.getParsedRetryPolicy(
+                stepDefinition.getRetryPolicy(),
+                p ->
+                    paramEvaluator.parseAttribute(
+                        p, workflowSummary.getParams(), workflowSummary.getIdentity(), false));
+      } catch (RuntimeException e) {
+        LOG.warn(
+            "Use default step retry as failing to parse retry policy for step [{}] in workflow {} with the error: {}",
+            stepDefinition.getId(),
+            workflowSummary.getIdentity(),
+            e.getMessage());
+      }
+    }
+    return StepInstance.StepRetry.from(retryPolicy);
   }
 
   private void initializeStepRuntime(

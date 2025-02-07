@@ -19,11 +19,13 @@ import com.netflix.maestro.MaestroBaseTest;
 import org.junit.Test;
 
 public class RetryPolicyTest extends MaestroBaseTest {
-  private static Long CONFIGURED_PLATFORM_RETRY_LIMIT_SECS = 3L;
-  private static Long CONFIGURED_ERROR_RETRY_LIMIT_SECS = 3L;
-  private static Long RANDOM_ERROR_LIMIT = 10L;
-  private static Long PLATFORM_RETRY_DELAY_SECS = 1L;
-  private static Long ERROR_RETRY_DELAY_SECS = 1L;
+  private static final long CONFIGURED_PLATFORM_RETRY_LIMIT_SECS = 3L;
+  private static final long CONFIGURED_ERROR_RETRY_LIMIT_SECS = 3L;
+  private static final long RANDOM_ERROR_LIMIT = 10L;
+  private static final long RANDOM_PLATFORM_ERROR_LIMIT = 3L;
+  private static final long RANDOM_TIMEOUT_ERROR_LIMIT = 1L;
+  private static final long PLATFORM_RETRY_DELAY_SECS = 1L;
+  private static final long ERROR_RETRY_DELAY_SECS = 1L;
 
   @Test
   public void testRoundTripSerdeExponentialBackoffDelay() throws Exception {
@@ -37,10 +39,14 @@ public class RetryPolicyTest extends MaestroBaseTest {
         RetryPolicy.BackoffPolicyType.EXPONENTIAL_BACKOFF, retryPolicy.getBackoff().getType());
     assertEquals(
         CONFIGURED_PLATFORM_RETRY_LIMIT_SECS,
-        ((RetryPolicy.ExponentialBackoff) retryPolicy.getBackoff()).getErrorRetryLimitInSecs());
+        ((RetryPolicy.ExponentialBackoff) retryPolicy.getBackoff())
+            .getErrorRetryLimitInSecs()
+            .getLong());
     assertEquals(
         CONFIGURED_ERROR_RETRY_LIMIT_SECS,
-        ((RetryPolicy.ExponentialBackoff) retryPolicy.getBackoff()).getPlatformRetryLimitInSecs());
+        ((RetryPolicy.ExponentialBackoff) retryPolicy.getBackoff())
+            .getPlatformRetryLimitInSecs()
+            .getLong());
   }
 
   @Test
@@ -52,10 +58,14 @@ public class RetryPolicyTest extends MaestroBaseTest {
     assertEquals(RetryPolicy.BackoffPolicyType.FIXED_BACKOFF, retryPolicy.getBackoff().getType());
     assertEquals(
         ERROR_RETRY_DELAY_SECS,
-        ((RetryPolicy.FixedBackoff) retryPolicy.getBackoff()).getErrorRetryBackoffInSecs());
+        ((RetryPolicy.FixedBackoff) retryPolicy.getBackoff())
+            .getErrorRetryBackoffInSecs()
+            .getLong());
     assertEquals(
         PLATFORM_RETRY_DELAY_SECS,
-        ((RetryPolicy.FixedBackoff) retryPolicy.getBackoff()).getPlatformRetryBackoffInSecs());
+        ((RetryPolicy.FixedBackoff) retryPolicy.getBackoff())
+            .getPlatformRetryBackoffInSecs()
+            .getLong());
   }
 
   @Test
@@ -72,7 +82,20 @@ public class RetryPolicyTest extends MaestroBaseTest {
         loadObject("fixtures/retry_policy/sample-retry-random-values.json", RetryPolicy.class);
     assertNull(retryPolicy.getPlatformRetryLimit());
     assertNull(retryPolicy.getBackoff());
-    assertEquals(RANDOM_ERROR_LIMIT, retryPolicy.getErrorRetryLimit());
+    assertEquals(RANDOM_ERROR_LIMIT, retryPolicy.getErrorRetryLimit().getLong());
+  }
+
+  @Test
+  public void testRandomParsableValues() throws Exception {
+    RetryPolicy retryPolicy =
+        loadObject("fixtures/retry_policy/sample-parsable-retry-values.json", RetryPolicy.class);
+    assertNull(retryPolicy.getBackoff());
+    assertEquals(RANDOM_ERROR_LIMIT, Long.parseLong(retryPolicy.getErrorRetryLimit().asString()));
+    assertEquals(
+        RANDOM_PLATFORM_ERROR_LIMIT,
+        Long.parseLong(retryPolicy.getPlatformRetryLimit().asString()));
+    assertEquals(
+        RANDOM_TIMEOUT_ERROR_LIMIT, Long.parseLong(retryPolicy.getTimeoutRetryLimit().asString()));
   }
 
   @Test

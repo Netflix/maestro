@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Netflix, Inc.
+ * Copyright 2025 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -12,11 +12,11 @@
  */
 package com.netflix.maestro.validations;
 
-import com.netflix.maestro.models.definition.ParsableLong;
+import com.netflix.maestro.models.definition.RetryPolicy;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.ParamType;
 import com.netflix.maestro.models.parameter.Parameter;
-import com.netflix.maestro.utils.DurationParser;
+import com.netflix.maestro.utils.RetryPolicyParser;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -28,12 +28,12 @@ import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 import javax.validation.Payload;
 
-/** Timeout validation. Note that it won't be able to validate string interpolated timeout. */
+/** Retry policy validation. Note that it won't be able to validate string interpolated retries. */
 @Documented
-@Constraint(validatedBy = TimeoutConstraint.TimeoutValidator.class)
+@Constraint(validatedBy = RetryPolicyConstraint.RetryValidator.class)
 @Target({ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface TimeoutConstraint {
+public @interface RetryPolicyConstraint {
   /** input constraint message. */
   String message() default "";
 
@@ -43,9 +43,9 @@ public @interface TimeoutConstraint {
   /** input constraint payload. */
   Class<? extends Payload>[] payload() default {};
 
-  /** Timeout validator. */
-  class TimeoutValidator implements ConstraintValidator<TimeoutConstraint, ParsableLong> {
-    private static final String DUMMY_EVALUATED_RESULT = "123";
+  /** RetryPolicy validator. */
+  class RetryValidator implements ConstraintValidator<RetryPolicyConstraint, RetryPolicy> {
+    private static final String DUMMY_EVALUATED_RESULT = "2";
     private static final Long DUMMY_EVALUATION_TIME = 1L;
     private static final Function<ParamDefinition, Parameter> IGNORE_INTERPOLATION_MAPPING =
         paramDefinition -> {
@@ -59,15 +59,16 @@ public @interface TimeoutConstraint {
         };
 
     @Override
-    public boolean isValid(ParsableLong timeout, ConstraintValidatorContext context) {
-      if (timeout == null) {
+    public boolean isValid(RetryPolicy retryPolicy, ConstraintValidatorContext context) {
+      if (retryPolicy == null) {
         return true;
       }
-
       try {
-        DurationParser.getDurationWithParamInMillis(timeout, IGNORE_INTERPOLATION_MAPPING);
-      } catch (IllegalArgumentException iae) {
-        context.buildConstraintViolationWithTemplate(iae.getMessage()).addConstraintViolation();
+        RetryPolicyParser.getParsedRetryPolicy(retryPolicy, IGNORE_INTERPOLATION_MAPPING);
+      } catch (IllegalArgumentException e) {
+        context
+            .buildConstraintViolationWithTemplate("RetryPolicy: " + e.getMessage())
+            .addConstraintViolation();
         return false;
       }
       return true;

@@ -21,10 +21,8 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
-import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.Defaults;
 import java.util.Locale;
-import javax.validation.constraints.Max;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -40,14 +38,14 @@ import lombok.Getter;
 @Getter
 @EqualsAndHashCode
 public class RetryPolicy {
-  @Max(Constants.MAX_RETRY_LIMIT)
-  private final Long errorRetryLimit;
+  /** Retry limit for user errors. */
+  private final ParsableLong errorRetryLimit;
 
-  @Max(Constants.MAX_RETRY_LIMIT)
-  private final Long platformRetryLimit;
+  /** Retry limit for platform errors. */
+  private final ParsableLong platformRetryLimit;
 
-  @Max(Constants.MAX_RETRY_LIMIT)
-  private final Long timeoutRetryLimit;
+  /** Retry limit for timeout errors. */
+  private final ParsableLong timeoutRetryLimit;
 
   /** Backoff strategy. */
   private final Backoff backoff;
@@ -148,37 +146,31 @@ public class RetryPolicy {
   @EqualsAndHashCode
   public static class ExponentialBackoff implements Backoff {
     /** Base time in seconds to wait between retries for user errors. */
-    @Max(Constants.MAX_ERROR_RETRY_LIMIT_SECS)
-    private final Long errorRetryBackoffInSecs;
+    private final ParsableLong errorRetryBackoffInSecs;
 
     /** Base exponent. */
-    private final Integer errorRetryExponent;
+    private final ParsableLong errorRetryExponent;
 
     /** Max time in seconds to wait between retries for user errors. */
-    @Max(Constants.MAX_ERROR_RETRY_LIMIT_SECS)
-    private final Long errorRetryLimitInSecs;
+    private final ParsableLong errorRetryLimitInSecs;
 
     /** Base time in seconds to wait between retries for platform errors. */
-    @Max(Constants.MAX_PLATFORM_RETRY_LIMIT_SECS)
-    private final Long platformRetryBackoffInSecs;
+    private final ParsableLong platformRetryBackoffInSecs;
 
     /** Base exponent for platform errors. */
-    private final Integer platformRetryExponent;
+    private final ParsableLong platformRetryExponent;
 
     /** Max time in seconds to wait between retries for platform errors. */
-    @Max(Constants.MAX_PLATFORM_RETRY_LIMIT_SECS)
-    private final Long platformRetryLimitInSecs;
+    private final ParsableLong platformRetryLimitInSecs;
 
     /** Base time in seconds to wait between retries for timeout errors. */
-    @Max(Constants.MAX_TIMEOUT_RETRY_LIMIT_SECS)
-    private final Long timeoutRetryBackoffInSecs;
+    private final ParsableLong timeoutRetryBackoffInSecs;
 
     /** Base exponent for timeout errors. */
-    private final Integer timeoutRetryExponent;
+    private final ParsableLong timeoutRetryExponent;
 
     /** Max time in seconds to wait between retries for timeout errors. */
-    @Max(Constants.MAX_TIMEOUT_RETRY_LIMIT_SECS)
-    private final Long timeoutRetryLimitInSecs;
+    private final ParsableLong timeoutRetryLimitInSecs;
 
     @Override
     public BackoffPolicyType getType() {
@@ -187,22 +179,29 @@ public class RetryPolicy {
 
     @Override
     public int getNextRetryDelayForUserError(long errorRetries) {
-      long waitVal = (long) (errorRetryBackoffInSecs * Math.pow(errorRetryExponent, errorRetries));
-      return (int) Math.min(waitVal, errorRetryLimitInSecs);
+      long waitVal =
+          (long)
+              (errorRetryBackoffInSecs.getLong()
+                  * Math.pow(errorRetryExponent.getLong(), errorRetries));
+      return (int) Math.min(waitVal, errorRetryLimitInSecs.getLong());
     }
 
     @Override
     public int getNextRetryDelayForPlatformError(long platformRetries) {
       long waitVal =
-          (long) (platformRetryBackoffInSecs * Math.pow(platformRetryExponent, platformRetries));
-      return (int) Math.min(waitVal, platformRetryLimitInSecs);
+          (long)
+              (platformRetryBackoffInSecs.getLong()
+                  * Math.pow(platformRetryExponent.getLong(), platformRetries));
+      return (int) Math.min(waitVal, platformRetryLimitInSecs.getLong());
     }
 
     @Override
     public int getNextRetryDelayForTimeoutError(long timeoutRetries) {
       long waitVal =
-          (long) (timeoutRetryBackoffInSecs * Math.pow(timeoutRetryExponent, timeoutRetries));
-      return (int) Math.min(waitVal, timeoutRetryLimitInSecs);
+          (long)
+              (timeoutRetryBackoffInSecs.getLong()
+                  * Math.pow(timeoutRetryExponent.getLong(), timeoutRetries));
+      return (int) Math.min(waitVal, timeoutRetryLimitInSecs.getLong());
     }
 
     @Override
@@ -271,13 +270,13 @@ public class RetryPolicy {
   @EqualsAndHashCode
   public static class FixedBackoff implements Backoff {
     /** Constant wait between error retries. */
-    private final Long errorRetryBackoffInSecs;
+    private final ParsableLong errorRetryBackoffInSecs;
 
     /** Constant wait between platform retries. */
-    private final Long platformRetryBackoffInSecs;
+    private final ParsableLong platformRetryBackoffInSecs;
 
     /** Constant wait between timeout retries. */
-    private final Long timeoutRetryBackoffInSecs;
+    private final ParsableLong timeoutRetryBackoffInSecs;
 
     @Override
     public BackoffPolicyType getType() {
@@ -286,17 +285,17 @@ public class RetryPolicy {
 
     @Override
     public int getNextRetryDelayForUserError(long errorRetries) {
-      return errorRetryBackoffInSecs.intValue();
+      return errorRetryBackoffInSecs.asInt();
     }
 
     @Override
     public int getNextRetryDelayForPlatformError(long platformRetries) {
-      return platformRetryBackoffInSecs.intValue();
+      return platformRetryBackoffInSecs.asInt();
     }
 
     @Override
     public int getNextRetryDelayForTimeoutError(long timeoutRetries) {
-      return timeoutRetryBackoffInSecs.intValue();
+      return timeoutRetryBackoffInSecs.asInt();
     }
 
     @Override

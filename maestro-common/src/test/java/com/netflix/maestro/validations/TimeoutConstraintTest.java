@@ -12,10 +12,8 @@
  */
 package com.netflix.maestro.validations;
 
-import com.fasterxml.jackson.databind.node.LongNode;
-import com.fasterxml.jackson.databind.node.TextNode;
 import com.netflix.maestro.models.Constants;
-import com.netflix.maestro.models.definition.Duration;
+import com.netflix.maestro.models.definition.ParsableLong;
 import java.util.Set;
 import javax.validation.ConstraintViolation;
 import org.junit.Assert;
@@ -23,14 +21,14 @@ import org.junit.Test;
 
 public class TimeoutConstraintTest extends BaseConstraintTest {
   private static class DummyWorkflow {
-    @TimeoutConstraint Duration timeout;
+    @TimeoutConstraint ParsableLong timeout;
 
     DummyWorkflow(long timeout) {
-      this.timeout = new Duration(new LongNode(timeout));
+      this.timeout = ParsableLong.of(timeout);
     }
 
     DummyWorkflow(String timeout) {
-      this.timeout = new Duration(new TextNode(timeout));
+      this.timeout = ParsableLong.of(timeout);
     }
   }
 

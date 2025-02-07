@@ -13,6 +13,7 @@
 package com.netflix.maestro.models;
 
 import com.netflix.maestro.models.definition.FailureMode;
+import com.netflix.maestro.models.definition.ParsableLong;
 import com.netflix.maestro.models.definition.RetryPolicy;
 import com.netflix.maestro.models.definition.RunStrategy;
 import com.netflix.maestro.models.definition.TagList;
@@ -72,23 +73,23 @@ public final class Defaults {
   /** Default Exponential backoff. */
   public static final RetryPolicy.ExponentialBackoff DEFAULT_EXPONENTIAL_BACK_OFF =
       RetryPolicy.ExponentialBackoff.builder()
-          .errorRetryExponent(DEFAULT_ERROR_RETRY_EXPONENT)
-          .errorRetryBackoffInSecs(DEFAULT_BASE_ERROR_RETRY_BACKOFF_SECS)
-          .errorRetryLimitInSecs(DEFAULT_ERROR_RETRY_LIMIT_SECS)
-          .platformRetryExponent(DEFAULT_PLATFORM_RETRY_EXPONENT)
-          .platformRetryBackoffInSecs(DEFAULT_BASE_PLATFORM_RETRY_BACKOFF_SECS)
-          .platformRetryLimitInSecs(DEFAULT_PLATFORM_RETRY_LIMIT_SECS)
-          .timeoutRetryExponent(DEFAULT_TIMEOUT_RETRY_EXPONENT)
-          .timeoutRetryBackoffInSecs(DEFAULT_BASE_TIMEOUT_RETRY_BACKOFF_SECS)
-          .timeoutRetryLimitInSecs(DEFAULT_TIMEOUT_RETRY_LIMIT_SECS)
+          .errorRetryExponent(ParsableLong.of(DEFAULT_ERROR_RETRY_EXPONENT))
+          .errorRetryBackoffInSecs(ParsableLong.of(DEFAULT_BASE_ERROR_RETRY_BACKOFF_SECS))
+          .errorRetryLimitInSecs(ParsableLong.of(DEFAULT_ERROR_RETRY_LIMIT_SECS))
+          .platformRetryExponent(ParsableLong.of(DEFAULT_PLATFORM_RETRY_EXPONENT))
+          .platformRetryBackoffInSecs(ParsableLong.of(DEFAULT_BASE_PLATFORM_RETRY_BACKOFF_SECS))
+          .platformRetryLimitInSecs(ParsableLong.of(DEFAULT_PLATFORM_RETRY_LIMIT_SECS))
+          .timeoutRetryExponent(ParsableLong.of(DEFAULT_TIMEOUT_RETRY_EXPONENT))
+          .timeoutRetryBackoffInSecs(ParsableLong.of(DEFAULT_BASE_TIMEOUT_RETRY_BACKOFF_SECS))
+          .timeoutRetryLimitInSecs(ParsableLong.of(DEFAULT_TIMEOUT_RETRY_LIMIT_SECS))
           .build();
 
   /** Default Fixed backoff. */
   public static final RetryPolicy.FixedBackoff DEFAULT_FIXED_BACK_OFF =
       RetryPolicy.FixedBackoff.builder()
-          .errorRetryBackoffInSecs(DEFAULT_FIXED_USER_RETRY_BACKOFF_SECS)
-          .platformRetryBackoffInSecs(DEFAULT_FIXED_PLATFORM_RETRY_BACKOFF_SECS)
-          .timeoutRetryBackoffInSecs(DEFAULT_FIXED_TIMEOUT_RETRY_BACKOFF_SECS)
+          .errorRetryBackoffInSecs(ParsableLong.of(DEFAULT_FIXED_USER_RETRY_BACKOFF_SECS))
+          .platformRetryBackoffInSecs(ParsableLong.of(DEFAULT_FIXED_PLATFORM_RETRY_BACKOFF_SECS))
+          .timeoutRetryBackoffInSecs(ParsableLong.of(DEFAULT_FIXED_TIMEOUT_RETRY_BACKOFF_SECS))
           .build();
 
   private static final long DEFAULT_USER_RETRY_LIMIT = 2L;
@@ -98,9 +99,9 @@ public final class Defaults {
   /** Default retry policy if unset. */
   public static final RetryPolicy DEFAULT_RETRY_POLICY =
       RetryPolicy.builder()
-          .errorRetryLimit(DEFAULT_USER_RETRY_LIMIT)
-          .platformRetryLimit(DEFAULT_PLATFORM_RETRY_LIMIT)
-          .timeoutRetryLimit(DEFAULT_TIMEOUT_RETRY_LIMIT)
+          .errorRetryLimit(ParsableLong.of(DEFAULT_USER_RETRY_LIMIT))
+          .platformRetryLimit(ParsableLong.of(DEFAULT_PLATFORM_RETRY_LIMIT))
+          .timeoutRetryLimit(ParsableLong.of(DEFAULT_TIMEOUT_RETRY_LIMIT))
           .backoff(DEFAULT_EXPONENTIAL_BACK_OFF)
           .build();
 

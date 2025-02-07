@@ -12,9 +12,8 @@
  */
 package com.netflix.maestro.utils;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.netflix.maestro.models.Constants;
-import com.netflix.maestro.models.definition.Duration;
+import com.netflix.maestro.models.definition.ParsableLong;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.Parameter;
 import java.util.Locale;
@@ -56,23 +55,22 @@ public final class DurationParser {
     return timeout;
   }
 
-  public static long getDurationInMillis(Duration duration) {
-    JsonNode value = duration.getValue();
-    if (value.isNumber()) {
-      return value.asLong();
+  public static long getDurationInMillis(ParsableLong duration) {
+    if (duration.isLong()) {
+      return duration.getLong();
     } else {
-      return parseDuration(value.asText());
+      return parseDuration(duration.asString());
     }
   }
 
   public static long getDurationWithParamInMillis(
-      Duration duration, Function<ParamDefinition, Parameter> paramParser) {
-    JsonNode value = duration.getValue();
+      ParsableLong duration, Function<ParamDefinition, Parameter> paramParser) {
     long timeout;
-    if (value.isNumber()) {
-      timeout = TimeUnit.SECONDS.toMillis(value.asLong());
+    if (duration.isLong()) {
+      timeout = TimeUnit.SECONDS.toMillis(duration.getLong());
     } else {
-      ParamDefinition paramDef = ParamDefinition.buildParamDefinition(PARAM_NAME, value.asText());
+      ParamDefinition paramDef =
+          ParamDefinition.buildParamDefinition(PARAM_NAME, duration.asString());
       String durationParam = paramParser.apply(paramDef).asString();
       timeout =
           Checks.toNumeric(durationParam)
@@ -83,7 +81,7 @@ public final class DurationParser {
         timeout > 0 && timeout <= Constants.MAX_TIME_OUT_LIMIT_IN_MILLIS,
         "timeout [%s ms]/[%s] cannot be non-positive or more than system limit: %s days",
         timeout,
-        value,
+        duration,
         TimeUnit.MILLISECONDS.toDays(Constants.MAX_TIME_OUT_LIMIT_IN_MILLIS));
     return timeout;
   }

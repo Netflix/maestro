@@ -23,7 +23,13 @@ import com.netflix.maestro.engine.db.DbOperation;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
 import com.netflix.maestro.engine.jobevents.StepInstanceUpdateJobEvent;
+import com.netflix.maestro.flow.models.Flow;
+import com.netflix.maestro.flow.models.Task;
+import com.netflix.maestro.models.Constants;
+import com.netflix.maestro.models.Defaults;
+import com.netflix.maestro.models.definition.ParsableLong;
 import com.netflix.maestro.models.definition.RetryPolicy;
+import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.instance.RestartConfig;
 import com.netflix.maestro.models.instance.RunPolicy;
 import com.netflix.maestro.models.instance.StepInstance;
@@ -33,7 +39,9 @@ import com.netflix.maestro.models.timeline.TimelineEvent;
 import com.netflix.maestro.models.timeline.TimelineLogEvent;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -58,8 +66,8 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
     stepRetry.setRetryable(true);
     RetryPolicy.FixedBackoff fixedBackoff =
         RetryPolicy.FixedBackoff.builder()
-            .errorRetryBackoffInSecs(100L)
-            .platformRetryBackoffInSecs(200L)
+            .errorRetryBackoffInSecs(ParsableLong.of(100L))
+            .platformRetryBackoffInSecs(ParsableLong.of(200L))
             .build();
     stepRetry.setBackoff(fixedBackoff);
     StepRuntimeSummary runtimeSummary =
@@ -78,10 +86,10 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
 
     RetryPolicy.ExponentialBackoff exponentialBackoff =
         RetryPolicy.ExponentialBackoff.builder()
-            .errorRetryExponent(2)
-            .errorRetryLimitInSecs(600L)
-            .errorRetryBackoffInSecs(100L)
-            .platformRetryBackoffInSecs(200L)
+            .errorRetryExponent(ParsableLong.of(2))
+            .errorRetryLimitInSecs(ParsableLong.of(600L))
+            .errorRetryBackoffInSecs(ParsableLong.of(100L))
+            .platformRetryBackoffInSecs(ParsableLong.of(200L))
             .build();
     stepRetry.setBackoff(exponentialBackoff);
     stepRetry.setErrorRetries(6);
@@ -106,7 +114,7 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
     StepInstance.StepRetry stepRetry = new StepInstance.StepRetry();
     stepRetry.setRetryable(true);
     RetryPolicy.FixedBackoff fixedBackoff =
-        RetryPolicy.FixedBackoff.builder().timeoutRetryBackoffInSecs(200L).build();
+        RetryPolicy.FixedBackoff.builder().timeoutRetryBackoffInSecs(ParsableLong.of(200L)).build();
     stepRetry.setBackoff(fixedBackoff);
     StepRuntimeSummary runtimeSummary =
         StepRuntimeSummary.builder()
@@ -124,9 +132,9 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
 
     RetryPolicy.ExponentialBackoff exponentialBackoff =
         RetryPolicy.ExponentialBackoff.builder()
-            .timeoutRetryExponent(2)
-            .timeoutRetryLimitInSecs(600L)
-            .timeoutRetryBackoffInSecs(100L)
+            .timeoutRetryExponent(ParsableLong.of(2))
+            .timeoutRetryLimitInSecs(ParsableLong.of(600L))
+            .timeoutRetryBackoffInSecs(ParsableLong.of(100L))
             .build();
     stepRetry.setBackoff(exponentialBackoff);
     stepRetry.setTimeoutRetries(6);
@@ -236,5 +244,111 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
         .contains(
             StepInstanceUpdateJobEvent.createRecord(
                 StepInstance.Status.USER_FAILED, StepInstance.Status.SKIPPED, 0L));
+  }
+
+  @Test
+  public void testParseRetryPolicy() throws Exception {
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+    StepInstance.StepRetry actual = initializeStepRetry(false, workflowSummary);
+
+    // Verify retry parameters are correctly parsed.
+    Assert.assertEquals(5, actual.getErrorRetryLimit());
+    Assert.assertEquals(3, actual.getPlatformRetryLimit());
+    Assert.assertEquals(1, actual.getTimeoutRetryLimit());
+    Assert.assertEquals(200, actual.getBackoff().getNextRetryDelayForUserError(1));
+    Assert.assertEquals(350, actual.getBackoff().getNextRetryDelayForUserError(2));
+    Assert.assertEquals(900, actual.getBackoff().getNextRetryDelayForPlatformError(1));
+    Assert.assertEquals(1000, actual.getBackoff().getNextRetryDelayForPlatformError(2));
+    Assert.assertEquals(1000, actual.getBackoff().getNextRetryDelayForTimeoutError(1));
+    Assert.assertEquals(5000, actual.getBackoff().getNextRetryDelayForTimeoutError(2));
+  }
+
+  @Test
+  public void testParseRetryPolicyWithParams() throws Exception {
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+    workflowSummary.setParams(
+        Map.of(
+            "foo", buildParam("foo", 3L),
+            "far", buildParam("far", 100L),
+            "bar", buildParam("bar", 10L),
+            "bat", buildParam("bat", "2"),
+            "baz", buildParam("baz", "1800")));
+    StepInstance.StepRetry actual = initializeStepRetry(true, workflowSummary);
+
+    // Verify retry parameters are correctly parsed.
+    Assert.assertEquals(3, actual.getErrorRetryLimit());
+    Assert.assertEquals(10, actual.getPlatformRetryLimit());
+    Assert.assertEquals(2, actual.getTimeoutRetryLimit());
+    Assert.assertEquals(200, actual.getBackoff().getNextRetryDelayForUserError(1));
+    Assert.assertEquals(800, actual.getBackoff().getNextRetryDelayForUserError(3));
+    Assert.assertEquals(1800, actual.getBackoff().getNextRetryDelayForUserError(10));
+    Assert.assertEquals(200, actual.getBackoff().getNextRetryDelayForPlatformError(1));
+    Assert.assertEquals(800, actual.getBackoff().getNextRetryDelayForPlatformError(3));
+    Assert.assertEquals(1800, actual.getBackoff().getNextRetryDelayForPlatformError(10));
+    Assert.assertEquals(200, actual.getBackoff().getNextRetryDelayForTimeoutError(1));
+    Assert.assertEquals(800, actual.getBackoff().getNextRetryDelayForTimeoutError(3));
+    Assert.assertEquals(1800, actual.getBackoff().getNextRetryDelayForTimeoutError(10));
+  }
+
+  @Test
+  public void testParseRetryPolicyWithErrorFallback() throws Exception {
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+    workflowSummary.setParams(
+        Map.of(
+            "foo", buildParam("foo", 3L),
+            "far", buildParam("far", 100L),
+            "bar", buildParam("bar", 100L),
+            "bat", buildParam("bat", "2"),
+            "baz", buildParam("baz", "1800")));
+    StepInstance.StepRetry actual = initializeStepRetry(true, workflowSummary);
+
+    // Verify retry parameters use fallback default.
+    Assert.assertEquals(2, actual.getErrorRetryLimit());
+    Assert.assertEquals(10, actual.getPlatformRetryLimit());
+    Assert.assertEquals(0, actual.getTimeoutRetryLimit());
+    Assert.assertEquals(Defaults.DEFAULT_EXPONENTIAL_BACK_OFF, actual.getBackoff());
+  }
+
+  private StepInstance.StepRetry initializeStepRetry(
+      boolean withParams, WorkflowSummary workflowSummary) throws Exception {
+    maestroTask =
+        new MaestroTask(
+            null,
+            null,
+            paramEvaluator,
+            MAPPER,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            metricRepo,
+            null,
+            paramExtensionRepo);
+    // Step definition with or without retry parameters.
+    Step stepDef =
+        withParams
+            ? loadObject("fixtures/typedsteps/sample-step-with-param-retries.json", Step.class)
+            : loadObject("fixtures/typedsteps/sample-step-with-retries.json", Step.class);
+    Task task = mock(Task.class);
+    when(task.referenceTaskName()).thenReturn("job1");
+    Map<String, Object> runtimeSummaryMap = new HashMap<>();
+    when(task.getOutputData()).thenReturn(runtimeSummaryMap);
+
+    Flow flow = mock(Flow.class);
+    workflowSummary.setWorkflowId("test-workflow");
+    workflowSummary.setWorkflowInstanceId(1L);
+    workflowSummary.setWorkflowRunId(1L);
+    workflowSummary.setStepMap(Map.of("job1", stepDef));
+    when(flow.getInput()).thenReturn(Map.of(Constants.WORKFLOW_SUMMARY_FIELD, workflowSummary));
+    when(flow.getPrepareTask()).thenReturn(task);
+
+    // Start Maestro task
+    maestroTask.start(flow, task);
+    StepRuntimeSummary runtimeSummary =
+        (StepRuntimeSummary) runtimeSummaryMap.get(Constants.STEP_RUNTIME_SUMMARY_FIELD);
+    return runtimeSummary.getStepRetry();
   }
 }

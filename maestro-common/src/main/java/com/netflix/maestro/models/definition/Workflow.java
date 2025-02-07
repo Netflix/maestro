@@ -81,7 +81,7 @@ public class Workflow {
   @Valid @TagListConstraint private final TagList tags;
 
   /** Workflow timeout in seconds. */
-  @TimeoutConstraint private final Duration timeout;
+  @TimeoutConstraint private final ParsableLong timeout;
 
   @Valid private final List<@TimeTriggerConstraint TimeTrigger> timeTriggers;
   @Valid private final List<SignalTrigger> signalTriggers;
@@ -99,7 +99,7 @@ public class Workflow {
       @Size(max = Constants.NAME_LENGTH_LIMIT) String name,
       @Size(max = Constants.FIELD_SIZE_LIMIT) String description,
       @Valid TagList tags,
-      Duration timeout,
+      ParsableLong timeout,
       @Valid List<TimeTrigger> timeTriggers,
       @Valid List<SignalTrigger> signalTriggers,
       Criticality criticality,
