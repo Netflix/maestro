@@ -360,7 +360,7 @@ public class ParamEvaluatorTest extends MaestroEngineBaseTest {
     AssertHelper.assertThrows(
         "cannot find a step id or signal instance",
         MaestroInvalidExpressionException.class,
-        "Expression evaluation throws an exception",
+        "Failed to evaluate the param with a definition: [step2__foo]",
         () ->
             paramEvaluator.parseStepParameter(
                 Collections.singletonMap("step1", Collections.emptyMap()),
