@@ -22,6 +22,7 @@ import com.netflix.maestro.engine.execution.RunResponse;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
 import com.netflix.maestro.engine.jobevents.StepInstanceUpdateJobEvent;
 import com.netflix.maestro.engine.jobevents.StepInstanceWakeUpEvent;
+import com.netflix.maestro.engine.properties.StepActionProperties;
 import com.netflix.maestro.engine.publisher.MaestroJobEventPublisher;
 import com.netflix.maestro.engine.utils.ObjectHelper;
 import com.netflix.maestro.engine.utils.TimeUtils;
@@ -69,9 +70,6 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
-  private static final long ACTION_TIMEOUT = 30 * 1000L; // 30 sec
-  private static final long CHECK_INTERVAL = 1000L; // 1 sec
-
   private static final String INSERT_ACTION_QUERY =
       "INSERT INTO maestro_step_instance_action (payload) VALUES (?) ON CONFLICT DO NOTHING";
   private static final String INSTANCE_CONDITION =
@@ -89,18 +87,23 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
 
   private final MaestroStepInstanceDao stepInstanceDao;
   private final MaestroJobEventPublisher eventPublisher;
+  private final long actionTimeout;
+  private final long checkInterval;
 
   /** step instance action dao constructor. */
   public MaestroStepInstanceActionDao(
       DataSource dataSource,
       ObjectMapper objectMapper,
       DatabaseConfiguration config,
+      StepActionProperties stepActionProperties,
       MaestroStepInstanceDao stepInstanceDao,
       MaestroJobEventPublisher eventPublisher,
       MaestroMetrics metrics) {
     super(dataSource, objectMapper, config, metrics);
     this.stepInstanceDao = stepInstanceDao;
     this.eventPublisher = eventPublisher;
+    this.actionTimeout = stepActionProperties.getActionTimeout();
+    this.checkInterval = stepActionProperties.getCheckInterval();
   }
 
   /** restart a restartable step instance in a non-terminal workflow instance. */
@@ -300,7 +303,7 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
     try {
       long startTime = System.currentTimeMillis();
       boolean isForeachStepRunning = isForeachStepRunningAndRestartable(stepInstance);
-      while (System.currentTimeMillis() - startTime < ACTION_TIMEOUT) {
+      while (System.currentTimeMillis() - startTime < actionTimeout) {
         StepInstance stepView =
             stepInstanceDao.getStepInstanceView(
                 stepInstance.getWorkflowId(),
@@ -327,7 +330,7 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
           }
         }
 
-        TimeUtils.sleep(CHECK_INTERVAL);
+        TimeUtils.sleep(checkInterval);
       }
     } finally {
       deleteAction(stepInstance, action.getAction());
@@ -342,7 +345,7 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
       StepInstance stepInstance, StepAction action) {
     try {
       long startTime = System.currentTimeMillis();
-      while (System.currentTimeMillis() - startTime < ACTION_TIMEOUT) {
+      while (System.currentTimeMillis() - startTime < actionTimeout) {
 
         StepRuntimeState state =
             stepInstanceDao.getStepInstanceRuntimeState(
@@ -352,7 +355,7 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
                 stepInstance.getStepId(),
                 Long.toString(stepInstance.getStepAttemptId()));
         if (state.getStatus() == StepInstance.Status.WAITING_FOR_SIGNALS) {
-          TimeUtils.sleep(CHECK_INTERVAL);
+          TimeUtils.sleep(checkInterval);
         } else {
           return createActionResponseFrom(stepInstance, state, action.toTimelineEvent());
         }
@@ -424,7 +427,7 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
 
     if (blocking) {
       long startTime = System.currentTimeMillis();
-      while (System.currentTimeMillis() - startTime < ACTION_TIMEOUT) {
+      while (System.currentTimeMillis() - startTime < actionTimeout) {
         StepRuntimeState state =
             stepInstanceDao.getStepInstanceRuntimeState(
                 stepInstance.getWorkflowId(),
@@ -435,7 +438,7 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
         if (!state.getStatus().shouldWakeup()) {
           return createActionResponseFrom(stepInstance, state, stepAction.toTimelineEvent());
         }
-        TimeUtils.sleep(CHECK_INTERVAL);
+        TimeUtils.sleep(checkInterval);
       }
 
       throw new MaestroTimeoutException(
@@ -539,7 +542,7 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
       if (action.getAction() != null && action.getAction().isUsingUpstream()) {
         stepAction = action;
         break;
-      } else if (System.currentTimeMillis() - action.getCreateTime() < ACTION_TIMEOUT
+      } else if (System.currentTimeMillis() - action.getCreateTime() < actionTimeout
           && action.getWorkflowId().equals(self.getWorkflowId())
           && action.getWorkflowInstanceId() == self.getInstanceId()
           && action.getWorkflowRunId() == self.getRunId()

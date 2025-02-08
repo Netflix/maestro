@@ -13,6 +13,7 @@
 package com.netflix.maestro.server.properties;
 
 import com.netflix.maestro.engine.properties.SelProperties;
+import com.netflix.maestro.engine.properties.StepActionProperties;
 import com.netflix.maestro.models.Constants;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -26,4 +27,5 @@ import org.springframework.boot.context.properties.ConstructorBinding;
 @ConfigurationProperties(prefix = Constants.MAESTRO_QUALIFIER)
 public class MaestroProperties {
   private final SelProperties sel;
+  private final StepActionProperties stepAction;
 }

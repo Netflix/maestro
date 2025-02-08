@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -65,7 +66,8 @@ public class StepInstanceActionController {
       @Valid @NotNull @PathVariable("workflowId") String workflowId,
       @PathVariable("workflowInstanceId") long workflowInstanceId,
       @Valid @NotNull @PathVariable("stepId") String stepId,
-      @Valid @NotNull @RequestBody StepInstanceRestartRequest restartRequest) {
+      @Valid @NotNull @RequestBody StepInstanceRestartRequest restartRequest,
+      @RequestParam(value = "blocking", defaultValue = "true") boolean blocking) {
     RunRequest runRequest =
         RunRequest.builder()
             .requester(callerBuilder.build())
@@ -88,7 +90,7 @@ public class StepInstanceActionController {
                     .build())
             .build();
 
-    RunResponse runResponse = stepActionHandler.restart(runRequest, false);
+    RunResponse runResponse = stepActionHandler.restart(runRequest, blocking);
     return runResponse.toStepRestartResponse();
   }
 
@@ -99,14 +101,15 @@ public class StepInstanceActionController {
   public StepInstanceActionResponse stopStepInstance(
       @Valid @NotNull @PathVariable("workflowId") String workflowId,
       @PathVariable("workflowInstanceId") long workflowInstanceId,
-      @Valid @NotNull @PathVariable("stepId") String stepId) {
+      @Valid @NotNull @PathVariable("stepId") String stepId,
+      @RequestParam(value = "blocking", defaultValue = "true") boolean blocking) {
     return stepActionHandler.terminate(
         workflowId,
         workflowInstanceId,
         stepId,
         callerBuilder.build(),
         Actions.StepInstanceAction.STOP,
-        false);
+        blocking);
   }
 
   @PutMapping(
@@ -116,14 +119,15 @@ public class StepInstanceActionController {
   public StepInstanceActionResponse killStepInstance(
       @Valid @NotNull @PathVariable("workflowId") String workflowId,
       @PathVariable("workflowInstanceId") long workflowInstanceId,
-      @Valid @NotNull @PathVariable("stepId") String stepId) {
+      @Valid @NotNull @PathVariable("stepId") String stepId,
+      @RequestParam(value = "blocking", defaultValue = "true") boolean blocking) {
     return stepActionHandler.terminate(
         workflowId,
         workflowInstanceId,
         stepId,
         callerBuilder.build(),
         Actions.StepInstanceAction.KILL,
-        false);
+        blocking);
   }
 
   @PutMapping(
@@ -136,7 +140,8 @@ public class StepInstanceActionController {
   public StepInstanceActionResponse skipStepInstance(
       @Valid @NotNull @PathVariable("workflowId") String workflowId,
       @PathVariable("workflowInstanceId") long workflowInstanceId,
-      @Valid @NotNull @PathVariable("stepId") String stepId) {
+      @Valid @NotNull @PathVariable("stepId") String stepId,
+      @RequestParam(value = "blocking", defaultValue = "true") boolean blocking) {
     RunRequest runRequest =
         RunRequest.builder()
             .requester(callerBuilder.build())
@@ -152,7 +157,7 @@ public class StepInstanceActionController {
                     .build())
             .build();
     return stepActionHandler.skip(
-        workflowId, workflowInstanceId, stepId, callerBuilder.build(), runRequest, false);
+        workflowId, workflowInstanceId, stepId, callerBuilder.build(), runRequest, blocking);
   }
 
   @PutMapping(
@@ -162,9 +167,10 @@ public class StepInstanceActionController {
   public StepInstanceActionResponse bypassStepDependencies(
       @Valid @NotNull @PathVariable("workflowId") String workflowId,
       @PathVariable("workflowInstanceId") long workflowInstanceId,
-      @Valid @NotNull @PathVariable("stepId") String stepId) {
+      @Valid @NotNull @PathVariable("stepId") String stepId,
+      @RequestParam(value = "blocking", defaultValue = "true") boolean blocking) {
     // dependencies can be signal or other types of dependencies as well
     return stepActionHandler.bypassStepDependencies(
-        workflowId, workflowInstanceId, stepId, callerBuilder.build(), false);
+        workflowId, workflowInstanceId, stepId, callerBuilder.build(), blocking);
   }
 }
