@@ -18,6 +18,7 @@ import com.netflix.maestro.annotations.VisibleForTesting;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.engine.utils.StepHelper;
 import com.netflix.maestro.exceptions.MaestroInternalError;
+import com.netflix.maestro.exceptions.MaestroInvalidExpressionException;
 import com.netflix.maestro.exceptions.MaestroRuntimeException;
 import com.netflix.maestro.exceptions.MaestroUnprocessableEntityException;
 import com.netflix.maestro.exceptions.MaestroValidationException;
@@ -157,7 +158,8 @@ public class ParamEvaluator {
       } else if (refParamName.contains(STEP_PARAM_SEPARATOR)) {
         // here it might be from signal triggers
         Map.Entry<String, String> pair = parseReferenceName(refParamName, Collections.emptyMap());
-        refParams.put(refParamName, getReferenceSignalParam(pair.getKey(), pair.getValue()));
+        refParams.put(
+            refParamName, getReferenceSignalParam(refParamName, pair.getKey(), pair.getValue()));
       } else {
         throw new MaestroValidationException(
             "Param [%s] referenced a non-existing param [%s] in workflow [%s]",
@@ -408,14 +410,17 @@ public class ParamEvaluator {
 
     // here it might be from signal triggers or signal dependencies (not supported yet)
     if (!allStepOutputData.containsKey(refStepId)) {
-      return getReferenceSignalParam(refStepId, refParamName);
+      return getReferenceSignalParam(refParam, refStepId, refParamName);
     }
 
     Map<String, Object> refStepData =
         Checks.notNull(
             allStepOutputData.get(refStepId),
-            "Error: reference a non-existing step [%s] in the expression.",
-            refStepId);
+            "Error: param [%s] in step [%s] referenced a non-existing step [%s] in the expression [%s]",
+            paramName,
+            stepId,
+            refStepId,
+            refParam);
     StepRuntimeSummary refRuntimeSummary =
         StepHelper.retrieveRuntimeSummary(objectMapper, refStepData);
     Parameter refStepParam =
@@ -439,15 +444,26 @@ public class ParamEvaluator {
    * Extract signal param value from the signal and wrap it into a Parameter. Currently, it only
    * returns a StringParameter.
    */
-  private Parameter getReferenceSignalParam(String signalName, String paramName) {
-    String expr = String.format(SIGNAL_EXPRESSION_TEMPLATE, signalName, paramName);
-    Object val = exprEvaluator.eval(expr, Collections.emptyMap());
-    Parameter param =
-        ParamHelper.deriveTypedParameter(
-            paramName, expr, val, null, ParamMode.IMMUTABLE, Collections.emptyMap());
-    param.setEvaluatedResult(val);
-    param.setEvaluatedTime(System.currentTimeMillis());
-    return param;
+  @SuppressWarnings({"PMD.PreserveStackTrace"})
+  private Parameter getReferenceSignalParam(String refParam, String signalName, String paramName) {
+    try {
+      String expr = String.format(SIGNAL_EXPRESSION_TEMPLATE, signalName, paramName);
+      Object val = exprEvaluator.eval(expr, Collections.emptyMap());
+      Parameter param =
+          ParamHelper.deriveTypedParameter(
+              paramName, expr, val, null, ParamMode.IMMUTABLE, Collections.emptyMap());
+      param.setEvaluatedResult(val);
+      param.setEvaluatedTime(System.currentTimeMillis());
+      return param;
+    } catch (MaestroRuntimeException e) {
+      LOG.warn(
+          "Failed to evaluate [{}] as a param within signal triggers or dependencies due to",
+          refParam,
+          e);
+      throw new MaestroInvalidExpressionException(
+          "Failed to evaluate the param with a definition: [%s]. Please check if there is a typo in the expression.",
+          refParam);
+    }
   }
 
   /**

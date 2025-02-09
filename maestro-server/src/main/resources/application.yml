@@ -29,6 +29,10 @@ maestro:
     memory-limit: 100000000
   cluster:
     name: test
+  # step database related action config
+  step-action:
+    action-timeout: 5000
+    check-interval: 500
 
 engine:
   configs:
@@ -49,6 +53,7 @@ engine:
     workflow-database-connection-pool-idle-min: 8
     workflow-database-connection-lifetime-max: 50000
     workflow-database-connection-idle-timeout: 30000
+    # flow engine config
     flow-engine-address: http://${spring.cloud.client.ip-address}:${server.port}
     initial-maintenance-delay-millis: ${random.long[2000,5000]}
 

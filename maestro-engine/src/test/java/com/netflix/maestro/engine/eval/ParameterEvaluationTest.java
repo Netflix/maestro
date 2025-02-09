@@ -19,6 +19,7 @@ import static org.junit.Assert.assertTrue;
 import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.engine.MaestroEngineBaseTest;
 import com.netflix.maestro.exceptions.MaestroInternalError;
+import com.netflix.maestro.exceptions.MaestroInvalidExpressionException;
 import com.netflix.maestro.models.definition.Workflow;
 import com.netflix.maestro.models.definition.WorkflowDefinition;
 import com.netflix.maestro.models.initiator.SignalInitiator;
@@ -309,6 +310,35 @@ public class ParameterEvaluationTest extends MaestroEngineBaseTest {
     paramEvaluator.parseStepParameter(
         Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(), bar, "step1");
     assertEquals("123-1", bar.getEvaluatedResult());
+    paramExtensionRepo.clear();
+  }
+
+  @Test
+  public void testParseStepParameterWithNonExistingStepIdUsingDoubleUnderscore() {
+    SignalInitiator initiator = new SignalInitiator();
+    initiator.setParams(
+        twoItemMap(
+            "signal_a",
+            StringMapParameter.builder().evaluatedResult(singletonMap("param1", "value1")).build(),
+            "signal_b",
+            MapParameter.builder().evaluatedResult(singletonMap("param2", 123L)).build()));
+    paramExtensionRepo.reset(
+        Collections.emptyMap(),
+        Collections.emptyMap(),
+        InstanceWrapper.builder().initiator(initiator).build());
+    StringParameter bar =
+        StringParameter.builder().name("bar").expression("non_existing__param2 + '-1';").build();
+    AssertHelper.assertThrows(
+        "cannot find non_existing entity",
+        MaestroInvalidExpressionException.class,
+        "Failed to evaluate the param with a definition: [non_existing__param2]",
+        () ->
+            paramEvaluator.parseStepParameter(
+                Collections.emptyMap(),
+                Collections.emptyMap(),
+                Collections.emptyMap(),
+                bar,
+                "step1"));
     paramExtensionRepo.clear();
   }
 

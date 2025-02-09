@@ -28,6 +28,7 @@ import com.netflix.maestro.flow.dao.MaestroFlowDao;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.server.properties.MaestroEngineProperties;
+import com.netflix.maestro.server.properties.MaestroProperties;
 import javax.sql.DataSource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -126,12 +127,19 @@ public class DatabaseConfiguration {
       DataSource maestroDataSource,
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
       MaestroEngineProperties props,
+      MaestroProperties maestroProperties,
       MaestroStepInstanceDao stepInstanceDao,
       MaestroJobEventPublisher maestroJobEventPublisher,
       MaestroMetrics metrics) {
     LOG.info("Creating maestroInstanceActionDao within Spring boot...");
     return new MaestroStepInstanceActionDao(
-        maestroDataSource, objectMapper, props, stepInstanceDao, maestroJobEventPublisher, metrics);
+        maestroDataSource,
+        objectMapper,
+        props,
+        maestroProperties.getStepAction(),
+        stepInstanceDao,
+        maestroJobEventPublisher,
+        metrics);
   }
 
   @Bean
