@@ -48,8 +48,7 @@ public class GroupActorTest extends ActorBaseTest {
   @Test
   public void testBeforeRunning() {
     groupActor.beforeRunning();
-    verify(context, times(1)).schedule(any(), anyLong());
-    assertEquals(Set.of(Action.GROUP_HEARTBEAT), groupActor.getScheduledActions().keySet());
+    verify(context, times(0)).schedule(any(), anyLong());
     verify(metrics, times(1)).counter("num_of_running_groups", GroupActor.class);
   }
 
@@ -59,8 +58,10 @@ public class GroupActorTest extends ActorBaseTest {
     groupActor.runForAction(Action.GROUP_START);
 
     verify(context, times(1)).getFlowsFrom(any(), anyLong(), any());
-    verify(context, times(1)).schedule(any(), anyLong());
-    assertEquals(Set.of(Action.GROUP_START), groupActor.getScheduledActions().keySet());
+    verify(context, times(2)).schedule(any(), anyLong());
+    assertEquals(
+        Set.of(Action.GROUP_HEARTBEAT, Action.GROUP_START),
+        groupActor.getScheduledActions().keySet());
   }
 
   @Test
@@ -69,8 +70,8 @@ public class GroupActorTest extends ActorBaseTest {
     groupActor.runForAction(Action.GROUP_START);
 
     verify(context, times(1)).getFlowsFrom(any(), anyLong(), any());
-    verify(context, times(0)).schedule(any(), anyLong());
-    assertTrue(groupActor.getScheduledActions().isEmpty());
+    verify(context, times(1)).schedule(any(), anyLong());
+    assertEquals(Set.of(Action.GROUP_HEARTBEAT), groupActor.getScheduledActions().keySet());
   }
 
   @Test
@@ -82,8 +83,8 @@ public class GroupActorTest extends ActorBaseTest {
 
     verifyActions(groupActor, new Action.FlowLaunch(flow, true));
     verify(context, times(2)).getFlowsFrom(any(), anyLong(), any());
-    verify(context, times(0)).schedule(any(), anyLong());
-    assertTrue(groupActor.getScheduledActions().isEmpty());
+    verify(context, times(1)).schedule(any(), anyLong());
+    assertEquals(Set.of(Action.GROUP_HEARTBEAT), groupActor.getScheduledActions().keySet());
   }
 
   @Test

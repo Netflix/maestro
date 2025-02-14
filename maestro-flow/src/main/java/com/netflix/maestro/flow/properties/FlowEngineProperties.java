@@ -13,8 +13,8 @@ public class FlowEngineProperties implements DatabaseConfiguration {
   private static final String MAX_GROUP_NUM_PROPERTY_NAME = "max.group.num";
   private static final long MAX_GROUP_NUM_DEFAULT_VALUE = 3;
 
-  private static final String GROUP_NUM_PER_NODE_PROPERTY_NAME = "group.num.per.node";
-  private static final long GROUP_NUM_PER_NODE_DEFAULT_VALUE = 3;
+  private static final String MAX_GROUP_NUM_PER_NODE_PROPERTY_NAME = "max.group.num.per.node";
+  private static final long MAX_GROUP_NUM_PER_NODE_DEFAULT_VALUE = 3;
 
   private static final String ACTOR_RETRY_INTERVAL_PROPERTY_NAME = "actor.retry.interval.millis";
   private static final long ACTOR_RETRY_INTERVAL_DEFAULT_VALUE = TimeUnit.SECONDS.toMillis(5);
@@ -47,12 +47,16 @@ public class FlowEngineProperties implements DatabaseConfiguration {
   private static final String FLOW_ENGINE_ADDRESS_PROPERTY_NAME = "flow.engine.address";
   private static final String FLOW_ENGINE_ADDRESS_DEFAULT_VALUE = "http://localhost:8080";
 
+  private static final String INTERNAL_WORKER_NUMBER_PROPERTY_NAME = "internal.worker.num";
+  private static final int INTERNAL_WORKER_NUMBER_DEFAULT_VALUE = 10;
+
   public long getMaxGroupNum() {
     return getLongProperty(MAX_GROUP_NUM_PROPERTY_NAME, MAX_GROUP_NUM_DEFAULT_VALUE);
   }
 
-  public long getGroupNumPerNode() {
-    return getLongProperty(GROUP_NUM_PER_NODE_PROPERTY_NAME, GROUP_NUM_PER_NODE_DEFAULT_VALUE);
+  public long getMaxGroupNumPerNode() {
+    return getLongProperty(
+        MAX_GROUP_NUM_PER_NODE_PROPERTY_NAME, MAX_GROUP_NUM_PER_NODE_DEFAULT_VALUE);
   }
 
   public long getActorErrorRetryIntervalInMillis() {
@@ -94,5 +98,10 @@ public class FlowEngineProperties implements DatabaseConfiguration {
 
   public String getEngineAddress() {
     return getProperty(FLOW_ENGINE_ADDRESS_PROPERTY_NAME, FLOW_ENGINE_ADDRESS_DEFAULT_VALUE);
+  }
+
+  public int getInternalWorkerNumber() {
+    return getIntProperty(
+        INTERNAL_WORKER_NUMBER_PROPERTY_NAME, INTERNAL_WORKER_NUMBER_DEFAULT_VALUE);
   }
 }

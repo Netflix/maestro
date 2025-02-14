@@ -25,6 +25,7 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-starter-sleuth:3.+'
     implementation spectatorApiDep
     implementation javaxValidationDep
+    implementation bvalJsrDep
     runtimeOnly testcontainerDep
 
     implementation project(':maestro-engine')

@@ -39,7 +39,7 @@ public class FlowExecutorTest extends ActorBaseTest {
   public void init() {
     when(properties.getInitialMaintenanceDelayInMillis()).thenReturn(1L);
     when(properties.getMaintenanceDelayInMillis()).thenReturn(100000L);
-    when(properties.getGroupNumPerNode()).thenReturn(2L);
+    when(properties.getMaxGroupNumPerNode()).thenReturn(2L);
     executor = new FlowExecutor(context);
   }
 
@@ -61,7 +61,7 @@ public class FlowExecutorTest extends ActorBaseTest {
 
   @Test
   public void testMaintenanceWithTooManyGroups() {
-    when(properties.getGroupNumPerNode()).thenReturn(0L);
+    when(properties.getMaxGroupNumPerNode()).thenReturn(0L);
     executor = new FlowExecutor(context);
     executor.init();
     verify(context, timeout(500).times(0)).claimGroup();

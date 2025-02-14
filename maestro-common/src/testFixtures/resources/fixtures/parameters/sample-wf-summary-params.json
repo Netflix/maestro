@@ -5,7 +5,7 @@
   "workflow_name": "Test workflow 01",
   "workflow_instance_id": 1,
   "workflow_run_id": 1,
-  "max_group_num": 5,
+  "group_info": 5,
   "initiator": {"type": "MANUAL"},
   "criticality": "CRITICAL",
   "run_policy": "START_FRESH_NEW_RUN",

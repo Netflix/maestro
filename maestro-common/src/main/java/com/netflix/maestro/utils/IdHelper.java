@@ -127,7 +127,7 @@ public final class IdHelper {
    * distributed.
    */
   public static long deriveGroupId(WorkflowInstance instance) {
-    return deriveGroupId(instance.getIdentity(), instance.getMaxGroupNum());
+    return deriveGroupId(instance.getIdentity(), instance.getGroupInfo());
   }
 
   public static long deriveGroupId(String groupingKey, long maxGroupNum) {

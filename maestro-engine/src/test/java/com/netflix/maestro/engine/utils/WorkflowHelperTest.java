@@ -117,7 +117,7 @@ public class WorkflowHelperTest extends MaestroEngineBaseTest {
     assertEquals(12345L, instance.getInternalId().longValue());
     assertNotNull(instance.getParams());
     assertNotNull(instance.getWorkflowUuid());
-    assertEquals(10, instance.getMaxGroupNum());
+    assertEquals(10, instance.getGroupInfo());
     Mockito.verify(paramsManager, Mockito.times(1)).generateMergedWorkflowParams(any(), any());
   }
 
@@ -129,14 +129,14 @@ public class WorkflowHelperTest extends MaestroEngineBaseTest {
         RunRequest.builder()
             .initiator(initiator)
             .currentPolicy(RunPolicy.START_FRESH_NEW_RUN)
-            .maxGroupNum(8L)
+            .groupInfo(8L)
             .build();
     Workflow workflow = definition.getWorkflow().toBuilder().instanceStepConcurrency(20L).build();
     WorkflowInstance instance =
         workflowHelper.createWorkflowInstance(workflow, 12345L, 1, new RunProperties(), request);
     assertNull(instance.getRuntimeWorkflow().getInstanceStepConcurrency());
     assertEquals(12345L, instance.getInternalId().longValue());
-    assertEquals(8, instance.getMaxGroupNum());
+    assertEquals(8, instance.getGroupInfo());
 
     request =
         RunRequest.builder()
@@ -262,7 +262,7 @@ public class WorkflowHelperTest extends MaestroEngineBaseTest {
     assertEquals(instance.getWorkflowVersionId(), summary.getWorkflowVersionId());
     assertEquals(instance.getCreateTime(), summary.getCreationTime());
     assertEquals(instance.getInternalId(), summary.getInternalId());
-    assertEquals(instance.getMaxGroupNum(), summary.getMaxGroupNum());
+    assertEquals(instance.getGroupInfo(), summary.getGroupInfo());
     assertEquals(definition.getWorkflow().getDag().keySet(), summary.getStepMap().keySet());
   }
 
@@ -276,10 +276,10 @@ public class WorkflowHelperTest extends MaestroEngineBaseTest {
     assertNull(summary.getInstanceStepConcurrency());
 
     instance.getRunProperties().setStepConcurrency(10L);
-    instance.setMaxGroupNum(8L);
+    instance.setGroupInfo(8L);
     summary = workflowHelper.createWorkflowSummaryFromInstance(instance);
     assertNull(summary.getInstanceStepConcurrency());
-    assertEquals(8, summary.getMaxGroupNum());
+    assertEquals(8, summary.getGroupInfo());
 
     // use runtime workflow instance_step_concurrency
     instance.setRuntimeWorkflow(

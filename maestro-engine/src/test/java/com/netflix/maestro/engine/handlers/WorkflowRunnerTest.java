@@ -53,7 +53,7 @@ public class WorkflowRunnerTest extends MaestroEngineBaseTest {
   public void testStart() {
     WorkflowInstance instance = new WorkflowInstance();
     instance.setWorkflowId("test-workflow");
-    instance.setMaxGroupNum(5L);
+    instance.setGroupInfo(5L);
     instance.setWorkflowVersionId(1);
     instance.setRuntimeWorkflow(mock(Workflow.class));
     instance.setRuntimeDag(Collections.singletonMap("step1", new StepTransition()));
@@ -71,7 +71,7 @@ public class WorkflowRunnerTest extends MaestroEngineBaseTest {
   public void testRestart() {
     WorkflowInstance instance = new WorkflowInstance();
     instance.setWorkflowId("test-workflow");
-    instance.setMaxGroupNum(5L);
+    instance.setGroupInfo(5L);
     instance.setWorkflowVersionId(1);
     instance.setRuntimeWorkflow(mock(Workflow.class));
     instance.setRuntimeDag(Collections.singletonMap("step1", new StepTransition()));

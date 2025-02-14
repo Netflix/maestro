@@ -122,7 +122,7 @@ public class StepInstanceWakeUpEventProcessor
             ForeachArtifact foreachArtifact =
                 stepInstance.getArtifacts().get(Artifact.Type.FOREACH.key()).asForeach();
             handleLeafTasksWakeup(
-                jobEvent.getMaxGroupNum(), foreachArtifact.getForeachOverview().getOverallRollup());
+                jobEvent.getGroupInfo(), foreachArtifact.getForeachOverview().getOverallRollup());
             stepTerminalCheck = desiredStatus.isTerminal();
           }
           break;
@@ -131,7 +131,7 @@ public class StepInstanceWakeUpEventProcessor
             SubworkflowArtifact subworkflowArtifact =
                 stepInstance.getArtifacts().get(Artifact.Type.SUBWORKFLOW.key()).asSubworkflow();
             handleLeafTasksWakeup(
-                jobEvent.getMaxGroupNum(),
+                jobEvent.getGroupInfo(),
                 subworkflowArtifact.getSubworkflowOverview().getRollupOverview());
             stepTerminalCheck = desiredStatus.isTerminal();
           }
@@ -158,11 +158,11 @@ public class StepInstanceWakeUpEventProcessor
             jobEvent.getWorkflowId(),
             jobEvent.getWorkflowInstanceId(),
             jobEvent.getWorkflowRunId());
-    wakeupUnderlyingTask(jobEvent.getMaxGroupNum(), flowReference, jobEvent.getStepId());
+    wakeupUnderlyingTask(jobEvent.getGroupInfo(), flowReference, jobEvent.getStepId());
   }
 
-  private void wakeupUnderlyingTask(long maxGroupNum, String flowReference, String stepId) {
-    long groupId = IdHelper.deriveGroupId(flowReference, maxGroupNum);
+  private void wakeupUnderlyingTask(long groupInfo, String flowReference, String stepId) {
+    long groupId = IdHelper.deriveGroupId(flowReference, groupInfo);
     try {
       boolean done = flowOperation.wakeUp(groupId, flowReference, stepId);
       if (!done) {
@@ -198,14 +198,14 @@ public class StepInstanceWakeUpEventProcessor
     }
 
     handleLeafTasksWakeup(
-        jobEvent.getMaxGroupNum(), workflowInstance.getRuntimeOverview().getRollupOverview());
+        jobEvent.getGroupInfo(), workflowInstance.getRuntimeOverview().getRollupOverview());
     if (jobEvent.getWorkflowAction().getStatus().isTerminal()) {
       throw new MaestroRetryableError(
           "Current status is not the desired status after action is taking. Will check again.");
     }
   }
 
-  private void handleLeafTasksWakeup(long maxGroupNum, WorkflowRollupOverview overview) {
+  private void handleLeafTasksWakeup(long groupInfo, WorkflowRollupOverview overview) {
     // get all the reference entities for leaf step that has shouldWakeup flag.
     Set<WorkflowRollupOverview.ReferenceEntity> retryingLeafRefs =
         overview.getOverview().entrySet().stream()
@@ -228,11 +228,11 @@ public class StepInstanceWakeUpEventProcessor
             .flatMap(Set::stream)
             .collect(Collectors.toSet());
 
-    wakeupUnderlyingFlows(maxGroupNum, retryingLeafRefs);
+    wakeupUnderlyingFlows(groupInfo, retryingLeafRefs);
   }
 
   private void wakeupUnderlyingFlows(
-      long maxGroupNum, Set<WorkflowRollupOverview.ReferenceEntity> entities) {
+      long groupInfo, Set<WorkflowRollupOverview.ReferenceEntity> entities) {
     var groupedRefs = new HashMap<Long, Set<String>>();
     entities.forEach(
         ref -> {
@@ -242,7 +242,7 @@ public class StepInstanceWakeUpEventProcessor
                   ref.getWorkflowId(),
                   ref.getInstanceId(),
                   ref.getRunId());
-          long groupId = IdHelper.deriveGroupId(flowReference, maxGroupNum);
+          long groupId = IdHelper.deriveGroupId(flowReference, groupInfo);
           if (!groupedRefs.containsKey(groupId)) {
             groupedRefs.put(groupId, new HashSet<>());
           }

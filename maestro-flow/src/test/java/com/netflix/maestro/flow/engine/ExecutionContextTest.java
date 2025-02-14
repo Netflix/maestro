@@ -58,6 +58,7 @@ public class ExecutionContextTest extends FlowBaseTest {
 
   @Before
   public void init() {
+    when(properties.getInternalWorkerNumber()).thenReturn(3);
     context =
         new ExecutionContext(
             Map.of("noop", flowTask),

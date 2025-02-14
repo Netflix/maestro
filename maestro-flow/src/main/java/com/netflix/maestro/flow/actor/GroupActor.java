@@ -45,8 +45,8 @@ final class GroupActor extends BaseActor {
 
   @Override
   void beforeRunning() {
+    LOG.info("Start running group actor for group: [{}]", group);
     getMetrics().counter("num_of_running_groups", getClass());
-    schedule(Action.GROUP_HEARTBEAT, heartbeatInterval);
   }
 
   @Override
@@ -90,7 +90,9 @@ final class GroupActor extends BaseActor {
    * will load every flow. Old owners will detect it during heartbeat or DB insert.
    */
   private void startGroup() {
+    schedule(Action.GROUP_HEARTBEAT, heartbeatInterval);
     String idCursor = FLOW_ID_START_CURSOR;
+    int cnt = 0;
     while (idCursor != null) {
       List<Flow> flows = getContext().getFlowsFrom(group, fetchLimit, idCursor);
       if (flows == null) { // indicate an exception
@@ -98,6 +100,7 @@ final class GroupActor extends BaseActor {
         idCursor = null;
       } else {
         LOG.debug("Loaded [{}] flows for group [{}]", flows.size(), group);
+        cnt += flows.size();
         idCursor =
             flows.stream()
                 .map(
@@ -109,6 +112,8 @@ final class GroupActor extends BaseActor {
                 .orElse(null);
       }
     }
+    // If this takes longer than expiration interval, need to start in phases.
+    LOG.info("Finished group start and loaded [{}] flows for the group [{}]", cnt, group);
   }
 
   private void runFlow(Action.FlowLaunch action) {

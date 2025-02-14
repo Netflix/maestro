@@ -56,7 +56,7 @@ public class RunRequest {
 
   @Nullable private final List<Tag> runtimeTags;
   @Nullable private final String correlationId;
-  @Nullable private final Long maxGroupNum;
+  @Nullable private final Long groupInfo;
   @Nullable private final Long instanceStepConcurrency; // null means unset and disabled
   @Nullable private final Map<String, ParamDefinition> runParams;
   @Nullable private final Map<String, Map<String, ParamDefinition>> stepRunParams;
