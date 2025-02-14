@@ -622,7 +622,7 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
     stepInstance.setWorkflowInstanceId(summary.getWorkflowInstanceId());
     stepInstance.setWorkflowRunId(summary.getWorkflowRunId());
     stepInstance.setStepId(stepId);
-    stepInstance.setMaxGroupNum(summary.getMaxGroupNum());
+    stepInstance.setGroupInfo(summary.getGroupInfo());
     StepAction stepAction = StepAction.createTerminate(action, stepInstance, user, reason, false);
 
     upsertActions(

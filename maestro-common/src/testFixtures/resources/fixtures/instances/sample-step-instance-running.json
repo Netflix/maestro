@@ -9,7 +9,7 @@
   "correlation_id": "sample-dag-test-3-1-1",
   "step_instance_id": 1,
   "workflow_version_id": 1,
-  "max_group_num": 8,
+  "group_info": 8,
   "owner": "tester",
   "definition": {
     "step": {

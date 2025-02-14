@@ -60,10 +60,12 @@ abstract sealed class BaseActor implements Actor permits GroupActor, FlowActor, 
             + reference());
   }
 
+  /** best effort operations without retry support. */
   abstract void beforeRunning();
 
   abstract void runForAction(Action action);
 
+  /** best effort operations without retry support. */
   abstract void afterRunning();
 
   abstract String reference();

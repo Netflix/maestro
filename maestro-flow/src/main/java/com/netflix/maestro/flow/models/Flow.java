@@ -57,7 +57,7 @@ public class Flow {
   private volatile Status status;
   private long updateTime;
   private String reasonForIncompletion;
-  private long seq = 0;
+  private long seq;
 
   private Task prepareTask; // inline task runs at the beginning before user jobs
   private Task monitorTask; // inline task runs whenever there is an update in the flow

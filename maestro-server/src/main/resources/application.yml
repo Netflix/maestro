@@ -10,8 +10,6 @@ server:
   port: 8080
 
 maestro:
-  queue:
-    type: in-memory
   publisher:
     type: in-memory
   alerting:
@@ -36,12 +34,9 @@ maestro:
 
 engine:
   configs:
-    payload-compression-enabled: true
-    payload-compressor-name: gzip
     # database config
     workflow-database-error-retries: 5
     workflow-database-insert-batch-size: 32
-    workflow-database-follower-reads-enabled: false
     workflow-database-rewrite-batched-inserts: true
     workflow-database-login-timeout-seconds: 5
     workflow-database-socket-timeout-seconds: 50
@@ -56,6 +51,7 @@ engine:
     # flow engine config
     flow-engine-address: http://${spring.cloud.client.ip-address}:${server.port}
     initial-maintenance-delay-millis: ${random.long[2000,5000]}
+    internal-worker-num: 80
 
 stepruntime:
   env: test

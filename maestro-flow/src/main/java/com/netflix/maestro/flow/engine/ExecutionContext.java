@@ -17,6 +17,8 @@ import com.netflix.maestro.flow.utils.ExecutionHelper;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -43,6 +45,7 @@ public class ExecutionContext {
   private final FinalFlowStatusCallback finalCallback;
   private final ExecutionPreparer executionPreparer;
   private final MaestroFlowDao flowDao;
+  private final ExecutorService internalWorkers; // avoid virtual thread running business logic
 
   @Getter private final FlowEngineProperties properties;
   @Getter private final MaestroMetrics metrics;
@@ -59,6 +62,7 @@ public class ExecutionContext {
     this.finalCallback = finalCallback;
     this.executionPreparer = executionPreparer;
     this.flowDao = flowDao;
+    this.internalWorkers = Executors.newFixedThreadPool(properties.getInternalWorkerNumber());
     this.properties = properties;
     this.metrics = metrics;
   }
@@ -137,12 +141,46 @@ public class ExecutionContext {
 
   /** run the one-time start logic of a task. */
   public void start(Flow flow, Task task) {
-    flowTaskMap.get(task.getTaskType()).start(flow, task);
+    var future =
+        internalWorkers.submit(() -> flowTaskMap.get(task.getTaskType()).start(flow, task));
+    try {
+      future.get();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new MaestroRetryableError(
+          e,
+          "task start: [%s] is interrupted due to [%s], retry it",
+          task.referenceTaskName(),
+          e.getMessage());
+    } catch (ExecutionException | CancellationException e) {
+      throw new MaestroRetryableError(
+          e,
+          "task start: [%s] is failed due to [%s], retry it",
+          task.referenceTaskName(),
+          e.getMessage());
+    }
   }
 
   /** run the repeated execute logic of a task. */
   public boolean execute(Flow flow, Task task) {
-    return flowTaskMap.get(task.getTaskType()).execute(flow, task);
+    var future =
+        internalWorkers.submit(() -> flowTaskMap.get(task.getTaskType()).execute(flow, task));
+    try {
+      return future.get();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new MaestroRetryableError(
+          e,
+          "task execute: [%s] is interrupted due to [%s], retry it",
+          task.referenceTaskName(),
+          e.getMessage());
+    } catch (ExecutionException | CancellationException e) {
+      throw new MaestroRetryableError(
+          e,
+          "task execute: [%s] is failed due to [%s], retry it",
+          task.referenceTaskName(),
+          e.getMessage());
+    }
   }
 
   /** Cancel the task. */
@@ -156,7 +194,7 @@ public class ExecutionContext {
       return executionPreparer.cloneTask(task);
     } catch (RuntimeException e) {
       throw new MaestroUnprocessableEntityException(
-          "cannot clone task: [%s]", task.referenceTaskName());
+          "cannot clone task: [%s] due to error [%s]", task.referenceTaskName(), e.getMessage());
     }
   }
 

@@ -38,7 +38,7 @@ public class FlowExecutor {
   private final ExecutionContext context;
   private final long initialDelay;
   private final long delay;
-  private final long groupNumPerNode;
+  private final long maxGroupNumPerNode;
   private final String address;
 
   /** Constructor. */
@@ -46,7 +46,7 @@ public class FlowExecutor {
     this.context = context;
     this.initialDelay = context.getProperties().getInitialMaintenanceDelayInMillis();
     this.delay = context.getProperties().getMaintenanceDelayInMillis();
-    this.groupNumPerNode = context.getProperties().getGroupNumPerNode();
+    this.maxGroupNumPerNode = context.getProperties().getMaxGroupNumPerNode();
     this.address = context.getProperties().getEngineAddress();
   }
 
@@ -66,24 +66,31 @@ public class FlowExecutor {
    * expected to manage a reasonable number (e.g. less than 10) of groups. No need to create many
    * groups as a group can include as many as running maestro flow instances. Group helps spread the
    * load into the whole cluster with minimal maintenance cost, e.g. heartbeat. We should set
-   * max_group_num <= group_num_per_node * number of nodes. When we need to add more nodes, we
-   * should adjust max_group_num and group_num_per_node for new nodes before adding them into the
-   * cluster. To improve the resiliency, we might add a bit more nodes. Note that those
-   * configurations can be inconsistent across the cluster. It won't affect each execution as the
-   * group id has been decided when the instance is created. Also note that max_group_num is not
-   * fixed, which is different from sharing. We can freely increase or reduce the max_group_num
-   * number without moving the existing flows. The max_group_num change only affects the new flow
-   * instances. Existing flows will continue to work as they are assigned a decided group id at the
-   * beginning. So if the maestro cluster does not enable auto-scaling, we can simply set `max_group
-   * = 1x or 2x of number of nodes`. Otherwise, we should leave spaces for auto-scaling. Then new
-   * nodes can ask to take the ownership a group from existing nodes.
+   * max_group_num to be reasonable size and always <= max_group_num_per_node * number of nodes.
+   * When we need to add more nodes, It's better to do a new fresh deployment to replace the whole
+   * cluster with a larger size rather than adding a few nodes into the existing cluster. In a
+   * cluster setup (>=3 nodes), a usual simple way is to set max_group_num_per_node to be 5 and
+   * max_group_num to be 3 * num of nodes. e.g. 3 nodes, then max_group_num = 9 and
+   * max_group_num_per_node = 5. If one node is dead, other two can still pick those groups. This
+   * support also supports autoscaling upto 3x to 9 nodes. Also note that those configurations can
+   * be inconsistent across the cluster. Adjusting max_group_num and max_group_num_per_node won't
+   * affect existing flow execution as the group id has been decided when the instance is created.
+   * It only affects the new flow instances. Existing flows will continue to work as they are
+   * assigned a decided group id at the beginning.
+   *
+   * <p>In the future, we might add support for nodes to talk with each other to take the ownership
+   * a group from existing nodes.
    */
   private void maintenance() {
     LOG.trace("[{}] tries to claim a group...", address);
     int groupNum = groupActors.size();
     context.getMetrics().gauge("num_of_groups", groupNum, getClass());
-    if (groupNum >= groupNumPerNode) {
-      LOG.trace("[{}] has enough groups, no need to claim more", address);
+    if (groupNum >= maxGroupNumPerNode) {
+      LOG.trace(
+          "[{}] has enough groups [{} >= {}], no need to claim more",
+          address,
+          groupNum,
+          maxGroupNumPerNode);
       return;
     }
     try {

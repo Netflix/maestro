@@ -55,6 +55,7 @@ final class FlowActor extends BaseActor {
 
   @Override
   void beforeRunning() {
+    LOG.info("Start running flow actor for flow: [{}]", reference());
     getMetrics().counter("num_of_running_flows", getClass());
   }
 

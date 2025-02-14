@@ -81,7 +81,7 @@ public class IdHelperTest {
     instance.setWorkflowRunId(2);
     Assert.assertEquals(0, IdHelper.deriveGroupId(instance));
 
-    instance.setMaxGroupNum(10);
+    instance.setGroupInfo(10);
     Assert.assertEquals(5, IdHelper.deriveGroupId(instance));
 
     Assert.assertEquals(0, IdHelper.deriveGroupId("test-key", 3));

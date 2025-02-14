@@ -56,7 +56,7 @@ import lombok.Data;
       "workflow_instance_id",
       "workflow_run_id",
       "correlation_id",
-      "max_group_num",
+      "group_info",
       "creation_time",
       "workflow_uuid",
       "run_policy",
@@ -83,7 +83,7 @@ public class WorkflowSummary {
   private long workflowInstanceId;
   private long workflowRunId;
   private String correlationId;
-  private long maxGroupNum;
+  private long groupInfo;
   private Long creationTime;
   @NotNull private String workflowUuid;
 

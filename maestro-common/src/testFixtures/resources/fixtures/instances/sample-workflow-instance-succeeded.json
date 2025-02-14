@@ -1,7 +1,7 @@
 {
   "workflow_id": "sample-dag-test-3",
   "internal_id": 12345,
-  "max_group_num": 3,
+  "group_info": 3,
   "workflow_instance_id": 1,
   "workflow_run_id": 1,
   "workflow_uuid": "8a0bd56f-745f-4a2c-b81b-1b2f89127e73",

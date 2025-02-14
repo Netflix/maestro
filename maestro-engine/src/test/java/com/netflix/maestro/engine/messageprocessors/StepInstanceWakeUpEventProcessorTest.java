@@ -61,7 +61,7 @@ public class StepInstanceWakeUpEventProcessorTest extends MaestroEngineBaseTest 
   private final long workflowInstanceId = 2;
   private final long workflowRunId = 3;
   private final String stepAttemptId = "2";
-  private final long maxGroupNum = 12L;
+  private final long groupInfo = 12L;
   private final String stepId = "sample-test-step-id";
   private StepInstanceWakeUpEventProcessor processor;
   private WorkflowRollupOverview overview;
@@ -81,7 +81,7 @@ public class StepInstanceWakeUpEventProcessorTest extends MaestroEngineBaseTest 
     event.setWorkflowRunId(workflowRunId);
     event.setStepId(stepId);
     event.setStepAttemptId(stepAttemptId);
-    event.setMaxGroupNum(maxGroupNum);
+    event.setGroupInfo(groupInfo);
     Mockito.when(
             stepInstanceDao.getStepInstance(
                 workflowId, workflowInstanceId, workflowRunId, stepId, stepAttemptId))
@@ -108,9 +108,9 @@ public class StepInstanceWakeUpEventProcessorTest extends MaestroEngineBaseTest 
     Mockito.when(stepInstance.getRuntimeState()).thenReturn(stepRuntimeState);
     Mockito.when(stepInstance.getArtifacts()).thenReturn(artifactMap);
     Mockito.when(stepInstance.getStepId()).thenReturn(stepId);
-    Mockito.when(stepInstance.getMaxGroupNum()).thenReturn(maxGroupNum);
+    Mockito.when(stepInstance.getGroupInfo()).thenReturn(groupInfo);
     Mockito.when(stepInstance.getStepAttemptId()).thenReturn(Long.valueOf(stepAttemptId));
-    Mockito.when(foreachStepInstance.getMaxGroupNum()).thenReturn(maxGroupNum);
+    Mockito.when(foreachStepInstance.getGroupInfo()).thenReturn(groupInfo);
   }
 
   private void setStepInstanceDefinition(StepType type) {

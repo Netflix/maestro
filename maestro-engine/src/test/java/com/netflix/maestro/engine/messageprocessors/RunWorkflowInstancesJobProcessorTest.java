@@ -59,9 +59,9 @@ public class RunWorkflowInstancesJobProcessorTest extends MaestroEngineBaseTest 
     when(workflowRunner.start(instance1)).thenReturn("a");
     when(workflowRunner.start(instance2)).thenReturn("b");
     when(workflowRunner.start(instance3)).thenReturn("c");
-    when(instance1.getMaxGroupNum()).thenReturn(1L);
-    when(instance2.getMaxGroupNum()).thenReturn(2L);
-    when(instance3.getMaxGroupNum()).thenReturn(3L);
+    when(instance1.getGroupInfo()).thenReturn(1L);
+    when(instance2.getGroupInfo()).thenReturn(2L);
+    when(instance3.getGroupInfo()).thenReturn(3L);
     when(instance1.getIdentity()).thenReturn("[" + workflowId + "][1][1]");
     when(instance2.getIdentity()).thenReturn("[" + workflowId + "][2][1]");
     when(instance3.getIdentity()).thenReturn("[" + workflowId + "][3][1]");

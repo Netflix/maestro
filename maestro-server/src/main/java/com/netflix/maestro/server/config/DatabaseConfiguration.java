@@ -51,12 +51,12 @@ public class DatabaseConfiguration {
   // below are maestro flow DB Daos
   @Bean
   public MaestroFlowDao maestroFlowDao(
-      DataSource crdbDataSource,
+      DataSource maestroDataSource,
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
       MaestroEngineProperties props,
       MaestroMetrics metrics) {
     LOG.info("Creating IndexDAO within Spring boot...");
-    return new MaestroFlowDao(crdbDataSource, objectMapper, props, metrics);
+    return new MaestroFlowDao(maestroDataSource, objectMapper, props, metrics);
   }
 
   // below are maestro DB Daos
@@ -102,14 +102,14 @@ public class DatabaseConfiguration {
 
   @Bean
   public MaestroRunStrategyDao maestroRunStrategyDao(
-      DataSource crdbDataSource,
+      DataSource maestroDataSource,
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
       MaestroEngineProperties props,
       MaestroJobEventPublisher maestroJobEventPublisher,
       MaestroMetrics metrics) {
     LOG.info("Creating maestroRunStrategyDao within Spring boot...");
     return new MaestroRunStrategyDao(
-        crdbDataSource, objectMapper, props, maestroJobEventPublisher, metrics);
+        maestroDataSource, objectMapper, props, maestroJobEventPublisher, metrics);
   }
 
   @Bean

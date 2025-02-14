@@ -65,7 +65,7 @@ public class Task {
   private Map<String, Object> outputData;
   private long startDelayInSeconds; // task polling interval
   private long retryCount;
-  private int pollCount = 0;
+  private int pollCount;
   private boolean active = true; // flag to indicate if a running task is active or not
   private Long startTime; // used to record the execution start time
   private Long timeoutInMillis; // keep unset timeout value from maestro engine

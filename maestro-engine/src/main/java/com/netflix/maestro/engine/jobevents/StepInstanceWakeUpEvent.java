@@ -35,7 +35,7 @@ import lombok.Data;
       "workflow_id",
       "workflow_instance_id",
       "workflow_run_id",
-      "max_group_num",
+      "group_info",
       "step_id",
       "step_attempt_id",
       "step_status",
@@ -55,7 +55,7 @@ public class StepInstanceWakeUpEvent implements MaestroJobEvent {
   @Min(1)
   private long workflowRunId;
 
-  private long maxGroupNum; // used to decide the group id to identify the event destination
+  private long groupInfo; // used to derive the group id for the step instance
 
   @Nullable private String stepId;
   @Nullable private String stepAttemptId;
@@ -93,7 +93,7 @@ public class StepInstanceWakeUpEvent implements MaestroJobEvent {
     event.stepId = action.getStepId();
     event.stepAction = action.getAction();
     event.entityType = EntityType.STEP;
-    event.maxGroupNum = stepInstance.getMaxGroupNum();
+    event.groupInfo = stepInstance.getGroupInfo();
 
     if (stepInstance.getStepAttemptId() > 0) {
       event.stepAttemptId = String.valueOf(stepInstance.getStepAttemptId());
@@ -123,7 +123,7 @@ public class StepInstanceWakeUpEvent implements MaestroJobEvent {
     event.workflowId = instance.getWorkflowId();
     event.workflowInstanceId = instance.getWorkflowInstanceId();
     event.workflowRunId = instance.getWorkflowRunId();
-    event.maxGroupNum = instance.getMaxGroupNum();
+    event.groupInfo = instance.getGroupInfo();
     event.workflowAction = action;
     event.entityType = EntityType.WORKFLOW;
     return event;

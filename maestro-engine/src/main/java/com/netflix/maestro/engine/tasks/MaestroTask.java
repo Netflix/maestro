@@ -919,7 +919,7 @@ public class MaestroTask implements FlowTask {
     toTerminate.setWorkflowId(summary.getWorkflowId());
     toTerminate.setWorkflowInstanceId(summary.getWorkflowInstanceId());
     toTerminate.setWorkflowRunId(summary.getWorkflowRunId());
-    toTerminate.setMaxGroupNum(summary.getMaxGroupNum());
+    toTerminate.setGroupInfo(summary.getGroupInfo());
 
     Map<String, Task> realTaskMap =
         TaskHelper.getUserDefinedRealTaskMap(flow.getFinishedTasks().stream());
@@ -1020,7 +1020,7 @@ public class MaestroTask implements FlowTask {
       WorkflowSummary workflowSummary,
       StepRuntimeSummary runtimeSummary,
       boolean thrown) {
-    StepInstance stepInstance = createStepInstance(task, workflowSummary, runtimeSummary);
+    StepInstance stepInstance = createStepInstance(workflowSummary, runtimeSummary);
     Optional<Details> result = stepSyncManager.sync(stepInstance, workflowSummary, runtimeSummary);
     if (result.isPresent()) {
       runtimeSummary.addTimeline(
@@ -1039,7 +1039,7 @@ public class MaestroTask implements FlowTask {
   }
 
   private StepInstance createStepInstance(
-      Task task, WorkflowSummary workflowSummary, StepRuntimeSummary stepSummary) {
+      WorkflowSummary workflowSummary, StepRuntimeSummary stepSummary) {
     StepInstance stepInstance = new StepInstance();
     stepInstance.setWorkflowId(workflowSummary.getWorkflowId());
     stepInstance.setWorkflowInstanceId(workflowSummary.getWorkflowInstanceId());
@@ -1057,7 +1057,7 @@ public class MaestroTask implements FlowTask {
     if (stepSummary.getDbOperation() != DbOperation.UPDATE) {
       Step stepDefinition = getStepDefinition(stepSummary.getStepId(), workflowSummary);
       stepInstance.setWorkflowVersionId(workflowSummary.getWorkflowVersionId());
-      stepInstance.setMaxGroupNum(workflowSummary.getMaxGroupNum());
+      stepInstance.setGroupInfo(workflowSummary.getGroupInfo());
       stepInstance.setOwner(workflowSummary.getRunProperties().getOwner());
       stepInstance.setDefinition(stepDefinition);
       stepInstance.setTags(stepSummary.getTags());

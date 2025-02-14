@@ -678,7 +678,7 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
   @Test
   public void testTerminateStep() {
     testRestartDirectly();
-    summary.setMaxGroupNum(10);
+    summary.setGroupInfo(10);
     Optional<StepAction> stepAction = actionDao.tryGetAction(summary, "job1");
     Assert.assertTrue(stepAction.isPresent());
     stepAction.ifPresent(
@@ -705,8 +705,8 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
         });
     var event = ArgumentCaptor.forClass(StepInstanceWakeUpEvent.class);
     Mockito.verify(publisher, Mockito.times(2)).publish(event.capture());
-    Assert.assertEquals(8, event.getAllValues().getFirst().getMaxGroupNum());
-    Assert.assertEquals(10, event.getAllValues().getLast().getMaxGroupNum());
+    Assert.assertEquals(8, event.getAllValues().getFirst().getGroupInfo());
+    Assert.assertEquals(10, event.getAllValues().getLast().getGroupInfo());
   }
 
   @Test

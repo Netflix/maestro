@@ -52,7 +52,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @AllArgsConstructor
 public class MaestroFinalFlowStatusCallback implements FinalFlowStatusCallback {
-  private static final String TYPE_TAG = "type";
   private static final String FAILURE_REASON_PREFIX = WorkflowInstance.Status.FAILED.name() + "-";
 
   private final MaestroTask maestroTask;
@@ -68,7 +67,7 @@ public class MaestroFinalFlowStatusCallback implements FinalFlowStatusCallback {
     metrics.counter(
         MetricConstants.FINAL_FLOW_STATUS_CALL_BACK_METRIC,
         getClass(),
-        TYPE_TAG,
+        MetricConstants.TYPE_TAG,
         "onFlowCompleted");
   }
 
@@ -78,7 +77,7 @@ public class MaestroFinalFlowStatusCallback implements FinalFlowStatusCallback {
     metrics.counter(
         MetricConstants.FINAL_FLOW_STATUS_CALL_BACK_METRIC,
         getClass(),
-        TYPE_TAG,
+        MetricConstants.TYPE_TAG,
         "onFlowTerminated",
         MetricConstants.STATUS_TAG,
         flow.getStatus().name());
@@ -98,7 +97,7 @@ public class MaestroFinalFlowStatusCallback implements FinalFlowStatusCallback {
     metrics.counter(
         MetricConstants.FINAL_FLOW_STATUS_CALL_BACK_METRIC,
         getClass(),
-        TYPE_TAG,
+        MetricConstants.TYPE_TAG,
         "onFlowFinalized",
         MetricConstants.STATUS_TAG,
         flow.getStatus().name());
@@ -188,7 +187,7 @@ public class MaestroFinalFlowStatusCallback implements FinalFlowStatusCallback {
               metrics.counter(
                   MetricConstants.FINAL_FLOW_STATUS_CALL_BACK_METRIC,
                   getClass(),
-                  TYPE_TAG,
+                  MetricConstants.TYPE_TAG,
                   "invalidStatusOnFlowFinalized");
               throw new MaestroInternalError(
                   "Invalid status [%s] onFlowFinalized", flow.getStatus());
@@ -201,7 +200,7 @@ public class MaestroFinalFlowStatusCallback implements FinalFlowStatusCallback {
       metrics.counter(
           MetricConstants.FINAL_FLOW_STATUS_CALL_BACK_METRIC,
           getClass(),
-          TYPE_TAG,
+          MetricConstants.TYPE_TAG,
           "nonRetryableErrorOnFlowFinalized");
       update(
           flow,
@@ -247,7 +246,7 @@ public class MaestroFinalFlowStatusCallback implements FinalFlowStatusCallback {
       metrics.counter(
           MetricConstants.FINAL_FLOW_STATUS_CALL_BACK_METRIC,
           getClass(),
-          TYPE_TAG,
+          MetricConstants.TYPE_TAG,
           "failedUpdateOnFlowFinalized");
       throw new MaestroRetryableError(
           updated.get(), "Failed to update workflow instance: " + summary.getIdentity());
@@ -260,7 +259,7 @@ public class MaestroFinalFlowStatusCallback implements FinalFlowStatusCallback {
     metrics.counter(
         MetricConstants.FINAL_FLOW_STATUS_CALL_BACK_METRIC,
         getClass(),
-        TYPE_TAG,
+        MetricConstants.TYPE_TAG,
         "updateOnFlowFinalized",
         MetricConstants.STATUS_TAG,
         status.name());
@@ -291,7 +290,7 @@ public class MaestroFinalFlowStatusCallback implements FinalFlowStatusCallback {
       metrics.counter(
           MetricConstants.FINAL_FLOW_STATUS_CALL_BACK_METRIC,
           getClass(),
-          TYPE_TAG,
+          MetricConstants.TYPE_TAG,
           "nonTerminalStatusOnFlowFinalized");
       throw new MaestroRetryableError(
           "Final workflow %s step status is invalid and will retry termination.",
@@ -308,7 +307,7 @@ public class MaestroFinalFlowStatusCallback implements FinalFlowStatusCallback {
       metrics.counter(
           MetricConstants.FINAL_FLOW_STATUS_CALL_BACK_METRIC,
           getClass(),
-          TYPE_TAG,
+          MetricConstants.TYPE_TAG,
           "inconsistentStatsOnFlowFinalized");
     }
     overview.setStepOverview(stats);

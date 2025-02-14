@@ -209,7 +209,7 @@ public final class StepHelper {
         .currentPolicy(workflowSummary.getRunPolicy()) // default and might be updated
         .runtimeTags(tags)
         .correlationId(workflowSummary.getCorrelationId())
-        .maxGroupNum(workflowSummary.getMaxGroupNum())
+        .groupInfo(workflowSummary.getGroupInfo())
         .instanceStepConcurrency(workflowSummary.getInstanceStepConcurrency()) // pass it down
         .runParams(runParams)
         .restartConfig(

@@ -85,7 +85,7 @@ public class WorkflowHelper {
     instance.setCorrelationId(runRequest.getCorrelationId());
     instance.setRunProperties(runProperties);
     // set the current max group num for the fresh new workflow instance
-    instance.setMaxGroupNum(ObjectHelper.valueOrDefault(runRequest.getMaxGroupNum(), maxGroupNum));
+    instance.setGroupInfo(ObjectHelper.valueOrDefault(runRequest.getGroupInfo(), maxGroupNum));
     // it includes runtime params and tags. Its dag is versioned dag.
     Workflow workflow = overrideWorkflowConfig(workflowDef, runRequest);
     instance.setRuntimeWorkflow(workflow);
@@ -172,7 +172,7 @@ public class WorkflowHelper {
     summary.setCreationTime(instance.getCreateTime());
     summary.setWorkflowRunId(instance.getWorkflowRunId());
     summary.setCorrelationId(instance.getCorrelationId());
-    summary.setMaxGroupNum(instance.getMaxGroupNum());
+    summary.setGroupInfo(instance.getGroupInfo());
     summary.setWorkflowUuid(instance.getWorkflowUuid());
     if (instance.getRunConfig() != null) {
       summary.setRunPolicy(instance.getRunConfig().getPolicy());
