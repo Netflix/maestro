@@ -107,8 +107,11 @@ configure(allprojects - project(':netflix-sel')) {
     }
 }
 
-configure([project(':maestro-common'), project(':maestro-engine')]) {
+configure(allprojects - project(':maestro-server')) {
     apply plugin: 'java-library'
+}
+
+configure([project(':maestro-common'), project(':maestro-engine')]) {
     apply plugin: 'java-test-fixtures'
 
     checkstyle {
@@ -118,8 +121,4 @@ configure([project(':maestro-common'), project(':maestro-engine')]) {
     pmd {
         pmdTestFixtures.enabled = true
     }
-}
-
-configure([project(':maestro-flow'), project(':maestro-database')]) {
-    apply plugin: 'java-library'
 }
