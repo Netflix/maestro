@@ -11,11 +11,11 @@ server:
 
 maestro:
   notifier:
-    type: noop
+    type: sns
   publisher:
-    type: in-memory
+    type: sqs
   listener:
-    type: in-memory
+    type: sqs
   alerting:
     type: noop
   redis:
@@ -89,3 +89,27 @@ logging:
   level:
     com:
       netflix: INFO
+
+aws:
+  sns:
+    topic: arn:aws:sns:us-east-1:000000000000:maestro-test
+    endpoint: http://localhost:4566
+  sqs:
+    start-workflow-job-queue-url: http://localhost:4566/000000000000/maestro-start-workflow-job
+    run-workflow-instances-job-queue-url: http://localhost:4566/000000000000/maestro-run-workflow-instances-job.fifo
+    terminate-instances-job-queue-url: http://localhost:4566/000000000000/maestro-terminate-instances-job
+    terminate-then-run-instance-job-queue-url: http://localhost:4566/000000000000/maestro-terminate-then-run-instance-job
+    publish-job-queue-url: http://localhost:4566/000000000000/maestro-publish-job-event
+    delete-workflow-job-queue-url: http://localhost:4566/000000000000/maestro-delete-workflow-job
+    step-wake-up-job-queue-url: http://localhost:4566/000000000000/maestro-step-wake-up-job.fifo
+
+cloud:
+  aws:
+    credentials:
+      access-key: ${AWS_ACCESS_KEY_ID}
+      secret-key: ${AWS_SECRET_ACCESS_KEY}
+    region:
+      static: ${AWS_DEFAULT_REGION}
+      auto: false
+    stack:
+      auto: false

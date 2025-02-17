@@ -1,5 +1,3 @@
-apply plugin: 'java-library'
-
 dependencies {
   implementation jodaTimeDep
   api slf4jApiDep

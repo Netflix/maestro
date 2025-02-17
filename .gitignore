@@ -55,3 +55,4 @@ Thumbs.db
 ######################
 tomcat.8080/
 cockroach-data
+**/tmp

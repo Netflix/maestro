@@ -63,6 +63,10 @@ public class MaestroServerConfiguration {
     return new UserInfoInterceptor(callerBuilder);
   }
 
+  @ConditionalOnProperty(
+      value = "maestro.notifier.type",
+      havingValue = "noop",
+      matchIfMissing = true)
   @Bean
   public MaestroNotificationPublisher notificationPublisher() {
     LOG.info("Creating NoOp MaestroNotificationPublisher within Spring boot...");
@@ -162,6 +166,10 @@ public class MaestroServerConfiguration {
   }
 
   @Bean(initMethod = "postConstruct", destroyMethod = "preDestroy")
+  @ConditionalOnProperty(
+      value = "maestro.listener.type",
+      havingValue = "in-memory",
+      matchIfMissing = true)
   public InMemoryJobEventListener inMemoryJobEventListener(
       DeleteWorkflowJobProcessor deleteWorkflowJobProcessor,
       RunWorkflowInstancesJobProcessor runWorkflowInstancesJobProcessor,
