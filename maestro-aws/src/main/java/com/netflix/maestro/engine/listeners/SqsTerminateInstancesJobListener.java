@@ -15,6 +15,8 @@ package com.netflix.maestro.engine.listeners;
 import com.netflix.maestro.engine.jobevents.TerminateInstancesJobEvent;
 import com.netflix.maestro.engine.processors.MaestroEventProcessor;
 import com.netflix.maestro.engine.processors.SqsProcessorFinalizer;
+import com.netflix.maestro.models.Constants;
+import java.util.concurrent.TimeUnit;
 import lombok.AllArgsConstructor;
 import org.springframework.cloud.aws.messaging.listener.Acknowledgment;
 import org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy;
@@ -25,14 +27,10 @@ import org.springframework.messaging.handler.annotation.Header;
 /** SQS Listener for TerminateInstancesJob SQS queue. */
 @AllArgsConstructor
 public class SqsTerminateInstancesJobListener {
-  /**
-   * Invisible time for resending job event, e.g. resending start job event if queued instances are
-   * larger than the limit.
-   */
-  private static final int RESEND_JOB_EVENT_DELAY_IN_SECONDS = 5;
-
   private final MaestroEventProcessor<TerminateInstancesJobEvent> messageProcessor;
   private final SqsProcessorFinalizer sqsProcessorFinalizer;
+  private final int visibilityTimeoutInSecs =
+      (int) TimeUnit.MILLISECONDS.toSeconds(Constants.RESEND_JOB_EVENT_DELAY_IN_MILLISECONDS);
 
   /** Listener configuration for SQS TerminateInstancesJobEvent message. */
   @SqsListener(
@@ -47,7 +45,7 @@ public class SqsTerminateInstancesJobListener {
         payload,
         acknowledgment::acknowledge,
         visibility::extend,
-        RESEND_JOB_EVENT_DELAY_IN_SECONDS,
+        visibilityTimeoutInSecs,
         receiveCount,
         messageProcessor,
         TerminateInstancesJobEvent.class);

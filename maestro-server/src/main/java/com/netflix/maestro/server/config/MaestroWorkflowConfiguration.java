@@ -69,7 +69,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.validation.Validation;
+import javax.validation.ValidatorFactory;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.bval.jsr.ApacheValidationProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -185,6 +188,14 @@ public class MaestroWorkflowConfiguration {
       WorkflowHelper workflowHelper) {
     LOG.info("Creating Maestro WorkflowRunner within Spring boot...");
     return new WorkflowRunner(flowOperation, workflowTranslator, workflowHelper);
+  }
+
+  @Bean
+  public ValidatorFactory validator() {
+    LOG.info("Creating validator within Spring boot...");
+    return Validation.byProvider(ApacheValidationProvider.class)
+        .configure()
+        .buildValidatorFactory();
   }
 
   @Bean

@@ -15,6 +15,8 @@ package com.netflix.maestro.engine.listeners;
 import com.netflix.maestro.engine.jobevents.MaestroJobEvent;
 import com.netflix.maestro.engine.processors.MaestroEventProcessor;
 import com.netflix.maestro.engine.processors.SqsProcessorFinalizer;
+import com.netflix.maestro.models.Constants;
+import java.util.concurrent.TimeUnit;
 import lombok.AllArgsConstructor;
 import org.springframework.cloud.aws.messaging.listener.Acknowledgment;
 import org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy;
@@ -27,8 +29,10 @@ import org.springframework.messaging.handler.annotation.Header;
 public class SqsPublishJobEventListener {
   private final MaestroEventProcessor<MaestroJobEvent> messageProcessor;
   private final SqsProcessorFinalizer sqsProcessorFinalizer;
+  private final int visibilityTimeoutInSecs =
+      (int) TimeUnit.MILLISECONDS.toSeconds(Constants.RESEND_JOB_EVENT_DELAY_IN_MILLISECONDS);
 
-  /** Listener configuration for SQS PublishJobEvent message. */
+  /** Listener configuration for SQS MaestroJobEvent message. */
   @SqsListener(
       value = "${aws.sqs.publish-job-queue-url}",
       deletionPolicy = SqsMessageDeletionPolicy.NEVER)
@@ -41,7 +45,7 @@ public class SqsPublishJobEventListener {
         payload,
         acknowledgment::acknowledge,
         visibility::extend,
-        0,
+        visibilityTimeoutInSecs,
         receiveCount,
         messageProcessor,
         MaestroJobEvent.class);

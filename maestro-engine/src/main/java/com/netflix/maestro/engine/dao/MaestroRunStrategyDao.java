@@ -46,7 +46,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.sql.DataSource;
 import javax.validation.constraints.NotNull;
@@ -146,7 +145,6 @@ public class MaestroRunStrategyDao extends AbstractDatabaseDao {
   private static final String RUN_STRATEGY_TAG = "run_strategy";
   private static final User RUN_STRATEGY_USER =
       User.create(Constants.MAESTRO_PREFIX + RUN_STRATEGY_TAG);
-  private static final long RESEND_JOB_EVENT_DELAY_IN_MILLISECONDS = TimeUnit.SECONDS.toMillis(5);
 
   private final MaestroJobEventPublisher publisher;
   private final MaestroMetrics metrics;
@@ -608,7 +606,7 @@ public class MaestroRunStrategyDao extends AbstractDatabaseDao {
           concurrency);
       publisher.publishOrThrow(
           StartWorkflowJobEvent.create(workflowId),
-          RESEND_JOB_EVENT_DELAY_IN_MILLISECONDS,
+          Constants.RESEND_JOB_EVENT_DELAY_IN_MILLISECONDS,
           "Failed to send start job event, will try it again");
     }
     return size;

@@ -18,7 +18,7 @@ public class AwsMetricConstants {
   /** SQS Processor latency metric, in milliseconds. */
   public static final String SQS_PROCESSOR_LATENCY_METRIC = "sqs.processor.latency.ms";
 
-  /** job event type tag for metrics. */
+  /** SQS job event type tag for metrics. */
   public static final String JOB_TYPE_TAG = "jobType";
 
   /** SQS jobevents publish success metric. */
@@ -26,4 +26,12 @@ public class AwsMetricConstants {
 
   /** SQS jobevents publish failures metric. */
   public static final String SQS_JOB_EVENT_PUBLISH_FAILURE_METRIC = "sqs.event.publish.failure";
+
+  /** SQS publish success metric for time trigger. */
+  public static final String SQS_TIME_TRIGGER_PUBLISH_SUCCESS_METRIC =
+      "sqs.timetrigger.publish.success";
+
+  /** SQS publish failures metric for time trigger. */
+  public static final String SQS_TIME_TRIGGER_PUBLISH_FAILURE_METRIC =
+      "sqs.timetrigger.publish.failure";
 }

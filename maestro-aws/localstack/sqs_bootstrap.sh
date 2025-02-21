@@ -27,3 +27,5 @@ create_queue "maestro-terminate-then-run-instance-job"
 create_queue "maestro-publish-job-event"
 create_queue "maestro-delete-workflow-job"
 create_fifo_queue "maestro-step-wake-up-job.fifo"
+
+awslocal --endpoint-url=http://${LOCALSTACK_HOST}:4566 sqs create-queue --queue-name maestro-time-trigger-execution --region ${AWS_REGION} --attributes VisibilityTimeout=120
