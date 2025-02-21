@@ -17,12 +17,13 @@ configurations {
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web:2.7.+'
     implementation 'org.springframework.boot:spring-boot-starter-validation:2.7.+'
+    implementation 'org.springframework.cloud:spring-cloud-starter-sleuth:3.+'
+    implementation 'io.swagger.core.v3:swagger-annotations:2.+'
 
     implementation hikaricpDep
     implementation postgresqlDep
     implementation flywayDep
-    implementation 'io.swagger.core.v3:swagger-annotations:2.+'
-    implementation 'org.springframework.cloud:spring-cloud-starter-sleuth:3.+'
+
     implementation spectatorApiDep
     implementation javaxValidationDep
     implementation bvalJsrDep
@@ -33,8 +34,7 @@ dependencies {
     implementation project(':maestro-flow')
     implementation project(':maestro-database')
     implementation project(':netflix-sel')
-
-    testImplementation 'org.springframework.boot:spring-boot-starter-test:2.7.+'
+    implementation project(':maestro-aws')
 }
 
 bootRun {

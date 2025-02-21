@@ -1,0 +1,12 @@
+dependencies {
+    implementation 'org.springframework.cloud:spring-cloud-starter-aws:2.+'
+    implementation 'org.springframework.cloud:spring-cloud-starter-aws-messaging:2.+'
+
+    implementation project(':maestro-common')
+    implementation project(':maestro-engine')
+    implementation spectatorApiDep
+
+    testImplementation junitDep
+    testImplementation mockitoCoreDep
+    testImplementation(testFixtures(project(':maestro-common')))
+}

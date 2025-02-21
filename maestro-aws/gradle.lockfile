@@ -1,0 +1,41 @@
+# This is a Gradle generated file for dependency locking.
+# Manual edits can break the build and are not advised.
+# This file is expected to be part of source control.
+com.amazonaws:aws-java-sdk-cloudformation:1.11.792=compileClasspath
+com.amazonaws:aws-java-sdk-core:1.11.792=compileClasspath
+com.amazonaws:aws-java-sdk-ec2:1.11.792=compileClasspath
+com.amazonaws:aws-java-sdk-kms:1.11.792=compileClasspath
+com.amazonaws:aws-java-sdk-s3:1.11.792=compileClasspath
+com.amazonaws:aws-java-sdk-sns:1.11.792=compileClasspath
+com.amazonaws:aws-java-sdk-sqs:1.11.792=compileClasspath
+com.amazonaws:jmespath-java:1.11.792=compileClasspath
+com.fasterxml.jackson.core:jackson-annotations:2.15.4=compileClasspath
+com.fasterxml.jackson.core:jackson-core:2.15.4=compileClasspath
+com.fasterxml.jackson.core:jackson-databind:2.15.4=compileClasspath
+com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.15.4=compileClasspath
+com.fasterxml.jackson:jackson-bom:2.15.4=compileClasspath
+com.netflix.spectator:spectator-api:1.8.6=compileClasspath
+commons-codec:commons-codec:1.11=compileClasspath
+commons-logging:commons-logging:1.2=compileClasspath
+joda-time:joda-time:2.8.1=compileClasspath
+org.apache.httpcomponents:httpclient:4.5.9=compileClasspath
+org.apache.httpcomponents:httpcore:4.4.11=compileClasspath
+org.projectlombok:lombok:1.18.36=annotationProcessor,compileClasspath
+org.slf4j:slf4j-api:1.7.30=compileClasspath
+org.springframework.boot:spring-boot-autoconfigure:2.3.8.RELEASE=compileClasspath
+org.springframework.boot:spring-boot:2.3.8.RELEASE=compileClasspath
+org.springframework.cloud:spring-cloud-aws-autoconfigure:2.2.6.RELEASE=compileClasspath
+org.springframework.cloud:spring-cloud-aws-context:2.2.6.RELEASE=compileClasspath
+org.springframework.cloud:spring-cloud-aws-core:2.2.6.RELEASE=compileClasspath
+org.springframework.cloud:spring-cloud-aws-messaging:2.2.6.RELEASE=compileClasspath
+org.springframework.cloud:spring-cloud-starter-aws-messaging:2.2.6.RELEASE=compileClasspath
+org.springframework.cloud:spring-cloud-starter-aws:2.2.6.RELEASE=compileClasspath
+org.springframework:spring-aop:5.2.12.RELEASE=compileClasspath
+org.springframework:spring-beans:5.2.12.RELEASE=compileClasspath
+org.springframework:spring-context:5.2.12.RELEASE=compileClasspath
+org.springframework:spring-core:5.2.12.RELEASE=compileClasspath
+org.springframework:spring-expression:5.2.12.RELEASE=compileClasspath
+org.springframework:spring-jcl:5.2.12.RELEASE=compileClasspath
+org.springframework:spring-messaging:5.2.12.RELEASE=compileClasspath
+software.amazon.ion:ion-java:1.0.2=compileClasspath
+empty=
