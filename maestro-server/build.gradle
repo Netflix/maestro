@@ -37,6 +37,12 @@ dependencies {
     implementation project(':maestro-aws')
 }
 
+bootJar {
+    layered {
+        enabled = true
+    }
+}
+
 bootRun {
     jvmArgs += ["-Djava.security.manager=allow"]
 }
