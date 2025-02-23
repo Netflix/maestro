@@ -446,7 +446,7 @@ public class MaestroTask implements FlowTask {
       Step stepDefinition, WorkflowSummary workflowSummary, StepRuntimeSummary runtimeSummary) {
     if (stepDefinition.getTimeout() != null) {
       Long timeout =
-          DurationParser.getDurationWithParamInMillis(
+          DurationParser.getTimeoutWithParamInMillis(
               stepDefinition.getTimeout(),
               p ->
                   paramEvaluator.parseAttribute(

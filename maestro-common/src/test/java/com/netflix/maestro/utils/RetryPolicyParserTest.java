@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.maestro.models.definition;
+package com.netflix.maestro.utils;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -18,9 +18,10 @@ import static org.junit.Assert.assertNull;
 import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.MaestroBaseTest;
 import com.netflix.maestro.models.Constants;
+import com.netflix.maestro.models.definition.ParsableLong;
+import com.netflix.maestro.models.definition.RetryPolicy;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.Parameter;
-import com.netflix.maestro.utils.RetryPolicyParser;
 import java.util.function.Function;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -55,21 +56,21 @@ public class RetryPolicyParserTest extends MaestroBaseTest {
     AssertHelper.assertThrows(
         "Invalid retry number:",
         IllegalArgumentException.class,
-        "cannot be negative or more than system limit: 99",
+        "error_retry_limit value [-1] is parsed to [-1] but cannot be less than [0] or more than [99]",
         () -> RetryPolicyParser.getParsedRetryPolicy(retries1, paramMapper));
 
     RetryPolicy retries2 = RetryPolicy.builder().errorRetryLimit(ParsableLong.of("bar")).build();
     AssertHelper.assertThrows(
         "Invalid retry number:",
         IllegalArgumentException.class,
-        "error_retry_limit has an invalid value [bar]",
+        "error_retry_limit value [\"bar\"] is parsed to [bar] but not a number",
         () -> RetryPolicyParser.getParsedRetryPolicy(retries2, paramMapper));
 
     RetryPolicy retries3 = RetryPolicy.builder().errorRetryLimit(ParsableLong.of(1000L)).build();
     AssertHelper.assertThrows(
         "Invalid retry number:",
         IllegalArgumentException.class,
-        "cannot be negative or more than system limit: 99",
+        "error_retry_limit value [1000] is parsed to [1000] but cannot be less than [0] or more than [99]",
         () -> RetryPolicyParser.getParsedRetryPolicy(retries3, paramMapper));
   }
 
@@ -104,7 +105,7 @@ public class RetryPolicyParserTest extends MaestroBaseTest {
     AssertHelper.assertThrows(
         "Should throw for invalid retry policy",
         IllegalArgumentException.class,
-        "error_retry_limit value [-1] cannot be negative or more than system limit: 99",
+        "error_retry_limit value [-1] is parsed to [-1] but cannot be less than [0] or more than [99]",
         () ->
             RetryPolicyParser.getParsedRetryPolicy(
                 RetryPolicy.builder().errorRetryLimit(ParsableLong.of(-1L)).build(), paramMapper));
@@ -112,7 +113,7 @@ public class RetryPolicyParserTest extends MaestroBaseTest {
     AssertHelper.assertThrows(
         "Should throw for invalid retry policy",
         IllegalArgumentException.class,
-        "platform_retry_limit has an invalid value [unset]",
+        "platform_retry_limit value [\"unset\"] is parsed to [unset] but not a number",
         () ->
             RetryPolicyParser.getParsedRetryPolicy(
                 RetryPolicy.builder()
@@ -135,7 +136,7 @@ public class RetryPolicyParserTest extends MaestroBaseTest {
                 RetryPolicy.FixedBackoff.builder()
                     .errorRetryBackoffInSecs(ParsableLong.of(1L))
                     .platformRetryBackoffInSecs(ParsableLong.of("2"))
-                    .timeoutRetryBackoffInSecs(ParsableLong.of(3L))
+                    .timeoutRetryBackoffInSecs(ParsableLong.of("3s"))
                     .build())
             .build();
     parsed = RetryPolicyParser.getParsedRetryPolicy(retries1, paramMapper);
@@ -156,10 +157,10 @@ public class RetryPolicyParserTest extends MaestroBaseTest {
                     .errorRetryLimitInSecs(ParsableLong.of(10L))
                     .platformRetryBackoffInSecs(ParsableLong.of("2"))
                     .platformRetryExponent(ParsableLong.of("3"))
-                    .platformRetryLimitInSecs(ParsableLong.of(15L))
+                    .platformRetryLimitInSecs(ParsableLong.of("15 seconds"))
                     .timeoutRetryBackoffInSecs(ParsableLong.of(3L))
                     .timeoutRetryExponent(ParsableLong.of(4L))
-                    .timeoutRetryLimitInSecs(ParsableLong.of(100L))
+                    .timeoutRetryLimitInSecs(ParsableLong.of("1min 40s"))
                     .build())
             .build();
     parsed = RetryPolicyParser.getParsedRetryPolicy(retries2, paramMapper);
@@ -189,9 +190,9 @@ public class RetryPolicyParserTest extends MaestroBaseTest {
                     .build())
             .build();
     AssertHelper.assertThrows(
-        "Invalid retry number:",
+        "Invalid retry backoff:",
         IllegalArgumentException.class,
-        "backoff.error_retry_backoff_in_secs value [86401] cannot be negative or more than system limit: 86400",
+        "backoff.error_retry_backoff_in_secs value [86401] is parsed to [86401] but cannot be less than [1] or more than [86400]",
         () -> RetryPolicyParser.getParsedRetryPolicy(retries1, paramMapper));
 
     RetryPolicy retries2 =
@@ -202,9 +203,22 @@ public class RetryPolicyParserTest extends MaestroBaseTest {
                     .build())
             .build();
     AssertHelper.assertThrows(
-        "Invalid retry number:",
+        "Invalid retry backoff:",
         IllegalArgumentException.class,
-        "backoff.error_retry_backoff_in_secs has an invalid value [bar]",
+        "backoff.error_retry_backoff_in_secs value [\"bar\"] is parsed to [0] but cannot be less than [1] or more than [86400]",
         () -> RetryPolicyParser.getParsedRetryPolicy(retries2, paramMapper));
+
+    RetryPolicy retries3 =
+        RetryPolicy.builder()
+            .backoff(
+                RetryPolicy.FixedBackoff.builder()
+                    .errorRetryBackoffInSecs(ParsableLong.of("3 day"))
+                    .build())
+            .build();
+    AssertHelper.assertThrows(
+        "Invalid retry backoff:",
+        IllegalArgumentException.class,
+        "backoff.error_retry_backoff_in_secs value [\"3 day\"] is parsed to [259200] but cannot be less than [1] or more than [86400]",
+        () -> RetryPolicyParser.getParsedRetryPolicy(retries3, paramMapper));
   }
 }

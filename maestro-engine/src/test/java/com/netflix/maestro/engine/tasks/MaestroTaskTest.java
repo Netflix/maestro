@@ -279,7 +279,7 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
             "far", buildParam("far", 100L),
             "bar", buildParam("bar", 10L),
             "bat", buildParam("bat", "2"),
-            "baz", buildParam("baz", "1800")));
+            "baz", buildParam("baz", "30min")));
     StepInstance.StepRetry actual = initializeStepRetry(true, workflowSummary);
 
     // Verify retry parameters are correctly parsed.
@@ -316,6 +316,38 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
     Assert.assertEquals(Defaults.DEFAULT_EXPONENTIAL_BACK_OFF, actual.getBackoff());
   }
 
+  @Test
+  public void testParseRetryPolicyWithInvalidDurationFallback() throws Exception {
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+    workflowSummary.setParams(
+        Map.of(
+            "foo", buildParam("foo", 3L),
+            "far", buildParam("far", 100L),
+            "bar", buildParam("bar", 10L),
+            "bat", buildParam("bat", "2"),
+            "baz", buildParam("baz", "abc")));
+    StepInstance.StepRetry actual = initializeStepRetry(true, workflowSummary);
+
+    // Verify retry parameters use fallback default.
+    Assert.assertEquals(2, actual.getErrorRetryLimit());
+    Assert.assertEquals(10, actual.getPlatformRetryLimit());
+    Assert.assertEquals(0, actual.getTimeoutRetryLimit());
+    Assert.assertEquals(Defaults.DEFAULT_EXPONENTIAL_BACK_OFF, actual.getBackoff());
+  }
+
+  @Test
+  public void testParseRetryPolicyWithNotFoundParamFallback() throws Exception {
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+    workflowSummary.setParams(Map.of());
+    StepInstance.StepRetry actual = initializeStepRetry(true, workflowSummary);
+
+    // Verify retry parameters use fallback default.
+    Assert.assertEquals(2, actual.getErrorRetryLimit());
+    Assert.assertEquals(10, actual.getPlatformRetryLimit());
+    Assert.assertEquals(0, actual.getTimeoutRetryLimit());
+    Assert.assertEquals(Defaults.DEFAULT_EXPONENTIAL_BACK_OFF, actual.getBackoff());
+  }
+
   private StepInstance.StepRetry initializeStepRetry(
       boolean withParams, WorkflowSummary workflowSummary) throws Exception {
     Step stepDef =
@@ -328,8 +360,7 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
   }
 
   private StepRuntimeSummary createAndRunMaestroTask(
-      boolean started, Step stepDef, StepRuntimeSummary input, WorkflowSummary workflowSummary)
-      throws Exception {
+      boolean started, Step stepDef, StepRuntimeSummary input, WorkflowSummary workflowSummary) {
     maestroTask =
         new MaestroTask(
             null,

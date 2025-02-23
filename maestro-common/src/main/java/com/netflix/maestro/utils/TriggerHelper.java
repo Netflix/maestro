@@ -33,10 +33,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTimeZone;
 import org.quartz.CronExpression;
 
-/** Cron Helper utility class. * */
+/** Cron Helper utility class. */
 @Slf4j
 public final class TriggerHelper {
-  /** Private constructor for utility class. * */
+  /** Private constructor for utility class. */
   private TriggerHelper() {}
 
   /**

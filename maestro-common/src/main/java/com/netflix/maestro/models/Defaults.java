@@ -121,7 +121,7 @@ public final class Defaults {
   public static final StepInstance.Status DEFAULT_STEP_INSTANCE_INITIAL_STATUS =
       StepInstance.Status.NOT_CREATED;
 
-  /** Default Time Zone. * */
+  /** Default Time Zone. */
   public static final TimeZone DEFAULT_TIMEZONE = DateTimeZone.UTC.toTimeZone();
 
   /** Default Param Mode. */
