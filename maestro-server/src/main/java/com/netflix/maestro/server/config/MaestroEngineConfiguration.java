@@ -28,7 +28,6 @@ import com.netflix.maestro.engine.handlers.WorkflowInstanceActionHandler;
 import com.netflix.maestro.engine.metrics.MaestroMetricRepo;
 import com.netflix.maestro.engine.params.DefaultParamManager;
 import com.netflix.maestro.engine.params.ParamsManager;
-import com.netflix.maestro.engine.utils.TriggerSubscriptionClient;
 import com.netflix.maestro.engine.utils.WorkflowHelper;
 import com.netflix.maestro.engine.validations.DryRunValidator;
 import com.netflix.maestro.models.Constants;
@@ -113,16 +112,6 @@ public class MaestroEngineConfiguration {
   public InstanceStepConcurrencyHandler noopInstanceStepConcurrencyHandler() {
     LOG.info("Creating maestro noop instanceStepConcurrencyHandler within Spring boot...");
     return InstanceStepConcurrencyHandler.NOOP_CONCURRENCY_HANDLER;
-  }
-
-  @Bean
-  public TriggerSubscriptionClient triggerSubscriptionClient() {
-    LOG.info("Creating noop triggerSubscriptionClient within Spring boot...");
-    return (workflow, current, previous) ->
-        LOG.info(
-            "[NoOp] upsert a new trigger subscription [{}] for workflow [{}]",
-            current,
-            workflow.getId());
   }
 
   @Bean(initMethod = "init")

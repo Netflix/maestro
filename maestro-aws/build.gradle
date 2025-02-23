@@ -4,6 +4,7 @@ dependencies {
 
     implementation project(':maestro-common')
     implementation project(':maestro-engine')
+    implementation project(':maestro-timetrigger')
     implementation spectatorApiDep
 
     testImplementation junitDep

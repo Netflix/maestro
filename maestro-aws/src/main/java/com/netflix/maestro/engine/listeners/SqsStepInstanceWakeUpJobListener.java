@@ -15,6 +15,8 @@ package com.netflix.maestro.engine.listeners;
 import com.netflix.maestro.engine.jobevents.StepInstanceWakeUpEvent;
 import com.netflix.maestro.engine.processors.MaestroEventProcessor;
 import com.netflix.maestro.engine.processors.SqsProcessorFinalizer;
+import com.netflix.maestro.models.Constants;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.aws.messaging.listener.Acknowledgment;
@@ -26,18 +28,14 @@ import org.springframework.messaging.handler.annotation.Header;
 /** SQS Listener for StepInstanceWakeUpEvent SQS queue. */
 @Slf4j
 @RequiredArgsConstructor
-public class SqsStepInstanceActionJobListener {
-  /**
-   * Invisible time for reprocessing a step instance wake up event. It is usually used for re-check
-   * if a non-leaf step has reached to its desired state.
-   */
-  private static final int REPROCESS_STEP_INSTANCE_WAKE_UP_EVENT_DELAY_IN_SECONDS = 6;
-
+public class SqsStepInstanceWakeUpJobListener {
   /** The max number of retries to process a step instance wake up event. */
-  private static final int STEP_INSTANCE_WAKE_UP_EVENT_RETRY_LIMIT = 6;
+  private static final int STEP_INSTANCE_WAKE_UP_EVENT_RETRY_LIMIT = 15;
 
   private final MaestroEventProcessor<StepInstanceWakeUpEvent> messageProcessor;
   private final SqsProcessorFinalizer sqsProcessorFinalizer;
+  private final int visibilityTimeoutInSecs =
+      (int) TimeUnit.MILLISECONDS.toSeconds(Constants.RESEND_JOB_EVENT_DELAY_IN_MILLISECONDS);
 
   private final MaestroEventProcessor<StepInstanceWakeUpEvent> fallbackProcessorOverRetryLimit =
       messageSupplier -> {
@@ -47,6 +45,7 @@ public class SqsStepInstanceActionJobListener {
             event.getMessageKey());
       };
 
+  /** Listener configuration for SQS StepInstanceWakeUpEvent message. */
   @SqsListener(
       value = "${aws.sqs.step-wake-up-job-queue-url}",
       deletionPolicy = SqsMessageDeletionPolicy.NEVER)
@@ -59,7 +58,7 @@ public class SqsStepInstanceActionJobListener {
         payload,
         acknowledgment::acknowledge,
         visibility::extend,
-        REPROCESS_STEP_INSTANCE_WAKE_UP_EVENT_DELAY_IN_SECONDS,
+        visibilityTimeoutInSecs,
         receiveCount,
         receiveCount > STEP_INSTANCE_WAKE_UP_EVENT_RETRY_LIMIT
             ? fallbackProcessorOverRetryLimit

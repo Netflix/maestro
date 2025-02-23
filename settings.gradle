@@ -6,5 +6,6 @@ include 'maestro-engine'
 include 'maestro-server'
 include 'maestro-database'
 include 'maestro-flow'
+include 'maestro-timetrigger'
 
 include 'maestro-aws'

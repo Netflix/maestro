@@ -28,7 +28,6 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.TimeZone;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTimeZone;
@@ -79,7 +78,7 @@ public final class TriggerHelper {
       Cron parsedCron = unixParser.parse(cron);
       cronStr = CronMapper.fromUnixToQuartz().map(parsedCron).asString();
     } catch (IllegalArgumentException e) {
-      LOG.debug("Unix cron parsing not successful for " + cron, e);
+      LOG.trace("Unix cron parsing not successful for " + cron, e);
     }
     CronExpression cronExpression = new CronExpression(cronStr);
     cronExpression.setTimeZone(timezone);
@@ -145,8 +144,7 @@ public final class TriggerHelper {
       return 0;
     }
     UUID triggerUUID = IdHelper.createUuid(trigger + salt);
-    Random rng = ThreadLocalRandom.current();
-    rng.setSeed(triggerUUID.getLeastSignificantBits());
+    Random rng = new Random(triggerUUID.getLeastSignificantBits());
     return rng.nextInt((int) (delayInMillis / TimeTrigger.MS_IN_SECONDS));
   }
 }

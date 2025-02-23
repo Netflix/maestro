@@ -85,10 +85,12 @@ stepruntime:
       NOT_CREATED:
         default: 30
 
-logging:
-  level:
-    com:
-      netflix: INFO
+triggers:
+  #time trigger configurations
+  time-trigger:
+    type: sqs
+    trigger-batch-size: 10
+    max-triggers-per-message: 200
 
 aws:
   sns:
@@ -102,6 +104,7 @@ aws:
     publish-job-queue-url: http://localhost:4566/000000000000/maestro-publish-job-event
     delete-workflow-job-queue-url: http://localhost:4566/000000000000/maestro-delete-workflow-job
     step-wake-up-job-queue-url: http://localhost:4566/000000000000/maestro-step-wake-up-job.fifo
+    time-trigger-execution-queue-url: http://localhost:4566/000000000000/maestro-time-trigger-execution
 
 cloud:
   aws:
@@ -113,3 +116,8 @@ cloud:
       auto: false
     stack:
       auto: false
+
+logging:
+  level:
+    com:
+      netflix: INFO

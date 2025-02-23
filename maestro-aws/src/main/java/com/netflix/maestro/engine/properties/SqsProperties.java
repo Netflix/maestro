@@ -23,10 +23,10 @@ public class SqsProperties {
    * Max pool size is based on SQS implementation in {@link
    * org.springframework.cloud.aws.messaging.listener.SimpleMessageListenerContainer} where we have
    * one spinning thread per-queue and worker threads equal to message batch size of the queue.
-   * Since we have 7 queues in maestro we do 7 * ({@link
-   * SqsProperties#DEFAULT_LISTENER_MAX_NUMBER_OF_MESSAGES} + 1) = 22 core pool size.
+   * Since we have 8 queues in maestro we do 8 * ({@link
+   * SqsProperties#DEFAULT_LISTENER_MAX_NUMBER_OF_MESSAGES} + 1) = 25 core pool size.
    */
-  private static final int DEFAULT_MAX_POOL_SIZE = 22;
+  private static final int DEFAULT_MAX_POOL_SIZE = 25;
 
   private static final int DEFAULT_CORE_POOL_SIZE = 10;
   private static final int DEFAULT_LISTENER_CAPACITY = 0;
@@ -40,6 +40,7 @@ public class SqsProperties {
   private String publishJobQueueUrl;
   private String deleteWorkflowJobQueueUrl;
   private String stepWakeUpJobQueueUrl;
+  private String timeTriggerExecutionQueueUrl;
 
   /** Core pool size of the thread pool executor used by SQS message listeners. */
   private int listenerCorePoolSize = DEFAULT_CORE_POOL_SIZE;

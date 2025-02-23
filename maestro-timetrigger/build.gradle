@@ -1,0 +1,11 @@
+dependencies {
+    implementation project(':maestro-common')
+    implementation project(':maestro-engine')
+    implementation spectatorApiDep
+    implementation jacksonDatabindDep
+    api slf4jApiDep
+
+    testImplementation junitDep
+    testImplementation mockitoCoreDep
+    testImplementation(testFixtures(project(':maestro-common')))
+}

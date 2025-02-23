@@ -1,0 +1,23 @@
+{
+  "time_triggers_with_watermarks": [
+    {
+      "time_trigger": {
+        "cron": "0 0 12 1/1 * ? *",
+        "timezone": "US/Pacific",
+        "type": "CRON"
+      },
+      "last_trigger_timestamp": "1620423061"
+    },
+    {
+      "time_trigger": {
+        "expression": "@daily",
+        "timezone": "US/Pacific",
+        "type": "PREDEFINED"
+      },
+      "last_trigger_timestamp": "1620423083"
+    }
+  ],
+  "workflow_id": "wfid",
+  "workflow_trigger_uuid": "v123",
+  "workflow_version": "12"
+}

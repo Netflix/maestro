@@ -15,6 +15,8 @@ package com.netflix.maestro.engine.listeners;
 import com.netflix.maestro.engine.jobevents.RunWorkflowInstancesJobEvent;
 import com.netflix.maestro.engine.processors.MaestroEventProcessor;
 import com.netflix.maestro.engine.processors.SqsProcessorFinalizer;
+import com.netflix.maestro.models.Constants;
+import java.util.concurrent.TimeUnit;
 import lombok.AllArgsConstructor;
 import org.springframework.cloud.aws.messaging.listener.Acknowledgment;
 import org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy;
@@ -27,6 +29,8 @@ import org.springframework.messaging.handler.annotation.Header;
 public class SqsRunWorkflowInstancesJobListener {
   private final MaestroEventProcessor<RunWorkflowInstancesJobEvent> messageProcessor;
   private final SqsProcessorFinalizer sqsProcessorFinalizer;
+  private final int visibilityTimeoutInSecs =
+      (int) TimeUnit.MILLISECONDS.toSeconds(Constants.RESEND_JOB_EVENT_DELAY_IN_MILLISECONDS);
 
   /** Listener configuration for SQS RunWorkflowInstancesJobEvent message. */
   @SqsListener(
@@ -41,7 +45,7 @@ public class SqsRunWorkflowInstancesJobListener {
         payload,
         acknowledgment::acknowledge,
         visibility::extend,
-        0,
+        visibilityTimeoutInSecs,
         receiveCount,
         messageProcessor,
         RunWorkflowInstancesJobEvent.class);

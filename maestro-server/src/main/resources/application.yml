@@ -85,6 +85,11 @@ stepruntime:
       NOT_CREATED:
         default: 30
 
+triggers:
+  #time trigger configurations
+  time-trigger:
+    type: noop
+
 logging:
   level:
     com:

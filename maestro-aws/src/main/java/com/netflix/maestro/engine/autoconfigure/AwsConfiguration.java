@@ -24,9 +24,10 @@ import com.netflix.maestro.engine.listeners.SqsDeleteWorkflowJobListener;
 import com.netflix.maestro.engine.listeners.SqsPublishJobEventListener;
 import com.netflix.maestro.engine.listeners.SqsRunWorkflowInstancesJobListener;
 import com.netflix.maestro.engine.listeners.SqsStartWorkflowJobListener;
-import com.netflix.maestro.engine.listeners.SqsStepInstanceActionJobListener;
+import com.netflix.maestro.engine.listeners.SqsStepInstanceWakeUpJobListener;
 import com.netflix.maestro.engine.listeners.SqsTerminateInstancesJobListener;
 import com.netflix.maestro.engine.listeners.SqsTerminateThenRunInstanceJobListener;
+import com.netflix.maestro.engine.listeners.SqsTimeTriggerExecutionListener;
 import com.netflix.maestro.engine.metrics.MaestroMetricRepo;
 import com.netflix.maestro.engine.processors.DeleteWorkflowJobProcessor;
 import com.netflix.maestro.engine.processors.ExceptionEventDeletionPolicy;
@@ -37,6 +38,7 @@ import com.netflix.maestro.engine.processors.StartWorkflowJobProcessor;
 import com.netflix.maestro.engine.processors.StepInstanceWakeUpEventProcessor;
 import com.netflix.maestro.engine.processors.TerminateInstancesJobProcessor;
 import com.netflix.maestro.engine.processors.TerminateThenRunInstanceJobProcessor;
+import com.netflix.maestro.engine.producer.SqsTimeTriggerProducer;
 import com.netflix.maestro.engine.properties.AwsProperties;
 import com.netflix.maestro.engine.properties.SqsProperties;
 import com.netflix.maestro.engine.publisher.MaestroJobEventPublisher;
@@ -44,6 +46,9 @@ import com.netflix.maestro.engine.publisher.MaestroNotificationPublisher;
 import com.netflix.maestro.engine.publisher.SnsEventNotificationPublisher;
 import com.netflix.maestro.engine.publisher.SqsMaestroJobEventPublisher;
 import com.netflix.maestro.metrics.MaestroMetrics;
+import com.netflix.maestro.models.Constants;
+import com.netflix.maestro.timetrigger.messageprocessors.TimeTriggerExecutionProcessor;
+import com.netflix.maestro.timetrigger.producer.TimeTriggerProducer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -91,7 +96,9 @@ public class AwsConfiguration {
   @Bean
   @ConditionalOnProperty(value = "maestro.notifier.type", havingValue = "sns")
   public MaestroNotificationPublisher notificationPublisher(
-      AmazonSNS amazonSns, AwsProperties props, ObjectMapper objectMapper) {
+      AmazonSNS amazonSns,
+      AwsProperties props,
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper) {
     LOG.info("Creating Maestro notificationPublisher within Spring boot...");
     return new SnsEventNotificationPublisher(amazonSns, props.getSns().topic(), objectMapper);
   }
@@ -112,7 +119,7 @@ public class AwsConfiguration {
   @ConditionalOnProperty(value = "maestro.publisher.type", havingValue = "sqs")
   public MaestroJobEventPublisher sqsMaestroJobEventPublisher(
       @Qualifier(MAESTRO_AWS_SQS_SYNC) AmazonSQS amazonSqs,
-      ObjectMapper objectMapper,
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
       AwsProperties props,
       MaestroMetrics metrics) {
     LOG.info("Creating sqsMaestroJobEventPublisher within Spring boot...");
@@ -120,9 +127,29 @@ public class AwsConfiguration {
   }
 
   @Bean
+  @ConditionalOnProperty(value = "triggers.time-trigger.type", havingValue = "sqs")
+  public TimeTriggerProducer sqsTimeTriggerProducer(
+      @Qualifier(MAESTRO_AWS_SQS_SYNC) AmazonSQS amazonSqs,
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
+      AwsProperties props,
+      MaestroMetrics metrics) {
+    LOG.info("Creating sqsTimeTriggerProducer within Spring boot...");
+    return new SqsTimeTriggerProducer(amazonSqs, objectMapper, props.getSqs(), metrics);
+  }
+
+  @Bean
+  @ConditionalOnProperty(value = "triggers.time-trigger.type", havingValue = "sqs")
+  public SqsTimeTriggerExecutionListener sqsTimeTriggerExecutionListener(
+      TimeTriggerExecutionProcessor timeTriggerExecutionProcessor, ObjectMapper mapper) {
+    LOG.info("Creating sqsTimeTriggerExecutionListener within Spring boot...");
+    return new SqsTimeTriggerExecutionListener(timeTriggerExecutionProcessor, mapper);
+  }
+
+  @Bean
   @ConditionalOnProperty(value = "maestro.listener.type", havingValue = "sqs")
   public SqsProcessorFinalizer sqsProcessorFinalizer(
-      ObjectMapper objectMapper, MaestroMetricRepo metricRepo) {
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
+      MaestroMetricRepo metricRepo) {
     LOG.info("Creating sqsProcessorFinalizer within Spring boot...");
     return new SqsProcessorFinalizer(
         objectMapper, metricRepo, ExceptionEventDeletionPolicy.DELETE_IF_MAESTRO_INTERNAL_ERROR);
@@ -169,10 +196,10 @@ public class AwsConfiguration {
 
   @Bean
   @ConditionalOnProperty(value = "maestro.listener.type", havingValue = "sqs")
-  public SqsStepInstanceActionJobListener sqsStepInstanceActionJobListener(
+  public SqsStepInstanceWakeUpJobListener sqsStepInstanceActionJobListener(
       StepInstanceWakeUpEventProcessor processor, SqsProcessorFinalizer sqsProcessorFinalizer) {
     LOG.info("Creating sqsStepInstanceActionJobListener within Spring boot...");
-    return new SqsStepInstanceActionJobListener(processor, sqsProcessorFinalizer);
+    return new SqsStepInstanceWakeUpJobListener(processor, sqsProcessorFinalizer);
   }
 
   @Bean
