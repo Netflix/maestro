@@ -17,6 +17,7 @@ import com.netflix.maestro.flow.utils.ExecutionHelper;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -91,6 +92,31 @@ public class ExecutionContext {
     LOG.info("ExecutionContext shutdown is completed");
   }
 
+  /** Run business logic using internal workers instead of directly over virtual threads. */
+  private <T> T runInternally(Callable<T> callable, Flow flow, String taskRef, String method) {
+    var future = internalWorkers.submit(callable);
+    try {
+      return future.get();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new MaestroRetryableError(
+          e,
+          "flow task %s[%s] is interrupted for method [%s] due to [%s], retry it",
+          method,
+          flow.getReference(),
+          taskRef,
+          e.getMessage());
+    } catch (ExecutionException | CancellationException e) {
+      throw new MaestroRetryableError(
+          e,
+          "flow task %s[%s] is failed for method [%s] due to [%s], retry it",
+          method,
+          flow.getReference(),
+          taskRef,
+          e.getMessage());
+    }
+  }
+
   /**
    * Run prepare task before running any maestro provided user tasks. It will retry prepare failures
    * forever as this is unexpected (i.e. bugs). Also, it passes reasonForIncomplete to handle a
@@ -103,9 +129,13 @@ public class ExecutionContext {
     try {
       Task prepare = flow.getPrepareTask();
       prepare.setStartTime(System.currentTimeMillis());
-      flowTaskMap.get(prepare.getTaskType()).execute(flow, prepare);
+      runInternally(
+          () -> flowTaskMap.get(prepare.getTaskType()).execute(flow, prepare),
+          flow,
+          "preparer",
+          "prepare");
       if (!prepare.getStatus().isTerminal()) {
-        LOG.info("prepare task for flow [{}] is not done yet, will retry", flow.getReference());
+        LOG.info("prepare task for flow {} is not done yet, will retry", flow.getReference());
         throw new MaestroRetryableError("prepare task is not done yet, will retry");
       } else {
         flow.setReasonForIncompletion(prepare.getReasonForIncompletion());
@@ -123,69 +153,64 @@ public class ExecutionContext {
   public void refresh(Flow flow) {
     Task monitor = flow.getMonitorTask();
     // safe to access tasks directly in the execution as the monitor task is run within the flow
-    flowTaskMap.get(monitor.getTaskType()).execute(flow, monitor);
+    runInternally(
+        () -> flowTaskMap.get(monitor.getTaskType()).execute(flow, monitor),
+        flow,
+        "monitor",
+        "refresh");
     flow.markUpdate();
   }
 
   /** Run the flow's final callback function. */
   public void finalCall(Flow flow) {
     if (flow.getFlowDef().isFinalFlowStatusCallbackEnabled()) {
-      if (flow.getStatus().isSuccessful()) {
-        finalCallback.onFlowCompleted(flow);
-      } else {
-        finalCallback.onFlowTerminated(flow);
-      }
-      finalCallback.onFlowFinalized(flow);
+      runInternally(
+          () -> {
+            if (flow.getStatus().isSuccessful()) {
+              finalCallback.onFlowCompleted(flow);
+            } else {
+              finalCallback.onFlowTerminated(flow);
+            }
+            finalCallback.onFlowFinalized(flow);
+            return null;
+          },
+          flow,
+          "finalCallback",
+          "finalCall");
     }
   }
 
   /** run the one-time start logic of a task. */
   public void start(Flow flow, Task task) {
-    var future =
-        internalWorkers.submit(() -> flowTaskMap.get(task.getTaskType()).start(flow, task));
-    try {
-      future.get();
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new MaestroRetryableError(
-          e,
-          "task start: [%s] is interrupted due to [%s], retry it",
-          task.referenceTaskName(),
-          e.getMessage());
-    } catch (ExecutionException | CancellationException e) {
-      throw new MaestroRetryableError(
-          e,
-          "task start: [%s] is failed due to [%s], retry it",
-          task.referenceTaskName(),
-          e.getMessage());
-    }
+    runInternally(
+        () -> {
+          flowTaskMap.get(task.getTaskType()).start(flow, task);
+          return null;
+        },
+        flow,
+        task.referenceTaskName(),
+        "start");
   }
 
   /** run the repeated execute logic of a task. */
   public boolean execute(Flow flow, Task task) {
-    var future =
-        internalWorkers.submit(() -> flowTaskMap.get(task.getTaskType()).execute(flow, task));
-    try {
-      return future.get();
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new MaestroRetryableError(
-          e,
-          "task execute: [%s] is interrupted due to [%s], retry it",
-          task.referenceTaskName(),
-          e.getMessage());
-    } catch (ExecutionException | CancellationException e) {
-      throw new MaestroRetryableError(
-          e,
-          "task execute: [%s] is failed due to [%s], retry it",
-          task.referenceTaskName(),
-          e.getMessage());
-    }
+    return runInternally(
+        () -> flowTaskMap.get(task.getTaskType()).execute(flow, task),
+        flow,
+        task.referenceTaskName(),
+        "execute");
   }
 
   /** Cancel the task. */
   public void cancel(Flow flow, Task task) {
-    flowTaskMap.get(task.getTaskType()).cancel(flow, task);
+    runInternally(
+        () -> {
+          flowTaskMap.get(task.getTaskType()).cancel(flow, task);
+          return null;
+        },
+        flow,
+        task.referenceTaskName(),
+        "cancel");
   }
 
   /** Clone the task by making a deep copy. */
@@ -210,7 +235,8 @@ public class ExecutionContext {
     try {
       flowDao.insertFlow(flow);
     } catch (MaestroInternalError e) {
-      throw new MaestroRetryableError(e, "insertFlow is failed and please retry");
+      throw new MaestroRetryableError(
+          e, "insertFlow is failed for %s and please retry", flow.getReference());
     }
   }
 
@@ -270,12 +296,12 @@ public class ExecutionContext {
   public void trySaveGroup(FlowGroup group) {
     if (executor.isShutdown() || scheduler.isShutdown()) {
       throw new MaestroRetryableError(
-          "ExecutionContext is shutdown and cannot save a group and please retry.");
+          "ExecutionContext is shutdown and cannot save a group [%s] and please retry.", group);
     }
     try {
       flowDao.insertGroup(group);
     } catch (MaestroInternalError e) {
-      throw new MaestroRetryableError(e, "insertGroup is failed and please retry");
+      throw new MaestroRetryableError(e, "insertGroup is failed for [%s] and please retry", group);
     }
   }
 

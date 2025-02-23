@@ -24,15 +24,18 @@ import org.slf4j.Logger;
 final class TaskActor extends BaseActor {
   private final Task task;
   private final Flow flow;
+  private final String name;
 
   TaskActor(Task task, Flow flow, FlowActor parent, ExecutionContext context) {
     super(context, parent);
     this.task = task;
     this.flow = flow;
+    this.name = flow.getReference() + "[" + task.referenceTaskName() + "]";
   }
 
   @Override
   void beforeRunning() {
+    LOG.info("Start running task actor for flow task: [{}]", name);
     getMetrics().counter("num_of_running_tasks", getClass());
   }
 
@@ -47,7 +50,7 @@ final class TaskActor extends BaseActor {
       case Action.TaskShutdown d -> shutdown();
       default ->
           throw new MaestroUnprocessableEntityException(
-              "Unexpected action: [%s] for Task [%s]", action, reference());
+              "Unexpected action: [%s] for Task [%s]", action, name);
     }
   }
 
@@ -59,6 +62,11 @@ final class TaskActor extends BaseActor {
   @Override
   String reference() {
     return task.referenceTaskName();
+  }
+
+  @Override
+  String name() {
+    return name;
   }
 
   @Override

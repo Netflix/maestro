@@ -55,9 +55,7 @@ abstract sealed class BaseActor implements Actor permits GroupActor, FlowActor, 
       return parent.generation();
     }
     throw new UnsupportedOperationException(
-        getClass().getSimpleName()
-            + " does not support getting generation info for "
-            + reference());
+        getClass().getSimpleName() + " does not support getting generation info for " + name());
   }
 
   /** best effort operations without retry support. */
@@ -68,7 +66,13 @@ abstract sealed class BaseActor implements Actor permits GroupActor, FlowActor, 
   /** best effort operations without retry support. */
   abstract void afterRunning();
 
+  /** unique identifier as the actor reference. */
   abstract String reference();
+
+  /** log friendly name for logging. */
+  String name() {
+    return reference();
+  }
 
   abstract Logger getLogger();
 
@@ -86,7 +90,7 @@ abstract sealed class BaseActor implements Actor permits GroupActor, FlowActor, 
           .warn(
               "The whole Maestro flow engine is shutdown and cannot take action [{}] for [{}], Ignore the action.",
               action,
-              actor.reference());
+              actor.name());
     }
   }
 
@@ -156,16 +160,13 @@ abstract sealed class BaseActor implements Actor permits GroupActor, FlowActor, 
           .debug(
               "skip posting action [{}] as either it's not running or there is already one for [{}]",
               action,
-              reference());
+              name());
     } else if (delayInMillis <= 0) {
       post(action);
     } else {
       getLogger()
           .debug(
-              "enqueue an action [{}] for [{}] with a delay [{}]ms",
-              action,
-              reference(),
-              delayInMillis);
+              "enqueue an action [{}] for [{}] with a delay [{}]ms", action, name(), delayInMillis);
       var future = context.schedule(() -> actions.offer(action), delayInMillis);
       scheduledActions.put(action, future);
     }
@@ -173,9 +174,9 @@ abstract sealed class BaseActor implements Actor permits GroupActor, FlowActor, 
 
   @Override
   public void run() {
-    getLogger().info("[{}] is ready to run", reference());
+    getLogger().info("[{}] is ready to run", name());
     beforeRunning();
-    getLogger().debug("[{}] is running", reference());
+    getLogger().debug("[{}] is running", name());
     while (isRunning()) {
       Action action = dequeueAction();
       if (action == null) { // interrupted
@@ -189,28 +190,28 @@ abstract sealed class BaseActor implements Actor permits GroupActor, FlowActor, 
         getLogger()
             .warn(
                 "[{}] got an exception for action [{}] and will retry the action",
-                reference(),
+                name(),
                 action,
                 e);
         schedule(action, retryInterval); // requeue and retry the action after some interval
       }
     }
-    getLogger().debug("[{}] is not running any more.", reference());
+    getLogger().debug("[{}] is not running any more.", name());
     afterRunning();
-    getLogger().info("[{}] is done after running.", reference());
+    getLogger().info("[{}] is done after running.", name());
   }
 
   private Action dequeueAction() {
     try {
       Action action = actions.take();
-      getLogger().debug("dequeued an action [{}] for [{}]", action, reference());
+      getLogger().debug("dequeued an action [{}] for [{}]", action, name());
       return action;
     } catch (InterruptedException e) {
       getLogger()
           .warn(
               "[{}] is interrupted, running flag value for [{}] is [{}]",
               Thread.currentThread(),
-              reference(),
+              name(),
               running);
       terminateNow();
       return null;

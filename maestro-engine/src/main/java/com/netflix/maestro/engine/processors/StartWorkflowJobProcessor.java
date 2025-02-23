@@ -56,6 +56,6 @@ public class StartWorkflowJobProcessor implements MaestroEventProcessor<StartWor
   void startWorkflowInstance(String workflowId) {
     RunStrategy runStrategy = workflowDao.getRunStrategy(workflowId);
     int res = runStrategyDao.dequeueWithRunStrategy(workflowId, runStrategy);
-    LOG.info("Run [{}] dequeued workflow instance(s) for workflow {}", res, workflowId);
+    LOG.info("Run [{}] dequeued workflow instance(s) for workflow [{}]", res, workflowId);
   }
 }

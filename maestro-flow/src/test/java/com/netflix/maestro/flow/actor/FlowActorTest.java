@@ -429,4 +429,9 @@ public class FlowActorTest extends ActorBaseTest {
   public void testReference() {
     assertEquals("test-flow-ref", flowActor.reference());
   }
+
+  @Test
+  public void testName() {
+    assertEquals("test-flow-ref", flowActor.name());
+  }
 }
