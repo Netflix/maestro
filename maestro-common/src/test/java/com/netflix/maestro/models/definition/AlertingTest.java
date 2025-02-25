@@ -24,10 +24,12 @@ import com.netflix.maestro.models.definition.Alerting.PagerdutyConfig;
 import com.netflix.maestro.models.definition.alerting.AlertType;
 import com.netflix.maestro.models.definition.alerting.AlertingTypeConfig;
 import com.netflix.maestro.models.definition.alerting.BypassDigestConfig;
+import com.netflix.maestro.models.parameter.Parameter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashSet;
+import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -157,6 +159,24 @@ public class AlertingTest extends MaestroBaseTest {
     assertNotNull(actual.getTypeConfigs());
     assertTrue(actual.getTypeConfigs().containsKey(SUCCESS_WITHIN));
     AlertingTypeConfig config = actual.getTypeConfigs().get(SUCCESS_WITHIN);
-    assertEquals(Integer.valueOf(1440), config.getDurationMinutes());
+    assertEquals(1440, config.getDurationMinutes().intValue());
+  }
+
+  @Test
+  public void testAlertingUpdate() {
+    Alerting parsable = new Alerting();
+    parsable.setEmails(Set.of("${foo}", "${bar}"));
+    parsable.update(
+        paramDefinition -> {
+          Parameter param = paramDefinition.toParameter();
+          if (param.getValue().equals("${foo}")) {
+            param.setEvaluatedResult("test1@netflix.com");
+          } else {
+            return null;
+          }
+          param.setEvaluatedTime(1L);
+          return param;
+        });
+    assertEquals(Set.of("test1@netflix.com", "${bar}"), parsable.getEmails());
   }
 }

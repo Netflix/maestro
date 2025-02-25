@@ -180,4 +180,9 @@ public class TaskActorTest extends ActorBaseTest {
   public void testReference() {
     assertEquals("task1", taskActor.reference());
   }
+
+  @Test
+  public void testName() {
+    assertEquals("test-flow-ref[task1]", taskActor.name());
+  }
 }

@@ -178,4 +178,9 @@ public class GroupActorTest extends ActorBaseTest {
   public void testReference() {
     assertEquals("group-1", groupActor.reference());
   }
+
+  @Test
+  public void testName() {
+    assertEquals("group-1", groupActor.name());
+  }
 }

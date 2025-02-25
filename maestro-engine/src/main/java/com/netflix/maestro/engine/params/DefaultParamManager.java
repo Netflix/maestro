@@ -49,7 +49,7 @@ public class DefaultParamManager {
     this.objectMapper = objectMapper;
   }
 
-  /** Postconstruct initialization for DefaultParamManager. * */
+  /** Postconstruct initialization for DefaultParamManager. */
   @SuppressWarnings({"PMD.AvoidInstantiatingObjectsInLoops"})
   public void init() throws IOException {
     defaultSystemParams = loadParamsFromFile(WORKFLOW_PARAMS_FILE);

@@ -231,7 +231,7 @@ public class WorkflowHelper {
     }
     if (workflow.getTimeout() != null) { // set parsed timeout
       long timeout =
-          DurationParser.getDurationWithParamInMillis(
+          DurationParser.getTimeoutWithParamInMillis(
               workflow.getTimeout(),
               p -> paramEvaluator.parseAttribute(p, allParams, workflow.getId(), false));
       instance.setTimeoutInMillis(timeout);

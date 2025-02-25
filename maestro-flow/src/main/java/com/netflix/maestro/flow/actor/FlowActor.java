@@ -140,9 +140,10 @@ final class FlowActor extends BaseActor {
 
   private void reconcile(Action.FlowReconcile action) {
     LOG.debug(
-        "Last update at [{}] and no update for [{}]ms, let's reconcile",
+        "Last update at [{}] and no update for [{}]ms, let's reconcile [{}]",
         action.scheduledAt(),
-        System.currentTimeMillis() - action.scheduledAt());
+        System.currentTimeMillis() - action.scheduledAt(),
+        reference());
     decide();
     schedule(
         new Action.FlowReconcile(System.currentTimeMillis()), delayForNext(reconciliationInterval));

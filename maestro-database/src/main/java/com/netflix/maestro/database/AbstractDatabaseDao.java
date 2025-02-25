@@ -174,7 +174,7 @@ public abstract class AbstractDatabaseDao {
       }
       combinedArgs[combinedArgs.length - 1] = e.getMessage();
       metrics.counter(QUERY_ERROR_METRIC_NAME, this.getClass(), "methodName", methodName);
-      LOG.error("{} due to {}", log, combinedArgs);
+      LOG.error(log + " due to {}", combinedArgs);
       throw e;
     }
   }

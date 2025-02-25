@@ -233,7 +233,7 @@ public final class MapParameter extends AbstractParameter {
         "Param [{}] is not evaluated and cannot call getEvaluatedParam()", getName());
   }
 
-  /** Check if parameter is defined. * */
+  /** Check if parameter is defined. */
   public boolean containsParam(String key) {
     return getValue().containsKey(key);
   }

@@ -24,6 +24,7 @@ import com.netflix.maestro.models.definition.alerting.AlertingTypeConfig;
 import com.netflix.maestro.models.definition.alerting.BypassDigestConfig;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.Parameter;
+import com.netflix.maestro.utils.StringParser;
 import com.netflix.maestro.validations.TctConstraint;
 import java.io.Serializable;
 import java.util.Locale;
@@ -141,12 +142,7 @@ public class Alerting {
     if (emails != null && !emails.isEmpty()) {
       emails =
           emails.stream()
-              .map(
-                  email -> {
-                    ParamDefinition emailParam = ParamDefinition.buildParamDefinition(email, email);
-                    Parameter param = paramParser.apply(emailParam);
-                    return param == null ? email : param.asString();
-                  })
+              .map(email -> StringParser.parseWithParam(email, paramParser))
               .collect(Collectors.toSet());
     }
     if (tct != null) {

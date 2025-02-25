@@ -22,8 +22,14 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.netflix.maestro.annotations.Nullable;
+import com.netflix.maestro.models.parameter.ParamDefinition;
+import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.utils.Checks;
+import com.netflix.maestro.utils.StringParser;
 import java.io.IOException;
+import java.util.OptionalLong;
+import java.util.function.Function;
+import java.util.function.LongUnaryOperator;
 import lombok.EqualsAndHashCode;
 
 /**
@@ -34,8 +40,8 @@ import lombok.EqualsAndHashCode;
 @JsonSerialize(using = ParsableLong.ParsableLongSerializer.class)
 @EqualsAndHashCode
 public final class ParsableLong {
-  @Nullable private Long longValue;
-  @Nullable private String stringValue;
+  @Nullable private final Long longValue;
+  @Nullable private final String stringValue;
 
   /**
    * This constructor should set exactly one value between longValue and stringValue, the other
@@ -69,7 +75,7 @@ public final class ParsableLong {
   /** Gets the String representation of the parsable number. */
   public String asString() {
     if (stringValue == null) {
-      stringValue = longValue.toString();
+      return longValue.toString();
     }
     return stringValue;
   }
@@ -126,6 +132,30 @@ public final class ParsableLong {
         gen.writeNumber(value.getLong());
       } else {
         gen.writeString(value.asString());
+      }
+    }
+  }
+
+  /**
+   * Parse the parameterized parsable long.
+   *
+   * @param paramParser the function to parse the parameter
+   * @param elseOperator the additional function to apply if the parsed value is not numeric
+   * @return the parsed long value
+   */
+  public long parseLongWithParam(
+      Function<ParamDefinition, Parameter> paramParser,
+      LongUnaryOperator operator,
+      Function<String, Long> elseOperator) {
+    if (longValue != null) {
+      return operator.applyAsLong(longValue);
+    } else {
+      String parsed = StringParser.parseWithParam(stringValue, paramParser);
+      OptionalLong val = Checks.toNumeric(parsed);
+      if (val.isPresent()) {
+        return operator.applyAsLong(val.getAsLong());
+      } else {
+        return elseOperator.apply(parsed);
       }
     }
   }

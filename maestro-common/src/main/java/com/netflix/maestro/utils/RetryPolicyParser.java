@@ -20,9 +20,11 @@ import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.Parameter;
 import java.util.function.Function;
 
-/** Utility class to parse retry policy. * */
+/** Utility class to parse retry policy. */
 public final class RetryPolicyParser {
-  private static final String PARAM_NAME = "retries_str";
+  /** Private constructor for utility class. */
+  private RetryPolicyParser() {}
+
   private static final String BACKOFF_ERROR_RETRY_BACKOFF_IN_SECS =
       "backoff.error_retry_backoff_in_secs";
   private static final String BACKOFF_PLATFORM_RETRY_BACKOFF_IN_SECS =
@@ -38,9 +40,6 @@ public final class RetryPolicyParser {
   private static final String BACKOFF_TIMEOUT_RETRY_EXPONENT = "backoff.timeout_retry_exponent";
   private static final String BACKOFF_TIMEOUT_RETRY_LIMIT_IN_SECS =
       "backoff.timeout_retry_limit_in_secs";
-
-  /** Private constructor for utility class. */
-  private RetryPolicyParser() {}
 
   public static RetryPolicy getParsedRetryPolicy(
       RetryPolicy retryPolicy, Function<ParamDefinition, Parameter> paramParser) {
@@ -62,68 +61,84 @@ public final class RetryPolicyParser {
       @Nullable ParsableLong retryNumber,
       Function<ParamDefinition, Parameter> paramParser,
       String path) {
-    return parseParsableLong(retryNumber, paramParser, Constants.MAX_RETRY_LIMIT, path);
+    return parseNumber(retryNumber, paramParser, Constants.MAX_RETRY_LIMIT, path);
   }
 
-  private static ParsableLong parseParsableLong(
+  private static ParsableLong parseNumber(
       @Nullable ParsableLong num,
       Function<ParamDefinition, Parameter> paramParser,
       long maxLimit,
       String path) {
-    if (num == null) {
+    return parseParsableLong(
+        num,
+        paramParser,
+        0,
+        maxLimit,
+        path,
+        val -> {
+          throw new IllegalArgumentException(
+              String.format("%s value [%s] is parsed to [%s] but not a number", path, num, val));
+        });
+  }
+
+  private static ParsableLong parseDuration(
+      @Nullable ParsableLong num,
+      Function<ParamDefinition, Parameter> paramParser,
+      long maxLimit,
+      String path) {
+    return parseParsableLong(
+        num, paramParser, 1, maxLimit, path, DurationParser::parseDurationInSecs);
+  }
+
+  private static ParsableLong parseParsableLong(
+      @Nullable ParsableLong parsable,
+      Function<ParamDefinition, Parameter> paramParser,
+      long minLimit,
+      long maxLimit,
+      String path,
+      Function<String, Long> elseFunc) {
+    if (parsable == null) {
       return null;
     }
 
-    long retries;
-    if (num.isLong()) {
-      retries = num.getLong();
-    } else {
-      ParamDefinition paramDef = ParamDefinition.buildParamDefinition(PARAM_NAME, num.asString());
-      String retriesParam = paramParser.apply(paramDef).asString();
-      try {
-        retries = Long.parseLong(retriesParam);
-      } catch (NumberFormatException ne) {
-        throw new IllegalArgumentException(
-            String.format(
-                "%s has an invalid value [%s] with an error: %s",
-                path, retriesParam, ne.getMessage()));
-      }
-    }
+    long parsed = parsable.parseLongWithParam(paramParser, l -> l, elseFunc);
     Checks.checkTrue(
-        retries >= 0 && retries <= maxLimit,
-        "%s value [%s] cannot be negative or more than system limit: %s",
+        parsed >= minLimit && parsed <= maxLimit,
+        "%s value [%s] is parsed to [%s] but cannot be less than [%s] or more than [%s]",
         path,
-        retries,
+        parsable,
+        parsed,
+        minLimit,
         maxLimit);
-    return ParsableLong.of(retries);
+    return ParsableLong.of(parsed);
   }
 
   private static ParsableLong getParsedErrorRetryLimit(
       @Nullable ParsableLong number,
       Function<ParamDefinition, Parameter> paramParser,
       String path) {
-    return parseParsableLong(number, paramParser, Constants.MAX_ERROR_RETRY_LIMIT_SECS, path);
+    return parseDuration(number, paramParser, Constants.MAX_ERROR_RETRY_LIMIT_SECS, path);
   }
 
   private static ParsableLong getParsedPlatformRetryLimit(
       @Nullable ParsableLong number,
       Function<ParamDefinition, Parameter> paramParser,
       String path) {
-    return parseParsableLong(number, paramParser, Constants.MAX_PLATFORM_RETRY_LIMIT_SECS, path);
+    return parseDuration(number, paramParser, Constants.MAX_PLATFORM_RETRY_LIMIT_SECS, path);
   }
 
   private static ParsableLong getParsedTimeoutRetryLimit(
       @Nullable ParsableLong number,
       Function<ParamDefinition, Parameter> paramParser,
       String path) {
-    return parseParsableLong(number, paramParser, Constants.MAX_TIMEOUT_RETRY_LIMIT_SECS, path);
+    return parseDuration(number, paramParser, Constants.MAX_TIMEOUT_RETRY_LIMIT_SECS, path);
   }
 
   private static ParsableLong getParsedRetryExponent(
       @Nullable ParsableLong number,
       Function<ParamDefinition, Parameter> paramParser,
       String path) {
-    return parseParsableLong(number, paramParser, Integer.MAX_VALUE, path);
+    return parseNumber(number, paramParser, Integer.MAX_VALUE, path);
   }
 
   private static RetryPolicy.Backoff getParsedBackoff(

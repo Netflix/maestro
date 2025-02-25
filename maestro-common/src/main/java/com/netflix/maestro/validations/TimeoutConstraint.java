@@ -65,7 +65,7 @@ public @interface TimeoutConstraint {
       }
 
       try {
-        DurationParser.getDurationWithParamInMillis(timeout, IGNORE_INTERPOLATION_MAPPING);
+        DurationParser.getTimeoutWithParamInMillis(timeout, IGNORE_INTERPOLATION_MAPPING);
       } catch (IllegalArgumentException iae) {
         context.buildConstraintViolationWithTemplate(iae.getMessage()).addConstraintViolation();
         return false;

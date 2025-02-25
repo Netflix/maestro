@@ -15,6 +15,7 @@ package com.netflix.maestro.models.definition;
 import static org.junit.Assert.assertEquals;
 
 import com.netflix.maestro.MaestroBaseTest;
+import com.netflix.maestro.models.parameter.Parameter;
 import lombok.Data;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -67,5 +68,47 @@ public class ParsableLongTest extends MaestroBaseTest {
     String expected = "{\"number1\":1,\"number2\":0,\"number3\":\"4\"}";
 
     assertEquals(expected, serialized);
+  }
+
+  @Test
+  public void testParseLongWithParam() {
+    assertEquals(
+        123450L,
+        ParsableLong.of(12345)
+            .parseLongWithParam(
+                paramDefinition -> {
+                  Parameter param = paramDefinition.toParameter();
+                  param.setEvaluatedResult("123");
+                  param.setEvaluatedTime(1L);
+                  return param;
+                },
+                l -> l * 10,
+                Long::valueOf));
+
+    assertEquals(
+        1230L,
+        ParsableLong.of("${foo}")
+            .parseLongWithParam(
+                paramDefinition -> {
+                  Parameter param = paramDefinition.toParameter();
+                  param.setEvaluatedResult("123");
+                  param.setEvaluatedTime(1L);
+                  return param;
+                },
+                l -> l * 10,
+                Long::valueOf));
+
+    assertEquals(
+        123,
+        ParsableLong.of("${foo}")
+            .parseLongWithParam(
+                paramDefinition -> {
+                  Parameter param = paramDefinition.toParameter();
+                  param.setEvaluatedResult("a123");
+                  param.setEvaluatedTime(1L);
+                  return param;
+                },
+                l -> l * 10,
+                s -> Long.valueOf(s.substring(1))));
   }
 }

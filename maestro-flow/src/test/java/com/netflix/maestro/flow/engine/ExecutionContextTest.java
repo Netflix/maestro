@@ -198,7 +198,7 @@ public class ExecutionContextTest extends FlowBaseTest {
     AssertHelper.assertThrows(
         "should throw and retry",
         MaestroRetryableError.class,
-        "insertFlow is failed and please retry",
+        "insertFlow is failed for test-flow-ref and please retry",
         () -> context.saveFlow(flow));
   }
 
@@ -265,7 +265,7 @@ public class ExecutionContextTest extends FlowBaseTest {
     AssertHelper.assertThrows(
         "should throw during shutdown",
         MaestroRetryableError.class,
-        "ExecutionContext is shutdown and cannot save a group and please retry.",
+        "ExecutionContext is shutdown and cannot save a group [FlowGroup[groupId=1, generation=1",
         () -> context.trySaveGroup(group));
   }
 
@@ -275,7 +275,7 @@ public class ExecutionContextTest extends FlowBaseTest {
     AssertHelper.assertThrows(
         "should throw and retry",
         MaestroRetryableError.class,
-        "insertGroup is failed and please retry",
+        "insertGroup is failed for [FlowGroup[groupId=1, generation=1",
         () -> context.trySaveGroup(group));
   }
 

@@ -98,7 +98,7 @@ public class RetryPolicyConstraintTest extends BaseConstraintTest {
                 ParsableLong.of(1L)));
     assertEquals(1, violations.size());
     assertEquals(
-        "RetryPolicy: error_retry_limit value [-1] cannot be negative or more than system limit: 99",
+        "RetryPolicy: error_retry_limit value [-1] is parsed to [-1] but cannot be less than [0] or more than [99]",
         violations.iterator().next().getMessage());
 
     violations =
@@ -112,7 +112,7 @@ public class RetryPolicyConstraintTest extends BaseConstraintTest {
                 ParsableLong.of(1L)));
     assertEquals(1, violations.size());
     assertEquals(
-        "RetryPolicy: platform_retry_limit value [100] cannot be negative or more than system limit: 99",
+        "RetryPolicy: platform_retry_limit value [100] is parsed to [100] but cannot be less than [0] or more than [99]",
         violations.iterator().next().getMessage());
 
     violations =
@@ -125,7 +125,7 @@ public class RetryPolicyConstraintTest extends BaseConstraintTest {
                 ParsableLong.of(1L),
                 ParsableLong.of(1L)));
     assertEquals(
-        "RetryPolicy: timeout_retry_limit has an invalid value [bar] with an error: For input string: \"bar\"",
+        "RetryPolicy: timeout_retry_limit value [\"bar\"] is parsed to [bar] but not a number",
         violations.iterator().next().getMessage());
 
     violations =
@@ -138,7 +138,7 @@ public class RetryPolicyConstraintTest extends BaseConstraintTest {
                 ParsableLong.of("1"),
                 ParsableLong.of(1L + Integer.MAX_VALUE)));
     assertEquals(
-        "RetryPolicy: backoff.timeout_retry_backoff_in_secs value [2147483648] cannot be negative or more than system limit: 86400",
+        "RetryPolicy: backoff.timeout_retry_backoff_in_secs value [2147483648] is parsed to [2147483648] but cannot be less than [1] or more than [86400]",
         violations.iterator().next().getMessage());
   }
 }

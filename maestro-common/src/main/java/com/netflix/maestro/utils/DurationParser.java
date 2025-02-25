@@ -22,13 +22,11 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** A parser to parse the duration in string to the duration in milliseconds. */
+/** A parser to parse the duration in string to the duration in numeric format. */
 public final class DurationParser {
 
-  /** Private constructor for utility class. * */
+  /** Private constructor for utility class. */
   private DurationParser() {}
-
-  private static final String PARAM_NAME = "duration_str";
 
   private static final Pattern SCALA_DURATION_REGEX =
       Pattern.compile(
@@ -42,7 +40,7 @@ public final class DurationParser {
         TimeUnit.DAYS, TimeUnit.HOURS, TimeUnit.MINUTES, TimeUnit.SECONDS, TimeUnit.MILLISECONDS
       };
 
-  /** parses the scala duration type and returns timeout duration in milliseconds. */
+  /** parses the scala duration type and returns duration in milliseconds. */
   private static long parseDuration(String duration) {
     Matcher m = SCALA_DURATION_REGEX.matcher(duration.toLowerCase(Locale.ROOT));
     long timeout = 0;
@@ -55,6 +53,14 @@ public final class DurationParser {
     return timeout;
   }
 
+  /** parses the scala duration type and returns duration in seconds. */
+  static long parseDurationInSecs(String duration) {
+    return TimeUnit.MILLISECONDS.toSeconds(parseDuration(duration));
+  }
+
+  /**
+   * Parse the ParsableLong value (default in milliseconds) and returns duration in milliseconds.
+   */
   public static long getDurationInMillis(ParsableLong duration) {
     if (duration.isLong()) {
       return duration.getLong();
@@ -63,20 +69,15 @@ public final class DurationParser {
     }
   }
 
-  public static long getDurationWithParamInMillis(
+  /**
+   * Parse the ParsableLong value (default in seconds) for timeout and returns duration in
+   * milliseconds.
+   */
+  public static long getTimeoutWithParamInMillis(
       ParsableLong duration, Function<ParamDefinition, Parameter> paramParser) {
-    long timeout;
-    if (duration.isLong()) {
-      timeout = TimeUnit.SECONDS.toMillis(duration.getLong());
-    } else {
-      ParamDefinition paramDef =
-          ParamDefinition.buildParamDefinition(PARAM_NAME, duration.asString());
-      String durationParam = paramParser.apply(paramDef).asString();
-      timeout =
-          Checks.toNumeric(durationParam)
-              .map(TimeUnit.SECONDS::toMillis)
-              .orElseGet(() -> DurationParser.parseDuration(durationParam));
-    }
+    long timeout =
+        duration.parseLongWithParam(
+            paramParser, TimeUnit.SECONDS::toMillis, DurationParser::parseDuration);
     Checks.checkTrue(
         timeout > 0 && timeout <= Constants.MAX_TIME_OUT_LIMIT_IN_MILLIS,
         "timeout [%s ms]/[%s] cannot be non-positive or more than system limit: %s days",
@@ -84,11 +85,5 @@ public final class DurationParser {
         duration,
         TimeUnit.MILLISECONDS.toDays(Constants.MAX_TIME_OUT_LIMIT_IN_MILLIS));
     return timeout;
-  }
-
-  /** checks if given `duration` string matches scala's duration type. */
-  public static boolean validate(String duration) {
-    Matcher m = SCALA_DURATION_REGEX.matcher(duration.toLowerCase(Locale.ROOT));
-    return m.matches();
   }
 }

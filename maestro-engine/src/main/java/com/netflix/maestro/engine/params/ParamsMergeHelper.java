@@ -56,7 +56,7 @@ public final class ParamsMergeHelper {
   private static final EnumSet<ParamMode> RESTART_UPDATE_MODES =
       EnumSet.of(ParamMode.MUTABLE, ParamMode.MUTABLE_ON_START_RESTART);
 
-  /** Allowed update modes for each stage for non system. * */
+  /** Allowed update modes for each stage for non system. */
   private static final Map<ParamSource, Set<ParamMode>> ALLOWED_UPDATE_MODES =
       Map.of(
           ParamSource.DEFINITION, DEFAULT_UPDATE_MODES,
@@ -69,7 +69,7 @@ public final class ParamsMergeHelper {
           ParamSource.OUTPUT_PARAMETER, EnumSet.of(ParamMode.MUTABLE),
           ParamSource.RESTART, RESTART_UPDATE_MODES);
 
-  /** Mapping of internal param mode to mode. * */
+  /** Mapping of internal param mode to mode. */
   private static final Map<InternalParamMode, ParamMode> INTERNAL_PARAM_MODE_TO_MODE =
       Map.of(
           InternalParamMode.OPTIONAL,
@@ -85,7 +85,7 @@ public final class ParamsMergeHelper {
   private static final Set<InternalParamMode> RESTRICTED_INTERNAL_MODES =
       EnumSet.of(InternalParamMode.RESERVED);
 
-  /** Param mode strictness in increasing order. * */
+  /** Param mode strictness in increasing order. */
   private static final List<ParamMode> PARAM_MODE_STRICTNESS =
       Arrays.asList(
           ParamMode.MUTABLE,

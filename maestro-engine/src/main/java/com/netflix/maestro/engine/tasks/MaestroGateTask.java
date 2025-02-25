@@ -61,7 +61,10 @@ public class MaestroGateTask implements FlowTask {
 
   private boolean confirmDone(Flow flow, Task task) {
     List<String> joinOn = getJoinOnSteps(task);
-    LOG.debug("Confirming steps [{}] are actually completed.", joinOn);
+    LOG.debug(
+        "Confirming steps [{}] are actually completed in the flow [{}].",
+        joinOn,
+        flow.getReference());
     WorkflowSummary workflowSummary =
         StepHelper.retrieveWorkflowSummary(objectMapper, flow.getInput());
 
@@ -81,7 +84,10 @@ public class MaestroGateTask implements FlowTask {
         return false;
       }
     }
-    LOG.debug("Confirmed steps [{}] are actually completed.", joinOn);
+    LOG.debug(
+        "Confirmed steps [{}] are actually completed in the flow [{}].",
+        joinOn,
+        flow.getReference());
     return true;
   }
 
