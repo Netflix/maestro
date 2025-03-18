@@ -315,7 +315,7 @@ public final class Constants {
               "AUTHORIZED_MANAGERS"));
 
   /** Minimum interval for any time trigger. */
-  public static final long TIME_TRIGGER_MINIMUM_INTERVAL = TimeUnit.MINUTES.toMillis(1);
+  public static final long TIME_TRIGGER_MINIMUM_INTERVAL = TimeUnit.MINUTES.toMillis(2);
 
   /** Workflow create request data size limit used for validation. */
   public static final String WORKFLOW_CREATE_REQUEST_DATA_SIZE_LIMIT = "256KB";
@@ -338,4 +338,7 @@ public final class Constants {
 
   /** the number of components existed in an inline workflow id split by _. */
   public static final int INLINE_WORKFLOW_ID_SPLIT_COMPONENT_COUNT = 5;
+
+  /** the maximal number of signal names supported in a single signal trigger. */
+  public static final int MAX_SIGNAL_NAMES_IN_A_TRIGGER = 8;
 }

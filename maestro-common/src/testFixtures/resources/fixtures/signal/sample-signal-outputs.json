@@ -1,0 +1,19 @@
+{
+  "outputs": [
+    {
+      "name": "signal_a",
+      "params": {
+        "foo": "bat",
+        "watermark": 123456,
+        "updated_by": "tester"
+      },
+      "payload": {
+        "extra": {
+          "source": {
+            "id": "test-id"
+          }
+        }
+      }
+    }
+  ]
+}

@@ -75,7 +75,10 @@
   "signal": {
     "type": "SIGNAL",
     "trigger_uuid": "bar",
-    "signal_instance_ids": ["123", "345"],
+    "signal_id_map": {
+      "signal_a": 123,
+      "signal_b": 345
+    },
     "params": {
       "foo": {
         "value": "bar",

@@ -20,11 +20,10 @@ import com.netflix.maestro.flow.models.Task;
 import com.netflix.maestro.flow.models.TaskDef;
 import com.netflix.maestro.flow.runtime.ExecutionPreparer;
 import com.netflix.maestro.models.Constants;
-import com.netflix.maestro.models.definition.StepDependencyType;
 import com.netflix.maestro.models.instance.RunPolicy;
-import com.netflix.maestro.models.instance.StepDependencies;
 import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.WorkflowInstance;
+import com.netflix.maestro.models.signal.SignalDependencies;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -74,7 +73,7 @@ public class MaestroExecutionPreparer implements ExecutionPreparer {
 
     if (!summary.isFreshRun()) {
       // todo this logic is currently best effort and can be improved for consecutive restarts.
-      Map<String, Map<StepDependencyType, StepDependencies>> stepDependenciesMap =
+      Map<String, SignalDependencies> stepDependenciesMap =
           stepInstanceDao.getAllStepDependencies(
               summary.getWorkflowId(),
               summary.getWorkflowInstanceId(),
@@ -258,8 +257,8 @@ public class MaestroExecutionPreparer implements ExecutionPreparer {
                 stepInstance.getTimeoutInMillis()) // actors will re-calc timeout offset
             .synced(true)
             .runtimeState(stepInstance.getRuntimeState())
-            .dependencies(stepInstance.getDependencies())
-            .outputs(stepInstance.getOutputs())
+            .signalDependencies(stepInstance.getSignalDependencies())
+            .signalOutputs(stepInstance.getSignalOutputs())
             .dbOperation(DbOperation.UPDATE)
             .artifacts(stepInstance.getArtifacts())
             .timeline(stepInstance.getTimeline())

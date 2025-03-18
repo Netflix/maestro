@@ -14,9 +14,7 @@ package com.netflix.maestro.engine.handlers;
 
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
-import com.netflix.maestro.models.parameter.Parameter;
-import java.util.List;
-import java.util.Map;
+import com.netflix.maestro.models.signal.SignalInstance;
 
 /**
  * Signal handler interface to implement signal dependencies and output signal features. During the
@@ -26,8 +24,9 @@ import java.util.Map;
  */
 public interface SignalHandler {
   /**
-   * Sends output signal.
+   * Sends output signals.
    *
+   * @param workflowSummary the workflow summary
    * @param stepRuntimeSummary the step runtime summary
    * @return true if the signal is sent successfully, false otherwise
    */
@@ -44,11 +43,11 @@ public interface SignalHandler {
   boolean signalsReady(WorkflowSummary workflowSummary, StepRuntimeSummary stepRuntimeSummary);
 
   /**
-   * Get the parameters from signal dependencies.
+   * Get a specific signal instance.
    *
-   * @param runtimeSummary the step runtime summary
-   * @return the map of signal parameters
+   * @param signalName the step runtime summary
+   * @param signalId the signal id
+   * @return the corresponding signal instance
    */
-  Map<String, List<Map<String, Parameter>>> getDependenciesParams(
-      StepRuntimeSummary runtimeSummary);
+  SignalInstance getSignalInstance(String signalName, long signalId);
 }

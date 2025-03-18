@@ -26,6 +26,10 @@ You can read more details about it in our latest [blog post](https://netflixtech
 ## Run it
 - `./gradlew bootRun`
 
+## Run it with AWS module
+- `docker compose -f maestro-aws/docker-compose.yml up`
+- `./gradlew bootRun --args='--spring.profiles.active=aws'`
+
 ## Create a sample workflow
 - `curl --header "user: tester" -X POST 'http://127.0.0.1:8080/api/v3/workflows' -H "Content-Type: application/json" -d @maestro-server/src/test/resources/samples/sample-dag-test-1.json`
 

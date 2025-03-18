@@ -215,8 +215,7 @@ public class WorkflowHelper {
     // evaluate workflow params
     Map<String, Parameter> allParams =
         paramsManager.generateMergedWorkflowParams(instance, request);
-    paramExtensionRepo.reset(
-        Collections.emptyMap(), Collections.emptyMap(), InstanceWrapper.from(instance, request));
+    paramExtensionRepo.reset(Collections.emptyMap(), null, InstanceWrapper.from(instance, request));
     // evaluate wf params during start and restart
     paramEvaluator.evaluateWorkflowParameters(allParams, instance.getWorkflowId());
     paramExtensionRepo.clear();

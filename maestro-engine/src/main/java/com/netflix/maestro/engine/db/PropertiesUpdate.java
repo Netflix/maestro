@@ -94,9 +94,10 @@ public class PropertiesUpdate {
         // merge the previous tags if any;
         TagList prevTagList = prevSnapshot.getTags();
         if (prevTagList == null) {
-          currTagList = upsertTag(new ArrayList<>(), proposedChange.getTags().getTags().get(0));
+          currTagList = upsertTag(new ArrayList<>(), proposedChange.getTags().getTags().getFirst());
         } else {
-          currTagList = upsertTag(prevTagList.getTags(), proposedChange.getTags().getTags().get(0));
+          currTagList =
+              upsertTag(prevTagList.getTags(), proposedChange.getTags().getTags().getFirst());
         }
 
         // form a properties change.
@@ -138,7 +139,7 @@ public class PropertiesUpdate {
             proposedChange.getTags() != null && proposedChange.getTags().getTags().size() == 1,
             "only a single tag must be present in order to perform delete workflow tag.");
 
-        Tag workflowTag = proposedChange.getTags().getTags().get(0);
+        Tag workflowTag = proposedChange.getTags().getTags().getFirst();
         // remove the tag from the previous workflow tag list if any; otherwise, throw not
         // found exception.
         TagList prevTagList = prevSnapshot.getTags();

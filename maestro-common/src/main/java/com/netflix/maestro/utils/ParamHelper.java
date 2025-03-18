@@ -87,7 +87,7 @@ public final class ParamHelper {
     } else if (evaluatedResult instanceof List) {
       List<?> list = (List<?>) evaluatedResult;
       if (!list.isEmpty()) {
-        Object item = list.get(0);
+        Object item = list.getFirst();
         if (item instanceof String) {
           return StringArrayParameter.builder()
               .name(name)

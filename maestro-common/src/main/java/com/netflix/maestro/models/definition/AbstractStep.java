@@ -20,8 +20,11 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.Defaults;
 import com.netflix.maestro.models.parameter.ParamDefinition;
+import com.netflix.maestro.models.signal.SignalDependenciesDefinition;
+import com.netflix.maestro.models.signal.SignalOutputsDefinition;
 import com.netflix.maestro.validations.MaestroReferenceIdConstraint;
-import com.netflix.maestro.validations.StepDependenciesDefinitionConstraint;
+import com.netflix.maestro.validations.SignalDependenciesDefinitionConstraint;
+import com.netflix.maestro.validations.SignalOutputsDefinitionConstraint;
 import com.netflix.maestro.validations.TagListConstraint;
 import com.netflix.maestro.validations.TimeoutConstraint;
 import java.util.Map;
@@ -64,11 +67,10 @@ public abstract class AbstractStep implements Step {
   @TimeoutConstraint
   private ParsableLong timeout;
 
-  @Valid
-  private Map<StepDependencyType, @StepDependenciesDefinitionConstraint StepDependenciesDefinition>
-      dependencies;
+  @Valid @SignalDependenciesDefinitionConstraint
+  private SignalDependenciesDefinition signalDependencies;
 
-  @Valid private Map<StepOutputsDefinition.StepOutputType, StepOutputsDefinition> outputs;
+  @Valid @SignalOutputsDefinitionConstraint private SignalOutputsDefinition signalOutputs;
 
   @Getter(onMethod = @__({@Override}))
   @Valid

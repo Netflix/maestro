@@ -31,7 +31,6 @@ import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.utils.Checks;
 import com.netflix.maestro.utils.ParamHelper;
 import java.util.AbstractMap;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -200,15 +199,14 @@ public class ParamEvaluator {
    * @param stepParams all evaluated step params
    * @param parameters all step dependencies params to be evaluated
    */
-  public void evaluateStepDependenciesOrOutputsParameters(
+  public void evaluateSignalDependenciesOrOutputsParameters(
       Map<String, Map<String, Object>> allStepOutputData,
       Map<String, Parameter> workflowParams,
       Map<String, Parameter> stepParams,
-      Collection<List<MapParameter>> parameters,
+      List<MapParameter> parameters,
       String stepId) {
-    parameters.stream()
-        .flatMap(Collection::stream)
-        .forEach(v -> parseStepParameter(allStepOutputData, workflowParams, stepParams, v, stepId));
+    parameters.forEach(
+        v -> parseStepParameter(allStepOutputData, workflowParams, stepParams, v, stepId));
   }
 
   /**

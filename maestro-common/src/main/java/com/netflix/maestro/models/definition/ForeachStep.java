@@ -44,8 +44,8 @@ import lombok.ToString;
       "timeout",
       "concurrency",
       "strict_ordering",
-      "dependencies",
-      "outputs",
+      "signal_dependencies",
+      "signal_outputs",
       "params",
       "steps"
     },

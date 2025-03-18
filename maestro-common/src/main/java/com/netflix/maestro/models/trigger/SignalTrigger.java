@@ -17,27 +17,61 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.annotations.Nullable;
-import com.netflix.maestro.annotations.SuppressFBWarnings;
-import com.netflix.maestro.models.parameter.SignalParamDefinition;
+import com.netflix.maestro.models.parameter.ParamDefinition;
+import com.netflix.maestro.models.signal.SignalMatchParam;
 import java.util.Map;
 import lombok.Data;
+import lombok.ToString;
 
-/** Request payload for signal triggers. */
-@SuppressFBWarnings({"EI_EXPOSE_REP", "EI_EXPOSE_REP2"})
+/** Data model for signal trigger defined in the workflow definition. */
 @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
-@JsonPropertyOrder(alphabetic = true)
+@JsonPropertyOrder(
+    value = {"definitions", "params", "condition", "dedup_expr"},
+    alphabetic = true)
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @Data
+@ToString
 public class SignalTrigger {
-  private String[] joinKeys;
-  private Map<String, Map<String, SignalParamDefinition>> definition;
-  @Nullable private String signalTriggerId;
+  private Map<String, SignalTriggerEntry> definitions; // key is the signal name
 
-  /** Setter. */
-  public void setDefinition(Map<String, Map<String, SignalParamDefinition>> definition) {
-    definition
-        .values()
-        .forEach(signalParams -> signalParams.forEach((k, v) -> v.getParameter().setName(k)));
-    this.definition = definition;
+  /**
+   * Param definitions to inject along the signal trigger. Signal trigger initiator has the
+   * evaluated param values.
+   */
+  @Nullable private Map<String, ParamDefinition> params;
+
+  /**
+   * SEL expression to evaluate matched signal instances and return a boolean value. If true,
+   * trigger the workflow run. Otherwise, skip it. But the matched signal instances are still
+   * considered as consumed. It can use the params defined in the signal trigger.
+   */
+  @Nullable private String condition;
+
+  /**
+   * SEL expression for deduplication and return a String value. This value is used to generate a
+   * UUID for the request id. If the same request id is used to start a workflow instance, it will
+   * not start a new workflow instance.
+   */
+  @Nullable private String dedupExpr;
+
+  @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+  @JsonPropertyOrder(
+      value = {"match_params", "join_keys"},
+      alphabetic = true)
+  @JsonInclude(JsonInclude.Include.NON_EMPTY)
+  @Data
+  @ToString
+  public static class SignalTriggerEntry {
+    /**
+     * matchParams key is param name for matching its value. It has to be static and cannot be a
+     * parameter.
+     */
+    @Nullable private Map<String, SignalMatchParam> matchParams;
+
+    /**
+     * Similar to SQL JOIN, joinKeys is the join condition on the list of signal param names with
+     * the same value. It must be the same size for all signal trigger entries.
+     */
+    @Nullable private String[] joinKeys;
   }
 }

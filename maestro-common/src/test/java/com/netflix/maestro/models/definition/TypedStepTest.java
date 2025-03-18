@@ -42,8 +42,8 @@ public class TypedStepTest extends MaestroBaseTest {
     Assertions.assertThat(constraintViolations).isEmpty();
 
     Assert.assertNotNull(typedStep1);
-    Assert.assertNotNull(typedStep1.getDependencies());
-    Assert.assertNotNull(typedStep1.getOutputs());
+    Assert.assertNotNull(typedStep1.getSignalDependencies());
+    Assert.assertNotNull(typedStep1.getSignalOutputs());
 
     TypedStep typedStep2 =
         (TypedStep) MAPPER.readValue(MAPPER.writeValueAsString(typedStep1), Step.class);

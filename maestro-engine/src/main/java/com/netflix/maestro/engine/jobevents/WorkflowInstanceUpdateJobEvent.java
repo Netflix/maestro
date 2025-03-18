@@ -160,9 +160,9 @@ public class WorkflowInstanceUpdateJobEvent implements MaestroJobEvent {
       WorkflowInstance.Status newStatus,
       long markTime) {
     WorkflowInstanceUpdateJobEvent event = new WorkflowInstanceUpdateJobEvent();
-    event.workflowId = instances.get(0).getWorkflowId();
+    event.workflowId = instances.getFirst().getWorkflowId();
     event.workflowName =
-        WorkflowHelper.getWorkflowNameOrDefault(instances.get(0).getRuntimeWorkflow());
+        WorkflowHelper.getWorkflowNameOrDefault(instances.getFirst().getRuntimeWorkflow());
     event.changeRecords =
         instances.stream()
             .map(

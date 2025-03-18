@@ -53,113 +53,57 @@
           "type": "BOOLEAN"
         }
       },
-      "outputs": {
-        "SIGNAL": {
-          "type": "SIGNAL",
-          "definitions": [
-            {
-              "value": {
-                "name": {
-                  "value": "dummy/test/signal1",
-                  "type": "STRING"
-                },
-                "p1": {
-                  "value": 1,
-                  "type": "LONG"
-                },
-                "p2": {
-                  "expression": "1+1",
-                  "type": "LONG"
-                }
-              },
-              "type": "MAP"
-            },
-            {
-              "value": {
-                "name": {
-                  "expression": "aaa",
-                  "type": "STRING"
-                },
-                "p1": {
-                  "expression": "foo + 1;",
-                  "type": "LONG"
-                },
-                "p2": {
-                  "expression": "auu+1",
-                  "type": "LONG"
-                }
-              },
-              "type": "MAP"
-            }
-          ]
-        }
-      }
-    }
-  },
-  "outputs": {
-    "SIGNAL": {
-      "type": "SIGNAL",
-      "outputs": [
+      "signal_outputs": [
         {
-          "param": {
-            "value": {
-              "name": {
-                "value": "dummy/test/signal1",
-                "type": "STRING"
-              },
-              "p1": {
-                "value": 1,
-                "type": "LONG"
-              },
-              "p2": {
-                "expression": "1+1",
-                "type": "LONG"
-              }
+          "name":  "dummy/test/signal1",
+          "params": {
+            "p1": {
+              "value": 1,
+              "type": "LONG"
             },
-            "type": "MAP",
-            "evaluated_result": {
-              "name": "dummy/test/signal1",
-              "p1": 1,
-              "p2": 2
-            },
-            "evaluated_time": 1667172135267
-          },
-          "output_signal_instance": {
-            "announced_time": 1667172135761,
-            "output_signal_instance_id": "41836323-cb8c-3770-ba7c-a5f7fbe3e199"
+            "p2": {
+              "expression": "1+1",
+              "type": "LONG"
+            }
           }
         },
         {
-          "param": {
-            "value": {
-              "name": {
-                "expression": "aaa",
-                "type": "STRING"
-              },
-              "p1": {
-                "expression": "foo + 1;",
-                "type": "LONG"
-              },
-              "p2": {
-                "expression": "auu+1",
-                "type": "LONG"
-              }
+          "name": "aaa",
+          "params": {
+            "p1": {
+              "expression": "foo + 1;",
+              "type": "LONG"
             },
-            "type": "MAP",
-            "evaluated_result": {
-              "name": "bar",
-              "p1": 11,
-              "p2": 124
-            },
-            "evaluated_time": 1667172135267
-          },
-          "output_signal_instance": {
-            "announced_time": 1667172136190,
-            "output_signal_instance_id": "14a980d2-ef71-38a2-8f50-871e3b613bfc"
+            "p2": {
+              "expression": "auu+1",
+              "type": "LONG"
+            }
           }
         }
       ]
     }
+  },
+  "signal_outputs": {
+    "outputs": [
+      {
+        "name": "dummy/test/signal1",
+        "params": {
+          "p1": 1,
+          "p2": 2
+        },
+        "signal_id": 52726829,
+        "announce_time": 1667197463771
+      },
+      {
+        "name": "bar",
+        "params": {
+          "p1": 11,
+          "p2": 124
+        },
+        "signal_id": 829,
+        "announce_time": 1667197464191
+      }
+    ]
   },
   "tags": [
     {

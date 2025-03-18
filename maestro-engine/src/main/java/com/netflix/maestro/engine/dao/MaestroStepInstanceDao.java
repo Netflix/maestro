@@ -29,15 +29,13 @@ import com.netflix.maestro.models.Defaults;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.artifact.ForeachArtifact;
 import com.netflix.maestro.models.artifact.SubworkflowArtifact;
-import com.netflix.maestro.models.definition.StepDependencyType;
-import com.netflix.maestro.models.definition.StepOutputsDefinition;
 import com.netflix.maestro.models.definition.TagList;
 import com.netflix.maestro.models.instance.StepAttemptState;
-import com.netflix.maestro.models.instance.StepDependencies;
 import com.netflix.maestro.models.instance.StepInstance;
-import com.netflix.maestro.models.instance.StepOutputs;
 import com.netflix.maestro.models.instance.StepRuntimeState;
 import com.netflix.maestro.models.parameter.ParamType;
+import com.netflix.maestro.models.signal.SignalDependencies;
+import com.netflix.maestro.models.signal.SignalOutputs;
 import com.netflix.maestro.models.timeline.Timeline;
 import com.netflix.maestro.models.timeline.TimelineEvent;
 import com.netflix.maestro.utils.Checks;
@@ -64,10 +62,6 @@ import javax.sql.DataSource;
 public class MaestroStepInstanceDao extends AbstractDatabaseDao {
   private static final TypeReference<Map<String, Artifact>> ARTIFACTS_REFERENCE =
       new TypeReference<>() {};
-  private static final TypeReference<Map<StepOutputsDefinition.StepOutputType, StepOutputs>>
-      OUTPUTS_TYPE_REFERENCE = new TypeReference<>() {};
-  private static final TypeReference<Map<StepDependencyType, StepDependencies>>
-      STEP_DEPENDENCIES_TYPE_REFERENCE = new TypeReference<>() {};
 
   private static final String ADD_STEP_INSTANCE_POSTFIX =
       "INTO maestro_step_instance (instance,runtime_state,dependencies,outputs,artifacts,timeline) VALUES (?,?,?,?,?,?)";
@@ -198,14 +192,14 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
    */
   public void insertOrUpsertStepInstance(StepInstance instance, boolean inserted) {
     final StepRuntimeState runtimeState = instance.getRuntimeState();
-    final Map<StepDependencyType, StepDependencies> dependencies = instance.getDependencies();
-    final Map<StepOutputsDefinition.StepOutputType, StepOutputs> outputs = instance.getOutputs();
+    final SignalDependencies dependencies = instance.getSignalDependencies();
+    final SignalOutputs outputs = instance.getSignalOutputs();
     final Map<String, Artifact> artifacts = instance.getArtifacts();
     final Timeline timeline = instance.getTimeline();
     try {
       instance.setRuntimeState(null);
-      instance.setDependencies(null);
-      instance.setOutputs(null);
+      instance.setSignalDependencies(null);
+      instance.setSignalOutputs(null);
       instance.setArtifacts(null);
       instance.setTimeline(null);
       final String stepInstanceStr = toJson(instance);
@@ -241,8 +235,8 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
     } finally {
       instance.setTimeline(timeline);
       instance.setArtifacts(artifacts);
-      instance.setDependencies(dependencies);
-      instance.setOutputs(outputs);
+      instance.setSignalDependencies(dependencies);
+      instance.setSignalOutputs(outputs);
       instance.setRuntimeState(runtimeState);
     }
   }
@@ -255,10 +249,10 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
    */
   public void updateStepInstance(WorkflowSummary workflowSummary, StepRuntimeSummary stepSummary) {
     final String runtimeState = toJson(stepSummary.getRuntimeState());
-    final String stepDependenciesSummariesStr = toJson(stepSummary.getDependencies());
+    final String stepDependenciesSummariesStr = toJson(stepSummary.getSignalDependencies());
     final String artifacts = toJson(stepSummary.getArtifacts());
     final String stepOutputs =
-        stepSummary.getOutputs() == null ? null : toJson(stepSummary.getOutputs());
+        stepSummary.getSignalOutputs() == null ? null : toJson(stepSummary.getSignalOutputs());
     final String[] timelineArray =
         stepSummary.getTimeline() == null
             ? null
@@ -310,8 +304,8 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
   private StepInstance maestroStepFromResult(ResultSet rs) throws SQLException {
     StepInstance instance = getInstance(rs);
     instance.setRuntimeState(getRuntimeState(rs));
-    instance.setDependencies(getDependencies(rs));
-    instance.setOutputs(getOutputs(rs));
+    instance.setSignalDependencies(getDependencies(rs));
+    instance.setSignalOutputs(getOutputs(rs));
     instance.setArtifacts(getArtifacts(rs));
     instance.setTimeline(getTimeline(rs));
     return instance;
@@ -407,22 +401,20 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
     return timeline;
   }
 
-  private Map<StepOutputsDefinition.StepOutputType, StepOutputs> getOutputs(ResultSet rs)
-      throws SQLException {
+  private SignalOutputs getOutputs(ResultSet rs) throws SQLException {
     String outputs = rs.getString(StepInstanceField.OUTPUTS.field);
     if (outputs == null) {
       return null;
     }
-    return fromJson(outputs, OUTPUTS_TYPE_REFERENCE);
+    return fromJson(outputs, SignalOutputs.class);
   }
 
-  private Map<StepDependencyType, StepDependencies> getDependencies(ResultSet rs)
-      throws SQLException {
+  private SignalDependencies getDependencies(ResultSet rs) throws SQLException {
     String summary = rs.getString(StepInstanceField.DEPENDENCIES.field);
     if (summary == null) {
       return null;
     }
-    return fromJson(summary, STEP_DEPENDENCIES_TYPE_REFERENCE);
+    return fromJson(summary, SignalDependencies.class);
   }
 
   enum StepInstanceField {
@@ -568,7 +560,7 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
   }
 
   /** Get step instance step dependencies from DB for a given step instance attempt. */
-  public Map<StepDependencyType, StepDependencies> getStepDependencies(
+  public SignalDependencies getSignalDependencies(
       String workflowId,
       long workflowInstanceId,
       long workflowRunId,
@@ -590,7 +582,7 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
   }
 
   /** Get step instance output signals from DB for a given step instance attempt. */
-  public Map<StepOutputsDefinition.StepOutputType, StepOutputs> getStepOutputs(
+  public SignalOutputs getSignalOutputs(
       String workflowId,
       long workflowInstanceId,
       long workflowRunId,
@@ -867,9 +859,9 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
    * @param workflowRunId workflow instance run id
    * @return all last step dependencies.
    */
-  public Map<String, Map<StepDependencyType, StepDependencies>> getAllStepDependencies(
+  public Map<String, SignalDependencies> getAllStepDependencies(
       String workflowId, long workflowInstanceId, long workflowRunId) {
-    Map<String, Map<StepDependencyType, StepDependencies>> allStepDependencies = new HashMap<>();
+    Map<String, SignalDependencies> allStepDependencies = new HashMap<>();
     return withMetricLogError(
         () ->
             withRetryableQuery(
@@ -883,8 +875,7 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
                 result -> {
                   while (result.next()) {
                     String stepId = result.getString(StepInstanceField.STEP_ID.field);
-                    Map<StepDependencyType, StepDependencies> dependencies =
-                        getDependencies(result);
+                    SignalDependencies dependencies = getDependencies(result);
                     if (dependencies != null) {
                       allStepDependencies.put(stepId, dependencies);
                     }

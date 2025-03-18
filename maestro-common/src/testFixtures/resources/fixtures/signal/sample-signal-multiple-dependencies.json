@@ -1,0 +1,23 @@
+{
+  "dependencies": [
+    {
+      "name": "signal_a",
+      "status": "PENDING",
+      "match_params": {
+        "param_a": {
+          "value": "test123",
+          "operator": "="
+        }
+      }
+    },
+    {
+      "name": "signal_a",
+      "status": "MATCHED",
+      "signal_id": 123
+    },
+    {
+      "name": "signal_a",
+      "status": "SKIPPED"
+    }
+  ]
+}

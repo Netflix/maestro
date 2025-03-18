@@ -41,6 +41,9 @@ public class SqsProperties {
   private String deleteWorkflowJobQueueUrl;
   private String stepWakeUpJobQueueUrl;
   private String timeTriggerExecutionQueueUrl;
+  private String signalInstanceQueueUrl;
+  private String signalTriggerMatchQueueUrl;
+  private String signalTriggerExecutionQueueUrl;
 
   /** Core pool size of the thread pool executor used by SQS message listeners. */
   private int listenerCorePoolSize = DEFAULT_CORE_POOL_SIZE;

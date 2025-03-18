@@ -1,0 +1,23 @@
+{
+  "workflow_id": "sample-workflow-1",
+  "trigger_uuid": "test-uuid-1",
+  "signal_instance": {
+    "name": "signal_a",
+    "seq_id": 1,
+    "instance_id": "9443cf4d-8434-3259-b913-926ca9f3c0d1",
+    "params": {
+      "foo": "bar",
+      "watermark": 123456,
+      "updated_by": "tester"
+    },
+    "payload": {
+      "extra": {
+        "source": {
+          "id": "test-id"
+        }
+      }
+    },
+    "request_time": 123456789,
+    "create_time": 123456789
+  }
+}

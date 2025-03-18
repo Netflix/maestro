@@ -314,7 +314,7 @@ public class WorkflowActionHandler {
         && request.getRestartConfig() != null
         && request.getRestartConfig().getRestartPath() != null
         && request.getRestartConfig().getRestartPath().size() == 1
-        && request.getRestartConfig().getRestartPath().get(0).getStepId() == null
+        && request.getRestartConfig().getRestartPath().getFirst().getStepId() == null
         && !MapHelper.isEmptyOrNull(request.getRestartConfig().getStepRestartParams())) {
       UpstreamInitiator.Info info =
           ((ForeachInitiator) request.getInitiator()).getNonInlineParent();

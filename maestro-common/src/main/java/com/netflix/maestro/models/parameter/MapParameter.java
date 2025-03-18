@@ -122,7 +122,7 @@ public final class MapParameter extends AbstractParameter {
         } else if (value instanceof List<?>) {
           final List<?> listValue = (List<?>) value;
           if (!(listValue).isEmpty()) {
-            Object firstValue = listValue.get(0);
+            Object firstValue = listValue.getFirst();
             if (firstValue instanceof Long) {
               long[] arr = ((List<Long>) value).stream().mapToLong(Long::longValue).toArray();
               newValue = arr;

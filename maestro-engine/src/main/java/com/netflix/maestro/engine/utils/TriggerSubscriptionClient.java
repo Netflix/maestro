@@ -14,6 +14,8 @@ package com.netflix.maestro.engine.utils;
 
 import com.netflix.maestro.models.definition.Workflow;
 import com.netflix.maestro.models.trigger.TriggerUuids;
+import java.sql.Connection;
+import java.sql.SQLException;
 
 /** Interface for client functionality managing trigger subscriptions. */
 public interface TriggerSubscriptionClient {
@@ -24,5 +26,7 @@ public interface TriggerSubscriptionClient {
    * @param current current active trigger uuids
    * @param previous previous active trigger uuids
    */
-  void upsertTriggerSubscription(Workflow workflow, TriggerUuids current, TriggerUuids previous);
+  void upsertTriggerSubscription(
+      Connection conn, Workflow workflow, TriggerUuids current, TriggerUuids previous)
+      throws SQLException;
 }

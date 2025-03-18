@@ -89,6 +89,9 @@ triggers:
   #time trigger configurations
   time-trigger:
     type: noop
+  #signal trigger configurations
+  signal-trigger:
+    type: noop
 
 logging:
   level:

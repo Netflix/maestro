@@ -60,13 +60,13 @@ import com.netflix.maestro.flow.runtime.FlowOperation;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.StepType;
-import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.server.properties.MaestroEngineProperties;
 import com.netflix.maestro.server.properties.StepRuntimeProperties;
+import com.netflix.maestro.signal.dao.MaestroSignalBrokerDao;
+import com.netflix.maestro.signal.handler.MaestroSignalHandler;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.validation.Validation;
@@ -350,27 +350,9 @@ public class MaestroWorkflowConfiguration {
   }
 
   @Bean
-  public SignalHandler signalHandler() {
-    LOG.info("Creating NoOp signalHandler within Spring boot...");
-    return new SignalHandler() {
-      @Override
-      public boolean sendOutputSignals(
-          WorkflowSummary workflowSummary, StepRuntimeSummary stepRuntimeSummary) {
-        return true;
-      }
-
-      @Override
-      public boolean signalsReady(
-          WorkflowSummary workflowSummary, StepRuntimeSummary stepRuntimeSummary) {
-        return true;
-      }
-
-      @Override
-      public Map<String, List<Map<String, Parameter>>> getDependenciesParams(
-          StepRuntimeSummary runtimeSummary) {
-        return Collections.emptyMap();
-      }
-    };
+  public SignalHandler signalHandler(MaestroSignalBrokerDao brokerDao) {
+    LOG.info("Creating maestroSignalHandler within Spring boot...");
+    return new MaestroSignalHandler(brokerDao);
   }
 
   @Bean

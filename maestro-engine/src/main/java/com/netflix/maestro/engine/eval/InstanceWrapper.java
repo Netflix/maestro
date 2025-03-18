@@ -121,7 +121,7 @@ public class InstanceWrapper {
 
   String getFirstTimeTriggerTimeZone() {
     if (timeTriggers != null && !timeTriggers.isEmpty()) {
-      return timeTriggers.get(0).getTimezone();
+      return timeTriggers.getFirst().getTimezone();
     }
     return null;
   }
@@ -129,12 +129,24 @@ public class InstanceWrapper {
   void validateSignalName(String signalName) {
     boolean exist = false;
     if (signalTriggers != null && !signalTriggers.isEmpty()) {
-      exist = signalTriggers.stream().anyMatch(s -> s.getDefinition().containsKey(signalName));
+      exist = signalTriggers.stream().anyMatch(s -> s.getDefinitions().containsKey(signalName));
     }
     Checks.checkTrue(
         exist,
         "Signal name [%s] does not exist in the signal trigger definition for workflow [%s]",
         signalName,
+        workflowId);
+  }
+
+  void validateSignalParamName(String paramName) {
+    boolean exist = false;
+    if (signalTriggers != null && !signalTriggers.isEmpty()) {
+      exist = signalTriggers.stream().anyMatch(s -> s.getParams().containsKey(paramName));
+    }
+    Checks.checkTrue(
+        exist,
+        "Signal param name [%s] does not exist in the signal trigger definition for workflow [%s]",
+        paramName,
         workflowId);
   }
 }

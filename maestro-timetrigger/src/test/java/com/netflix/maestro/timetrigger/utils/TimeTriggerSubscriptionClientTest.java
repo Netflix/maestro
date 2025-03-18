@@ -50,7 +50,7 @@ public class TimeTriggerSubscriptionClientTest extends MaestroBaseTest {
     Workflow wf1 =
         Workflow.builder().id("wf1").timeTriggers(Collections.singletonList(cronTrigger)).build();
     triggerClient.upsertTriggerSubscription(
-        wf1, TriggerUuids.builder().timeTriggerUuid("test-uuid").build(), null);
+        null, wf1, TriggerUuids.builder().timeTriggerUuid("test-uuid").build(), null);
     var requestCaptor = ArgumentCaptor.forClass(TimeTriggerExecution.class);
     Mockito.verify(triggerProducer, Mockito.times(1)).push(requestCaptor.capture(), anyInt());
     TimeTriggerExecution actual = requestCaptor.getValue();
@@ -65,7 +65,7 @@ public class TimeTriggerSubscriptionClientTest extends MaestroBaseTest {
   public void testUpsertTriggerSubscriptionWithEmptyTimeTrigger() {
     Workflow wf1 = Workflow.builder().id("wf1").timeTriggers(Collections.emptyList()).build();
     triggerClient.upsertTriggerSubscription(
-        wf1, TriggerUuids.builder().timeTriggerUuid("test-uuid").build(), null);
+        null, wf1, TriggerUuids.builder().timeTriggerUuid("test-uuid").build(), null);
     Mockito.verify(triggerProducer, Mockito.times(0)).push(any(), anyInt());
   }
 
@@ -76,6 +76,7 @@ public class TimeTriggerSubscriptionClientTest extends MaestroBaseTest {
     Workflow wf1 =
         Workflow.builder().id("wf1").timeTriggers(Collections.singletonList(cronTrigger)).build();
     triggerClient.upsertTriggerSubscription(
+        null,
         wf1,
         TriggerUuids.builder().timeTriggerUuid("test-uuid").build(),
         TriggerUuids.builder().timeTriggerUuid("test-uuid").build());

@@ -9,71 +9,47 @@
     },
     "type": "Sleep",
     "timeout": "10 minutes",
-    "dependencies": {
-      "SIGNAL": {
-        "definitions": [
-          {
-            "value": {
-              "name": {
-                "value": "signal_a",
-                "type": "STRING"
-              },
-              "key1": {
-                "parameter": {
-                  "value": "value1",
-                  "type": "STRING"
-                },
-                "operator": "=",
-                "type": "SIGNAL"
-              }
+    "signal_dependencies": [
+      {
+        "name": "signal_a",
+        "match_params": {
+          "key1": {
+            "param": {
+              "value": "value1",
+              "type": "STRING"
             },
-            "type": "MAP"
+            "operator": "="
+          }
+        }
+      },
+      {
+        "name": "signal_b",
+        "match_params": {
+          "key2": {
+            "param": {
+              "value": "value2",
+              "type": "STRING"
+            },
+            "operator": "="
+          }
+        }
+      }
+    ],
+    "signal_outputs": [
+      {
+        "name": "table_0",
+        "params": {
+          "p1": {
+            "value": 1,
+            "type": "LONG"
           },
-          {
-            "value": {
-              "name": {
-                "value": "signal_b",
-                "type": "STRING"
-              },
-              "key2": {
-                "parameter": {
-                  "value": "value2",
-                  "type": "STRING"
-                },
-                "operator": "=",
-                "type": "SIGNAL"
-              }
-            },
-            "type": "MAP"
+          "p2": {
+            "expression": "1+1",
+            "type": "STRING"
           }
-        ],
-        "type": "SIGNAL"
+        }
       }
-    },
-    "outputs": {
-      "SIGNAL": {
-        "type": "SIGNAL",
-        "definitions": [
-          {
-            "value": {
-              "p1": {
-                "value": 1,
-                "type": "LONG"
-              },
-              "p2": {
-                "expression": "1+1",
-                "type": "STRING"
-              },
-              "name": {
-                "value": "table_0",
-                "type": "STRING"
-              }
-            },
-            "type": "MAP"
-          }
-        ]
-      }
-    },
+    ],
     "params": {
       "sleep_seconds": {
         "value": 15,

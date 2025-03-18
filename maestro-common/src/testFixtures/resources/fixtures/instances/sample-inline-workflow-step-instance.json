@@ -36,117 +36,60 @@
           "type": "LONG"
         }
       },
-      "outputs": {
-        "SIGNAL": {
-          "type": "SIGNAL",
-          "definitions": [
-            {
-              "value": {
-                "name": {
-                  "value": "dummy/test/signal1",
-                  "type": "STRING"
-                },
-                "key1": {
-                  "value": "v1",
-                  "type": "STRING",
-                  "mode": "MUTABLE"
-                },
-                "key2": {
-                  "value": 1,
-                  "type": "LONG",
-                  "mode": "MUTABLE"
-                }
-              },
-              "type": "MAP"
-            },
-            {
-              "value": {
-                "name": {
-                  "value": "dummy/test/signal2",
-                  "type": "STRING"
-                },
-                "key3": {
-                  "value": "v3",
-                  "type": "STRING",
-                  "mode": "MUTABLE"
-                },
-                "key4": {
-                  "value": "v4",
-                  "type": "STRING",
-                  "mode": "MUTABLE"
-                }
-              },
-              "type": "MAP"
-            }
-          ]
-        }
-      }
-    }
-  },
-  "outputs": {
-    "SIGNAL": {
-      "type": "SIGNAL",
-      "outputs": [
+      "signal_outputs": [
         {
-          "param": {
-            "value": {
-              "name": {
-                "value": "dummy/test/signal1",
-                "type": "STRING"
-              },
-              "p1": {
-                "value": 1,
-                "type": "LONG"
-              },
-              "p2": {
-                "expression": "1+1",
-                "type": "LONG"
-              }
+          "name":  "dummy/test/signal1",
+          "params": {
+            "key1": {
+              "value": "v1",
+              "type": "STRING"
             },
-            "type": "MAP",
-            "evaluated_result": {
-              "name": "dummy/test/signal1",
-              "p1": 1,
-              "p2": 2
-            },
-            "evaluated_time": 1667197463147
-          },
-          "output_signal_instance": {
-            "announced_time": 1667197463771,
-            "output_signal_instance_id": "52726829-e6a9-366f-adae-4acb54e6b733"
+            "key2": {
+              "value": 1,
+              "type": "LONG",
+              "mode": "MUTABLE"
+            }
           }
         },
         {
-          "param": {
-            "value": {
-              "name": {
-                "expression": "aaa",
-                "type": "STRING"
-              },
-              "p1": {
-                "expression": "foo + 1;",
-                "type": "LONG"
-              },
-              "p2": {
-                "expression": "auu+1",
-                "type": "LONG"
-              }
+          "name": "dummy/test/signal2",
+          "params": {
+            "key3": {
+              "value": "v3",
+              "type": "STRING",
+              "mode": "MUTABLE"
             },
-            "type": "MAP",
-            "evaluated_result": {
-              "name": "bar",
-              "p1": 11,
-              "p2": 124
-            },
-            "evaluated_time": 1667197463148
-          },
-          "output_signal_instance": {
-            "announced_time": 1667197464191,
-            "output_signal_instance_id": "9b9b994f-71a1-3b9c-bb95-6ead3951715d"
+            "key4": {
+              "value": "v4",
+              "type": "STRING",
+              "mode": "MUTABLE"
+            }
           }
         }
       ]
     }
+  },
+  "signal_outputs": {
+    "outputs": [
+      {
+        "name": "dummy/test/signal1",
+        "params": {
+          "p1": 1,
+          "p2": 2
+        },
+        "signal_id": 52726829,
+        "announce_time": 1667197463771
+      },
+      {
+        "name": "bar",
+        "params": {
+          "p1": 11,
+          "p2": 124
+        },
+        "signal_id": 829,
+        "announce_time": 1667197464191
+      }
+    ]
   },
   "tags": [
     {

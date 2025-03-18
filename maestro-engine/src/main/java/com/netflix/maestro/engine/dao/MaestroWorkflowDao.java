@@ -430,7 +430,7 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
                     workflowInfo.getPrevActiveVersionId()));
 
     subscriptionClient.upsertTriggerSubscription(
-        workflowInfo.getWorkflow(), currTriggerUuids, prevTriggerUuids);
+        conn, workflowInfo.getWorkflow(), currTriggerUuids, prevTriggerUuids);
   }
 
   private void updateWorkflowInfoForNextActiveWorkflow(

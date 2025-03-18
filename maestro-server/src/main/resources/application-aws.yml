@@ -91,6 +91,9 @@ triggers:
     type: sqs
     trigger-batch-size: 10
     max-triggers-per-message: 200
+  #signal trigger configurations
+  signal-trigger:
+    type: sqs
 
 aws:
   sns:
@@ -105,6 +108,9 @@ aws:
     delete-workflow-job-queue-url: http://localhost:4566/000000000000/maestro-delete-workflow-job
     step-wake-up-job-queue-url: http://localhost:4566/000000000000/maestro-step-wake-up-job.fifo
     time-trigger-execution-queue-url: http://localhost:4566/000000000000/maestro-time-trigger-execution
+    signal-instance-queue-url: http://localhost:4566/000000000000/maestro-signal-instance.fifo
+    signal-trigger-match-queue-url: http://localhost:4566/000000000000/maestro-signal-trigger-match.fifo
+    signal-trigger-execution-queue-url: http://localhost:4566/000000000000/maestro-signal-trigger-execution.fifo
 
 cloud:
   aws:

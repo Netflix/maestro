@@ -16,6 +16,7 @@ import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.Workflow;
 import com.netflix.maestro.models.instance.WorkflowInstance;
+import com.netflix.maestro.models.signal.SignalParamValue;
 import com.netflix.maestro.models.trigger.TriggerUuids;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
@@ -29,6 +30,7 @@ public final class IdHelper {
   private static final char[] BASE62_CHARS =
       "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".toCharArray();
   private static final int BASE = BASE62_CHARS.length;
+  private static final int OFFSET = 37;
 
   private IdHelper() {}
 
@@ -71,7 +73,7 @@ public final class IdHelper {
 
   /** encode a long value into a hash key. */
   public static String hashKey(long value) {
-    return encodeBase62(value, false);
+    return encodeBase62(value, false, 0);
   }
 
   /**
@@ -79,7 +81,7 @@ public final class IdHelper {
    * use variable length
    */
   public static String rangeKey(long value) {
-    return encodeBase62(value, true);
+    return encodeBase62(value, true, 0);
   }
 
   /** assemble the inline workflow id prefix based on workflow internal id. */
@@ -94,8 +96,8 @@ public final class IdHelper {
   }
 
   /**
-   * Encode a long value into a compact base62 string using some special algorithm. For the case
-   * (e.g. range key) if the string must be preserving the natural ordering, the value will be
+   * Encode a positive long value into a compact base62 string using some special algorithm. For the
+   * case (e.g. range key) if the string must be preserving the natural ordering, the value will be
    * encoded into base62 and then add its length as the prefix to the string. In this way, we
    * support variable length base62 encoding with the original natural ordering. e.g. 62 (base62:
    * 11) vs 9 (base62: 9) -> 211 vs 19.
@@ -105,7 +107,7 @@ public final class IdHelper {
    *     and false for hashKey.
    * @return encoded base62 string
    */
-  private static String encodeBase62(long value, boolean isOrdered) {
+  private static String encodeBase62(long value, boolean isOrdered, int offset) {
     Checks.checkTrue(value > 0, "Input value must be positive: %s", value);
 
     StringBuilder sb = new StringBuilder();
@@ -116,10 +118,40 @@ public final class IdHelper {
     }
 
     if (isOrdered) {
-      sb.append(BASE62_CHARS[sb.length()]);
+      sb.append(BASE62_CHARS[sb.length() + offset]);
       sb.reverse();
     }
     return sb.toString();
+  }
+
+  /**
+   * Encode a long or string signal value into a string, which preserves the original ordering.
+   * String type will prepend '#' to the original value as the first char. Negative number will
+   * prepend the base62 encoded length to encoded negative value. Positive number will prepend the
+   * base62 encoded (length + 37) as the first char to encoded base62 value. Then the whole range
+   * will be allocated as '...string......negative......positive.... The largest string will be less
+   * than "0". The smallest number will be larger than "0". This encoding will ensure the ordering.
+   *
+   * @param value value to encode
+   * @return encoded string value
+   */
+  public static String encodeValue(SignalParamValue value) {
+    if (value.isLong()) {
+      long longValue = value.getLong();
+      if (longValue == 0) {
+        return "a0";
+      } else if (longValue > 0) {
+        return encodeBase62(longValue, true, OFFSET);
+      } else if (longValue == Long.MIN_VALUE) {
+        return "00";
+      } else if (longValue == -Long.MAX_VALUE) {
+        return "01";
+      } else {
+        return encodeBase62(Long.MAX_VALUE + longValue, true, 0);
+      }
+    } else {
+      return '#' + value.getString();
+    }
   }
 
   /**

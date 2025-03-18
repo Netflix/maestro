@@ -1,0 +1,153 @@
+{
+  "properties": {
+    "owner": "tester",
+    "run_strategy": "sequential",
+    "step_concurrency": 20
+  },
+  "workflow": {
+    "signal_triggers": [
+      {
+        "definitions": {
+          "signal_a": {
+            "match_params": {
+              "foo": {
+                "value": "bat",
+                "operator": "="
+              },
+              "watermark": {
+                "value": 12345,
+                "operator": ">="
+              }
+            },
+            "join_keys": [
+              "updated_by"
+            ]
+          },
+          "signal_b": {
+            "match_params": {
+              "bar": {
+                "value": "baz",
+                "operator": "="
+              },
+              "watermark": {
+                "value": 22222,
+                "operator": ">="
+              }
+            },
+            "join_keys": [
+              "posted_by"
+            ]
+          }
+        },
+        "condition": "245 > 123",
+        "dedup_expr": "return UUID.randomUUID().toString();",
+        "params": {
+          "foo": {
+            "value": "bar",
+            "type": "STRING"
+          }
+        }
+      }
+    ],
+    "id": "sample-signal-trigger-wf",
+    "name": "Signal Trigger Test Workflow 01",
+    "description": "Long description about this workflow",
+    "steps": [
+      {"step": {"id": "job.1", "type": "NoOp",
+        "params": {
+          "param1": {
+            "expression": "params.getFromSignal('foo')",
+            "type": "STRING"
+          },
+          "param2": {
+            "expression": "params.getFromSignal('signal_a', 'watermark')",
+            "type": "LONG"
+          },
+          "param3": {
+            "expression": "params.getFromSignalDependency('0', 'vtts_utc_dateint')",
+            "type": "STRING"
+          }
+        },
+        "signal_dependencies": [
+          {
+            "name": "db/test/table1",
+            "match_params": {
+              "vtts_utc_dateint": {
+                "param": {
+                  "expression": "\nDateTimeFormatter tz_dateint_hour_formatter = DateTimeFormat\n    .forPattern(\"yyyyMMddHH\")\n    .withZone(DateTimeZone.forID(\"UTC\"));\n\nDateTime dt = tz_dateint_hour_formatter\n    .parseDateTime(TARGET_RUN_DATE + \"00\")\n    .minusDays(0)\n    .minusHours(0);\n\ndt.withZone(DateTimeZone.forID(\"UTC\")).toString(\"yyyyMMdd\");\n",
+                  "type": "STRING",
+                  "mode": "MUTABLE"
+                },
+                "operator": ">="
+              },
+              "vtts_utc_hour": {
+                "param": {
+                  "expression": "\nDateTimeFormatter tz_dateint_hour_formatter = DateTimeFormat\n    .forPattern(\"yyyyMMddHH\")\n    .withZone(DateTimeZone.forID(\"UTC\"));\n\nDateTime dt = tz_dateint_hour_formatter\n    .parseDateTime(TARGET_RUN_DATE + \"00\")\n    .minusDays(0)\n    .minusHours(0);\n\ndt.withZone(DateTimeZone.forID(\"UTC\")).toString(\"HH\");\n",
+                  "type": "STRING",
+                  "mode": "MUTABLE"
+                },
+                "operator": "="
+              }
+            }
+          },
+          {
+            "name": "db/test/table2",
+            "match_params": {
+              "vtts_utc_dateint": {
+                "param": {
+                  "expression": "\nDateTimeFormatter tz_dateint_hour_formatter = DateTimeFormat\n    .forPattern(\"yyyyMMddHH\")\n    .withZone(DateTimeZone.forID(\"UTC\"));\n\nDateTime dt = tz_dateint_hour_formatter\n    .parseDateTime(TARGET_RUN_DATE + \"00\")\n    .minusDays(0)\n    .minusHours(0);\n\ndt.withZone(DateTimeZone.forID(\"UTC\")).toString(\"yyyyMMdd\");\n",
+                  "type": "STRING",
+                  "mode": "MUTABLE"
+                },
+                "operator": ">="
+              },
+              "vtts_utc_hour": {
+                "param": {
+                  "expression": "\nDateTimeFormatter tz_dateint_hour_formatter = DateTimeFormat\n    .forPattern(\"yyyyMMddHH\")\n    .withZone(DateTimeZone.forID(\"UTC\"));\n\nDateTime dt = tz_dateint_hour_formatter\n    .parseDateTime(TARGET_RUN_DATE + \"00\")\n    .minusDays(0)\n    .minusHours(0);\n\ndt.withZone(DateTimeZone.forID(\"UTC\")).toString(\"HH\");\n",
+                  "type": "STRING",
+                  "mode": "MUTABLE"
+                },
+                "operator": "="
+              }
+            }
+          }
+        ],
+        "signal_outputs": [
+          {
+            "name":  "dummy/test/signal1",
+            "params": {
+              "key1": {
+                "value": "v1",
+                "type": "STRING"
+              },
+              "key2": {
+                "value": 1,
+                "type": "LONG"
+              }
+            }
+          },
+          {
+            "name": "dummy/test/signal2",
+            "params": {
+              "key3": {
+                "value": "v3",
+                "type": "STRING",
+                "mode": "MUTABLE"
+              },
+              "key4": {
+                "value": "v4",
+                "type": "STRING",
+                "mode": "MUTABLE"
+              }
+            }
+          }
+        ],
+        "transition": {"successors": {"job.5": "true", "job.2":  "true"}}}},
+      {"step": {"id": "job.2", "type": "NoOp", "transition": {"successors": {"job.3": "true", "job.6":  "true"}}}},
+      {"step": {"id": "job.3", "type": "NoOp", "transition": {"successors": {"job.4": "true"}}}},
+      {"step": {"id": "job.4", "type": "NoOp", "transition": {}}},
+      {"step": {"id": "job.5", "type": "NoOp", "transition": {"successors": {"job.3": "true"}}}},
+      {"step": {"id": "job.6", "type": "NoOp", "transition": {"successors": {"job.4": "true"}}}}
+    ]
+  }
+}

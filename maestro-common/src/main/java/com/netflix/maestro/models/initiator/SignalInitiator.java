@@ -18,7 +18,6 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.models.trigger.TriggerUuids;
-import java.util.List;
 import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -28,11 +27,13 @@ import lombok.EqualsAndHashCode;
 @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(
-    value = {"trigger_uuid", "depth", "type", "signal_instance_ids", "params"},
+    value = {"trigger_uuid", "depth", "type", "signal_id_map", "params"},
     alphabetic = true)
 @Data
 public class SignalInitiator extends TriggerInitiator {
-  private List<String> signalInstanceIds;
+  // key is signal name, value is signal seq id.
+  private Map<String, Long> signalIdMap;
+  // those are params defined in SignalTrigger.
   private Map<String, Parameter> params;
 
   @Override

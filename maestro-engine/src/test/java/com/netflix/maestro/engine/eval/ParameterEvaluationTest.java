@@ -15,9 +15,11 @@ package com.netflix.maestro.engine.eval;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.when;
 
 import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.engine.MaestroEngineBaseTest;
+import com.netflix.maestro.engine.handlers.SignalHandler;
 import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.exceptions.MaestroInvalidExpressionException;
 import com.netflix.maestro.models.definition.Workflow;
@@ -27,11 +29,14 @@ import com.netflix.maestro.models.parameter.MapParameter;
 import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.models.parameter.StringMapParameter;
 import com.netflix.maestro.models.parameter.StringParameter;
+import com.netflix.maestro.models.signal.SignalInstance;
+import com.netflix.maestro.models.signal.SignalParamValue;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public class ParameterEvaluationTest extends MaestroEngineBaseTest {
 
@@ -211,7 +216,7 @@ public class ParameterEvaluationTest extends MaestroEngineBaseTest {
     WorkflowDefinition definition =
         loadObject("fixtures/parameters/sample-wf-params.json", WorkflowDefinition.class);
     Workflow workflow = definition.getWorkflow();
-    Map<String, Parameter> stepParams = toParameters(workflow.getSteps().get(0).getParams());
+    Map<String, Parameter> stepParams = toParameters(workflow.getSteps().getFirst().getParams());
     paramEvaluator.evaluateStepParameters(
         Collections.emptyMap(), Collections.emptyMap(), stepParams, "job1");
     assertEquals(
@@ -268,17 +273,17 @@ public class ParameterEvaluationTest extends MaestroEngineBaseTest {
 
   @Test
   public void testParseWorkflowParameterWithSignalParamUsingDoubleUnderscore() {
+    SignalHandler handler = Mockito.mock(SignalHandler.class);
     SignalInitiator initiator = new SignalInitiator();
-    initiator.setParams(
-        twoItemMap(
-            "signal_a",
-            StringMapParameter.builder().evaluatedResult(singletonMap("param1", "value1")).build(),
-            "signal_b",
-            MapParameter.builder().evaluatedResult(singletonMap("param2", 123L)).build()));
+    initiator.setSignalIdMap(Map.of("signal_a", 12L, "signal_b", 56L));
+    SignalInstance instance1 = new SignalInstance();
+    instance1.setParams(Collections.singletonMap("param1", SignalParamValue.of("value1")));
+    when(handler.getSignalInstance("signal_a", 12)).thenReturn(instance1);
+    SignalInstance instance2 = new SignalInstance();
+    instance2.setParams(Collections.singletonMap("param2", SignalParamValue.of(123L)));
+    when(handler.getSignalInstance("signal_b", 56)).thenReturn(instance2);
     paramExtensionRepo.reset(
-        Collections.emptyMap(),
-        Collections.emptyMap(),
-        InstanceWrapper.builder().initiator(initiator).build());
+        Collections.emptyMap(), handler, InstanceWrapper.builder().initiator(initiator).build());
 
     StringParameter bar =
         StringParameter.builder().name("bar").expression("signal_a__param1 + '-1';").build();
@@ -293,18 +298,17 @@ public class ParameterEvaluationTest extends MaestroEngineBaseTest {
 
   @Test
   public void testParseStepParameterWithSignalParamUsingDoubleUnderscore() {
+    SignalHandler handler = Mockito.mock(SignalHandler.class);
     SignalInitiator initiator = new SignalInitiator();
-    initiator.setParams(
-        twoItemMap(
-            "signal_a",
-            StringMapParameter.builder().evaluatedResult(singletonMap("param1", "value1")).build(),
-            "signal_b",
-            MapParameter.builder().evaluatedResult(singletonMap("param2", 123L)).build()));
+    initiator.setSignalIdMap(Map.of("signal_a", 12L, "signal_b", 56L));
+    SignalInstance instance1 = new SignalInstance();
+    instance1.setParams(Collections.singletonMap("param1", SignalParamValue.of("value1")));
+    when(handler.getSignalInstance("signal_a", 12)).thenReturn(instance1);
+    SignalInstance instance2 = new SignalInstance();
+    instance2.setParams(Collections.singletonMap("param2", SignalParamValue.of(123L)));
+    when(handler.getSignalInstance("signal_b", 56)).thenReturn(instance2);
     paramExtensionRepo.reset(
-        Collections.emptyMap(),
-        Collections.emptyMap(),
-        InstanceWrapper.builder().initiator(initiator).build());
-
+        Collections.emptyMap(), handler, InstanceWrapper.builder().initiator(initiator).build());
     StringParameter bar =
         StringParameter.builder().name("bar").expression("signal_b__param2 + '-1';").build();
     paramEvaluator.parseStepParameter(
@@ -323,9 +327,7 @@ public class ParameterEvaluationTest extends MaestroEngineBaseTest {
             "signal_b",
             MapParameter.builder().evaluatedResult(singletonMap("param2", 123L)).build()));
     paramExtensionRepo.reset(
-        Collections.emptyMap(),
-        Collections.emptyMap(),
-        InstanceWrapper.builder().initiator(initiator).build());
+        Collections.emptyMap(), null, InstanceWrapper.builder().initiator(initiator).build());
     StringParameter bar =
         StringParameter.builder().name("bar").expression("non_existing__param2 + '-1';").build();
     AssertHelper.assertThrows(
@@ -344,17 +346,17 @@ public class ParameterEvaluationTest extends MaestroEngineBaseTest {
 
   @Test
   public void testParseLiteralWorkflowParameterWithSignalParamUsingDoubleUnderscore() {
+    SignalHandler handler = Mockito.mock(SignalHandler.class);
     SignalInitiator initiator = new SignalInitiator();
-    initiator.setParams(
-        twoItemMap(
-            "signal-a",
-            StringMapParameter.builder().evaluatedResult(singletonMap("param1", "value1")).build(),
-            "signal-b",
-            MapParameter.builder().evaluatedResult(singletonMap("param2", 123L)).build()));
+    initiator.setSignalIdMap(Map.of("signal-a", 12L, "signal-b", 56L));
+    SignalInstance instance1 = new SignalInstance();
+    instance1.setParams(Collections.singletonMap("param1", SignalParamValue.of("value1")));
+    when(handler.getSignalInstance("signal-a", 12)).thenReturn(instance1);
+    SignalInstance instance2 = new SignalInstance();
+    instance2.setParams(Collections.singletonMap("param2", SignalParamValue.of(123L)));
+    when(handler.getSignalInstance("signal-b", 56)).thenReturn(instance2);
     paramExtensionRepo.reset(
-        Collections.emptyMap(),
-        Collections.emptyMap(),
-        InstanceWrapper.builder().initiator(initiator).build());
+        Collections.emptyMap(), handler, InstanceWrapper.builder().initiator(initiator).build());
 
     StringParameter bar =
         StringParameter.builder().name("bar").value("test ${signal-a__param1}-1").build();
@@ -369,17 +371,17 @@ public class ParameterEvaluationTest extends MaestroEngineBaseTest {
 
   @Test
   public void testParseLiteralStepParameterWithSignalParamUsingDoubleUnderscore() {
+    SignalHandler handler = Mockito.mock(SignalHandler.class);
     SignalInitiator initiator = new SignalInitiator();
-    initiator.setParams(
-        twoItemMap(
-            "signal-a",
-            StringMapParameter.builder().evaluatedResult(singletonMap("param1", "value1")).build(),
-            "signal-b",
-            MapParameter.builder().evaluatedResult(singletonMap("param2", 123L)).build()));
+    initiator.setSignalIdMap(Map.of("signal-a", 12L, "signal-b", 56L));
+    SignalInstance instance1 = new SignalInstance();
+    instance1.setParams(Collections.singletonMap("param1", SignalParamValue.of("value1")));
+    when(handler.getSignalInstance("signal-a", 12)).thenReturn(instance1);
+    SignalInstance instance2 = new SignalInstance();
+    instance2.setParams(Collections.singletonMap("param2", SignalParamValue.of(123L)));
+    when(handler.getSignalInstance("signal-b", 56)).thenReturn(instance2);
     paramExtensionRepo.reset(
-        Collections.emptyMap(),
-        Collections.emptyMap(),
-        InstanceWrapper.builder().initiator(initiator).build());
+        Collections.emptyMap(), handler, InstanceWrapper.builder().initiator(initiator).build());
 
     StringParameter bar =
         StringParameter.builder().name("bar").value("test ${signal-a__param1}").build();

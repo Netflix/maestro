@@ -61,44 +61,23 @@
       "type": "SUBWORKFLOW"
     }
   },
-  "dependencies": {
-    "SIGNAL": {
-      "type": "SIGNAL",
-      "statuses": [
-        {
-          "params": {
-            "value": {
-              "name": {
-                "value": "signal/a/1",
-                "type": "STRING"
-              },
-              "_step_dependency_sub_type": {
-                "value": "input_signal",
-                "type": "STRING"
-              },
-              "foo": {
-                "parameter": {
-                  "value": "bar",
-                  "type": "STRING"
-                },
-                "operator": "=",
-                "type": "SIGNAL"
-              }
-            },
-            "type": "MAP",
-            "evaluated_result": {
-              "name": "signal/a/1",
-              "foo": "bar"
-            },
-            "evaluated_time": 1617728847801
+  "signal_dependencies": {
+    "dependencies": [
+      {
+        "name": "signal/a/1",
+        "status": "MATCHED",
+        "match_params": {
+          "_step_dependency_sub_type": {
+            "value": "input_signal",
+            "operator": "="
           },
-          "signal_reference": {
-            "signal_instance_id": "fake_signal_id",
-            "timestamp": 1617728849086
-          },
-          "status": "MATCHED"
-        }
-      ]
-    }
+          "foo": {
+            "value": "bar",
+            "operator": "="
+          }
+        },
+        "signal_id": 849086
+      }
+    ]
   }
 }

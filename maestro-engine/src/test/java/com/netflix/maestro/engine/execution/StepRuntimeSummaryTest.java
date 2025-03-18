@@ -33,26 +33,25 @@ import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.artifact.DefaultArtifact;
 import com.netflix.maestro.models.artifact.ForeachArtifact;
 import com.netflix.maestro.models.artifact.SubworkflowArtifact;
-import com.netflix.maestro.models.definition.StepDependencyType;
-import com.netflix.maestro.models.definition.StepOutputsDefinition;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.instance.ForeachStepOverview;
-import com.netflix.maestro.models.instance.SignalReference;
-import com.netflix.maestro.models.instance.SignalStepOutputs;
-import com.netflix.maestro.models.instance.StepDependencies;
 import com.netflix.maestro.models.instance.StepDependencyMatchStatus;
 import com.netflix.maestro.models.instance.StepInstance;
-import com.netflix.maestro.models.instance.StepOutputs;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.instance.WorkflowRuntimeOverview;
 import com.netflix.maestro.models.instance.WorkflowStepStatusSummary;
 import com.netflix.maestro.models.parameter.MapParameter;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.Parameter;
-import com.netflix.maestro.models.parameter.SignalOperator;
-import com.netflix.maestro.models.parameter.SignalParamDefinition;
 import com.netflix.maestro.models.parameter.StringParamDefinition;
 import com.netflix.maestro.models.parameter.StringParameter;
+import com.netflix.maestro.models.signal.SignalDependencies;
+import com.netflix.maestro.models.signal.SignalDependenciesDefinition;
+import com.netflix.maestro.models.signal.SignalMatchParamDef;
+import com.netflix.maestro.models.signal.SignalOperator;
+import com.netflix.maestro.models.signal.SignalOutputs;
+import com.netflix.maestro.models.signal.SignalOutputsDefinition;
+import com.netflix.maestro.models.signal.SignalTransformer;
 import com.netflix.maestro.models.timeline.Timeline;
 import com.netflix.maestro.models.timeline.TimelineEvent;
 import com.netflix.maestro.models.timeline.TimelineLogEvent;
@@ -61,6 +60,7 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -74,14 +74,19 @@ public class StepRuntimeSummaryTest extends MaestroEngineBaseTest {
 
   @Test
   public void testRoundTripSerde() throws Exception {
+    var definition = new SignalDependenciesDefinition.SignalDependencyDefinition();
+    definition.setName("signal_a");
+    definition.setMatchParams(
+        Map.of(
+            "param_a",
+            SignalMatchParamDef.builder()
+                .operator(SignalOperator.EQUALS_TO)
+                .param(StringParamDefinition.builder().name("param_a").value("test123").build())
+                .build()));
     Map<String, ParamDefinition> paramDefMap = new LinkedHashMap<>();
     paramDefMap.put("name", StringParamDefinition.builder().name("name").value("signal_a").build());
     paramDefMap.put(
-        "param_a",
-        SignalParamDefinition.builder()
-            .operator(SignalOperator.EQUALS_TO)
-            .parameter(StringParamDefinition.builder().name("param_a").value("test123").build())
-            .build());
+        "param_a", StringParamDefinition.builder().name("param_a").value("test123").build());
     Map<String, Object> evaluatedResult = new HashMap<>();
     evaluatedResult.put("name", "signal_a");
     evaluatedResult.put("param_a", "test123");
@@ -93,14 +98,18 @@ public class StepRuntimeSummaryTest extends MaestroEngineBaseTest {
             .evaluatedTime(12345L)
             .build();
 
-    StepDependencies stepDependencies =
-        new StepDependencies(StepDependencyType.SIGNAL, Collections.singletonList(mapParameter));
+    SignalDependencies signalDependencies = new SignalDependencies();
+    signalDependencies.setDependencies(
+        Collections.singletonList(SignalTransformer.transform(definition, mapParameter)));
 
-    StepOutputs stepOutputs =
-        new SignalStepOutputs(
-            Collections.singletonList(new SignalStepOutputs.SignalStepOutput(mapParameter, null)));
+    SignalOutputs signalOutputs = new SignalOutputs();
+    var outputDef = new SignalOutputsDefinition.SignalOutputDefinition();
+    outputDef.setName("signal_a");
+    outputDef.setParams(paramDefMap);
+    signalOutputs.setOutputs(
+        Collections.singletonList(SignalTransformer.transform(outputDef, mapParameter)));
 
-    stepDependencies.bypass(User.builder().name("user").build(), System.currentTimeMillis());
+    signalDependencies.bypass(User.builder().name("user").build(), System.currentTimeMillis());
 
     Map<String, Parameter> params = new LinkedHashMap<>();
     params.put(
@@ -119,17 +128,16 @@ public class StepRuntimeSummaryTest extends MaestroEngineBaseTest {
             .stepName("step1")
             .stepInstanceId(123)
             .params(params)
-            .dependencies(Collections.singletonMap(StepDependencyType.SIGNAL, stepDependencies))
-            .outputs(
-                Collections.singletonMap(StepOutputsDefinition.StepOutputType.SIGNAL, stepOutputs))
+            .signalDependencies(signalDependencies)
+            .signalOutputs(signalOutputs)
             .build();
     summary.markTerminated(StepInstance.Status.SUCCEEDED, null);
     summary.addTimeline(TimelineLogEvent.info("hello"));
     String ser1 = MAPPER.writeValueAsString(summary);
     StepRuntimeSummary actual = MAPPER.readValue(ser1, StepRuntimeSummary.class);
     String ser2 = MAPPER.writeValueAsString(actual);
-    assertEquals(summary.getDependencies(), actual.getDependencies());
-    assertEquals(summary.getOutputs(), actual.getOutputs());
+    assertEquals(summary.getSignalDependencies(), actual.getSignalDependencies());
+    assertEquals(summary.getSignalOutputs(), actual.getSignalOutputs());
     assertEquals(ser1, ser2);
   }
 
@@ -263,19 +271,23 @@ public class StepRuntimeSummaryTest extends MaestroEngineBaseTest {
             .stepName("step1")
             .stepInstanceId(123)
             .params(params)
-            .dependencies(Collections.emptyMap())
             .build();
     summary.markTerminated(StepInstance.Status.SUCCEEDED, null);
     summary.addTimeline(TimelineLogEvent.info("hello"));
 
+    var definition = new SignalDependenciesDefinition.SignalDependencyDefinition();
+    definition.setName("signal_a");
+    definition.setMatchParams(
+        Map.of(
+            "param_a",
+            SignalMatchParamDef.builder()
+                .operator(SignalOperator.EQUALS_TO)
+                .param(StringParamDefinition.builder().name("param_a").value("test123").build())
+                .build()));
     Map<String, ParamDefinition> paramDefMap = new LinkedHashMap<>();
     paramDefMap.put("name", StringParamDefinition.builder().name("name").value("signal_a").build());
     paramDefMap.put(
-        "param_a",
-        SignalParamDefinition.builder()
-            .operator(SignalOperator.EQUALS_TO)
-            .parameter(StringParamDefinition.builder().name("param_a").value("test123").build())
-            .build());
+        "param_a", StringParamDefinition.builder().name("param_a").value("test123").build());
     Map<String, Object> evaluatedResult = new HashMap<>();
     evaluatedResult.put("name", "signal_a");
     evaluatedResult.put("param_a", "test123");
@@ -287,112 +299,12 @@ public class StepRuntimeSummaryTest extends MaestroEngineBaseTest {
             .evaluatedTime(12345L)
             .build();
 
-    summary.initializeStepDependenciesSummaries(
-        Collections.singletonMap(
-            StepDependencyType.SIGNAL, Collections.singletonList(mapParameter)));
-    assertNotNull(summary.getDependencies());
+    summary.initializeSignalDependencies(List.of(definition), List.of(mapParameter));
+    assertNotNull(summary.getSignalDependencies());
 
     assertEquals(
         StepDependencyMatchStatus.PENDING,
-        summary.getSignalDependencies().getStatuses().get(0).getStatus());
-  }
-
-  @Test
-  public void testUpdateStepSignalSummary() {
-    Map<String, Parameter> params = new LinkedHashMap<>();
-    params.put(
-        "param1",
-        StringParameter.builder()
-            .value("foo")
-            .evaluatedResult("foo")
-            .evaluatedTime(System.currentTimeMillis())
-            .build());
-    StepRuntimeSummary summary =
-        StepRuntimeSummary.builder()
-            .stepId("foo")
-            .stepAttemptId(2)
-            .stepInstanceUuid("bar")
-            .stepName("step1")
-            .stepInstanceId(123)
-            .params(params)
-            .dependencies(Collections.emptyMap())
-            .build();
-    summary.markTerminated(StepInstance.Status.SUCCEEDED, null);
-    summary.addTimeline(TimelineLogEvent.info("hello"));
-
-    Map<String, ParamDefinition> paramDefMap = new LinkedHashMap<>();
-    paramDefMap.put("name", StringParamDefinition.builder().name("name").value("signal_a").build());
-    paramDefMap.put(
-        "param_a",
-        SignalParamDefinition.builder()
-            .operator(SignalOperator.EQUALS_TO)
-            .parameter(StringParamDefinition.builder().name("param_a").value("test123").build())
-            .build());
-    Map<String, Object> evaluatedResult = new HashMap<>();
-    evaluatedResult.put("name", "signal_a");
-    evaluatedResult.put("param_a", "test123");
-
-    MapParameter mapParameter =
-        MapParameter.builder()
-            .value(paramDefMap)
-            .evaluatedResult(evaluatedResult)
-            .evaluatedTime(12345L)
-            .build();
-
-    summary.initializeStepDependenciesSummaries(
-        Collections.singletonMap(
-            StepDependencyType.SIGNAL, Collections.singletonList(mapParameter)));
-    assertNotNull(summary.getDependencies());
-    assertEquals(
-        StepDependencyMatchStatus.PENDING,
-        summary.getSignalDependencies().getStatuses().get(0).getStatus());
-
-    summary.updateSignalStatus(
-        mapParameter, StepDependencyMatchStatus.MATCHED, new SignalReference("fake_id", 123));
-    assertEquals(
-        "signal_a",
-        summary
-            .getSignalDependencies()
-            .getStatuses()
-            .get(0)
-            .getParams()
-            .getEvaluatedParam("name")
-            .getValue());
-    assertEquals(
-        StepDependencyMatchStatus.MATCHED,
-        summary.getSignalDependencies().getStatuses().get(0).getStatus());
-    assertEquals(
-        "fake_id",
-        summary
-            .getSignalDependencies()
-            .getStatuses()
-            .get(0)
-            .getSignalReference()
-            .getSignalInstanceId());
-
-    paramDefMap = new LinkedHashMap<>();
-    paramDefMap.put("name", StringParamDefinition.builder().name("name").value("signal_b").build());
-    paramDefMap.put(
-        "param_a",
-        SignalParamDefinition.builder()
-            .operator(SignalOperator.EQUALS_TO)
-            .parameter(StringParamDefinition.builder().name("param_a").value("test123").build())
-            .build());
-    evaluatedResult = new HashMap<>();
-    evaluatedResult.put("name", "signal_b");
-    evaluatedResult.put("param_a", "test123");
-
-    MapParameter badSignalParam =
-        MapParameter.builder()
-            .value(paramDefMap)
-            .evaluatedResult(evaluatedResult)
-            .evaluatedTime(12345L)
-            .build();
-
-    // update a status with unknown signal.
-    summary.updateSignalStatus(
-        badSignalParam, StepDependencyMatchStatus.PENDING, new SignalReference("fake_id", 123));
-    assertTrue(summary.getSignalDependencies().isSatisfied());
+        summary.getSignalDependencies().getDependencies().getFirst().getStatus());
   }
 
   @Test
@@ -539,7 +451,6 @@ public class StepRuntimeSummaryTest extends MaestroEngineBaseTest {
             .stepInstanceUuid("bar")
             .stepName("step1")
             .stepInstanceId(123)
-            .dependencies(Collections.emptyMap())
             .stepRetry(StepInstance.StepRetry.from(Defaults.DEFAULT_RETRY_POLICY))
             .tracingContext(tracingContext)
             .build();

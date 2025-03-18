@@ -36,9 +36,7 @@ public enum ParamType {
   /** Explicit type info for result returning BOOLEAN_ARRAY. */
   BOOLEAN_ARRAY,
   /** Explicit type info for result returning MAP<String, Object>. */
-  MAP,
-  /** Explicit type info for result returning SIGNAL. */
-  SIGNAL;
+  MAP;
 
   /** JSON creator. */
   @JsonCreator

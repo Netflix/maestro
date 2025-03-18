@@ -39,8 +39,8 @@ import lombok.ToString;
       "retry_policy",
       "tags",
       "timeout",
-      "dependencies",
-      "outputs",
+      "signal_dependencies",
+      "signal_outputs",
       "params"
     },
     alphabetic = true)

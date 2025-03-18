@@ -1,10 +1,10 @@
 # This is a Gradle generated file for dependency locking.
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
-com.fasterxml.jackson.core:jackson-annotations:2.18.2=compileClasspath
-com.fasterxml.jackson.core:jackson-core:2.18.2=compileClasspath
+com.fasterxml.jackson.core:jackson-annotations:2.18.3=compileClasspath
+com.fasterxml.jackson.core:jackson-core:2.18.3=compileClasspath
 com.fasterxml.jackson.core:jackson-databind:2.15.4=compileClasspath
-com.fasterxml.jackson:jackson-bom:2.18.2=compileClasspath
+com.fasterxml.jackson:jackson-bom:2.18.3=compileClasspath
 com.zaxxer:HikariCP:4.0.3=compileClasspath
 org.flywaydb:flyway-core:7.6.0=compileClasspath
 org.projectlombok:lombok:1.18.36=annotationProcessor,compileClasspath

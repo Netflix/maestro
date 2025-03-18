@@ -1,47 +1,42 @@
 {
-  "definition": {
+  "definitions": {
     "signal_a": {
-      "foo": {
-        "type": "SIGNAL",
-        "parameter": {
+      "match_params": {
+        "foo": {
           "value": "bar",
-          "type": "STRING",
-          "mode": "mutable"
+          "operator": "="
         },
-        "operator": "="
+        "updated_by": {
+          "value": "tester",
+          "operator": "="
+        }
       },
-      "posted_by": {
-        "type": "SIGNAL",
-        "parameter": {
-          "value": "a",
-          "type": "STRING",
-          "mode": "mutable"
-        },
-        "operator": "="
-      }
+      "join_keys": [
+        "updated_by"
+      ]
     },
     "signal_b": {
-      "foo": {
-        "type": "SIGNAL",
-        "parameter": {
+      "match_params": {
+        "foo": {
           "value": "bar",
-          "type": "STRING",
-          "mode": "mutable"
+          "operator": "="
         },
-        "operator": "="
-      },
-      "posted_by": {
-        "type": "SIGNAL",
-        "parameter": {
+        "posted_by": {
           "value": "a",
-          "type": "STRING",
-          "mode": "mutable"
-        },
-        "operator": "="
-      }
+          "operator": "="
+        }
+      },
+      "join_keys": [
+        "posted_by"
+      ]
     }
   },
-  "join_keys": [
-    "updated_by"
-  ]
+  "condition": "245 > 123",
+  "dedup_expr": "return UUID.randomUUID().toString();",
+  "params": {
+    "foo": {
+      "value": "bar",
+      "type": "STRING"
+    }
+  }
 }

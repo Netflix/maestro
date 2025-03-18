@@ -836,7 +836,7 @@ public class ForeachStepRuntime implements StepRuntime {
             false);
 
     if (!results.isEmpty()) {
-      long maxIterationId = results.get(0).getInstanceId(); // results are sorted in DESC;
+      long maxIterationId = results.getFirst().getInstanceId(); // results are sorted in DESC;
       long newCheckpoint =
           results.stream()
               .filter(rs -> !rs.getStatus().isTerminal())

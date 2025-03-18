@@ -20,30 +20,32 @@
         "step": {
           "id": "job.1",
           "type": "NoOp",
-          "dependencies": {
-            "SIGNAL": {
-              "definitions": [
-                {
-                  "value": {
-                    "name": {
-                      "value": "prod_db/foo/bar",
-                      "type": "STRING"
-                    },
-                    "vtts_utc_dateint": {
-                      "operator": "=",
-                      "parameter": {
-                        "type": "STRING",
-                        "value": "${DERIVED_RUN_DATE_UTC}"
-                      },
-                      "type": "SIGNAL"
-                    }
+          "signal_dependencies": [
+            {
+              "name": "prod_db/foo/bar",
+              "match_params": {
+                "vtts_utc_dateint": {
+                  "param": {
+                    "value": "${DERIVED_RUN_DATE_UTC}",
+                    "type": "STRING"
                   },
-                  "type": "MAP"
+                  "operator": "="
                 }
-              ],
-              "type": "SIGNAL"
+              }
+            },
+            {
+              "name": "signal_b",
+              "match_params": {
+                "key2": {
+                  "param": {
+                    "value": "value2",
+                    "type": "STRING"
+                  },
+                  "operator": "="
+                }
+              }
             }
-          },
+          ],
           "transition": {
             "successors": {
               "job.2": "true",

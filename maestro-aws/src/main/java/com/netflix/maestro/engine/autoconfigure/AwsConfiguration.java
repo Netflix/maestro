@@ -23,6 +23,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.engine.listeners.SqsDeleteWorkflowJobListener;
 import com.netflix.maestro.engine.listeners.SqsPublishJobEventListener;
 import com.netflix.maestro.engine.listeners.SqsRunWorkflowInstancesJobListener;
+import com.netflix.maestro.engine.listeners.SqsSignalInstanceListener;
+import com.netflix.maestro.engine.listeners.SqsSignalTriggerExecutionListener;
+import com.netflix.maestro.engine.listeners.SqsSignalTriggerMatchListener;
 import com.netflix.maestro.engine.listeners.SqsStartWorkflowJobListener;
 import com.netflix.maestro.engine.listeners.SqsStepInstanceWakeUpJobListener;
 import com.netflix.maestro.engine.listeners.SqsTerminateInstancesJobListener;
@@ -38,6 +41,7 @@ import com.netflix.maestro.engine.processors.StartWorkflowJobProcessor;
 import com.netflix.maestro.engine.processors.StepInstanceWakeUpEventProcessor;
 import com.netflix.maestro.engine.processors.TerminateInstancesJobProcessor;
 import com.netflix.maestro.engine.processors.TerminateThenRunInstanceJobProcessor;
+import com.netflix.maestro.engine.producer.SqsSignalQueueProducer;
 import com.netflix.maestro.engine.producer.SqsTimeTriggerProducer;
 import com.netflix.maestro.engine.properties.AwsProperties;
 import com.netflix.maestro.engine.properties.SqsProperties;
@@ -47,6 +51,10 @@ import com.netflix.maestro.engine.publisher.SnsEventNotificationPublisher;
 import com.netflix.maestro.engine.publisher.SqsMaestroJobEventPublisher;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.Constants;
+import com.netflix.maestro.signal.messageprocessors.SignalInstanceProcessor;
+import com.netflix.maestro.signal.messageprocessors.SignalTriggerExecutionProcessor;
+import com.netflix.maestro.signal.messageprocessors.SignalTriggerMatchProcessor;
+import com.netflix.maestro.signal.producer.SignalQueueProducer;
 import com.netflix.maestro.timetrigger.messageprocessors.TimeTriggerExecutionProcessor;
 import com.netflix.maestro.timetrigger.producer.TimeTriggerProducer;
 import lombok.extern.slf4j.Slf4j;
@@ -143,6 +151,41 @@ public class AwsConfiguration {
       TimeTriggerExecutionProcessor timeTriggerExecutionProcessor, ObjectMapper mapper) {
     LOG.info("Creating sqsTimeTriggerExecutionListener within Spring boot...");
     return new SqsTimeTriggerExecutionListener(timeTriggerExecutionProcessor, mapper);
+  }
+
+  @Bean
+  @ConditionalOnProperty(value = "triggers.signal-trigger.type", havingValue = "sqs")
+  public SignalQueueProducer sqsSignalQueueProducer(
+      @Qualifier(MAESTRO_AWS_SQS_SYNC) AmazonSQS amazonSqs,
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
+      AwsProperties props,
+      MaestroMetrics metrics) {
+    LOG.info("Creating sqsSignalQueueProducer within Spring boot...");
+    return new SqsSignalQueueProducer(amazonSqs, objectMapper, props.getSqs(), metrics);
+  }
+
+  @Bean
+  @ConditionalOnProperty(value = "triggers.signal-trigger.type", havingValue = "sqs")
+  public SqsSignalInstanceListener sqsSignalInstanceListener(
+      SignalInstanceProcessor processor, ObjectMapper mapper) {
+    LOG.info("Creating sqsSignalInstanceListener within Spring boot...");
+    return new SqsSignalInstanceListener(processor, mapper);
+  }
+
+  @Bean
+  @ConditionalOnProperty(value = "triggers.signal-trigger.type", havingValue = "sqs")
+  public SqsSignalTriggerMatchListener sqsSignalTriggerMatchListener(
+      SignalTriggerMatchProcessor processor, ObjectMapper mapper) {
+    LOG.info("Creating sqsSignalTriggerMatchListener within Spring boot...");
+    return new SqsSignalTriggerMatchListener(processor, mapper);
+  }
+
+  @Bean
+  @ConditionalOnProperty(value = "triggers.signal-trigger.type", havingValue = "sqs")
+  public SqsSignalTriggerExecutionListener sqsSignalTriggerExecutionListener(
+      SignalTriggerExecutionProcessor processor, ObjectMapper mapper) {
+    LOG.info("Creating sqsSignalTriggerExecutionListener within Spring boot...");
+    return new SqsSignalTriggerExecutionListener(processor, mapper);
   }
 
   @Bean
