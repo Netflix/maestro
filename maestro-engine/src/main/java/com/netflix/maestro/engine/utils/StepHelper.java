@@ -20,17 +20,16 @@ import com.netflix.maestro.engine.execution.WorkflowSummary;
 import com.netflix.maestro.flow.models.Flow;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.Step;
-import com.netflix.maestro.models.definition.StepDependencyType;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.Tag;
 import com.netflix.maestro.models.initiator.Initiator;
 import com.netflix.maestro.models.initiator.UpstreamInitiator;
 import com.netflix.maestro.models.instance.RestartConfig;
-import com.netflix.maestro.models.instance.StepDependencies;
 import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.StepInstanceTransition;
 import com.netflix.maestro.models.instance.StepRuntimeState;
 import com.netflix.maestro.models.parameter.ParamDefinition;
+import com.netflix.maestro.models.signal.SignalDependencies;
 import com.netflix.maestro.utils.Checks;
 import com.netflix.maestro.utils.IdHelper;
 import java.util.ArrayList;
@@ -105,11 +104,10 @@ public final class StepHelper {
   }
 
   /** utility to get the step dependencies summaries of a stepId. */
-  public static Map<StepDependencyType, StepDependencies> getStepDependencies(
-      Flow flow, String stepId) {
+  public static SignalDependencies getSignalDependencies(Flow flow, String stepId) {
     if (flow.getPrepareTask().getOutputData().containsKey(Constants.ALL_STEP_DEPENDENCIES_FIELD)) {
       var allStepDependencies =
-          (Map<String, Map<StepDependencyType, StepDependencies>>)
+          (Map<String, SignalDependencies>)
               flow.getPrepareTask().getOutputData().get(Constants.ALL_STEP_DEPENDENCIES_FIELD);
       return allStepDependencies.get(stepId);
     }

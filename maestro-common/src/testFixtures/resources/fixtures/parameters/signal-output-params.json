@@ -1,0 +1,11 @@
+[
+  {
+    "name": "signal_a",
+    "params": {
+      "foo": {
+        "value": "bar",
+        "type": "STRING"
+      }
+    }
+  }
+]

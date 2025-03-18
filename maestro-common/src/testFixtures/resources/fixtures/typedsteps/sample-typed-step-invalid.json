@@ -9,26 +9,19 @@
     },
     "type": "Sleep",
     "timeout": "10 minutes",
-    "dependencies": {
-      "SIGNAL": {
-        "definitions": [
-          {
-            "value": {
-              "key1": {
-                "parameter": {
-                  "value": "value1",
-                  "type": "STRING"
-                },
-                "operator": "=",
-                "type": "SIGNAL"
-              }
+    "signal_dependencies": [
+      {
+        "match_params": {
+          "key1": {
+            "param": {
+              "value": "value1",
+              "type": "STRING"
             },
-            "type": "MAP"
+            "operator": "="
           }
-        ],
-        "type": "SIGNAL"
+        }
       }
-    },
+    ],
     "params": {
       "sleep_seconds": {
         "value": 15,

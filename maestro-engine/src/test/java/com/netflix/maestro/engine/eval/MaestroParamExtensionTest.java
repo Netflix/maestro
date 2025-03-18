@@ -22,6 +22,7 @@ import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.engine.MaestroEngineBaseTest;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
+import com.netflix.maestro.engine.handlers.SignalHandler;
 import com.netflix.maestro.engine.validations.DryRunValidator;
 import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.exceptions.MaestroNotFoundException;
@@ -34,14 +35,14 @@ import com.netflix.maestro.models.initiator.ManualInitiator;
 import com.netflix.maestro.models.initiator.SignalInitiator;
 import com.netflix.maestro.models.initiator.SubworkflowInitiator;
 import com.netflix.maestro.models.instance.StepInstance;
+import com.netflix.maestro.models.parameter.LongParameter;
 import com.netflix.maestro.models.parameter.MapParameter;
 import com.netflix.maestro.models.parameter.ParamType;
-import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.models.parameter.StringMapParameter;
 import com.netflix.maestro.models.parameter.StringParameter;
-import java.util.Arrays;
+import com.netflix.maestro.models.signal.SignalInstance;
+import com.netflix.maestro.models.signal.SignalParamValue;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -61,7 +62,7 @@ public class MaestroParamExtensionTest extends MaestroEngineBaseTest {
   @Mock MaestroStepInstanceDao stepInstanceDao;
   @Mock InstanceWrapper instanceWrapper;
   @Mock Map<String, Map<String, Object>> allStepOutputData;
-  @Mock Map<String, List<Map<String, Parameter>>> signalDependenciesParams;
+  @Mock SignalHandler handler;
   MaestroParamExtension paramExtension;
 
   @Before
@@ -72,7 +73,7 @@ public class MaestroParamExtensionTest extends MaestroEngineBaseTest {
             stepInstanceDao,
             "prod",
             allStepOutputData,
-            signalDependenciesParams,
+            handler,
             instanceWrapper,
             MAPPER);
   }
@@ -89,19 +90,34 @@ public class MaestroParamExtensionTest extends MaestroEngineBaseTest {
   }
 
   @Test
-  public void testGetFromSignal() {
+  public void testGetFromSignalInitiator() {
     SignalInitiator initiator = Mockito.mock(SignalInitiator.class);
     when(instanceWrapper.getInitiator()).thenReturn(initiator);
     when(initiator.getType()).thenReturn(Initiator.Type.SIGNAL);
     when(initiator.getParams())
         .thenReturn(
             twoItemMap(
-                "signal-a",
-                StringMapParameter.builder()
-                    .evaluatedResult(singletonMap("param1", "value1"))
-                    .build(),
-                "signal-b",
-                MapParameter.builder().evaluatedResult(singletonMap("param2", 123L)).build()));
+                "param1",
+                StringParameter.builder().evaluatedResult("value1").build(),
+                "param2",
+                LongParameter.builder().evaluatedResult(123L).build()));
+    assertEquals("value1", paramExtension.getFromSignal("param1"));
+    assertEquals(123L, paramExtension.getFromSignal("param2"));
+  }
+
+  @Test
+  public void testGetFromSignal() {
+    SignalInitiator initiator = Mockito.mock(SignalInitiator.class);
+    when(instanceWrapper.getInitiator()).thenReturn(initiator);
+    when(initiator.getType()).thenReturn(Initiator.Type.SIGNAL);
+    when(initiator.getSignalIdMap()).thenReturn(Map.of("signal-a", 12L, "signal-b", 56L));
+    SignalInstance instance1 = new SignalInstance();
+    instance1.setParams(Collections.singletonMap("param1", SignalParamValue.of("value1")));
+    when(handler.getSignalInstance("signal-a", 12)).thenReturn(instance1);
+    SignalInstance instance2 = new SignalInstance();
+    instance2.setParams(Collections.singletonMap("param2", SignalParamValue.of(123L)));
+    when(handler.getSignalInstance("signal-b", 56)).thenReturn(instance2);
+
     assertEquals("value1", paramExtension.getFromSignal("signal-a", "param1"));
     assertEquals(123L, paramExtension.getFromSignal("signal-b", "param2"));
   }
@@ -111,15 +127,11 @@ public class MaestroParamExtensionTest extends MaestroEngineBaseTest {
     SignalInitiator initiator = Mockito.mock(SignalInitiator.class);
     when(instanceWrapper.getInitiator()).thenReturn(initiator);
     when(initiator.getType()).thenReturn(Initiator.Type.SIGNAL);
-    when(initiator.getParams())
-        .thenReturn(
-            twoItemMap(
-                "signal-a",
-                StringMapParameter.builder()
-                    .evaluatedResult(singletonMap("param1", "value1"))
-                    .build(),
-                "signal-b",
-                MapParameter.builder().evaluatedResult(singletonMap("param2", 123L)).build()));
+    when(initiator.getSignalIdMap()).thenReturn(Map.of("signal-a", 12L, "signal-b", 56L));
+    SignalInstance instance1 = new SignalInstance();
+    instance1.setParams(Collections.singletonMap("param1", SignalParamValue.of("value1")));
+    when(handler.getSignalInstance("signal-a", 12)).thenReturn(instance1);
+
     assertEquals("value1", paramExtension.getFromSignalOrDefault("signal-a", "param1", "value2"));
     assertEquals(
         "defaultValue",
@@ -426,53 +438,58 @@ public class MaestroParamExtensionTest extends MaestroEngineBaseTest {
   }
 
   @Test
-  public void testGetFromSignalDependency() {
-    when(signalDependenciesParams.get("dev/foo/bar"))
-        .thenReturn(
-            Collections.singletonList(
-                Collections.singletonMap(
-                    "param1", StringParameter.builder().evaluatedResult("hello").build())));
-    assertEquals("hello", paramExtension.getFromSignalDependency("dev/foo/bar", "param1"));
+  public void testGetFromSignalDependency() throws Exception {
+    StepRuntimeSummary runtimeSummary =
+        loadObject(
+            "fixtures/execution/step-runtime-summary-with-step-dependencies.json",
+            StepRuntimeSummary.class);
+    when(instanceWrapper.getStepInstanceAttributes())
+        .thenReturn(StepInstanceAttributes.from(runtimeSummary));
+    SignalInstance instance = new SignalInstance();
+    instance.setParams(Collections.singletonMap("param1", SignalParamValue.of("hello")));
+    when(handler.getSignalInstance("db/test/table1", 849086)).thenReturn(instance);
+
+    assertEquals("hello", paramExtension.getFromSignalDependency("0", "param1"));
   }
 
   @Test
-  public void testInvalidGetFromSignalDependency() {
-    when(signalDependenciesParams.get("dev/foo/bar"))
-        .thenReturn(
-            Collections.singletonList(
-                Collections.singletonMap(
-                    "param1", StringParameter.builder().evaluatedResult("hello").build())));
+  public void testInvalidGetFromSignalDependency() throws Exception {
+    StepRuntimeSummary runtimeSummary =
+        loadObject(
+            "fixtures/execution/step-runtime-summary-with-step-dependencies.json",
+            StepRuntimeSummary.class);
+    when(instanceWrapper.getStepInstanceAttributes())
+        .thenReturn(StepInstanceAttributes.from(runtimeSummary));
+    SignalInstance instance = new SignalInstance();
+    instance.setParams(Collections.singletonMap("param1", SignalParamValue.of("hello")));
+    when(handler.getSignalInstance("db/test/table1", 849086)).thenReturn(instance);
+
     AssertHelper.assertThrows(
         "Referenced param in signal dependencies does not exist yet.",
         MaestroInternalError.class,
         "getFromSignalDependency throws an exception for ",
-        () -> paramExtension.getFromSignalDependency("dev/foo/bar", "param2"));
+        () -> paramExtension.getFromSignalDependency("0", "param2"));
 
-    when(signalDependenciesParams.get("dev/foo/bar")).thenReturn(Collections.emptyList());
+    instance.setParams(null);
     AssertHelper.assertThrows(
         "Referenced signal dependencies does not exist",
         MaestroInternalError.class,
         "getFromSignalDependency throws an exception for ",
-        () -> paramExtension.getFromSignalDependency("dev/foo/bar", "param1"));
+        () -> paramExtension.getFromSignalDependency("0", "param1"));
 
-    when(signalDependenciesParams.get("dev/foo/bar")).thenReturn(null);
+    instance.setParams(Collections.emptyMap());
     AssertHelper.assertThrows(
         "Referenced signal dependencies does not exist",
         MaestroInternalError.class,
         "getFromSignalDependency throws an exception for ",
-        () -> paramExtension.getFromSignalDependency("dev/foo/bar", "param1"));
+        () -> paramExtension.getFromSignalDependency("0", "param1"));
 
-    when(signalDependenciesParams.get("dev/foo/bar"))
-        .thenReturn(
-            Arrays.asList(
-                Collections.singletonMap(
-                    "param1", StringParameter.builder().evaluatedResult("hello").build()),
-                Collections.singletonMap(
-                    "param2", StringParameter.builder().evaluatedResult("world").build())));
+    instance.setParams(
+        Map.of("param1", SignalParamValue.of("hello"), "param2", SignalParamValue.of("world")));
     AssertHelper.assertThrows(
         "Referenced signal dependencies does not exist",
         MaestroInternalError.class,
         "getFromSignalDependency throws an exception for ",
-        () -> paramExtension.getFromSignalDependency("dev/foo/bar", "param1"));
+        () -> paramExtension.getFromSignalDependency("3", "param1"));
   }
 }

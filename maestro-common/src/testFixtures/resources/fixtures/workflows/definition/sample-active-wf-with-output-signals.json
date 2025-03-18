@@ -132,47 +132,34 @@
               "type": "FIXED_BACKOFF"
             }
           },
-          "outputs": {
-            "SIGNAL": {
-              "type": "SIGNAL",
-              "definitions": [
-                {
-                  "value": {
-                    "p1": {
-                      "value": 1,
-                      "type": "LONG"
-                    },
-                    "p2": {
-                      "expression": "1+1",
-                      "type": "LONG"
-                    },
-                    "name": {
-                      "value": "dummy/test/signal1",
-                      "type": "STRING"
-                    }
-                  },
-                  "type": "MAP"
+          "signal_outputs": [
+            {
+              "name":  "dummy/test/signal1",
+              "params": {
+                "p1": {
+                  "value": 1,
+                  "type": "LONG"
                 },
-                {
-                  "value": {
-                    "p1": {
-                      "expression": "foo + 1;",
-                      "type": "LONG"
-                    },
-                    "p2": {
-                      "expression": "auu+1",
-                      "type": "LONG"
-                    },
-                    "name": {
-                      "expression": "aaa",
-                      "type": "STRING"
-                    }
-                  },
-                  "type": "MAP"
+                "p2": {
+                  "expression": "1+1",
+                  "type": "LONG"
                 }
-              ]
+              }
+            },
+            {
+              "name": "aaa",
+              "params": {
+                "p1": {
+                  "expression": "foo + 1;",
+                  "type": "LONG"
+                },
+                "p2": {
+                  "expression": "auu+1",
+                  "type": "LONG"
+                }
+              }
             }
-          }
+          ]
         }
       },
       {
@@ -248,47 +235,34 @@
                   }
                 },
                 "retry_policy": {},
-                "outputs": {
-                  "SIGNAL": {
-                    "type": "SIGNAL",
-                    "definitions": [
-                      {
-                        "value": {
-                          "p1": {
-                            "value": 1,
-                            "type": "LONG"
-                          },
-                          "p2": {
-                            "expression": "1+1",
-                            "type": "LONG"
-                          },
-                          "name": {
-                            "value": "dummy/test/signal1",
-                            "type": "STRING"
-                          }
-                        },
-                        "type": "MAP"
+                "signal_outputs": [
+                  {
+                    "name":  "dummy/test/signal1",
+                    "params": {
+                      "p1": {
+                        "value": 1,
+                        "type": "LONG"
                       },
-                      {
-                        "value": {
-                          "p1": {
-                            "expression": "foo + 1;",
-                            "type": "LONG"
-                          },
-                          "p2": {
-                            "expression": "auu+1",
-                            "type": "LONG"
-                          },
-                          "name": {
-                            "expression": "aaa",
-                            "type": "STRING"
-                          }
-                        },
-                        "type": "MAP"
+                      "p2": {
+                        "expression": "1+1",
+                        "type": "LONG"
                       }
-                    ]
+                    }
+                  },
+                  {
+                    "name": "aaa",
+                    "params": {
+                      "p1": {
+                        "expression": "foo + 1;",
+                        "type": "LONG"
+                      },
+                      "p2": {
+                        "expression": "auu+1",
+                        "type": "LONG"
+                      }
+                    }
                   }
-                }
+                ]
               }
             },
             {

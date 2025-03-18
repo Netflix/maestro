@@ -31,7 +31,6 @@ import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.artifact.DynamicOutputArtifact;
 import com.netflix.maestro.models.artifact.TitusArtifact;
-import com.netflix.maestro.models.definition.StepOutputsDefinition;
 import com.netflix.maestro.models.parameter.InternalParamMode;
 import com.netflix.maestro.models.parameter.LongParameter;
 import com.netflix.maestro.models.parameter.MapParameter;
@@ -265,7 +264,7 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
               .evaluatedTime(System.currentTimeMillis())
               .build());
     DynamicOutputArtifact signalsArtifact = new DynamicOutputArtifact();
-    signalsArtifact.setOutputs(Map.of(StepOutputsDefinition.StepOutputType.SIGNAL, signals));
+    signalsArtifact.setSignalOutputs(signals);
     OutputData outputData =
         new OutputData(
             ExternalJobType.TITUS,
@@ -285,11 +284,8 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
     assertEquals(2, runtimeSummary.getArtifacts().size());
     DynamicOutputArtifact dynamicOutputArtifact =
         runtimeSummary.getArtifacts().get(Artifact.Type.DYNAMIC_OUTPUT.key()).asDynamicOutput();
-    assertEquals(1, dynamicOutputArtifact.getOutputs().size());
-    assertEquals(
-        2,
-        dynamicOutputArtifact.getOutputs().get(StepOutputsDefinition.StepOutputType.SIGNAL).size());
-    for (MapParameter signal : dynamicOutputArtifact.getOutputSignals()) {
+    assertEquals(2, dynamicOutputArtifact.getSignalOutputs().size());
+    for (MapParameter signal : dynamicOutputArtifact.getSignalOutputs()) {
       assertEquals(currentTs, (long) signal.getEvaluatedResult().get(timestampStr));
     }
   }

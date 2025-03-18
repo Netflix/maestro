@@ -46,7 +46,7 @@ public class MaestroParamExtensionRepoTest extends MaestroEngineBaseTest {
   public void testResetGetClear() throws Exception {
     extensionRepo.reset(
         Collections.emptyMap(),
-        Collections.emptyMap(),
+        null,
         InstanceWrapper.builder().workflowId("foo").initiator(new ManualInitiator()).build());
     assertNotNull(extensionRepo.get());
     ExecutorService executor = Executors.newSingleThreadExecutor();

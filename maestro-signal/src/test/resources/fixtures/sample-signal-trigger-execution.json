@@ -1,0 +1,16 @@
+{
+  "workflow_id": "sample-workflow-1",
+  "trigger_uuid": "test-uuid-1",
+  "signal_ids": {
+    "signal_a": 1,
+    "signal_b": 2
+  },
+  "condition": "123 > 245",
+  "dedup_expr": "return UUID.randomUUID().toString();",
+  "params": {
+    "foo": {
+      "value": "bar",
+      "type": "STRING"
+    }
+  }
+}

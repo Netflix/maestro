@@ -25,38 +25,35 @@ import com.netflix.maestro.engine.db.StepAction;
 import com.netflix.maestro.engine.jobevents.StepInstanceUpdateJobEvent;
 import com.netflix.maestro.engine.tracing.MaestroTracingContext;
 import com.netflix.maestro.engine.tracing.MaestroTracingManager;
+import com.netflix.maestro.engine.utils.ObjectHelper;
 import com.netflix.maestro.models.Actions;
 import com.netflix.maestro.models.artifact.Artifact;
-import com.netflix.maestro.models.definition.StepDependencyType;
-import com.netflix.maestro.models.definition.StepOutputsDefinition;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.Tag;
 import com.netflix.maestro.models.definition.TagList;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.error.Details;
 import com.netflix.maestro.models.instance.RestartConfig;
-import com.netflix.maestro.models.instance.SignalReference;
-import com.netflix.maestro.models.instance.SignalStepOutputs;
-import com.netflix.maestro.models.instance.StepDependencies;
-import com.netflix.maestro.models.instance.StepDependencyMatchStatus;
 import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.StepInstanceTransition;
-import com.netflix.maestro.models.instance.StepOutputs;
 import com.netflix.maestro.models.instance.StepRuntimeState;
 import com.netflix.maestro.models.parameter.MapParameter;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.Parameter;
+import com.netflix.maestro.models.signal.SignalDependencies;
+import com.netflix.maestro.models.signal.SignalDependenciesDefinition;
+import com.netflix.maestro.models.signal.SignalOutputs;
+import com.netflix.maestro.models.signal.SignalOutputsDefinition;
+import com.netflix.maestro.models.signal.SignalTransformer;
 import com.netflix.maestro.models.timeline.Timeline;
 import com.netflix.maestro.models.timeline.TimelineDetailsEvent;
 import com.netflix.maestro.models.timeline.TimelineEvent;
 import com.netflix.maestro.utils.Checks;
-import com.netflix.maestro.utils.MapHelper;
 import com.netflix.maestro.validations.TagListConstraint;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import lombok.Builder;
@@ -85,8 +82,8 @@ import lombok.ToString;
       "synced",
       "db_ops",
       "runtime_state",
-      "dependencies",
-      "outputs",
+      "signal_dependencies",
+      "signal_outputs",
       "artifacts",
       "timeline",
       "pending_records",
@@ -117,8 +114,8 @@ public final class StepRuntimeSummary {
   private DbOperation dbOperation;
   @Valid @NotNull private final StepRuntimeState runtimeState;
 
-  @Valid private Map<StepDependencyType, StepDependencies> dependencies;
-  @Valid private Map<StepOutputsDefinition.StepOutputType, StepOutputs> outputs;
+  @Valid private SignalDependencies signalDependencies;
+  @Valid private SignalOutputs signalOutputs;
 
   @JsonInclude(JsonInclude.Include.NON_EMPTY)
   @Valid
@@ -157,8 +154,8 @@ public final class StepRuntimeSummary {
       boolean synced,
       @NotNull DbOperation dbOperation,
       StepRuntimeState runtimeState,
-      Map<StepDependencyType, StepDependencies> dependencies,
-      Map<StepOutputsDefinition.StepOutputType, StepOutputs> outputs,
+      SignalDependencies signalDependencies,
+      SignalOutputs signalOutputs,
       Map<String, Artifact> artifacts,
       Timeline timeline,
       List<StepInstanceUpdateJobEvent.StepInstancePendingRecord> pendingRecords,
@@ -180,8 +177,8 @@ public final class StepRuntimeSummary {
     this.dbOperation = dbOperation; // never be null
     this.synced = synced;
     this.runtimeState = runtimeState == null ? new StepRuntimeState() : runtimeState;
-    this.dependencies = dependencies;
-    this.outputs = outputs;
+    this.signalDependencies = signalDependencies;
+    this.signalOutputs = signalOutputs;
     this.artifacts = artifacts == null ? new LinkedHashMap<>() : artifacts;
     this.timeline = timeline == null ? new Timeline(null) : timeline;
     this.pendingRecords = pendingRecords == null ? new ArrayList<>() : pendingRecords;
@@ -209,69 +206,63 @@ public final class StepRuntimeSummary {
     synced = false;
   }
 
-  /** Initializes the dependencies for the given params. */
-  public void initializeStepDependenciesSummaries(
-      Map<StepDependencyType, List<MapParameter>> dependenciesParameters) {
-    this.dependencies =
-        dependenciesParameters.entrySet().stream()
-            .collect(
-                MapHelper.toListMap(
-                    Map.Entry::getKey, e -> new StepDependencies(e.getKey(), e.getValue())));
+  /** Initializes the signal step dependencies for the given params. */
+  public void initializeSignalDependencies(
+      List<SignalDependenciesDefinition.SignalDependencyDefinition> definitions,
+      List<MapParameter> dependenciesParameters) {
+    this.signalDependencies = new SignalDependencies();
+    var dependencies = new ArrayList<SignalDependencies.SignalDependency>();
+    var iterator = definitions.iterator();
+    for (MapParameter param : dependenciesParameters) {
+      dependencies.add(SignalTransformer.transform(iterator.next(), param));
+    }
+    this.signalDependencies.setDependencies(dependencies);
     synced = false;
   }
 
   /**
-   * Initialize outputs.
+   * Initialize outputs, including dynamic outputs.
    *
-   * @param outputParameters output signals
+   * @param outputParams output signals
    */
-  @SuppressWarnings({"PMD.AvoidInstantiatingObjectsInLoops", "OperatorWrap"})
-  public void initializeOutputs(
-      Map<StepOutputsDefinition.StepOutputType, List<MapParameter>> outputParameters) {
-    if (outputs == null) {
-      outputs = new LinkedHashMap<>();
-    }
-    for (Map.Entry<StepOutputsDefinition.StepOutputType, List<MapParameter>> entry :
-        outputParameters.entrySet()) {
-      if (entry.getKey().equals(StepOutputsDefinition.StepOutputType.SIGNAL)) {
-        List<MapParameter> outputParams = entry.getValue();
-        outputs.put(
-            StepOutputsDefinition.StepOutputType.SIGNAL,
-            new SignalStepOutputs(
-                outputParams.stream()
-                    .map(p -> new SignalStepOutputs.SignalStepOutput(p, null))
-                    .collect(Collectors.toList())));
+  public void initializeSignalOutputs(
+      SignalOutputsDefinition outputsDefinition,
+      List<MapParameter> outputParams,
+      List<MapParameter> dynamicOutputs) {
+    this.signalOutputs = new SignalOutputs();
+    var outputs = new ArrayList<SignalOutputs.SignalOutput>();
+    if (outputsDefinition != null
+        && !ObjectHelper.isCollectionEmptyOrNull(outputsDefinition.definitions())) {
+      Checks.checkTrue(
+          outputsDefinition.definitions().size() == outputParams.size(),
+          "outputs definition size [%s] must match the evaluated output param list size [%s].",
+          outputsDefinition,
+          outputParams);
+      var iterator = outputsDefinition.definitions().iterator();
+      for (MapParameter param : outputParams) {
+        outputs.add(SignalTransformer.transform(iterator.next(), param));
       }
     }
+    if (!ObjectHelper.isCollectionEmptyOrNull(dynamicOutputs)) {
+      for (MapParameter param : dynamicOutputs) {
+        outputs.add(SignalTransformer.transform(param));
+      }
+    }
+    this.signalOutputs.setOutputs(outputs);
     synced = false;
   }
 
-  /** Updates the signal status based on the response from Signal service. */
-  public void updateSignalStatus(
-      MapParameter signalParams,
-      StepDependencyMatchStatus signalStatus,
-      SignalReference reference) {
-    StepDependencies signalDependencies = getSignalDependencies();
-    if (signalDependencies != null) {
-      signalDependencies.getStatuses().stream()
-          .filter(s -> s.getParams().equals(signalParams))
-          .forEach(s -> s.updateStatus(reference, signalStatus));
-      synced = false;
-    }
+  /** Flag there is an update in the step instance data. */
+  public void flagToSync() {
+    synced = false;
   }
 
   /** By passes the step dependencies. */
-  public void byPassStepDependencies(User user, long createTime) {
-    if (dependencies != null) {
-      dependencies.forEach((k, v) -> v.bypass(user, createTime));
+  public void byPassSignalDependencies(User user, long createTime) {
+    if (signalDependencies != null) {
+      signalDependencies.bypass(user, createTime);
       synced = false;
     }
-  }
-
-  /** Returns signal dependencies if present. */
-  @JsonIgnore
-  public StepDependencies getSignalDependencies() {
-    return dependencies != null ? dependencies.get(StepDependencyType.SIGNAL) : null;
   }
 
   /** merge step runtime updates to the runtime summary. */

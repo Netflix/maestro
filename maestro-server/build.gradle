@@ -36,6 +36,7 @@ dependencies {
     implementation project(':netflix-sel')
     implementation project(':maestro-aws')
     implementation project(':maestro-timetrigger')
+    implementation project(':maestro-signal')
 }
 
 bootRun {

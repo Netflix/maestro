@@ -38,8 +38,7 @@ import java.util.Map;
   @JsonSubTypes.Type(name = "LONG_ARRAY", value = LongArrayParamDefinition.class),
   @JsonSubTypes.Type(name = "DOUBLE_ARRAY", value = DoubleArrayParamDefinition.class),
   @JsonSubTypes.Type(name = "BOOLEAN_ARRAY", value = BooleanArrayParamDefinition.class),
-  @JsonSubTypes.Type(name = "MAP", value = MapParamDefinition.class),
-  @JsonSubTypes.Type(name = "SIGNAL", value = SignalParamDefinition.class)
+  @JsonSubTypes.Type(name = "MAP", value = MapParamDefinition.class)
 })
 public interface ParamDefinition {
 

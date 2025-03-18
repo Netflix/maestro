@@ -64,7 +64,7 @@ public class WorkflowStepStatusSummary {
   @JsonIgnore
   public void sortSteps() {
     if (steps != null) {
-      steps.sort(Comparator.comparingLong(o -> o.get(0)));
+      steps.sort(Comparator.comparingLong(List::getFirst));
     }
   }
 }

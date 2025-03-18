@@ -55,14 +55,10 @@ import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.definition.FailureMode;
 import com.netflix.maestro.models.definition.RetryPolicy;
 import com.netflix.maestro.models.definition.Step;
-import com.netflix.maestro.models.definition.StepDependenciesDefinition;
-import com.netflix.maestro.models.definition.StepDependencyType;
-import com.netflix.maestro.models.definition.StepOutputsDefinition;
 import com.netflix.maestro.models.definition.Tag;
 import com.netflix.maestro.models.error.Details;
 import com.netflix.maestro.models.instance.RestartConfig;
 import com.netflix.maestro.models.instance.RunPolicy;
-import com.netflix.maestro.models.instance.StepDependencies;
 import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.StepInstanceTransition;
 import com.netflix.maestro.models.instance.WorkflowInstance;
@@ -70,6 +66,8 @@ import com.netflix.maestro.models.instance.WorkflowRuntimeOverview;
 import com.netflix.maestro.models.parameter.BooleanParameter;
 import com.netflix.maestro.models.parameter.MapParameter;
 import com.netflix.maestro.models.parameter.Parameter;
+import com.netflix.maestro.models.signal.SignalDependencies;
+import com.netflix.maestro.models.signal.SignalOutputsDefinition;
 import com.netflix.maestro.models.timeline.TimelineLogEvent;
 import com.netflix.maestro.utils.DurationParser;
 import com.netflix.maestro.utils.MapHelper;
@@ -159,8 +157,8 @@ public class MaestroTask implements FlowTask {
       WorkflowSummary workflowSummary =
           StepHelper.retrieveWorkflowSummary(objectMapper, flow.getInput());
       Step stepDefinition = getStepDefinition(task.referenceTaskName(), workflowSummary);
-      Map<StepDependencyType, StepDependencies> dependencies =
-          StepHelper.getStepDependencies(flow, stepDefinition.getId());
+      SignalDependencies dependencies =
+          StepHelper.getSignalDependencies(flow, stepDefinition.getId());
       StepRuntimeSummary runtimeSummary =
           createStepRuntimeSummary(task, stepDefinition, workflowSummary, dependencies);
       task.getOutputData().put(Constants.STEP_RUNTIME_SUMMARY_FIELD, runtimeSummary);
@@ -196,11 +194,11 @@ public class MaestroTask implements FlowTask {
       Task task,
       Step stepDefinition,
       WorkflowSummary workflowSummary,
-      Map<StepDependencyType, StepDependencies> dependencies) {
+      SignalDependencies dependencies) {
 
     StepInstance.StepRetry stepRetry;
     long stepInstanceId;
-    Map<StepDependencyType, StepDependencies> dependenciesToUse;
+    SignalDependencies dependenciesToUse;
     if (task.getRetryCount() == 0) { // this is a new start
       stepRetry = initializeStepRetry(stepDefinition, workflowSummary);
       stepInstanceId = task.getSeq(); // may have a gap but increasing monotonically
@@ -223,7 +221,7 @@ public class MaestroTask implements FlowTask {
       stepRetry = prev.getStepRetry();
       stepRetry.incrementByStatus(prev.getRuntimeState().getStatus());
       stepInstanceId = prev.getStepInstanceId();
-      dependenciesToUse = prev.getDependencies();
+      dependenciesToUse = prev.getSignalDependencies();
     }
 
     long stepAttemptId = task.getRetryCount() + 1L;
@@ -255,7 +253,7 @@ public class MaestroTask implements FlowTask {
             .stepRetry(stepRetry)
             .timeoutInMillis(null) // mean to use system default timeout initially
             .synced(true)
-            .dependencies(dependenciesToUse)
+            .signalDependencies(dependenciesToUse)
             .dbOperation(DbOperation.INSERT)
             .tracingContext(tracingContext)
             .artifacts(
@@ -317,7 +315,7 @@ public class MaestroTask implements FlowTask {
           e);
       throw e;
     }
-    return runtimeSummary.getOutputs() == null
+    return runtimeSummary.getSignalOutputs() == null
         || signalHandler.sendOutputSignals(workflowSummary, runtimeSummary);
   }
 
@@ -359,14 +357,9 @@ public class MaestroTask implements FlowTask {
       Map<String, Parameter> allStepParams =
           stepRuntimeManager.getAllParams(stepDefinition, workflowSummary, runtimeSummary);
 
-      Map<String, List<Map<String, Parameter>>> signalDependenciesParams =
-          signalHandler.getDependenciesParams(runtimeSummary);
-
       // First, only support step param evaluation with param extension.
       paramExtensionRepo.reset(
-          allStepOutputData,
-          signalDependenciesParams,
-          InstanceWrapper.from(workflowSummary, runtimeSummary));
+          allStepOutputData, signalHandler, InstanceWrapper.from(workflowSummary, runtimeSummary));
       paramEvaluator.evaluateStepParameters(
           allStepOutputData,
           workflowSummary.getParams(),
@@ -396,33 +389,33 @@ public class MaestroTask implements FlowTask {
       WorkflowSummary workflowSummary,
       StepRuntimeSummary runtimeSummary) {
     Map<String, Parameter> allStepParams = runtimeSummary.getParams();
-    Map<StepOutputsDefinition.StepOutputType, StepOutputsDefinition> stepOutputs =
-        stepDefinition.getOutputs();
-    Map<StepOutputsDefinition.StepOutputType, List<MapParameter>> stepOutputsParameters =
-        stepOutputs == null
-            ? new LinkedHashMap<>()
-            : ParamsManager.getStepOutputsParameters(stepOutputs.values());
-    Artifact artifact = runtimeSummary.getArtifacts().get(Artifact.Type.DYNAMIC_OUTPUT.key());
-    if (artifact != null) {
-      if (artifact.asDynamicOutput().getInfo() != null) {
-        runtimeSummary.addTimeline(artifact.asDynamicOutput().getInfo());
-      }
-      if (artifact.asDynamicOutput().getOutputSignals() != null) {
-        // merge dynamic output's MapParameter list into stepOutputsParameters
-        stepOutputsParameters
-            .computeIfAbsent(StepOutputsDefinition.StepOutputType.SIGNAL, k -> new ArrayList<>())
-            .addAll(artifact.asDynamicOutput().getOutputSignals());
-      }
-    }
-    if (!stepOutputsParameters.isEmpty()) {
-      paramEvaluator.evaluateStepDependenciesOrOutputsParameters(
+    SignalOutputsDefinition signalOutputs = stepDefinition.getSignalOutputs();
+    List<MapParameter> signalOutputsParameters =
+        signalOutputs == null
+            ? new ArrayList<>()
+            : ParamsManager.getSignalOutputsParameters(signalOutputs);
+    if (!signalOutputsParameters.isEmpty()) {
+      paramEvaluator.evaluateSignalDependenciesOrOutputsParameters(
           allStepOutputData,
           workflowSummary.getParams(),
           allStepParams,
-          stepOutputsParameters.values(),
+          signalOutputsParameters,
           runtimeSummary.getStepId());
-      runtimeSummary.initializeOutputs(stepOutputsParameters);
     }
+
+    List<MapParameter> dynamicOutputs = null;
+    Artifact artifact = runtimeSummary.getArtifacts().get(Artifact.Type.DYNAMIC_OUTPUT.key());
+    if (artifact != null) {
+      var dynamicArtifact = artifact.asDynamicOutput();
+      if (dynamicArtifact.getInfo() != null) {
+        runtimeSummary.addTimeline(dynamicArtifact.getInfo());
+      }
+      if (dynamicArtifact.getSignalOutputs() != null) {
+        dynamicOutputs = dynamicArtifact.getSignalOutputs();
+      }
+    }
+
+    runtimeSummary.initializeSignalOutputs(signalOutputs, signalOutputsParameters, dynamicOutputs);
   }
 
   private void emitStepDelayMetric(StepRuntimeSummary runtimeSummary) {
@@ -485,19 +478,19 @@ public class MaestroTask implements FlowTask {
       StepRuntimeSummary runtimeSummary) {
     initializeTimeout(stepDefinition, workflowSummary, runtimeSummary);
 
-    if (runtimeSummary.getDependencies() == null && stepDefinition.getDependencies() != null) {
-      Map<StepDependencyType, StepDependenciesDefinition> dependencies =
-          stepDefinition.getDependencies();
-      Map<StepDependencyType, List<MapParameter>> stepDependenciesParameters =
-          ParamsManager.getStepDependenciesParameters(dependencies.values());
+    if (runtimeSummary.getSignalDependencies() == null
+        && stepDefinition.getSignalDependencies() != null) {
+      List<MapParameter> stepDependenciesParameters =
+          ParamsManager.getSignalDependenciesParameters(stepDefinition.getSignalDependencies());
       if (!stepDependenciesParameters.isEmpty()) {
-        paramEvaluator.evaluateStepDependenciesOrOutputsParameters(
+        paramEvaluator.evaluateSignalDependenciesOrOutputsParameters(
             allStepOutputData,
             workflowSummary.getParams(),
             Collections.emptyMap(), // dependencies cannot use its own step params
-            stepDependenciesParameters.values(),
+            stepDependenciesParameters,
             runtimeSummary.getStepId());
-        runtimeSummary.initializeStepDependenciesSummaries(stepDependenciesParameters);
+        runtimeSummary.initializeSignalDependencies(
+            stepDefinition.getSignalDependencies().definitions(), stepDependenciesParameters);
       }
     }
 
@@ -653,7 +646,7 @@ public class MaestroTask implements FlowTask {
                 LOG.info("Ignore bypass dependency action as current status is: {}", status);
                 // todo better to delete byPassStepDependencies action
               } else {
-                runtimeSummary.byPassStepDependencies(action.getUser(), action.getCreateTime());
+                runtimeSummary.byPassSignalDependencies(action.getUser(), action.getCreateTime());
                 // skip adding the timeline info for action as its already taken care in the
                 // byPassStepDependencies.
               }
@@ -984,9 +977,7 @@ public class MaestroTask implements FlowTask {
             : runtimeSummary.getParams();
 
     paramExtensionRepo.reset(
-        allStepOutputData,
-        Collections.emptyMap(),
-        InstanceWrapper.from(workflowSummary, runtimeSummary));
+        allStepOutputData, null, InstanceWrapper.from(workflowSummary, runtimeSummary));
     runtimeSummary
         .getTransition()
         .getSuccessors()
@@ -1066,8 +1057,8 @@ public class MaestroTask implements FlowTask {
       stepInstance.setStepRetry(stepSummary.getStepRetry());
       stepInstance.setTimeoutInMillis(stepSummary.getTimeoutInMillis());
       stepInstance.setRuntimeState(stepSummary.getRuntimeState());
-      stepInstance.setDependencies(stepSummary.getDependencies());
-      stepInstance.setOutputs(stepSummary.getOutputs());
+      stepInstance.setSignalDependencies(stepSummary.getSignalDependencies());
+      stepInstance.setSignalOutputs(stepSummary.getSignalOutputs());
       stepInstance.setArtifacts(stepSummary.getArtifacts());
       stepInstance.setTimeline(stepSummary.getTimeline());
       stepInstance.setStepRunParams(stepSummary.getStepRunParams());

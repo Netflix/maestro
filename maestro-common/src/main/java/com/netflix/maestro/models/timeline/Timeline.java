@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.annotations.VisibleForTesting;
 import com.netflix.maestro.models.artifact.Artifact;
-import com.netflix.maestro.models.instance.StepDependencies;
 import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.StepRuntimeState;
 import com.netflix.maestro.models.instance.WorkflowInstance;
@@ -29,7 +28,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
@@ -189,11 +187,12 @@ public final class Timeline {
         timelineEvents.add(
             TimelineStatusEvent.create(runtimeState.getEndTime(), runtimeState.getStatus()));
       }
-      if (instance.getDependencies() != null) {
-        instance.getDependencies().values().stream()
-            .map(StepDependencies::getInfo)
-            .filter(Objects::nonNull)
-            .forEach(timelineEvents::add);
+      if (instance.getSignalDependencies() != null
+          && instance.getSignalDependencies().getInfo() != null) {
+        timelineEvents.add(instance.getSignalDependencies().getInfo());
+      }
+      if (instance.getSignalOutputs() != null && instance.getSignalOutputs().getInfo() != null) {
+        timelineEvents.add(instance.getSignalOutputs().getInfo());
       }
       if (instance.getArtifacts() != null) {
         if (instance.getArtifacts().containsKey(Artifact.Type.TITUS.key())) {

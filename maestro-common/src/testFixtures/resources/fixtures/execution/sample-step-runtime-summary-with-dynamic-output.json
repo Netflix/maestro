@@ -65,122 +65,120 @@
       "type": "SUBWORKFLOW"
     },
     "maestro_dynamic_output": {
-      "outputs": {
-        "SIGNAL": [
-          {
-            "value": {
-              "name": {
-                "value": "table_1",
-                "type": "STRING"
-              },
-              "timestamp": {
-                "value": 1536787990,
-                "type": "LONG"
-              },
-              "is_iceberg": {
-                "value": true,
-                "type": "BOOLEAN"
-              },
-              "nested_map": {
-                "type": "MAP",
-                "value": {
-                  "nested_string_map": {
-                    "type": "STRING_MAP",
-                    "value": {
-                      "foo": "bar"
-                    }
-                  },
-                  "nested_string_array": {
-                    "type": "STRING_ARRAY",
-                    "value": [
-                      "a",
-                      "b",
-                      "c"
-                    ]
-                  },
-                  "nested_long_array": {
-                    "type": "LONG_ARRAY",
-                    "value": [
-                      1,
-                      2,
-                      3
-                    ]
-                  },
-                  "nested_double_array": {
-                    "type": "DOUBLE_ARRAY",
-                    "value": [
-                      1.1,
-                      2.2,
-                      3.3
-                    ]
-                  },
-                  "nested_boolean_array": {
-                    "type": "BOOLEAN_ARRAY",
-                    "value": [
-                      true,
-                      false,
-                      true
-                    ]
+      "signal_outputs": [
+        {
+          "value": {
+            "name": {
+              "value": "table_1",
+              "type": "STRING"
+            },
+            "timestamp": {
+              "value": 1536787990,
+              "type": "LONG"
+            },
+            "is_iceberg": {
+              "value": true,
+              "type": "BOOLEAN"
+            },
+            "nested_map": {
+              "type": "MAP",
+              "value": {
+                "nested_string_map": {
+                  "type": "STRING_MAP",
+                  "value": {
+                    "foo": "bar"
                   }
+                },
+                "nested_string_array": {
+                  "type": "STRING_ARRAY",
+                  "value": [
+                    "a",
+                    "b",
+                    "c"
+                  ]
+                },
+                "nested_long_array": {
+                  "type": "LONG_ARRAY",
+                  "value": [
+                    1,
+                    2,
+                    3
+                  ]
+                },
+                "nested_double_array": {
+                  "type": "DOUBLE_ARRAY",
+                  "value": [
+                    1.1,
+                    2.2,
+                    3.3
+                  ]
+                },
+                "nested_boolean_array": {
+                  "type": "BOOLEAN_ARRAY",
+                  "value": [
+                    true,
+                    false,
+                    true
+                  ]
                 }
               }
-            },
-            "type": "MAP",
-            "evaluated_result": {
-              "name": "table_1",
-              "timestamp": 1536787990,
-              "is_iceberg": true,
-              "nested_map": {
-                "nested_string_map": {
-                  "foo": "bar"
-                },
-                "nested_string_array": [
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "nested_long_array": [
-                  1,
-                  2,
-                  3
-                ],
-                "nested_double_array": [
-                  1.1,
-                  2.2,
-                  3.3
-                ],
-                "nested_boolean_array": [
-                  true,
-                  false,
-                  true
-                ]
-              }
-            },
-            "evaluated_time": 1625871404000
+            }
           },
-          {
-            "value": {
-              "name": {
-                "value": "table_2",
-                "type": "STRING"
+          "type": "MAP",
+          "evaluated_result": {
+            "name": "table_1",
+            "timestamp": 1536787990,
+            "is_iceberg": true,
+            "nested_map": {
+              "nested_string_map": {
+                "foo": "bar"
               },
-              "timestamp": {
-                "value": 1536787990,
-                "type": "LONG"
-              }
+              "nested_string_array": [
+                "a",
+                "b",
+                "c"
+              ],
+              "nested_long_array": [
+                1,
+                2,
+                3
+              ],
+              "nested_double_array": [
+                1.1,
+                2.2,
+                3.3
+              ],
+              "nested_boolean_array": [
+                true,
+                false,
+                true
+              ]
+            }
+          },
+          "evaluated_time": 1625871404000
+        },
+        {
+          "value": {
+            "name": {
+              "value": "table_2",
+              "type": "STRING"
             },
-            "type": "MAP",
-            "evaluated_result": {
-              "name": "table_2",
-              "timestamp": 1536787990
-            },
-            "evaluated_time": 1625871404000
-          }
-        ]
-      },
+            "timestamp": {
+              "value": 1536787990,
+              "type": "LONG"
+            }
+          },
+          "type": "MAP",
+          "evaluated_result": {
+            "name": "table_2",
+            "timestamp": 1536787990
+          },
+          "evaluated_time": 1625871404000
+        }
+      ],
       "type": "DYNAMIC_OUTPUT"
     }
   },
-  "dependencies": {
+  "signal_dependencies": {
   }
 }

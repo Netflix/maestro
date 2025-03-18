@@ -26,9 +26,6 @@ import com.netflix.maestro.engine.steps.StepRuntime;
 import com.netflix.maestro.exceptions.MaestroValidationException;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.Step;
-import com.netflix.maestro.models.definition.StepDependenciesDefinition;
-import com.netflix.maestro.models.definition.StepDependencyType;
-import com.netflix.maestro.models.definition.StepOutputsDefinition;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.TypedStep;
 import com.netflix.maestro.models.definition.User;
@@ -50,10 +47,11 @@ import com.netflix.maestro.models.parameter.MapParameter;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.ParamMode;
 import com.netflix.maestro.models.parameter.ParamSource;
-import com.netflix.maestro.models.parameter.ParamType;
 import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.models.parameter.StringParamDefinition;
 import com.netflix.maestro.models.parameter.StringParameter;
+import com.netflix.maestro.models.signal.SignalDependenciesDefinition;
+import com.netflix.maestro.models.signal.SignalOutputsDefinition;
 import com.netflix.maestro.utils.JsonHelper;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -119,32 +117,28 @@ public class ParamsManagerTest extends MaestroEngineBaseTest {
 
   @Test
   public void testGetStepDependencyParams() throws Exception {
-    StepDependenciesDefinition stepDependency =
+    SignalDependenciesDefinition signalDependencies =
         loadObject(
-            "fixtures/parameters/step-dependency-params.json", StepDependenciesDefinition.class);
-    Map<StepDependencyType, List<MapParameter>> params =
-        ParamsManager.getStepDependenciesParameters(Collections.singletonList(stepDependency));
-    Assert.assertEquals(1, params.size());
-    List<MapParameter> signalParams = params.get(StepDependencyType.SIGNAL);
+            "fixtures/parameters/signal-dependency-params.json",
+            SignalDependenciesDefinition.class);
+    List<MapParameter> signalParams =
+        ParamsManager.getSignalDependenciesParameters(signalDependencies);
     Assert.assertEquals(1, signalParams.size());
-    Assert.assertEquals("signal_a", signalParams.get(0).getValue().get("name").getValue());
-    Assert.assertEquals("bar", signalParams.get(0).getValue().get("foo").getValue());
-    Assert.assertEquals(ParamType.SIGNAL, signalParams.get(0).getValue().get("foo").getType());
+    Assert.assertEquals("signal_a", signalParams.getFirst().getValue().get("name").getValue());
+    Assert.assertEquals("bar", signalParams.getFirst().getValue().get("foo").getValue());
 
     // same def can be loaded for outputs, the operator fields will be ignored.
-    StepOutputsDefinition outputs =
-        loadObject("fixtures/parameters/step-dependency-params.json", StepOutputsDefinition.class);
-    Map<StepOutputsDefinition.StepOutputType, List<MapParameter>> outParams =
-        ParamsManager.getStepOutputsParameters(Collections.singletonList(outputs));
-    Assert.assertEquals(1, outParams.size());
-    signalParams = outParams.get(StepOutputsDefinition.StepOutputType.SIGNAL);
+    SignalOutputsDefinition signalOutputs =
+        loadObject("fixtures/parameters/signal-output-params.json", SignalOutputsDefinition.class);
+    signalParams = ParamsManager.getSignalOutputsParameters(signalOutputs);
     Assert.assertEquals(1, signalParams.size());
-    Assert.assertEquals("signal_a", signalParams.get(0).getValue().get("name").getValue());
-    Assert.assertEquals("bar", signalParams.get(0).getValue().get("foo").getValue());
+    Assert.assertEquals("signal_a", signalParams.getFirst().getValue().get("name").getValue());
+    Assert.assertEquals("bar", signalParams.getFirst().getValue().get("foo").getValue());
 
     // empty check
-    outParams = ParamsManager.getStepOutputsParameters(Collections.emptyList());
-    Assert.assertTrue(outParams.isEmpty());
+    Assert.assertTrue(ParamsManager.getSignalOutputsParameters(null).isEmpty());
+    Assert.assertTrue(
+        ParamsManager.getSignalOutputsParameters(new SignalOutputsDefinition(null)).isEmpty());
   }
 
   @Test
@@ -467,8 +461,8 @@ public class ParamsManagerTest extends MaestroEngineBaseTest {
 
   @Test
   public void testGetSignalParamsEmpty() {
-    Assert.assertTrue(ParamsManager.getStepDependenciesParameters(null).isEmpty());
-    Assert.assertTrue(ParamsManager.getStepOutputsParameters(null).isEmpty());
+    Assert.assertTrue(ParamsManager.getSignalDependenciesParameters(null).isEmpty());
+    Assert.assertTrue(ParamsManager.getSignalOutputsParameters(null).isEmpty());
   }
 
   @Test
@@ -490,9 +484,7 @@ public class ParamsManagerTest extends MaestroEngineBaseTest {
         paramsManager.generateMergedWorkflowParams(workflowInstance, request);
 
     paramExtensionRepo.reset(
-        Collections.emptyMap(),
-        Collections.emptyMap(),
-        InstanceWrapper.from(workflowInstance, request));
+        Collections.emptyMap(), null, InstanceWrapper.from(workflowInstance, request));
     paramEvaluator.evaluateWorkflowParameters(workflowParams, workflow.getId());
     paramExtensionRepo.clear();
 
@@ -525,9 +517,7 @@ public class ParamsManagerTest extends MaestroEngineBaseTest {
         paramsManager.generateMergedWorkflowParams(workflowInstance, request);
 
     paramExtensionRepo.reset(
-        Collections.emptyMap(),
-        Collections.emptyMap(),
-        InstanceWrapper.from(workflowInstance, request));
+        Collections.emptyMap(), null, InstanceWrapper.from(workflowInstance, request));
     paramEvaluator.evaluateWorkflowParameters(workflowParams, workflow.getId());
     paramExtensionRepo.clear();
 
@@ -561,9 +551,7 @@ public class ParamsManagerTest extends MaestroEngineBaseTest {
         paramsManager.generateMergedWorkflowParams(workflowInstance, request);
 
     paramExtensionRepo.reset(
-        Collections.emptyMap(),
-        Collections.emptyMap(),
-        InstanceWrapper.from(workflowInstance, request));
+        Collections.emptyMap(), null, InstanceWrapper.from(workflowInstance, request));
     paramEvaluator.evaluateWorkflowParameters(workflowParams, workflow.getId());
     paramExtensionRepo.clear();
 
@@ -989,9 +977,7 @@ public class ParamsManagerTest extends MaestroEngineBaseTest {
         paramsManager.generateMergedWorkflowParams(workflowInstance, request);
 
     paramExtensionRepo.reset(
-        Collections.emptyMap(),
-        Collections.emptyMap(),
-        InstanceWrapper.from(workflowInstance, request));
+        Collections.emptyMap(), null, InstanceWrapper.from(workflowInstance, request));
     paramEvaluator.evaluateWorkflowParameters(workflowParams, workflow.getId());
     paramExtensionRepo.clear();
 

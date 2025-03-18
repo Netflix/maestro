@@ -33,7 +33,6 @@ import com.netflix.maestro.models.instance.StepInstanceTransition;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.utils.ExceptionHelper;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -109,7 +108,6 @@ public class DryRunValidator {
                 .params(new LinkedHashMap<>())
                 .transition(StepInstanceTransition.from(step))
                 .synced(true)
-                .dependencies(Collections.emptyMap())
                 .build();
         paramsManager.generateMergedStepParams(
             workflowSummary, step, stepRuntimeMap.get(step.getType()), runtimeSummary);

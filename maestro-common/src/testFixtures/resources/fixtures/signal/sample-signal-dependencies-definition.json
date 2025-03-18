@@ -1,0 +1,14 @@
+[
+  {
+    "name": "signal_a",
+    "match_params": {
+      "param_a": {
+        "param": {
+          "value": "test123",
+          "type": "STRING"
+        },
+        "operator": "="
+      }
+    }
+  }
+]

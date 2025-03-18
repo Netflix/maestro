@@ -1,0 +1,14 @@
+{
+  "dependencies": [
+    {
+      "name": "signal_a",
+      "status": "PENDING",
+      "match_params": {
+        "param_a": {
+          "value": "test123",
+          "operator": "="
+        }
+      }
+    }
+  ]
+}

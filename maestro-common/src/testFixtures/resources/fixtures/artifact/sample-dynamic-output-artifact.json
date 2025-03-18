@@ -1,7 +1,5 @@
 {
-  "outputs": {
-    "SIGNAL": [
-      {
+  "signal_outputs": [{
         "value": {
           "name": {
             "value": "demo_table",
@@ -19,8 +17,7 @@
         },
         "evaluated_time": 1625871404000
       }
-    ]
-  },
+    ],
   "info": {
     "timestamp": 1609272999666,
     "type": "LOG",

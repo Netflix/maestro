@@ -40,13 +40,12 @@ import com.netflix.maestro.flow.models.Task;
 import com.netflix.maestro.flow.models.TaskDef;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.Step;
-import com.netflix.maestro.models.definition.StepDependencyType;
 import com.netflix.maestro.models.definition.SubworkflowStep;
 import com.netflix.maestro.models.instance.RunPolicy;
-import com.netflix.maestro.models.instance.StepDependencies;
 import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.StepRuntimeState;
 import com.netflix.maestro.models.instance.WorkflowInstance;
+import com.netflix.maestro.models.signal.SignalDependencies;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -90,12 +89,9 @@ public class MaestroExecutionPreparerTest extends MaestroEngineBaseTest {
   public void testAddExtraTasksAndInputForStepDependencies() {
     when(workflowSummary.isFreshRun()).thenReturn(false);
     when(workflowSummary.getRunPolicy()).thenReturn(RunPolicy.RESTART_FROM_BEGINNING);
-    var stepDependencies =
-        Map.of(
-            "step1",
-            Map.of(
-                StepDependencyType.SIGNAL,
-                new StepDependencies(StepDependencyType.SIGNAL, List.of())));
+    var dependency = new SignalDependencies();
+    dependency.setDependencies(List.of());
+    var stepDependencies = Map.of("step1", dependency);
     when(stepInstanceDao.getAllStepDependencies(any(), anyLong(), anyLong()))
         .thenReturn(stepDependencies);
 

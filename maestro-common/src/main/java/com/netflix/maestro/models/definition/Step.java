@@ -15,6 +15,8 @@ package com.netflix.maestro.models.definition;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.netflix.maestro.models.parameter.ParamDefinition;
+import com.netflix.maestro.models.signal.SignalDependenciesDefinition;
+import com.netflix.maestro.models.signal.SignalOutputsDefinition;
 import java.util.Map;
 
 /** Step interface. */
@@ -64,9 +66,9 @@ public interface Step {
   /** Get retry policy. */
   RetryPolicy getRetryPolicy();
 
-  /** Get dependencies definition for different types like signals. */
-  Map<StepDependencyType, StepDependenciesDefinition> getDependencies();
+  /** Get signal step dependencies definition. */
+  SignalDependenciesDefinition getSignalDependencies();
 
-  /** Get step outputs, e.g signal outputs. */
-  Map<StepOutputsDefinition.StepOutputType, StepOutputsDefinition> getOutputs();
+  /** Get signal step outputs, e.g signal outputs. */
+  SignalOutputsDefinition getSignalOutputs();
 }

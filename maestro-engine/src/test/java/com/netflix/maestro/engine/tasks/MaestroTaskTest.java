@@ -33,12 +33,11 @@ import com.netflix.maestro.models.Defaults;
 import com.netflix.maestro.models.definition.ParsableLong;
 import com.netflix.maestro.models.definition.RetryPolicy;
 import com.netflix.maestro.models.definition.Step;
-import com.netflix.maestro.models.definition.StepOutputsDefinition;
 import com.netflix.maestro.models.instance.RestartConfig;
 import com.netflix.maestro.models.instance.RunPolicy;
-import com.netflix.maestro.models.instance.SignalStepOutputs;
 import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.StepRuntimeState;
+import com.netflix.maestro.models.signal.SignalOutputs;
 import com.netflix.maestro.models.timeline.Timeline;
 import com.netflix.maestro.models.timeline.TimelineEvent;
 import com.netflix.maestro.models.timeline.TimelineLogEvent;
@@ -408,11 +407,7 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
         createAndRunMaestroTask(true, stepDef, input, new WorkflowSummary());
 
     // verify there is only one static signal
-    SignalStepOutputs outputs =
-        runtimeSummary
-            .getOutputs()
-            .get(StepOutputsDefinition.StepOutputType.SIGNAL)
-            .asSignalStepOutputs();
+    SignalOutputs outputs = runtimeSummary.getSignalOutputs();
     Assert.assertEquals(1, outputs.getOutputs().size());
   }
 
@@ -427,15 +422,11 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
         createAndRunMaestroTask(true, stepDef, input, new WorkflowSummary());
 
     // verify there are two dynamic signals
-    SignalStepOutputs outputs =
-        runtimeSummary
-            .getOutputs()
-            .get(StepOutputsDefinition.StepOutputType.SIGNAL)
-            .asSignalStepOutputs();
+    SignalOutputs outputs = runtimeSummary.getSignalOutputs();
     Assert.assertEquals(2, outputs.getOutputs().size());
     Set<String> dynamicOutputNames = new HashSet<>();
-    for (SignalStepOutputs.SignalStepOutput output : outputs.getOutputs()) {
-      String tableName = output.getParam().getValue().get("name").getValue();
+    for (SignalOutputs.SignalOutput output : outputs.getOutputs()) {
+      String tableName = output.getName();
       dynamicOutputNames.add(tableName);
     }
     Assert.assertEquals(Set.of("table_1", "table_2"), dynamicOutputNames);
@@ -452,21 +443,17 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
         createAndRunMaestroTask(true, stepDef, input, new WorkflowSummary());
 
     // verify there are 3 output signals:  1 static + 2 dynamic
-    SignalStepOutputs outputs =
-        runtimeSummary
-            .getOutputs()
-            .get(StepOutputsDefinition.StepOutputType.SIGNAL)
-            .asSignalStepOutputs();
+    SignalOutputs outputs = runtimeSummary.getSignalOutputs();
     Assert.assertEquals(3, outputs.getOutputs().size());
     boolean[] signalFound = new boolean[] {false, false, false}; // static, dynamic_1, dynamic_2
-    for (SignalStepOutputs.SignalStepOutput output : outputs.getOutputs()) {
-      String tableName = output.getParam().getValue().get("name").getValue();
+    for (SignalOutputs.SignalOutput output : outputs.getOutputs()) {
+      String tableName = output.getName();
       if (tableName.startsWith("table_")) {
         int index = Integer.parseInt(tableName.substring(6));
         signalFound[index] = true;
       }
       if (tableName.equals("table_1")) {
-        Map<String, Object> evaluated = output.getParam().getEvaluatedResult();
+        Map<String, Object> evaluated = output.getPayload();
         Assert.assertTrue((Boolean) evaluated.get("is_iceberg"));
         Map<String, Object> nestedMap = (Map<String, Object>) evaluated.get("nested_map");
         Assert.assertArrayEquals(

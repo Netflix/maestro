@@ -14,6 +14,7 @@ package com.netflix.maestro.utils;
 
 import com.netflix.maestro.models.definition.Workflow;
 import com.netflix.maestro.models.instance.WorkflowInstance;
+import com.netflix.maestro.models.signal.SignalParamValue;
 import com.netflix.maestro.models.trigger.CronTimeTrigger;
 import com.netflix.maestro.models.trigger.SignalTrigger;
 import com.netflix.maestro.models.trigger.TriggerUuids;
@@ -49,7 +50,7 @@ public class IdHelperTest {
     TriggerUuids triggerUuids = IdHelper.toTriggerUuids(workflow);
     Assert.assertEquals("399e992f-bca3-3cf1-9e1c-f04e7f9ee6f4", triggerUuids.getTimeTriggerUuid());
     Assert.assertEquals(
-        Collections.singletonMap("ae3fd022-76e8-3322-b657-0db619b4575f", 0),
+        Collections.singletonMap("6a180223-3858-3c96-bb20-83682dd19132", 0),
         triggerUuids.getSignalTriggerUuids());
   }
 
@@ -87,5 +88,55 @@ public class IdHelperTest {
     Assert.assertEquals(0, IdHelper.deriveGroupId("test-key", 3));
     Assert.assertTrue("negative-test".hashCode() < 0);
     Assert.assertEquals(2, IdHelper.deriveGroupId("negative-test", 3));
+  }
+
+  @Test
+  public void testEncodeValue() {
+    var v01 = IdHelper.encodeValue(SignalParamValue.of(Long.MAX_VALUE));
+    var v02 = IdHelper.encodeValue(SignalParamValue.of(125));
+    var v03 = IdHelper.encodeValue(SignalParamValue.of(123));
+    var v04 = IdHelper.encodeValue(SignalParamValue.of(12));
+    var v05 = IdHelper.encodeValue(SignalParamValue.of(1));
+    var v06 = IdHelper.encodeValue(SignalParamValue.of(0));
+    var v07 = IdHelper.encodeValue(SignalParamValue.of(-1));
+    var v08 = IdHelper.encodeValue(SignalParamValue.of(-12));
+    var v09 = IdHelper.encodeValue(SignalParamValue.of(-123));
+    var v10 = IdHelper.encodeValue(SignalParamValue.of(-125));
+    var v11 = IdHelper.encodeValue(SignalParamValue.of(-Long.MAX_VALUE));
+    var v12 = IdHelper.encodeValue(SignalParamValue.of(Long.MIN_VALUE));
+    var v13 = IdHelper.encodeValue(SignalParamValue.of("hello"));
+    var v14 = IdHelper.encodeValue(SignalParamValue.of("foo"));
+    var v15 = IdHelper.encodeValue(SignalParamValue.of("bar"));
+
+    Assert.assertEquals("mAzL8n0Y58m7", v01);
+    Assert.assertEquals("d21", v02);
+    Assert.assertEquals("d1z", v03);
+    Assert.assertEquals("cC", v04);
+    Assert.assertEquals("c1", v05);
+    Assert.assertEquals("a0", v06);
+    Assert.assertEquals("BAzL8n0Y58m6", v07);
+    Assert.assertEquals("BAzL8n0Y58lv", v08);
+    Assert.assertEquals("BAzL8n0Y58k8", v09);
+    Assert.assertEquals("BAzL8n0Y58k6", v10);
+    Assert.assertEquals("01", v11);
+    Assert.assertEquals("00", v12);
+    Assert.assertEquals("#hello", v13);
+    Assert.assertEquals("#foo", v14);
+    Assert.assertEquals("#bar", v15);
+
+    Assert.assertTrue(v01.compareTo(v02) > 0);
+    Assert.assertTrue(v02.compareTo(v03) > 0);
+    Assert.assertTrue(v03.compareTo(v04) > 0);
+    Assert.assertTrue(v04.compareTo(v05) > 0);
+    Assert.assertTrue(v05.compareTo(v06) > 0);
+    Assert.assertTrue(v06.compareTo(v07) > 0);
+    Assert.assertTrue(v07.compareTo(v08) > 0);
+    Assert.assertTrue(v08.compareTo(v09) > 0);
+    Assert.assertTrue(v09.compareTo(v10) > 0);
+    Assert.assertTrue(v11.compareTo(v12) > 0);
+    Assert.assertTrue(v12.compareTo("0") > 0);
+    Assert.assertTrue("0".compareTo(v13) > 0);
+    Assert.assertTrue(v13.compareTo(v14) > 0);
+    Assert.assertTrue(v14.compareTo(v15) > 0);
   }
 }

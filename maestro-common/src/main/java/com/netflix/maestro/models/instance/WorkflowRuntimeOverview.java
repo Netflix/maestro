@@ -120,7 +120,7 @@ public class WorkflowRuntimeOverview {
                     stepInfo -> {
                       String stepId =
                           Checks.notNull(
-                              ordinalStepMap.remove(stepInfo.get(0)),
+                              ordinalStepMap.remove(stepInfo.getFirst()),
                               "cannot find step id for stepInfo [%s]",
                               stepInfo);
                       StepRuntimeState state = new StepRuntimeState();

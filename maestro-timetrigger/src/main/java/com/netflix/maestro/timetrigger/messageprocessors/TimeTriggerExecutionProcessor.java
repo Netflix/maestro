@@ -13,6 +13,7 @@
 package com.netflix.maestro.timetrigger.messageprocessors;
 
 import com.netflix.maestro.engine.execution.RunResponse;
+import com.netflix.maestro.engine.utils.ExceptionClassifier;
 import com.netflix.maestro.exceptions.MaestroNotFoundException;
 import com.netflix.maestro.exceptions.MaestroResourceConflictException;
 import com.netflix.maestro.exceptions.MaestroRetryableError;
@@ -24,7 +25,6 @@ import com.netflix.maestro.timetrigger.models.PlannedTimeTriggerExecution;
 import com.netflix.maestro.timetrigger.models.TimeTriggerExecution;
 import com.netflix.maestro.timetrigger.producer.TimeTriggerProducer;
 import com.netflix.maestro.timetrigger.properties.TimeTriggerProperties;
-import com.netflix.maestro.timetrigger.utils.ExceptionClassifier;
 import com.netflix.maestro.timetrigger.utils.MaestroWorkflowLauncher;
 import com.netflix.maestro.timetrigger.utils.TimeTriggerExecutionPlanner;
 import com.netflix.maestro.utils.Checks;

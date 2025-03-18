@@ -13,10 +13,10 @@
 package com.netflix.maestro.engine.eval;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
-import com.netflix.maestro.models.parameter.Parameter;
+import com.netflix.maestro.engine.handlers.SignalHandler;
 import com.netflix.sel.ext.Extension;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -45,7 +45,7 @@ public class MaestroParamExtensionRepo {
   /** Reset repo by creating a new param extension wrapper for the current thread. */
   public void reset(
       Map<String, Map<String, Object>> allStepOutputData,
-      Map<String, List<Map<String, Parameter>>> signalDependenciesParams,
+      @Nullable SignalHandler signalHandler,
       InstanceWrapper instanceWrapper) {
     Extension ext =
         new MaestroParamExtension(
@@ -53,7 +53,7 @@ public class MaestroParamExtensionRepo {
             stepInstanceDao,
             env,
             allStepOutputData,
-            signalDependenciesParams,
+            signalHandler,
             instanceWrapper,
             objectMapper);
     repos.set(ext);

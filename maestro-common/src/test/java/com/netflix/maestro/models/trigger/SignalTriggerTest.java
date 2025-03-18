@@ -22,8 +22,11 @@ public class SignalTriggerTest extends MaestroBaseTest {
   public void testSignalTriggerDeserialization() throws Exception {
     SignalTrigger def =
         loadObject("fixtures/signal_triggers/signal_trigger_simple.json", SignalTrigger.class);
-    Assert.assertEquals("updated_by", def.getJoinKeys()[0]);
-    Assert.assertEquals(2, def.getDefinition().size());
-    Assert.assertEquals("foo", def.getDefinition().get("signal_a").get("foo").getName());
+    Assert.assertEquals(2, def.getDefinitions().size());
+    Assert.assertEquals("updated_by", def.getDefinitions().get("signal_a").getJoinKeys()[0]);
+    Assert.assertEquals("posted_by", def.getDefinitions().get("signal_b").getJoinKeys()[0]);
+    Assert.assertEquals(
+        "bar",
+        def.getDefinitions().get("signal_a").getMatchParams().get("foo").getValue().getString());
   }
 }

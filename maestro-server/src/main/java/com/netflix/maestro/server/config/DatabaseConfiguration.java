@@ -29,6 +29,11 @@ import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.server.properties.MaestroEngineProperties;
 import com.netflix.maestro.server.properties.MaestroProperties;
+import com.netflix.maestro.signal.dao.MaestroSignalBrokerDao;
+import com.netflix.maestro.signal.dao.MaestroSignalInstanceDao;
+import com.netflix.maestro.signal.dao.MaestroSignalParamDao;
+import com.netflix.maestro.signal.dao.MaestroSignalTriggerDao;
+import com.netflix.maestro.signal.producer.SignalQueueProducer;
 import javax.sql.DataSource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -162,5 +167,58 @@ public class DatabaseConfiguration {
     LOG.info("Creating maestroStepBreakpointDao within Spring boot...");
     return new MaestroStepBreakpointDao(
         maestroDataSource, objectMapper, props, workflowDao, metrics);
+  }
+
+  // below are Maestro Signal Daos
+  @Bean
+  public MaestroSignalBrokerDao maestroSignalBrokerDao(
+      DataSource maestroDataSource,
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
+      MaestroEngineProperties props,
+      MaestroMetrics metrics,
+      MaestroSignalInstanceDao instanceDao,
+      MaestroSignalParamDao paramDao,
+      MaestroSignalTriggerDao triggerDao,
+      SignalQueueProducer queueProducer) {
+    LOG.info("Creating maestroSignalBrokerDao within Spring boot...");
+    return new MaestroSignalBrokerDao(
+        maestroDataSource,
+        objectMapper,
+        props,
+        metrics,
+        instanceDao,
+        paramDao,
+        triggerDao,
+        queueProducer);
+  }
+
+  @Bean
+  public MaestroSignalInstanceDao maestroSignalInstanceDao(
+      DataSource maestroDataSource,
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
+      MaestroEngineProperties props,
+      MaestroMetrics metrics) {
+    LOG.info("Creating maestroSignalInstanceDao within Spring boot...");
+    return new MaestroSignalInstanceDao(maestroDataSource, objectMapper, props, metrics);
+  }
+
+  @Bean
+  public MaestroSignalParamDao maestroSignalParamDao(
+      DataSource maestroDataSource,
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
+      MaestroEngineProperties props,
+      MaestroMetrics metrics) {
+    LOG.info("Creating maestroSignalParamDao within Spring boot...");
+    return new MaestroSignalParamDao(maestroDataSource, objectMapper, props, metrics);
+  }
+
+  @Bean
+  public MaestroSignalTriggerDao maestroSignalTriggerDao(
+      DataSource maestroDataSource,
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
+      MaestroEngineProperties props,
+      MaestroMetrics metrics) {
+    LOG.info("Creating maestroSignalTriggerDao within Spring boot...");
+    return new MaestroSignalTriggerDao(maestroDataSource, objectMapper, props, metrics);
   }
 }

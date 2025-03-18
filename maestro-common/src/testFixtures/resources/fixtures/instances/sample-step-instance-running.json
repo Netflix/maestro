@@ -32,112 +32,80 @@
         }
       },
       "timeout": "10 minutes",
-      "dependencies": {
-        "SIGNAL": {
-          "definitions": [
-            {
-              "value": {
-                "name": {
-                  "value": "db/test/table1",
-                  "type": "STRING"
-                },
-                "vtts_utc_dateint": {
-                  "parameter": {
-                    "expression": "\nDateTimeFormatter tz_dateint_hour_formatter = DateTimeFormat\n    .forPattern(\"yyyyMMddHH\")\n    .withZone(DateTimeZone.forID(\"UTC\"));\n\nDateTime dt = tz_dateint_hour_formatter\n    .parseDateTime(RUN_DATEINT + \"00\")\n    .minusDays(0)\n    .minusHours(0);\n\ndt.withZone(DateTimeZone.forID(\"UTC\")).toString(\"yyyyMMdd\");\n",
-                    "type": "STRING",
-                    "mode": "MUTABLE"
-                  },
-                  "operator": "=",
-                  "type": "SIGNAL"
-                },
-                "vtts_utc_hour": {
-                  "parameter": {
-                    "expression": "\nDateTimeFormatter tz_dateint_hour_formatter = DateTimeFormat\n    .forPattern(\"yyyyMMddHH\")\n    .withZone(DateTimeZone.forID(\"UTC\"));\n\nDateTime dt = tz_dateint_hour_formatter\n    .parseDateTime(RUN_DATEINT + \"00\")\n    .minusDays(0)\n    .minusHours(0);\n\ndt.withZone(DateTimeZone.forID(\"UTC\")).toString(\"HH\");\n",
-                    "type": "STRING",
-                    "mode": "MUTABLE"
-                  },
-                  "operator": "=",
-                  "type": "SIGNAL"
-                }
+      "signal_dependencies": [
+        {
+          "name": "db/test/table1",
+          "match_params": {
+            "vtts_utc_dateint": {
+              "param": {
+                "expression": "\nDateTimeFormatter tz_dateint_hour_formatter = DateTimeFormat\n    .forPattern(\"yyyyMMddHH\")\n    .withZone(DateTimeZone.forID(\"UTC\"));\n\nDateTime dt = tz_dateint_hour_formatter\n    .parseDateTime(RUN_DATEINT + \"00\")\n    .minusDays(0)\n    .minusHours(0);\n\ndt.withZone(DateTimeZone.forID(\"UTC\")).toString(\"yyyyMMdd\");\n",
+                "type": "STRING",
+                "mode": "MUTABLE"
               },
-              "type": "MAP"
+              "operator": "="
             },
-            {
-              "value": {
-                "name": {
-                  "value": "db/test/table2",
-                  "type": "STRING"
-                },
-                "vtts_utc_dateint": {
-                  "parameter": {
-                    "expression": "\nDateTimeFormatter tz_dateint_hour_formatter = DateTimeFormat\n    .forPattern(\"yyyyMMddHH\")\n    .withZone(DateTimeZone.forID(\"UTC\"));\n\nDateTime dt = tz_dateint_hour_formatter\n    .parseDateTime(RUN_DATEINT + \"00\")\n    .minusDays(0)\n    .minusHours(0);\n\ndt.withZone(DateTimeZone.forID(\"UTC\")).toString(\"yyyyMMdd\");\n",
-                    "type": "STRING",
-                    "mode": "MUTABLE"
-                  },
-                  "operator": "=",
-                  "type": "SIGNAL"
-                },
-                "vtts_utc_hour": {
-                  "parameter": {
-                    "expression": "\nDateTimeFormatter tz_dateint_hour_formatter = DateTimeFormat\n    .forPattern(\"yyyyMMddHH\")\n    .withZone(DateTimeZone.forID(\"UTC\"));\n\nDateTime dt = tz_dateint_hour_formatter\n    .parseDateTime(RUN_DATEINT + \"00\")\n    .minusDays(0)\n    .minusHours(0);\n\ndt.withZone(DateTimeZone.forID(\"UTC\")).toString(\"HH\");\n",
-                    "type": "STRING",
-                    "mode": "MUTABLE"
-                  },
-                  "operator": "=",
-                  "type": "SIGNAL"
-                }
+            "vtts_utc_hour": {
+              "param": {
+                "expression": "\nDateTimeFormatter tz_dateint_hour_formatter = DateTimeFormat\n    .forPattern(\"yyyyMMddHH\")\n    .withZone(DateTimeZone.forID(\"UTC\"));\n\nDateTime dt = tz_dateint_hour_formatter\n    .parseDateTime(RUN_DATEINT + \"00\")\n    .minusDays(0)\n    .minusHours(0);\n\ndt.withZone(DateTimeZone.forID(\"UTC\")).toString(\"HH\");\n",
+                "type": "STRING",
+                "mode": "MUTABLE"
               },
-              "type": "MAP"
+              "operator": "="
             }
-          ],
-          "type": "SIGNAL"
-        }
-      },
-      "outputs": {
-        "SIGNAL": {
-          "type": "SIGNAL",
-          "definitions": [
-            {
-              "value": {
-                "name": {
-                  "value": "dummy/test/signal1",
-                  "type": "STRING"
-                },
-                "key1": {
-                  "value": "v1",
-                  "type": "STRING",
-                  "mode": "MUTABLE"
-                },
-                "key2": {
-                  "value": 1,
-                  "type": "LONG",
-                  "mode": "MUTABLE"
-                }
+          }
+        },
+        {
+          "name": "db/test/table2",
+          "match_params": {
+            "vtts_utc_dateint": {
+              "param": {
+                "expression": "\nDateTimeFormatter tz_dateint_hour_formatter = DateTimeFormat\n    .forPattern(\"yyyyMMddHH\")\n    .withZone(DateTimeZone.forID(\"UTC\"));\n\nDateTime dt = tz_dateint_hour_formatter\n    .parseDateTime(RUN_DATEINT + \"00\")\n    .minusDays(0)\n    .minusHours(0);\n\ndt.withZone(DateTimeZone.forID(\"UTC\")).toString(\"yyyyMMdd\");\n",
+                "type": "STRING",
+                "mode": "MUTABLE"
               },
-              "type": "MAP"
+              "operator": "="
             },
-            {
-              "value": {
-                "name": {
-                  "value": "dummy/test/signal2",
-                  "type": "STRING"
-                },
-                "key3": {
-                  "value": "v3",
-                  "type": "STRING",
-                  "mode": "MUTABLE"
-                },
-                "key4": {
-                  "value": "v4",
-                  "type": "STRING",
-                  "mode": "MUTABLE"
-                }
+            "vtts_utc_hour": {
+              "param": {
+                "expression": "\nDateTimeFormatter tz_dateint_hour_formatter = DateTimeFormat\n    .forPattern(\"yyyyMMddHH\")\n    .withZone(DateTimeZone.forID(\"UTC\"));\n\nDateTime dt = tz_dateint_hour_formatter\n    .parseDateTime(RUN_DATEINT + \"00\")\n    .minusDays(0)\n    .minusHours(0);\n\ndt.withZone(DateTimeZone.forID(\"UTC\")).toString(\"HH\");\n",
+                "type": "STRING",
+                "mode": "MUTABLE"
               },
-              "type": "MAP"
+              "operator": "="
             }
-          ]
+          }
         }
-      },
+      ],
+      "signal_outputs": [
+        {
+          "name":  "dummy/test/signal1",
+          "params": {
+            "key1": {
+              "value": "v1",
+              "type": "STRING"
+            },
+            "key2": {
+              "value": 1,
+              "type": "LONG"
+            }
+          }
+        },
+        {
+          "name": "dummy/test/signal2",
+          "params": {
+            "key3": {
+              "value": "v3",
+              "type": "STRING",
+              "mode": "MUTABLE"
+            },
+            "key4": {
+              "value": "v4",
+              "type": "STRING",
+              "mode": "MUTABLE"
+            }
+          }
+        }
+      ],
       "params": {
         "sleep_seconds": {
           "value": 15,
@@ -198,152 +166,68 @@
     "execute_time": 1608749934147,
     "modify_time": 1608749936287
   },
-  "dependencies": {
-    "SIGNAL": {
-      "type": "SIGNAL",
-      "statuses": [
-        {
-          "params": {
-            "value": {
-              "name": {
-                "value": "db/test/table1",
-                "type": "STRING"
-              },
-              "_step_dependency_sub_type": {
-                "value": "input_signal",
-                "type": "STRING"
-              },
-              "vtts_utc_dateint": {
-                "parameter": {
-                  "value": "20210628",
-                  "type": "STRING"
-                },
-                "operator": "=",
-                "type": "SIGNAL"
-              },
-              "vtts_utc_hour": {
-                "parameter": {
-                  "value": "00",
-                  "type": "STRING"
-                },
-                "operator": "=",
-                "type": "SIGNAL"
-              }
-            },
-            "type": "MAP",
-            "evaluated_result": {
-              "name": "db/test/table1",
-              "vtts_utc_dateint": "20210628",
-              "vtts_utc_hour": "00"
-            },
-            "evaluated_time": 1662845203725
+
+  "signal_dependencies": {
+    "dependencies": [
+      {
+        "name": "db/test/table1",
+        "status": "PENDING",
+        "match_params": {
+          "_step_dependency_sub_type": {
+            "value": "input_signal",
+            "operator": "="
           },
-          "status": "PENDING"
-        },
-        {
-          "params": {
-            "value": {
-              "name": {
-                "value": "db/test/test/table2",
-                "type": "STRING"
-              },
-              "vtts_utc_dateint": {
-                "parameter": {
-                  "value": "20210628",
-                  "type": "STRING"
-                },
-                "operator": "=",
-                "type": "SIGNAL"
-              },
-              "vtts_utc_hour": {
-                "parameter": {
-                  "value": "00",
-                  "type": "STRING"
-                },
-                "operator": "=",
-                "type": "SIGNAL"
-              }
-            },
-            "type": "MAP",
-            "evaluated_result": {
-              "name": "db/test/table2",
-              "vtts_utc_dateint": "20210628",
-              "vtts_utc_hour": "00"
-            },
-            "evaluated_time": 1662845203726
+          "vtts_utc_dateint": {
+            "value": "20210628",
+            "operator": "="
           },
-          "signal_reference": {
-            "signal_instance_id": "215ae2cd-ee75-46dd-976c-c37273f86472",
-            "timestamp": 1624978754301
-          },
-          "status": "MATCHED"
+          "vtts_utc_hour": {
+            "value": "00",
+            "operator": "="
+          }
         }
-      ]
-    }
+      },
+      {
+        "name": "db/test/table2",
+        "status": "MATCHED",
+        "match_params": {
+          "_step_dependency_sub_type": {
+            "value": "input_signal",
+            "operator": "="
+          },
+          "vtts_utc_dateint": {
+            "value": "20210628",
+            "operator": "="
+          },
+          "vtts_utc_hour": {
+            "value": "00",
+            "operator": "="
+          }
+        },
+        "signal_id": 849086
+      }
+    ]
   },
-  "outputs": {
-    "SIGNAL": {
-      "type": "SIGNAL",
-      "outputs": [
-        {
-          "param": {
-            "value": {
-              "name": {
-                "value": "dummy/test/signal1",
-                "type": "STRING"
-              },
-              "p1": {
-                "value": 1,
-                "type": "LONG"
-              },
-              "p2": {
-                "expression": "1+1",
-                "type": "LONG"
-              }
-            },
-            "type": "MAP",
-            "evaluated_result": {
-              "name": "dummy/test/signal1",
-              "p1": 1,
-              "p2": 2
-            },
-            "evaluated_time": 1667197463147
-          },
-          "output_signal_instance": {
-            "announced_time": 1667197463771,
-            "output_signal_instance_id": "52726829-e6a9-366f-adae-4acb54e6b733"
-          }
+  "signal_outputs": {
+    "outputs": [
+      {
+        "name": "dummy/test/signal1",
+        "params": {
+          "p1": 1,
+          "p2": 2
         },
-        {
-          "param": {
-            "value": {
-              "name": {
-                "expression": "aaa",
-                "type": "STRING"
-              },
-              "p1": {
-                "expression": "foo + 1;",
-                "type": "LONG"
-              },
-              "p2": {
-                "expression": "auu+1",
-                "type": "LONG"
-              }
-            },
-            "type": "MAP",
-            "evaluated_result": {
-              "name": "bar",
-              "p1": 11,
-              "p2": 124
-            },
-            "evaluated_time": 1667197463148
-          },
-          "output_signal_instance": {
-            "announced_time": 1667197464191,
-            "output_signal_instance_id": "9b9b994f-71a1-3b9c-bb95-6ead3951715d"
-          }
-        }
-      ]
-    }
+        "signal_id": 7463771,
+        "announce_time": 1667197463771
+      },
+      {
+        "name": "bar",
+        "params": {
+          "p1": 11,
+          "p2": 124
+        },
+        "signal_id": 74637,
+        "announce_time": 1667197464191
+      }
+    ]
   }
 }

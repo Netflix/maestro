@@ -1,13 +1,15 @@
-{
-  "signal_a": {
-    "foo": {
-      "type": "SIGNAL",
-      "parameter": {
-        "value": "bar",
-        "type": "STRING",
-        "mode": "mutable"
-      },
-      "operator": "="
+[
+  {
+    "name": "signal_a",
+    "match_params": {
+      "foo": {
+        "param": {
+          "value": "bar",
+          "type": "STRING",
+          "mode": "mutable"
+        },
+        "operator": "="
+      }
     }
   }
-}
+]

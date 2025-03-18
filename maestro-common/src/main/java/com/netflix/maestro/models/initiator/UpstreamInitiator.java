@@ -50,13 +50,13 @@ public abstract class UpstreamInitiator implements Initiator {
   /** helper method to get the parent. */
   @JsonIgnore
   public Info getParent() {
-    return ancestors.get(ancestors.size() - 1);
+    return ancestors.getLast();
   }
 
   /** helper method to get the root. */
   @JsonIgnore
   public Info getRoot() {
-    return ancestors.get(0);
+    return ancestors.getFirst();
   }
 
   /**

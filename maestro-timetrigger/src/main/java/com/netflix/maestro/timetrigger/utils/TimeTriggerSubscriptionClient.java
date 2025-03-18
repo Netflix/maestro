@@ -21,6 +21,7 @@ import com.netflix.maestro.timetrigger.metrics.MetricConstants;
 import com.netflix.maestro.timetrigger.models.TimeTriggerExecution;
 import com.netflix.maestro.timetrigger.models.TimeTriggerWithWatermark;
 import com.netflix.maestro.timetrigger.producer.TimeTriggerProducer;
+import java.sql.Connection;
 import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +35,7 @@ public class TimeTriggerSubscriptionClient implements TriggerSubscriptionClient 
 
   @Override
   public void upsertTriggerSubscription(
-      Workflow workflow, TriggerUuids current, TriggerUuids previous) {
+      Connection conn, Workflow workflow, TriggerUuids current, TriggerUuids previous) {
     if (workflow.getTimeTriggers() != null
         && !workflow.getTimeTriggers().isEmpty()
         && current != null

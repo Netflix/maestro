@@ -49,7 +49,6 @@ import com.netflix.maestro.models.definition.Metadata;
 import com.netflix.maestro.models.definition.Properties;
 import com.netflix.maestro.models.definition.PropertiesSnapshot;
 import com.netflix.maestro.models.definition.RunStrategy;
-import com.netflix.maestro.models.definition.StepOutputsDefinition;
 import com.netflix.maestro.models.definition.Tag;
 import com.netflix.maestro.models.definition.TagList;
 import com.netflix.maestro.models.definition.User;
@@ -59,7 +58,6 @@ import com.netflix.maestro.models.error.Details;
 import com.netflix.maestro.models.initiator.ForeachInitiator;
 import com.netflix.maestro.models.initiator.UpstreamInitiator;
 import com.netflix.maestro.models.instance.WorkflowInstance;
-import com.netflix.maestro.models.parameter.MapParamDefinition;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.timeline.WorkflowTimeline;
 import com.netflix.maestro.models.trigger.CronTimeTrigger;
@@ -67,6 +65,7 @@ import com.netflix.maestro.models.trigger.SignalTrigger;
 import com.netflix.maestro.models.trigger.TimeTrigger;
 import com.netflix.maestro.models.trigger.TriggerUuids;
 import com.netflix.maestro.utils.IdHelper;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -140,7 +139,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
         workflowDao.addWorkflowDefinition(wfd, wfd.getPropertiesSnapshot().extractProperties());
     assertEquals(wfd, definition);
     verify(publisher, times(1)).publishOrThrow(any(), any());
-    verify(triggerClient, times(0)).upsertTriggerSubscription(any(), any(), any());
+    verify(triggerClient, times(0)).upsertTriggerSubscription(any(), any(), any(), any());
   }
 
   @Test
@@ -167,21 +166,14 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
         workflowDao.addWorkflowDefinition(wfd, wfd.getPropertiesSnapshot().extractProperties());
     assertEquals(wfd, definition);
     assertNotNull(wfd.getInternalId());
-    List<MapParamDefinition> step1Signals =
-        definition
-            .getWorkflow()
-            .getSteps()
-            .get(0)
-            .getOutputs()
-            .get(StepOutputsDefinition.StepOutputType.SIGNAL)
-            .asSignalOutputsDefinition()
-            .getDefinitions();
+    var step1Signals =
+        definition.getWorkflow().getSteps().getFirst().getSignalOutputs().definitions();
     assertEquals(2, step1Signals.size());
-    assertEquals("dummy/test/signal1", step1Signals.get(0).getValue().get("name").getValue());
+    assertEquals("dummy/test/signal1", step1Signals.getFirst().getName());
     assertEquals(
-        1, step1Signals.get(0).getValue().get("p1").asLongParamDef().getValue().longValue());
-    assertEquals("aaa", step1Signals.get(1).getValue().get("name").getExpression());
-    assertEquals("auu+1", step1Signals.get(1).getValue().get("p2").getExpression());
+        1, step1Signals.getFirst().getParams().get("p1").asLongParamDef().getValue().longValue());
+    assertEquals("aaa", step1Signals.get(1).getName());
+    assertEquals("auu+1", step1Signals.get(1).getParams().get("p2").getExpression());
     verify(publisher, times(1)).publishOrThrow(any(), any());
   }
 
@@ -261,7 +253,8 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
       Boolean signalTriggerDisabled,
       boolean isCurrentNull,
       boolean isPreviousNull,
-      int triggerCalled) {
+      int triggerCalled)
+      throws SQLException {
     wfd.getMetadata().setCreateTime(wfd.getMetadata().getCreateTime() + 1);
     wfd.setIsActive(active);
     wfd.setPropertiesSnapshot(
@@ -278,12 +271,14 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
     verifyTriggerUpdate(isCurrentNull, isPreviousNull, triggerCalled);
   }
 
-  private void verifyTriggerUpdate(
-      boolean isCurrentNull, boolean isPreviousNull, int triggerCalled) {
+  private void verifyTriggerUpdate(boolean isCurrentNull, boolean isPreviousNull, int triggerCalled)
+      throws SQLException {
     verify(publisher, times(1)).publishOrThrow(any(), any());
-    verify(triggerClient, times(triggerCalled)).upsertTriggerSubscription(any(), any(), any());
+    verify(triggerClient, times(triggerCalled))
+        .upsertTriggerSubscription(any(), any(), any(), any());
     verify(triggerClient, times(triggerCalled))
         .upsertTriggerSubscription(
+            any(),
             any(),
             isCurrentNull ? eq(null) : any(TriggerUuids.class),
             isPreviousNull ? eq(null) : any(TriggerUuids.class));
@@ -320,7 +315,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
     maestroWorkflow = workflowDao.getMaestroWorkflow(TEST_WORKFLOW_ID2);
     assertEquals("another-owner", maestroWorkflow.getPropertiesSnapshot().getOwner().getName());
     assertEquals(wfd, workflowDao.addWorkflowDefinition(wfd, null));
-    verify(triggerClient, times(0)).upsertTriggerSubscription(any(), any(), any());
+    verify(triggerClient, times(0)).upsertTriggerSubscription(any(), any(), any(), any());
   }
 
   @Test
@@ -344,7 +339,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
             .build(),
         newSnapshot);
     verify(publisher, times(2)).publishOrThrow(any(), any());
-    verify(triggerClient, times(0)).upsertTriggerSubscription(any(), any(), any());
+    verify(triggerClient, times(0)).upsertTriggerSubscription(any(), any(), any(), any());
   }
 
   @Test
@@ -420,7 +415,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
     assertEquals(1, maestroWorkflow.getPropertiesSnapshot().getTags().getTags().size());
     assertEquals(
         "some-workflow-tag",
-        maestroWorkflow.getPropertiesSnapshot().getTags().getTags().get(0).getName());
+        maestroWorkflow.getPropertiesSnapshot().getTags().getTags().getFirst().getName());
     Tag tagToBeDeleted = Tag.create("some-workflow-tag");
     Properties props = new Properties();
     props.setTags(new TagList(Collections.singletonList(tagToBeDeleted)));
@@ -435,7 +430,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
             .build(),
         newSnapshot);
     verify(publisher, times(2)).publishOrThrow(any(), any());
-    verify(triggerClient, times(0)).upsertTriggerSubscription(any(), any(), any());
+    verify(triggerClient, times(0)).upsertTriggerSubscription(any(), any(), any(), any());
   }
 
   @Test
@@ -518,7 +513,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
     ArgumentCaptor<Workflow> workflowCaptor = ArgumentCaptor.forClass(Workflow.class);
     Mockito.verify(triggerClient, Mockito.times(1))
         .upsertTriggerSubscription(
-            workflowCaptor.capture(), Mockito.eq(wfd.getTriggerUuids()), Mockito.eq(null));
+            any(), workflowCaptor.capture(), Mockito.eq(wfd.getTriggerUuids()), Mockito.eq(null));
     Workflow capturedWorkflow = workflowCaptor.getValue();
     Assert.assertNotNull(capturedWorkflow);
     Assert.assertEquals("sample-active-wf-with-signal-triggers", capturedWorkflow.getId());
@@ -543,7 +538,10 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
                 MaestroRuntimeException.Code.INTERNAL_ERROR, "test error message"))
         .when(triggerClient)
         .upsertTriggerSubscription(
-            Mockito.eq(wfd.getWorkflow()), Mockito.eq(wfd.getTriggerUuids()), Mockito.eq(null));
+            any(),
+            Mockito.eq(wfd.getWorkflow()),
+            Mockito.eq(wfd.getTriggerUuids()),
+            Mockito.eq(null));
     AssertHelper.assertThrows(
         "expects mockito test error",
         MaestroRuntimeException.class,
@@ -635,7 +633,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
     ArgumentCaptor<Workflow> workflowCaptor = ArgumentCaptor.forClass(Workflow.class);
     Mockito.verify(triggerClient, Mockito.times(1))
         .upsertTriggerSubscription(
-            workflowCaptor.capture(), Mockito.eq(wfd.getTriggerUuids()), Mockito.eq(null));
+            any(), workflowCaptor.capture(), Mockito.eq(wfd.getTriggerUuids()), Mockito.eq(null));
     Workflow capturedWorkflow = workflowCaptor.getValue();
     Assert.assertNotNull(capturedWorkflow);
     Assert.assertEquals("sample-active-wf-with-time-triggers", capturedWorkflow.getId());
@@ -666,7 +664,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
             new MaestroRuntimeException(
                 MaestroRuntimeException.Code.INTERNAL_ERROR, "test error message"))
         .when(triggerClient)
-        .upsertTriggerSubscription(Mockito.eq(wfd.getWorkflow()), any(), any());
+        .upsertTriggerSubscription(any(), Mockito.eq(wfd.getWorkflow()), any(), any());
     AssertHelper.assertThrows(
         "expects mockito test error",
         MaestroRuntimeException.class,
@@ -686,10 +684,10 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
 
     Mockito.verify(triggerClient, Mockito.times(1))
         .upsertTriggerSubscription(
-            workflowCaptor.capture(), Mockito.eq(wfd.getTriggerUuids()), Mockito.eq(null));
+            any(), workflowCaptor.capture(), Mockito.eq(wfd.getTriggerUuids()), Mockito.eq(null));
     Mockito.verify(triggerClient, Mockito.times(1))
         .upsertTriggerSubscription(
-            workflowCaptor.capture(), Mockito.eq(wfd.getTriggerUuids()), Mockito.eq(null));
+            any(), workflowCaptor.capture(), Mockito.eq(wfd.getTriggerUuids()), Mockito.eq(null));
     Workflow capturedWorkflow = workflowCaptor.getValue();
     Assert.assertNotNull(capturedWorkflow);
     Assert.assertEquals("sample-active-wf-with-triggers", capturedWorkflow.getId());
@@ -709,6 +707,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
     assertNotNull(wfd.getInternalId());
     Mockito.verify(triggerClient, Mockito.times(1))
         .upsertTriggerSubscription(
+            any(),
             workflowCaptor.capture(),
             Mockito.eq(wfd.getTriggerUuids()),
             Mockito.eq(wfd.getTriggerUuids()));
@@ -921,7 +920,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
         "Caller [test] do nothing as workflow version [sample-active-wf-with-triggers][1] is already active",
         timelineEvent.getLog());
     verify(publisher, times(0)).publishOrThrow(any(), any());
-    verify(triggerClient, times(0)).upsertTriggerSubscription(any(), any(), any());
+    verify(triggerClient, times(0)).upsertTriggerSubscription(any(), any(), any(), any());
 
     // add a new active version
     testWorkflowUpdate(wfd, true, null, null, false, false, 1);
@@ -1212,8 +1211,8 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
     assertEquals(1, results.getTimelineEvents().size());
     assertEquals(
         "Created a new workflow version [1] for workflow id [sample-active-wf-with-props]",
-        results.getTimelineEvents().get(0).getLog());
-    assertEquals(1598399975650L, results.getTimelineEvents().get(0).getTimestamp());
+        results.getTimelineEvents().getFirst().getLog());
+    assertEquals(1598399975650L, results.getTimelineEvents().getFirst().getTimestamp());
   }
 
   @Test

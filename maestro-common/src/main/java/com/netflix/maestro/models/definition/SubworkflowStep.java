@@ -40,8 +40,8 @@ import lombok.ToString;
       "failure_mode",
       "tags",
       "timeout",
-      "dependencies",
-      "outputs",
+      "signal_dependencies",
+      "signal_outputs",
       "params"
     },
     alphabetic = true)

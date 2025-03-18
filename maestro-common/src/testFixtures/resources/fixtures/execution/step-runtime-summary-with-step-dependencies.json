@@ -5,37 +5,20 @@
     }
   },
   "db_operation": "UPDATE",
-  "dependencies": {
-    "SIGNAL": {
-      "statuses": [
-        {
-          "params": {
-            "evaluated_result": {
-              "name": "db/test/table1",
-              "valid_thru_utc_ts": "1666767600"
-            },
-            "evaluated_time": 1675321220316,
-            "type": "MAP",
-            "value": {
-              "name": {
-                "type": "STRING",
-                "value": "db/test/table1"
-              },
-              "valid_thru_utc_ts": {
-                "operator": ">=",
-                "parameter": {
-                  "expression": "\nLong l = Util.dateIntHourToTs(TARGET_RUN_DATE, \"00\", WORKFLOW_CRON_TIMEZONE, 0, 0)/1000;\nreturn l.toString();\n",
-                  "type": "STRING"
-                },
-                "type": "SIGNAL"
-              }
-            }
-          },
-          "status": "PENDING"
-        }
-      ],
-      "type": "SIGNAL"
-    }
+  "signal_dependencies": {
+    "dependencies": [
+      {
+        "name": "db/test/table1",
+        "status": "PENDING",
+        "match_params": {
+          "valid_thru_utc_ts": {
+            "value": "1234567890",
+            "operator": ">="
+          }
+        },
+        "signal_id": 849086
+      }
+    ]
   },
   "params": {
     "maestro_step_satisfied": {

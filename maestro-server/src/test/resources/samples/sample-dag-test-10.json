@@ -85,35 +85,39 @@
               "type": "FIXED_BACKOFF"
             }
           },
-          "dependencies": {
-            "SIGNAL": {
-              "definitions": [
-                {
-                  "value": {
-                    "name": {
-                      "value": "signal_a",
-                      "type": "STRING"
-                    },
-                    "_step_dependency_sub_type": {
-                      "value": "input_signal",
-                      "type": "STRING"
-                    },
-                    "foo": {
-                      "type": "SIGNAL",
-                      "parameter": {
-                        "value": "bar",
-                        "type": "STRING",
-                        "mode": "mutable"
-                      },
-                      "operator": "="
-                    }
+          "signal_dependencies": [
+            {
+              "name": "signal_a",
+              "match_params": {
+                "_step_dependency_sub_type": {
+                  "param": {
+                    "value": "input_signal",
+                    "type": "STRING"
                   },
-                  "type": "MAP"
+                  "operator": "="
+                },
+                "foo": {
+                  "param": {
+                    "value": "bar",
+                    "type": "STRING"
+                  },
+                  "operator": "="
                 }
-              ],
-              "type": "SIGNAL"
+              }
+            },
+            {
+              "name": "signal_b",
+              "match_params": {
+                "key2": {
+                  "param": {
+                    "value": "value2",
+                    "type": "STRING"
+                  },
+                  "operator": "="
+                }
+              }
             }
-          }
+          ]
         }
       },
       {

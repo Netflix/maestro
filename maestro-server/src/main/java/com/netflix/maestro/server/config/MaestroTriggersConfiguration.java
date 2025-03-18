@@ -12,16 +12,33 @@
  */
 package com.netflix.maestro.server.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.maestro.engine.eval.ParamEvaluator;
 import com.netflix.maestro.engine.handlers.WorkflowActionHandler;
 import com.netflix.maestro.engine.utils.TriggerSubscriptionClient;
 import com.netflix.maestro.metrics.MaestroMetrics;
+import com.netflix.maestro.models.Constants;
+import com.netflix.maestro.models.definition.Workflow;
+import com.netflix.maestro.models.signal.SignalInstance;
+import com.netflix.maestro.models.trigger.TriggerUuids;
 import com.netflix.maestro.server.properties.TriggersProperties;
+import com.netflix.maestro.signal.dao.MaestroSignalBrokerDao;
+import com.netflix.maestro.signal.messageprocessors.SignalInstanceProcessor;
+import com.netflix.maestro.signal.messageprocessors.SignalTriggerExecutionProcessor;
+import com.netflix.maestro.signal.messageprocessors.SignalTriggerMatchProcessor;
+import com.netflix.maestro.signal.models.SignalTriggerExecution;
+import com.netflix.maestro.signal.models.SignalTriggerMatch;
+import com.netflix.maestro.signal.producer.SignalQueueProducer;
+import com.netflix.maestro.signal.utils.SignalTriggerSubscriptionClient;
 import com.netflix.maestro.timetrigger.messageprocessors.TimeTriggerExecutionProcessor;
 import com.netflix.maestro.timetrigger.producer.TimeTriggerProducer;
 import com.netflix.maestro.timetrigger.utils.MaestroWorkflowLauncher;
 import com.netflix.maestro.timetrigger.utils.TimeTriggerExecutionPlanner;
 import com.netflix.maestro.timetrigger.utils.TimeTriggerSubscriptionClient;
+import java.sql.Connection;
+import java.sql.SQLException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -43,13 +60,6 @@ public class MaestroTriggersConfiguration {
   public TimeTriggerExecutionPlanner timeTriggerExecutionPlanner(TriggersProperties properties) {
     LOG.info("Creating timeTriggerExecutionPlanner within Spring boot...");
     return new TimeTriggerExecutionPlanner(properties.getTimeTrigger().getMaxTriggersPerMessage());
-  }
-
-  @Bean
-  public TriggerSubscriptionClient triggerSubscriptionClient(
-      TimeTriggerProducer producer, MaestroMetrics metrics) {
-    LOG.info("Creating triggerSubscriptionClient within Spring boot...");
-    return new TimeTriggerSubscriptionClient(producer, metrics);
   }
 
   @Bean
@@ -77,5 +87,71 @@ public class MaestroTriggersConfiguration {
         executionPlanner,
         props.getTimeTrigger(),
         metrics);
+  }
+
+  @Bean
+  public TriggerSubscriptionClient triggerSubscriptionClient(
+      MaestroSignalBrokerDao brokerDao, TimeTriggerProducer producer, MaestroMetrics metrics) {
+    LOG.info("Creating both signal and time triggerSubscriptionClient within Spring boot...");
+    return new TriggerSubscriptionClient() {
+      private final TriggerSubscriptionClient signalTriggerClient =
+          new SignalTriggerSubscriptionClient(brokerDao, metrics);
+      private final TriggerSubscriptionClient timeTriggerClient =
+          new TimeTriggerSubscriptionClient(producer, metrics);
+
+      @Override
+      public void upsertTriggerSubscription(
+          Connection conn, Workflow workflow, TriggerUuids current, TriggerUuids previous)
+          throws SQLException {
+        signalTriggerClient.upsertTriggerSubscription(conn, workflow, current, previous);
+        timeTriggerClient.upsertTriggerSubscription(conn, workflow, current, previous);
+      }
+    };
+  }
+
+  // Below are signal related beans.
+  @Bean
+  @ConditionalOnProperty(
+      value = "triggers.signal-trigger.type",
+      havingValue = "noop",
+      matchIfMissing = true)
+  public SignalQueueProducer noopSignalQueueProducer() {
+    LOG.info("Creating noopSignalQueueProducer within Spring boot...");
+    return new SignalQueueProducer() {
+      @Override
+      public void push(SignalInstance signalInstance) {}
+
+      @Override
+      public void push(SignalTriggerMatch triggerMatch) {}
+
+      @Override
+      public void push(SignalTriggerExecution triggerExecution) {}
+    };
+  }
+
+  @Bean
+  public SignalInstanceProcessor signalInstanceProcessor(
+      MaestroSignalBrokerDao brokerDao, SignalQueueProducer producer, MaestroMetrics metrics) {
+    LOG.info("Creating signalInstanceProcessor within Spring boot...");
+    return new SignalInstanceProcessor(brokerDao, producer, metrics);
+  }
+
+  @Bean
+  public SignalTriggerMatchProcessor signalTriggerMatchProcessor(
+      MaestroSignalBrokerDao brokerDao, MaestroMetrics metrics) {
+    LOG.info("Creating signalTriggerMatchProcessor within Spring boot...");
+    return new SignalTriggerMatchProcessor(brokerDao, metrics);
+  }
+
+  @Bean
+  public SignalTriggerExecutionProcessor signalTriggerExecutionProcessor(
+      MaestroSignalBrokerDao brokerDao,
+      ParamEvaluator paramEvaluator,
+      WorkflowActionHandler actionHandler,
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
+      MaestroMetrics metrics) {
+    LOG.info("Creating signalTriggerExecutionProcessor within Spring boot...");
+    return new SignalTriggerExecutionProcessor(
+        brokerDao, paramEvaluator, actionHandler, objectMapper, metrics);
   }
 }

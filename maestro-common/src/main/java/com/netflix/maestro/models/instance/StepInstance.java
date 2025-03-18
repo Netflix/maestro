@@ -23,12 +23,12 @@ import com.netflix.maestro.exceptions.MaestroInvalidStatusException;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.definition.RetryPolicy;
 import com.netflix.maestro.models.definition.Step;
-import com.netflix.maestro.models.definition.StepDependencyType;
-import com.netflix.maestro.models.definition.StepOutputsDefinition;
 import com.netflix.maestro.models.definition.TagList;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.Parameter;
+import com.netflix.maestro.models.signal.SignalDependencies;
+import com.netflix.maestro.models.signal.SignalOutputs;
 import com.netflix.maestro.models.timeline.Timeline;
 import com.netflix.maestro.validations.TagListConstraint;
 import java.util.Locale;
@@ -65,8 +65,8 @@ import lombok.Getter;
       "step_retry",
       "timeout_in_millis",
       "runtime_state",
-      "dependencies",
-      "outputs",
+      "signal_dependencies",
+      "signal_outputs",
       "artifacts",
       "timeline"
     },
@@ -119,8 +119,8 @@ public class StepInstance {
 
   @Valid @NotNull private StepRuntimeState runtimeState;
 
-  @Valid private Map<StepDependencyType, StepDependencies> dependencies;
-  @Valid private Map<StepOutputsDefinition.StepOutputType, StepOutputs> outputs;
+  @Valid private SignalDependencies signalDependencies;
+  @Valid private SignalOutputs signalOutputs;
 
   @JsonInclude(JsonInclude.Include.NON_EMPTY)
   @Valid
@@ -145,11 +145,6 @@ public class StepInstance {
   @JsonIgnore
   public String getIdentity() {
     return String.format("[%s][%s][%s][%s]", workflowId, workflowInstanceId, workflowRunId, stepId);
-  }
-
-  @JsonIgnore
-  public StepDependencies getSignalDependencies() {
-    return dependencies != null ? dependencies.get(StepDependencyType.SIGNAL) : null;
   }
 
   /** step retry info. */

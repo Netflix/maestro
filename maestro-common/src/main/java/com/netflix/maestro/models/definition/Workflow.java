@@ -25,6 +25,7 @@ import com.netflix.maestro.models.trigger.SignalTrigger;
 import com.netflix.maestro.models.trigger.TimeTrigger;
 import com.netflix.maestro.utils.MapHelper;
 import com.netflix.maestro.validations.MaestroIdConstraint;
+import com.netflix.maestro.validations.SignalTriggerConstraint;
 import com.netflix.maestro.validations.TagListConstraint;
 import com.netflix.maestro.validations.TimeTriggerConstraint;
 import com.netflix.maestro.validations.TimeoutConstraint;
@@ -84,7 +85,7 @@ public class Workflow {
   @TimeoutConstraint private final ParsableLong timeout;
 
   @Valid private final List<@TimeTriggerConstraint TimeTrigger> timeTriggers;
-  @Valid private final List<SignalTrigger> signalTriggers;
+  @Valid private final List<@SignalTriggerConstraint SignalTrigger> signalTriggers;
   private final Criticality criticality;
   private final Long instanceStepConcurrency; // null means unset and disabled
 

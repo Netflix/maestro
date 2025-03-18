@@ -1,0 +1,8 @@
+{
+  "workflow_id": "sample-workflow-1",
+  "workflow_instance_id": 1,
+  "workflow_run_id": 1,
+  "step_id": "step_a",
+  "step_attempt_id": 3,
+  "step_instance_id": 10
+}
