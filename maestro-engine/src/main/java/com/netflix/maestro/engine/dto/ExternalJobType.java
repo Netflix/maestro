@@ -18,7 +18,9 @@ import java.util.Locale;
 /** Enum for specifying external job type. */
 public enum ExternalJobType {
   /** Titus Job Type. */
-  TITUS;
+  TITUS,
+  /** Kubernetes Job Type. */
+  KUBERNETES;
 
   /**
    * JSONCreator for OutputParameter.

@@ -16,6 +16,8 @@ public enum StepType {
   TITUS("Titus", true),
   /** Notebook step. */
   NOTEBOOK("Notebook", true),
+  /** Kubernetes step. */
+  KUBERNETES("Kubernetes", true),
   /** Join step. */
   JOIN("Join", false),
   /** foreach loop step. */

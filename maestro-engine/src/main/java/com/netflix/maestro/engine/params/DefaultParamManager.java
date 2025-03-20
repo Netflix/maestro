@@ -115,11 +115,9 @@ public class DefaultParamManager {
   }
 
   /** Load params from JSON file. */
-  private Map<String, ParamDefinition> loadParamsFromFile(String titusParamsFile)
-      throws IOException {
+  private Map<String, ParamDefinition> loadParamsFromFile(String paramsFile) throws IOException {
     return objectMapper.readValue(
-        Thread.currentThread().getContextClassLoader().getResourceAsStream(titusParamsFile),
-        typeRef);
+        Thread.currentThread().getContextClassLoader().getResourceAsStream(paramsFile), typeRef);
   }
 
   private Map<String, ParamDefinition> preprocessParams(Map<String, ParamDefinition> params) {

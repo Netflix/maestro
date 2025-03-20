@@ -34,10 +34,13 @@ import com.netflix.maestro.engine.handlers.SignalHandler;
 import com.netflix.maestro.engine.handlers.WorkflowActionHandler;
 import com.netflix.maestro.engine.handlers.WorkflowInstanceActionHandler;
 import com.netflix.maestro.engine.handlers.WorkflowRunner;
+import com.netflix.maestro.engine.kubernetes.KubernetesCommandGenerator;
+import com.netflix.maestro.engine.kubernetes.KubernetesRuntimeExecutor;
 import com.netflix.maestro.engine.params.DefaultParamManager;
 import com.netflix.maestro.engine.params.OutputDataManager;
 import com.netflix.maestro.engine.params.ParamsManager;
 import com.netflix.maestro.engine.publisher.MaestroJobEventPublisher;
+import com.netflix.maestro.engine.stepruntime.KubernetesStepRuntime;
 import com.netflix.maestro.engine.steps.ForeachStepRuntime;
 import com.netflix.maestro.engine.steps.NoOpStepRuntime;
 import com.netflix.maestro.engine.steps.SleepStepRuntime;
@@ -62,11 +65,10 @@ import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.server.properties.MaestroEngineProperties;
 import com.netflix.maestro.server.properties.StepRuntimeProperties;
+import com.netflix.maestro.server.runtime.Fabric8RuntimeExecutor;
 import com.netflix.maestro.signal.dao.MaestroSignalBrokerDao;
 import com.netflix.maestro.signal.handler.MaestroSignalHandler;
-import java.util.Collections;
 import java.util.EnumMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import javax.validation.Validation;
@@ -115,6 +117,32 @@ public class MaestroWorkflowConfiguration {
   }
 
   @Bean
+  public KubernetesStepRuntime kubernetes(
+      @Qualifier(STEP_RUNTIME_QUALIFIER) Map<StepType, StepRuntime> stepRuntimeMap,
+      KubernetesRuntimeExecutor runtimeExecutor,
+      KubernetesCommandGenerator commandGenerator,
+      MaestroMetrics metrics) {
+    LOG.info("Creating kubernetes step within Spring boot...");
+    KubernetesStepRuntime step =
+        new KubernetesStepRuntime(runtimeExecutor, commandGenerator, metrics);
+    stepRuntimeMap.put(StepType.KUBERNETES, step);
+    return step;
+  }
+
+  @Bean
+  public KubernetesRuntimeExecutor kubernetesRuntimeExecutor() {
+    LOG.info("Creating kubernetesRuntimeExecutor within Spring boot...");
+    return new Fabric8RuntimeExecutor();
+  }
+
+  @Bean
+  public KubernetesCommandGenerator kubernetesCommandGenerator(
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper) {
+    LOG.info("Creating kubernetesCommandGenerator within Spring boot...");
+    return new KubernetesCommandGenerator(objectMapper);
+  }
+
+  @Bean
   public NoOpStepRuntime noop(
       @Qualifier(STEP_RUNTIME_QUALIFIER) Map<StepType, StepRuntime> stepRuntimeMap) {
     LOG.info("Creating NoOp step within Spring boot...");
@@ -143,8 +171,7 @@ public class MaestroWorkflowConfiguration {
       StepRuntimeProperties stepRuntimeProperties) {
     LOG.info("Creating Subworkflow step within Spring boot...");
     Set<String> alwaysPassDownParamNames =
-        Collections.unmodifiableSet(
-            new HashSet<>(stepRuntimeProperties.getSubworkflow().getAlwaysPassDownParamNames()));
+        Set.copyOf(stepRuntimeProperties.getSubworkflow().getAlwaysPassDownParamNames());
     SubworkflowStepRuntime step =
         new SubworkflowStepRuntime(
             actionHandler,

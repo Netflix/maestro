@@ -45,7 +45,7 @@ public class OutputDataDao extends AbstractDatabaseDao {
   /**
    * Return output data {@link OutputData} for specific step instance.
    *
-   * @param externalJobId External Job ID such as Titus Instance ID
+   * @param externalJobId External Job ID such as a container instance id
    * @param externalJobType ExternalJobType {@link ExternalJobType}
    * @return optional output data
    */

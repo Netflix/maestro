@@ -45,6 +45,12 @@ You can read more details about it in our latest [blog post](https://netflixtech
 ## Delete the sample workflow and its data
 - `curl --header "user: tester" -X DELETE 'http://127.0.0.1:8080/api/v3/workflows/sample-dag-test-1'`
 
+## Run it with Kubernetes support
+- setup kubernetes configs so the kubectl command works
+- `./gradlew bootRun`
+- `curl --header "user: tester" -X POST 'http://127.0.0.1:8080/api/v3/workflows' -H "Content-Type: application/json" -d @maestro-server/src/test/resources/samples/sample-kubernetes-wf.json`
+- `curl --header "user: tester" -X POST 'http://127.0.0.1:8080/api/v3/workflows/sample-kubernetes-wf/versions/latest/actions/start' -H "Content-Type: application/json" -d '{"initiator": {"type": "manual"}}'`
+
 # License
 Copyright 2024 Netflix, Inc.
 

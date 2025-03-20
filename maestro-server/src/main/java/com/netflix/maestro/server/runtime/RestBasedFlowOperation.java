@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import org.springframework.web.client.RestTemplate;
 
+/** Implementation of FlowOperation using REST API. */
 public class RestBasedFlowOperation implements FlowOperation {
 
   private final RestTemplate restTemplate;
@@ -34,6 +35,7 @@ public class RestBasedFlowOperation implements FlowOperation {
   private final long expirationDuration;
   private final Map<Long, FlowGroup> addressCache;
 
+  /** Constructor. */
   public RestBasedFlowOperation(
       RestTemplate restTemplate,
       MaestroFlowDao flowDao,
@@ -118,6 +120,7 @@ public class RestBasedFlowOperation implements FlowOperation {
     }
   }
 
+  /** Load flow group from cache or database. */
   private FlowGroup loadFlowGroup(long groupId) {
     FlowGroup group = addressCache.get(groupId);
     if (group != null && group.heartbeatTs() + expirationDuration > System.currentTimeMillis()) {

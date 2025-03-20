@@ -15,7 +15,7 @@ ext {
     cronutilsDep = 'com.cronutils:cron-utils:9.1.+'
     zipkinDep = 'io.zipkin.brave:brave:5.+'
     spectatorApiDep = 'com.netflix.spectator:spectator-api:1.+'
-    slf4jApiDep = 'org.slf4j:slf4j-api:1.7.25'
+    slf4jApiDep = 'org.slf4j:slf4j-api:1.7.+'
 
     testcontainerDep = 'org.testcontainers:cockroachdb:1.19.0'
     postgresqlDep = 'org.postgresql:postgresql:42.+'

@@ -10,3 +10,4 @@ include 'maestro-timetrigger'
 include 'maestro-signal'
 
 include 'maestro-aws'
+include 'maestro-kubernetes'

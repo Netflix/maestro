@@ -36,6 +36,7 @@ public class StepTranslator implements Translator<Step, TaskDef> {
       case SLEEP:
       case TITUS:
       case NOTEBOOK:
+      case KUBERNETES:
         return createMaestroTask((AbstractStep) step);
       case TEMPLATE:
       default:

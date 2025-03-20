@@ -59,6 +59,9 @@ public class MetricConstants {
   /** Step init delay in milliseconds: CREATED -> INITIALIZED. */
   public static final String STEP_INITIALIZE_DELAY_METRIC = "step.initialize.delay.ms";
 
+  /** Metric name for step launch action. */
+  public static final String STEP_LAUNCHED_METRIC = "step.launch";
+
   /** Status tag, used by various metrics. */
   public static final String STATUS_TAG = "status";
 
