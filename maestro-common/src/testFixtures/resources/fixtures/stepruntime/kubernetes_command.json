@@ -1,0 +1,11 @@
+{
+  "app_name": "maestro",
+  "cpu": "0.5",
+  "disk": "1G",
+  "image": "test-image",
+  "entrypoint": "echo hello world",
+  "env": {
+    "foo": "bar"
+  },
+  "job_deduplication_key": "job-dedup-key-1"
+}

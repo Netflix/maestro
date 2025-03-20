@@ -1,0 +1,45 @@
+{
+  "properties": {
+    "owner": "tester",
+    "run_strategy": "sequential"
+  },
+  "workflow": {
+    "id": "sample-kubernetes-wf",
+    "name": "Test kubernetes workflow",
+    "description": "Long description about this workflow",
+    "params": {
+      "foo":  {
+        "expression": "new DateTime(1569018000000).withZone(DateTimeZone.forID('UTC')).monthOfYear().getAsText();",
+        "type":  "STRING"
+      }
+    },
+    "steps": [
+      {"step": {"id": "job.1", "type": "NoOp", "transition": {"successors": {"job.2":  "true"}}}},
+      {
+        "step": {
+          "id": "job.2",
+          "type": "kubernetes",
+          "transition": {},
+          "retry_policy": {
+            "error_retry_limit": 0
+          },
+          "params": {
+            "kubernetes": {
+              "value": {
+                "image": {
+                  "value": "busybox",
+                  "type": "STRING"
+                },
+                "entrypoint": {
+                  "value": "echo hello world",
+                  "type": "STRING"
+                }
+              },
+              "type": "MAP"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

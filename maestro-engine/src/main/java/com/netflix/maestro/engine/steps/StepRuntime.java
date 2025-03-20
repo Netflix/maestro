@@ -36,7 +36,7 @@ import lombok.Getter;
  * <p>The state should not be kept in instance variables within StepRuntime.
  *
  * <p>The whole execution offers at-least-once guarantee. Therefore, the logic implemented here
- * should be idempotent. For example, Periodically check sleep time or check titus container status.
+ * should be idempotent. For example, Periodically check sleep time or check the container status.
  */
 public interface StepRuntime {
   /** Maestro system user. */

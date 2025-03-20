@@ -107,6 +107,19 @@
         "message": "sample info log"
       },
       "type": "DYNAMIC_OUTPUT"
+    },
+    "maestro_kubernetes": {
+      "job_id": "job-uuid-1",
+      "execution_script": "echo hello world",
+      "command": {
+        "app_name": "maestro",
+        "image": "test-image",
+        "entrypoint": "echo hello world",
+        "env": {},
+        "job_deduplication_key": "job-dedup-key-1"
+      },
+      "execution_output": "hello world\n",
+      "type": "KUBERNETES"
     }
   }
 }

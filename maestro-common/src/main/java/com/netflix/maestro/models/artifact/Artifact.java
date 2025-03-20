@@ -29,7 +29,8 @@ import com.netflix.maestro.models.Constants;
   @JsonSubTypes.Type(name = "FOREACH", value = ForeachArtifact.class),
   @JsonSubTypes.Type(name = "TITUS", value = TitusArtifact.class),
   @JsonSubTypes.Type(name = "NOTEBOOK", value = NotebookArtifact.class),
-  @JsonSubTypes.Type(name = "DYNAMIC_OUTPUT", value = DynamicOutputArtifact.class)
+  @JsonSubTypes.Type(name = "DYNAMIC_OUTPUT", value = DynamicOutputArtifact.class),
+  @JsonSubTypes.Type(name = "KUBERNETES", value = KubernetesArtifact.class),
 })
 public interface Artifact {
   /** Get artifact type info. */
@@ -48,7 +49,9 @@ public interface Artifact {
     /** notebook artifact. */
     NOTEBOOK(Constants.MAESTRO_PREFIX + "notebook"),
     /** dynamic output artifact. */
-    DYNAMIC_OUTPUT(Constants.MAESTRO_PREFIX + "dynamic_output");
+    DYNAMIC_OUTPUT(Constants.MAESTRO_PREFIX + "dynamic_output"),
+    /** kubernetes artifact. */
+    KUBERNETES(Constants.MAESTRO_PREFIX + "kubernetes");
 
     private final String key;
 
@@ -114,5 +117,14 @@ public interface Artifact {
   default DynamicOutputArtifact asDynamicOutput() {
     throw new MaestroInternalError(
         "Artifact type [%s] cannot be used as DYNAMIC_OUTPUT", getType());
+  }
+
+  /**
+   * Get Kubernetes type artifact.
+   *
+   * @return concrete artifact object.
+   */
+  default KubernetesArtifact asKubernetes() {
+    throw new MaestroInternalError("Artifact type [%s] cannot be used as KUBERNETES", getType());
   }
 }
