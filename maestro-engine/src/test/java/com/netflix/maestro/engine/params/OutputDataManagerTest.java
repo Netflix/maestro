@@ -16,6 +16,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -30,7 +31,9 @@ import com.netflix.maestro.exceptions.MaestroValidationException;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.artifact.DynamicOutputArtifact;
+import com.netflix.maestro.models.artifact.KubernetesArtifact;
 import com.netflix.maestro.models.artifact.TitusArtifact;
+import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.parameter.InternalParamMode;
 import com.netflix.maestro.models.parameter.LongParameter;
 import com.netflix.maestro.models.parameter.MapParameter;
@@ -103,6 +106,12 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
   }
 
   @Test
+  public void testSaveOutputData() {
+    outputDataManager.saveOutputData(outputData);
+    Mockito.verify(outputDataDao, times(1)).insertOrUpdateOutputData(outputData);
+  }
+
+  @Test
   public void testMissingJobIdArtifact() {
     outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
     assertTrue(runtimeSummary.getParams().isEmpty());
@@ -111,7 +120,7 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
 
   @Test
   public void testMissingOutputParams() {
-    runtimeSummary = runtimeSummaryBuilder().artifacts(artifacts).build();
+    runtimeSummary = runtimeSummaryBuilder().type(StepType.TITUS).artifacts(artifacts).build();
     outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
     assertTrue(runtimeSummary.getParams().isEmpty());
     assertEquals(1, runtimeSummary.getArtifacts().size());
@@ -121,7 +130,7 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
   @Test
   public void testUndefinedOutputParameter() {
     setupOutputDataDao();
-    runtimeSummary = runtimeSummaryBuilder().artifacts(artifacts).build();
+    runtimeSummary = runtimeSummaryBuilder().type(StepType.TITUS).artifacts(artifacts).build();
     AssertHelper.assertThrows(
         "throws validation error if output param not defined",
         MaestroValidationException.class,
@@ -134,6 +143,7 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
     setupOutputDataDao();
     runtimeSummary =
         runtimeSummaryBuilder()
+            .type(StepType.TITUS)
             .artifacts(artifacts)
             .params(
                 Collections.singletonMap(
@@ -157,6 +167,7 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
     setupOutputDataDao();
     runtimeSummary =
         runtimeSummaryBuilder()
+            .type(StepType.TITUS)
             .artifacts(artifacts)
             .params(
                 Collections.singletonMap(
@@ -182,6 +193,7 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
     setupOutputDataDao();
     runtimeSummary =
         runtimeSummaryBuilder()
+            .type(StepType.TITUS)
             .artifacts(artifacts)
             .params(
                 Collections.singletonMap(
@@ -216,7 +228,12 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
             .evaluatedTime(System.currentTimeMillis())
             .build());
     setupOutputDataDao();
-    runtimeSummary = runtimeSummaryBuilder().artifacts(artifacts).params(runtimeParams).build();
+    runtimeSummary =
+        runtimeSummaryBuilder()
+            .type(StepType.TITUS)
+            .artifacts(artifacts)
+            .params(runtimeParams)
+            .build();
     outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
     assertEquals("hello", runtimeSummary.getParams().get("str_param").asString());
   }
@@ -237,7 +254,12 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
             outputParams,
             new HashMap<>());
     setupOutputDataDao();
-    runtimeSummary = runtimeSummaryBuilder().artifacts(artifacts).params(runtimeParams).build();
+    runtimeSummary =
+        runtimeSummaryBuilder()
+            .type(StepType.TITUS)
+            .artifacts(artifacts)
+            .params(runtimeParams)
+            .build();
     outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
     long[] expectedLongArray = {4L, 5L, 6L};
     assertEquals("goodbye", runtimeSummary.getParams().get("str_param").asString());
@@ -278,7 +300,8 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
         .thenReturn(Optional.of(outputData));
 
     Map<String, Artifact> existingArtifacts = new HashMap<>(artifacts);
-    runtimeSummary = runtimeSummaryBuilder().artifacts(existingArtifacts).build();
+    runtimeSummary =
+        runtimeSummaryBuilder().type(StepType.TITUS).artifacts(existingArtifacts).build();
     outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
 
     assertEquals(2, runtimeSummary.getArtifacts().size());
@@ -305,10 +328,67 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
         .thenReturn(Optional.of(outputData));
 
     Map<String, Artifact> existingArtifacts = new HashMap<>(artifacts);
-    runtimeSummary = runtimeSummaryBuilder().artifacts(existingArtifacts).build();
+    runtimeSummary =
+        runtimeSummaryBuilder().type(StepType.TITUS).artifacts(existingArtifacts).build();
     outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
     assertEquals(1, runtimeSummary.getArtifacts().size());
     assertFalse(runtimeSummary.getArtifacts().containsKey(Artifact.Type.DYNAMIC_OUTPUT.key()));
     assertTrue(runtimeSummary.getParams().isEmpty());
+  }
+
+  @Test
+  public void testMergeKubernetesStepOutputData() throws IOException {
+    OutputData output = loadObject("fixtures/outputdata/sample-output-data.json", OutputData.class);
+    output.setExternalJobType(ExternalJobType.KUBERNETES);
+    output.setExternalJobId("k8s-123");
+    output.setWorkflowId("wfid");
+    when(outputDataDao.getOutputDataForExternalJob("k8s-123", ExternalJobType.KUBERNETES))
+        .thenReturn(Optional.of(output));
+    KubernetesArtifact artifact = new KubernetesArtifact();
+    artifact.setJobId("k8s-123");
+    Map<String, Parameter> params = new HashMap<>();
+    params.put(
+        "foo",
+        StringParameter.builder()
+            .value("default")
+            .evaluatedResult("default")
+            .evaluatedTime(12345L)
+            .build());
+    Map<String, Artifact> artifacts = new HashMap<>();
+    artifacts.put(Artifact.Type.KUBERNETES.key(), artifact);
+    runtimeSummary =
+        runtimeSummaryBuilder()
+            .type(StepType.KUBERNETES)
+            .artifacts(artifacts)
+            .params(params)
+            .build();
+    outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
+    assertEquals(1, runtimeSummary.getParams().size());
+    assertEquals("bar", runtimeSummary.getParams().get("foo").asString());
+    assertEquals(2, runtimeSummary.getArtifacts().size());
+    assertEquals(
+        "k8s-123",
+        runtimeSummary
+            .getArtifacts()
+            .get(Artifact.Type.KUBERNETES.key())
+            .asKubernetes()
+            .getJobId());
+    assertEquals(
+        1,
+        runtimeSummary
+            .getArtifacts()
+            .get(Artifact.Type.DYNAMIC_OUTPUT.key())
+            .asDynamicOutput()
+            .getSignalOutputs()
+            .size());
+    assertEquals(
+        Map.of("name", "demo_table"),
+        runtimeSummary
+            .getArtifacts()
+            .get(Artifact.Type.DYNAMIC_OUTPUT.key())
+            .asDynamicOutput()
+            .getSignalOutputs()
+            .getFirst()
+            .getEvaluatedResult());
   }
 }

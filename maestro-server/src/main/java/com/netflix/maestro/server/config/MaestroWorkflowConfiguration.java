@@ -68,6 +68,9 @@ import com.netflix.maestro.server.properties.StepRuntimeProperties;
 import com.netflix.maestro.server.runtime.Fabric8RuntimeExecutor;
 import com.netflix.maestro.signal.dao.MaestroSignalBrokerDao;
 import com.netflix.maestro.signal.handler.MaestroSignalHandler;
+import io.fabric8.kubernetes.client.ConfigBuilder;
+import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
@@ -121,18 +124,29 @@ public class MaestroWorkflowConfiguration {
       @Qualifier(STEP_RUNTIME_QUALIFIER) Map<StepType, StepRuntime> stepRuntimeMap,
       KubernetesRuntimeExecutor runtimeExecutor,
       KubernetesCommandGenerator commandGenerator,
+      OutputDataManager outputDataManager,
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
       MaestroMetrics metrics) {
     LOG.info("Creating kubernetes step within Spring boot...");
     KubernetesStepRuntime step =
-        new KubernetesStepRuntime(runtimeExecutor, commandGenerator, metrics);
+        new KubernetesStepRuntime(
+            runtimeExecutor, commandGenerator, outputDataManager, objectMapper, metrics);
     stepRuntimeMap.put(StepType.KUBERNETES, step);
     return step;
   }
 
   @Bean
-  public KubernetesRuntimeExecutor kubernetesRuntimeExecutor() {
+  public KubernetesClient kubernetesClient() {
+    LOG.info("Creating kubernetesClient within Spring boot...");
+    return new KubernetesClientBuilder()
+        .withConfig(new ConfigBuilder().withAutoConfigure().build())
+        .build();
+  }
+
+  @Bean
+  public KubernetesRuntimeExecutor kubernetesRuntimeExecutor(KubernetesClient kubernetesClient) {
     LOG.info("Creating kubernetesRuntimeExecutor within Spring boot...");
-    return new Fabric8RuntimeExecutor();
+    return new Fabric8RuntimeExecutor(kubernetesClient);
   }
 
   @Bean

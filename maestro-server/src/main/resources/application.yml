@@ -95,6 +95,8 @@ stepruntime:
         default: 5
       PAUSED:
         default: 5
+      FINISHING:
+        default: 5
       NOT_CREATED:
         default: 30
 

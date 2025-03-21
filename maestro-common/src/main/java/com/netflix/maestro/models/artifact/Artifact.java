@@ -48,7 +48,7 @@ public interface Artifact {
     TITUS(Constants.MAESTRO_PREFIX + "titus"),
     /** notebook artifact. */
     NOTEBOOK(Constants.MAESTRO_PREFIX + "notebook"),
-    /** dynamic output artifact. */
+    /** dynamic output (e.g. output signal) artifact. */
     DYNAMIC_OUTPUT(Constants.MAESTRO_PREFIX + "dynamic_output"),
     /** kubernetes artifact. */
     KUBERNETES(Constants.MAESTRO_PREFIX + "kubernetes");

@@ -12,6 +12,9 @@
  */
 package com.netflix.maestro.engine.stepruntime;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.maestro.engine.dto.ExternalJobType;
+import com.netflix.maestro.engine.dto.OutputData;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
 import com.netflix.maestro.engine.kubernetes.KubernetesCommandGenerator;
@@ -19,6 +22,7 @@ import com.netflix.maestro.engine.kubernetes.KubernetesJobResult;
 import com.netflix.maestro.engine.kubernetes.KubernetesRuntimeExecutor;
 import com.netflix.maestro.engine.kubernetes.KubernetesStepContext;
 import com.netflix.maestro.engine.metrics.MetricConstants;
+import com.netflix.maestro.engine.params.OutputDataManager;
 import com.netflix.maestro.engine.steps.StepRuntime;
 import com.netflix.maestro.exceptions.MaestroBadRequestException;
 import com.netflix.maestro.exceptions.MaestroRetryableError;
@@ -30,6 +34,7 @@ import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.error.Details;
 import com.netflix.maestro.models.timeline.TimelineDetailsEvent;
 import com.netflix.maestro.models.timeline.TimelineLogEvent;
+import java.io.IOException;
 import java.util.Collections;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +45,8 @@ import lombok.extern.slf4j.Slf4j;
 public class KubernetesStepRuntime implements StepRuntime {
   private final KubernetesRuntimeExecutor runtimeExecutor;
   private final KubernetesCommandGenerator commandGenerator;
+  private final OutputDataManager outputDataManager;
+  private final ObjectMapper objectMapper;
   private final MaestroMetrics metrics;
 
   @Override
@@ -115,6 +122,19 @@ public class KubernetesStepRuntime implements StepRuntime {
           workflowSummary.getIdentity(),
           runtimeSummary.getIdentity(),
           e);
+    } catch (IOException e) {
+      LOG.error(
+          "Error processing the data for {}{}, will fail the job",
+          workflowSummary.getIdentity(),
+          runtimeSummary.getIdentity(),
+          e);
+      return new Result(
+          State.USER_ERROR,
+          Collections.emptyMap(),
+          Collections.singletonList(
+              TimelineDetailsEvent.from(
+                  Details.create(
+                      e, false, "Error processing the output data in KubernetesStepRuntime"))));
     }
     return new Result(State.CONTINUE, Collections.emptyMap(), Collections.emptyList());
   }
@@ -195,12 +215,29 @@ public class KubernetesStepRuntime implements StepRuntime {
     return null;
   }
 
-  private StepRuntime.State customizeArtifactsForJobStatus(KubernetesStepContext context) {
+  private StepRuntime.State customizeArtifactsForJobStatus(KubernetesStepContext context)
+      throws IOException {
     if (context.getJobResult().jobStatus().isTerminal()) {
       KubernetesArtifact artifact = context.getKubernetesArtifact();
       if (artifact != null) {
+        // download logs
         artifact.setExecutionOutput(runtimeExecutor.getJobLog(artifact.getJobId()));
         context.getPendingArtifacts().put(Artifact.Type.KUBERNETES.key(), artifact);
+        // download outputs
+        String outputStr = runtimeExecutor.getJobOutput(artifact.getJobId());
+        if (outputStr != null) {
+          OutputData outputData = objectMapper.readValue(outputStr, OutputData.class);
+          if (outputData.isNotEmpty()) {
+            outputData.setExternalJobId(artifact.getJobId());
+            outputData.setExternalJobType(ExternalJobType.KUBERNETES);
+            if (outputData.getCreateTime() == null) {
+              outputData.setCreateTime(System.currentTimeMillis());
+            }
+            outputData.setModifyTime(System.currentTimeMillis());
+            outputData.setWorkflowId(context.getWorkflowSummary().getWorkflowId());
+            outputDataManager.saveOutputData(outputData);
+          }
+        }
       }
     }
     return context.getJobResult().jobStatus();

@@ -70,7 +70,9 @@ public class MaestroSignalBrokerDao extends AbstractDatabaseDao {
     }
     SignalCreateRequest sorted = new SignalCreateRequest();
     sorted.setName(request.getName());
-    sorted.setParams(new TreeMap<>(request.getParams()));
+    if (request.getParams() != null) {
+      sorted.setParams(new TreeMap<>(request.getParams()));
+    }
     sorted.setRequestTime(0);
     // if needed, we can also consider payload when computing instance id.
     return IdHelper.createUuid(toJson(sorted)).toString();

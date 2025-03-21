@@ -27,12 +27,17 @@ public class OutputDataManager {
 
   private OutputDataDao outputDataDao;
 
+  public void saveOutputData(OutputData outputData) {
+    outputDataDao.insertOrUpdateOutputData(outputData);
+  }
+
   /** Merge back output parameters updated by step into params space along with validation. */
   public void validateAndMergeOutputParamsAndArtifacts(StepRuntimeSummary runtimeSummary) {
     Optional<String> externalJobId = extractExternalJobId(runtimeSummary);
     if (externalJobId.isPresent()) {
+      ExternalJobType type = ExternalJobType.forValues(runtimeSummary.getType().name());
       Optional<OutputData> outputDataOpt =
-          outputDataDao.getOutputDataForExternalJob(externalJobId.get(), ExternalJobType.TITUS);
+          outputDataDao.getOutputDataForExternalJob(externalJobId.get(), type);
       outputDataOpt.ifPresent(
           outputData -> {
             // merge output params if any.
@@ -50,12 +55,16 @@ public class OutputDataManager {
 
   private Optional<String> extractExternalJobId(StepRuntimeSummary runtimeSummary) {
     Map<String, Artifact> artifacts = runtimeSummary.getArtifacts();
-    if (artifacts.containsKey(Artifact.Type.TITUS.key())) {
-      String titusJobId = artifacts.get(Artifact.Type.TITUS.key()).asTitus().getTitusTaskId();
-      if (titusJobId != null && !titusJobId.isEmpty()) {
-        return Optional.of(titusJobId);
-      }
+    String jobId = null;
+    if (artifacts.containsKey(Artifact.Type.KUBERNETES.key())) {
+      jobId = artifacts.get(Artifact.Type.KUBERNETES.key()).asKubernetes().getJobId();
+    } else if (artifacts.containsKey(Artifact.Type.TITUS.key())) {
+      jobId = artifacts.get(Artifact.Type.TITUS.key()).asTitus().getTitusTaskId();
     }
-    return Optional.empty();
+    if (jobId != null && !jobId.isEmpty()) {
+      return Optional.of(jobId);
+    } else {
+      return Optional.empty();
+    }
   }
 }
