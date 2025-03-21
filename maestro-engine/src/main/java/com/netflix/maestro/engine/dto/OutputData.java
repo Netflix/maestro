@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.engine.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
@@ -64,4 +65,9 @@ public class OutputData {
   @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
   @JsonPOJOBuilder(withPrefix = "")
   public static final class OutputDataBuilder {}
+
+  @JsonIgnore
+  public boolean isNotEmpty() {
+    return (params != null && !params.isEmpty()) || (artifacts != null && !artifacts.isEmpty());
+  }
 }

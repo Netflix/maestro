@@ -26,6 +26,7 @@ import com.netflix.maestro.engine.kubernetes.KubernetesRuntimeExecutor;
 import com.netflix.maestro.engine.kubernetes.KubernetesStepContext;
 import com.netflix.maestro.engine.metrics.MaestroMetricRepo;
 import com.netflix.maestro.engine.metrics.MetricConstants;
+import com.netflix.maestro.engine.params.OutputDataManager;
 import com.netflix.maestro.engine.steps.StepRuntime;
 import com.netflix.maestro.exceptions.MaestroBadRequestException;
 import com.netflix.maestro.exceptions.MaestroRetryableError;
@@ -44,6 +45,7 @@ import org.mockito.Mockito;
 /** Tests for {@link KubernetesStepRuntime}. */
 public class KubernetesStepRuntimeTest extends MaestroBaseTest {
   private KubernetesRuntimeExecutor runtimeExecutor;
+  private OutputDataManager outputDataManager;
   private MaestroMetricRepo metricRepo;
   private KubernetesStepRuntime stepRuntime;
   private StepRuntimeSummary runtimeSummary;
@@ -51,9 +53,12 @@ public class KubernetesStepRuntimeTest extends MaestroBaseTest {
   @Before
   public void setUp() throws Exception {
     runtimeExecutor = Mockito.mock(KubernetesRuntimeExecutor.class);
+    outputDataManager = Mockito.mock(OutputDataManager.class);
     KubernetesCommandGenerator commandGenerator = new KubernetesCommandGenerator(MAPPER);
     metricRepo = new MaestroMetricRepo(new DefaultRegistry());
-    stepRuntime = new KubernetesStepRuntime(runtimeExecutor, commandGenerator, metricRepo);
+    stepRuntime =
+        new KubernetesStepRuntime(
+            runtimeExecutor, commandGenerator, outputDataManager, MAPPER, metricRepo);
 
     runtimeSummary =
         loadObject("fixtures/execution/sample-step-runtime-summary.json", StepRuntimeSummary.class);
@@ -151,6 +156,30 @@ public class KubernetesStepRuntimeTest extends MaestroBaseTest {
     assertEquals("test-log", artifact.getExecutionOutput());
     Mockito.verify(runtimeExecutor, times(1)).checkJobStatus("job_deduplication_key");
     Mockito.verify(runtimeExecutor, times(1)).getJobLog("job_deduplication_key");
+    Mockito.verify(runtimeExecutor, times(1)).getJobOutput("job_deduplication_key");
+  }
+
+  @Test
+  public void testExecuteWithOutput() {
+    String sampleOutput =
+        "{\"params\":{\"foo\": {\"value\":\"bar\",\"type\":\"STRING\",\"evaluated_result\":\"bar\",\"evaluated_time\":1}}}";
+    var ka = new KubernetesArtifact();
+    ka.setJobId("job_deduplication_key");
+    runtimeSummary.getArtifacts().put(Artifact.Type.KUBERNETES.key(), ka);
+    when(runtimeExecutor.getJobLog("job_deduplication_key")).thenReturn("test-log");
+    when(runtimeExecutor.checkJobStatus("job_deduplication_key"))
+        .thenReturn(new KubernetesJobResult("job_deduplication_key", StepRuntime.State.DONE));
+    when(runtimeExecutor.getJobOutput("job_deduplication_key")).thenReturn(sampleOutput);
+    StepRuntime.Result res = stepRuntime.execute(new WorkflowSummary(), null, runtimeSummary);
+    assertEquals(StepRuntime.State.DONE, res.getState());
+    assertEquals(1, res.getArtifacts().size());
+    assertTrue(res.getTimeline().isEmpty());
+    var artifact = res.getArtifacts().get(Artifact.Type.KUBERNETES.key()).asKubernetes();
+    assertEquals("job_deduplication_key", artifact.getJobId());
+    Mockito.verify(runtimeExecutor, times(1)).checkJobStatus("job_deduplication_key");
+    Mockito.verify(runtimeExecutor, times(1)).getJobLog("job_deduplication_key");
+    Mockito.verify(runtimeExecutor, times(1)).getJobOutput("job_deduplication_key");
+    Mockito.verify(outputDataManager, times(1)).saveOutputData(Mockito.any());
   }
 
   @Test
@@ -165,6 +194,24 @@ public class KubernetesStepRuntimeTest extends MaestroBaseTest {
     assertEquals(StepRuntime.State.CONTINUE, res.getState());
     assertTrue(res.getArtifacts().isEmpty());
     assertTrue(res.getTimeline().isEmpty());
+  }
+
+  @Test
+  public void testIOExceptionOnExecute() {
+    when(runtimeExecutor.checkJobStatus("job_deduplication_key"))
+        .thenReturn(new KubernetesJobResult("job_deduplication_key", StepRuntime.State.DONE));
+    when(runtimeExecutor.getJobOutput("job_deduplication_key")).thenReturn("test-output");
+    var ka = new KubernetesArtifact();
+    ka.setJobId("job_deduplication_key");
+    runtimeSummary.getArtifacts().put(Artifact.Type.KUBERNETES.key(), ka);
+
+    StepRuntime.Result res = stepRuntime.execute(new WorkflowSummary(), null, runtimeSummary);
+    assertEquals(StepRuntime.State.USER_ERROR, res.getState());
+    assertTrue(res.getArtifacts().isEmpty());
+    assertEquals(1, res.getTimeline().size());
+    assertEquals(
+        "Error processing the output data in KubernetesStepRuntime",
+        res.getTimeline().getFirst().getMessage());
   }
 
   @Test

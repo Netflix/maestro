@@ -91,7 +91,7 @@ public class OutputDataDao extends AbstractDatabaseDao {
     Checks.notNull(data.getExternalJobId(), "External job id cannot be null");
     Checks.notNull(data.getExternalJobType(), "External Job Type cannot be null");
     Checks.notNull(data.getWorkflowId(), "Workflow id cannot be null");
-    Checks.checkTrue(isOutputDataNotEmpty(data), "Output data cannot be empty");
+    Checks.checkTrue(data.isNotEmpty(), "Output data cannot be empty");
     String dataStr = toJson(data);
     Checks.checkTrue(
         dataStr.length() <= Constants.JSONIFIED_PARAMS_STRING_SIZE_LIMIT,
@@ -99,10 +99,5 @@ public class OutputDataDao extends AbstractDatabaseDao {
         dataStr.length(),
         Constants.JSONIFIED_PARAMS_STRING_SIZE_LIMIT);
     return dataStr;
-  }
-
-  private boolean isOutputDataNotEmpty(OutputData data) {
-    return (data.getParams() != null && !data.getParams().isEmpty())
-        || (data.getArtifacts() != null && !data.getArtifacts().isEmpty());
   }
 }

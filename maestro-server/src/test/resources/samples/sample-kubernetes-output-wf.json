@@ -1,0 +1,44 @@
+{
+  "properties": {
+    "owner": "tester",
+    "run_strategy": "sequential"
+  },
+  "workflow": {
+    "id": "sample-kubernetes-output-wf",
+    "name": "Test kubernetes workflow without output data",
+    "description": "This workflow runs a kubernetes job, which produces output data.",
+    "steps": [
+      {"step": {"id": "start", "type": "NoOp", "transition": {"successors": {"job1":  "true"}}}},
+      {
+        "step": {
+          "id": "job1",
+          "type": "kubernetes",
+          "transition": {"successors": {"end": "foo != 'default'"}},
+          "retry_policy": {
+            "error_retry_limit": 0
+          },
+          "params": {
+            "foo":  {
+              "value": "default",
+              "type":  "STRING"
+            },
+            "kubernetes": {
+              "value": {
+                "image": {
+                  "value": "busybox",
+                  "type": "STRING"
+                },
+                "entrypoint": {
+                  "value": "echo hello world && echo $$MAESTRO_OUTPUT_START'{\"params\":{\"foo\": {\"value\":\"bar\",\"type\":\"STRING\",\"evaluated_result\":\"bar\",\"evaluated_time\":1625871404000}},\"artifacts\":{\"maestro_dynamic_output\": {\"signal_outputs\":[{\"value\":{\"name\":{\"value\":\"demo_table\",\"type\":\"STRING\"}},\"type\":\"MAP\",\"evaluated_result\":{\"name\":\"demo_table\"},\"evaluated_time\": 1625871404000}],\"type\":\"DYNAMIC_OUTPUT\"}}}'$$MAESTRO_OUTPUT_END",
+                  "type": "STRING"
+                }
+              },
+              "type": "MAP"
+            }
+          }
+        }
+      },
+      {"step": {"id": "end", "type": "NoOp"}}
+    ]
+  }
+}

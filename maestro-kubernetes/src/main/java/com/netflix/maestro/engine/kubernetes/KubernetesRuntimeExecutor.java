@@ -39,6 +39,15 @@ public interface KubernetesRuntimeExecutor {
   String getJobLog(String jobId);
 
   /**
+   * Get the job output including output params and output signals of a finished kubernetes job in
+   * the string format. The caller is responsible to take care of the data model transformation.
+   *
+   * @param jobId Job ID.
+   * @return Job log.
+   */
+  String getJobOutput(String jobId);
+
+  /**
    * Terminate a kubernetes job.
    *
    * @param jobId Job ID to terminate.
