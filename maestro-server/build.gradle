@@ -44,6 +44,12 @@ dependencies {
     }
 }
 
+bootJar {
+    layered {
+        enabled = true
+    }
+}
+
 bootRun {
     jvmArgs += ["-Djava.security.manager=allow"]
 }
