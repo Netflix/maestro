@@ -1,0 +1,87 @@
+kubernetes:
+  type: MAP
+  value:
+    app_name:
+      type: STRING
+      value: "maestro-job"
+      internal_mode: PROVIDED
+    cpu:
+      type: STRING
+      internal_mode: OPTIONAL
+    disk:
+      type: STRING
+      internal_mode: OPTIONAL
+    gpu:
+      type: STRING
+      internal_mode: OPTIONAL
+    memory:
+      type: STRING
+      internal_mode: OPTIONAL
+    image:
+      type: STRING
+      internal_mode: REQUIRED
+    entrypoint:
+      type: STRING
+      value: ""
+      internal_mode: PROVIDED
+    env:
+      type: STRING_MAP
+      value: {}
+      internal_mode: PROVIDED
+    job_deduplication_key:
+      type: STRING
+      internal_mode: OPTIONAL
+    owner_email:
+      type: STRING
+      internal_mode: OPTIONAL
+  internal_mode: PROVIDED
+  tags:
+    - kubernetes
+notebook:
+  type: MAP
+  value:
+    init_command:
+      type: STRING
+      value: ""
+      internal_mode: PROVIDED
+    git_branch:
+      type: STRING
+      internal_mode: OPTIONAL
+    git_commit:
+      type: STRING
+      internal_mode: OPTIONAL
+    git_repo:
+      type: STRING
+      internal_mode: OPTIONAL
+    input_path:
+      type: STRING
+      internal_mode: REQUIRED
+    output_path:
+      type: STRING
+      expression: |
+        DateTimeFormatter
+            dateTimeFormatter = DateTimeFormat.forPattern("yyyyMMddHHmmss").withZone(DateTimeZone.forID("UTC"));
+        return String.format("%s_%s__%s_%s_%s.%s", 
+            "maestro-output",
+            dateTimeFormatter.print(RUN_TS),
+            params.getFromInstance("workflow_instance_id"),
+            params.getFromStep("step_instance_id"),
+            params.getFromStep("step_instance_uuid"),
+            "ipynb");
+      internal_mode: PROVIDED
+    papermill_arguments:
+      type: STRING_ARRAY
+      internal_mode: OPTIONAL
+    run_id:
+      type: STRING
+      expression: |
+        return String.format("%s_%d_%d_%s_%d",
+            params.getFromInstance("workflow_id"),
+            params.getFromInstance("workflow_instance_id"),
+            params.getFromInstance("workflow_run_id"),
+            params.getFromStep("step_id"),
+            params.getFromStep("step_attempt_id"));
+      internal_mode: PROVIDED
+  internal_mode: REQUIRED
+  tags:
+    - notebook

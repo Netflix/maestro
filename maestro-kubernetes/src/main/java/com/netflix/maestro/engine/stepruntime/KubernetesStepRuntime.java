@@ -13,7 +13,6 @@
 package com.netflix.maestro.engine.stepruntime;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.maestro.engine.dto.ExternalJobType;
 import com.netflix.maestro.engine.dto.OutputData;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
@@ -229,7 +228,7 @@ public class KubernetesStepRuntime implements StepRuntime {
           OutputData outputData = objectMapper.readValue(outputStr, OutputData.class);
           if (outputData.isNotEmpty()) {
             outputData.setExternalJobId(artifact.getJobId());
-            outputData.setExternalJobType(ExternalJobType.KUBERNETES);
+            outputData.setExternalJobType(context.getRuntimeSummary().getType());
             if (outputData.getCreateTime() == null) {
               outputData.setCreateTime(System.currentTimeMillis());
             }

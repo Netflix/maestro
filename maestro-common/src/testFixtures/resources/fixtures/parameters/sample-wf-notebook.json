@@ -20,6 +20,10 @@
       },
       "notebook": {
         "value": {
+          "init_command": {
+            "type": "STRING",
+            "value": ""
+          },
           "input_path": {
             "type": "STRING",
             "value": "/some/notebook.ipynb"

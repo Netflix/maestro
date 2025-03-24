@@ -24,7 +24,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.engine.MaestroEngineBaseTest;
 import com.netflix.maestro.engine.dao.OutputDataDao;
-import com.netflix.maestro.engine.dto.ExternalJobType;
 import com.netflix.maestro.engine.dto.OutputData;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.exceptions.MaestroValidationException;
@@ -78,7 +77,7 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
 
     outputData =
         new OutputData(
-            ExternalJobType.TITUS,
+            StepType.TITUS,
             titusTaskId,
             "wfid",
             System.currentTimeMillis(),
@@ -86,7 +85,7 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
             params,
             new HashMap<>());
     outputData.setExternalJobId(titusTaskId);
-    outputData.setExternalJobType(ExternalJobType.TITUS);
+    outputData.setExternalJobType(StepType.TITUS);
   }
 
   private Map<String, Parameter> loadParams(String param) throws JsonProcessingException {
@@ -94,7 +93,7 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
   }
 
   private void setupOutputDataDao() {
-    when(outputDataDao.getOutputDataForExternalJob(titusTaskId, ExternalJobType.TITUS))
+    when(outputDataDao.getOutputDataForExternalJob(titusTaskId, StepType.TITUS))
         .thenReturn(Optional.of(outputData));
   }
 
@@ -246,7 +245,7 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
         loadObject("fixtures/outputdata/sample-output-data-params-updated.json", paramMap);
     outputData =
         new OutputData(
-            ExternalJobType.TITUS,
+            StepType.TITUS,
             titusTaskId,
             "wfid",
             System.currentTimeMillis(),
@@ -289,14 +288,14 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
     signalsArtifact.setSignalOutputs(signals);
     OutputData outputData =
         new OutputData(
-            ExternalJobType.TITUS,
+            StepType.TITUS,
             titusTaskId,
             "wfid",
             System.currentTimeMillis(),
             System.currentTimeMillis(),
             Collections.emptyMap(),
             Map.of(Artifact.Type.DYNAMIC_OUTPUT.key(), signalsArtifact));
-    when(outputDataDao.getOutputDataForExternalJob(titusTaskId, ExternalJobType.TITUS))
+    when(outputDataDao.getOutputDataForExternalJob(titusTaskId, StepType.TITUS))
         .thenReturn(Optional.of(outputData));
 
     Map<String, Artifact> existingArtifacts = new HashMap<>(artifacts);
@@ -317,14 +316,14 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
   public void testOutputNullableParamsAndArtifacts() {
     OutputData outputData =
         new OutputData(
-            ExternalJobType.TITUS,
+            StepType.TITUS,
             titusTaskId,
             "wfid",
             System.currentTimeMillis(),
             System.currentTimeMillis(),
             null,
             null);
-    when(outputDataDao.getOutputDataForExternalJob(titusTaskId, ExternalJobType.TITUS))
+    when(outputDataDao.getOutputDataForExternalJob(titusTaskId, StepType.TITUS))
         .thenReturn(Optional.of(outputData));
 
     Map<String, Artifact> existingArtifacts = new HashMap<>(artifacts);
@@ -339,10 +338,10 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
   @Test
   public void testMergeKubernetesStepOutputData() throws IOException {
     OutputData output = loadObject("fixtures/outputdata/sample-output-data.json", OutputData.class);
-    output.setExternalJobType(ExternalJobType.KUBERNETES);
+    output.setExternalJobType(StepType.KUBERNETES);
     output.setExternalJobId("k8s-123");
     output.setWorkflowId("wfid");
-    when(outputDataDao.getOutputDataForExternalJob("k8s-123", ExternalJobType.KUBERNETES))
+    when(outputDataDao.getOutputDataForExternalJob("k8s-123", StepType.KUBERNETES))
         .thenReturn(Optional.of(output));
     KubernetesArtifact artifact = new KubernetesArtifact();
     artifact.setJobId("k8s-123");

@@ -13,7 +13,6 @@
 package com.netflix.maestro.engine.params;
 
 import com.netflix.maestro.engine.dao.OutputDataDao;
-import com.netflix.maestro.engine.dto.ExternalJobType;
 import com.netflix.maestro.engine.dto.OutputData;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.models.artifact.Artifact;
@@ -35,9 +34,8 @@ public class OutputDataManager {
   public void validateAndMergeOutputParamsAndArtifacts(StepRuntimeSummary runtimeSummary) {
     Optional<String> externalJobId = extractExternalJobId(runtimeSummary);
     if (externalJobId.isPresent()) {
-      ExternalJobType type = ExternalJobType.forValues(runtimeSummary.getType().name());
       Optional<OutputData> outputDataOpt =
-          outputDataDao.getOutputDataForExternalJob(externalJobId.get(), type);
+          outputDataDao.getOutputDataForExternalJob(externalJobId.get(), runtimeSummary.getType());
       outputDataOpt.ifPresent(
           outputData -> {
             // merge output params if any.

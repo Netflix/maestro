@@ -346,6 +346,7 @@ public class MaestroParamExtensionTest extends MaestroEngineBaseTest {
   public void testGetFromInstance() {
     when(instanceWrapper.getWorkflowId()).thenReturn("test-workflow-id");
     when(instanceWrapper.getWorkflowInstanceId()).thenReturn(2L);
+    when(instanceWrapper.getWorkflowRunId()).thenReturn(3L);
     when(instanceWrapper.isWorkflowParam()).thenReturn(true);
     when(instanceWrapper.getInitiatorTimeZone()).thenReturn("US/Pacific");
     Initiator initiator = new ManualInitiator();
@@ -364,6 +365,7 @@ public class MaestroParamExtensionTest extends MaestroEngineBaseTest {
         "UTC", paramExtension.getFromInstance(Constants.FIRST_TIME_TRIGGER_TIMEZONE_PARAM));
     assertEquals("test-workflow-id", paramExtension.getFromInstance(Constants.WORKFLOW_ID_PARAM));
     assertEquals(2L, paramExtension.getFromInstance(Constants.WORKFLOW_INSTANCE_ID_PARAM));
+    assertEquals(3L, paramExtension.getFromInstance(Constants.WORKFLOW_RUN_ID_PARAM));
     initiator = new DryRunValidator.ValidationInitiator();
     when(instanceWrapper.getInitiator()).thenReturn(initiator);
     assertEquals("VALIDATION", paramExtension.getFromInstance(Constants.INITIATOR_TYPE_PARAM));

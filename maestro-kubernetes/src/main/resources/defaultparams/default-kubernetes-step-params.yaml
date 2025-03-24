@@ -1,0 +1,38 @@
+kubernetes:
+  type: MAP
+  value:
+    app_name:
+      type: STRING
+      value: "maestro-job"
+      internal_mode: PROVIDED
+    cpu:
+      type: STRING
+      internal_mode: OPTIONAL
+    disk:
+      type: STRING
+      internal_mode: OPTIONAL
+    gpu:
+      type: STRING
+      internal_mode: OPTIONAL
+    memory:
+      type: STRING
+      internal_mode: OPTIONAL
+    image:
+      type: STRING
+      internal_mode: REQUIRED
+    entrypoint:
+      type: STRING
+      internal_mode: REQUIRED
+    env:
+      type: STRING_MAP
+      value: {}
+      internal_mode: PROVIDED
+    job_deduplication_key:
+      type: STRING
+      internal_mode: OPTIONAL
+    owner_email:
+      type: STRING
+      internal_mode: OPTIONAL
+  internal_mode: REQUIRED
+  tags:
+    - kubernetes

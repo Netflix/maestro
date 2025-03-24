@@ -1,0 +1,62 @@
+{
+  "properties": {
+    "owner": "tester",
+    "run_strategy": "sequential"
+  },
+  "workflow": {
+    "id": "sample-notebook-wf",
+    "name": "Test Notebook workflow",
+    "description": "Long description about this workflow",
+    "params": {
+      "foo":  {
+        "expression": "new DateTime(1569018000000).withZone(DateTimeZone.forID('UTC')).monthOfYear().getAsText();",
+        "type":  "STRING"
+      }
+    },
+    "steps": [
+      {"step": {"id": "job.1", "type": "NoOp", "transition": {"successors": {"job.2":  "true"}}}},
+      {
+        "step": {
+          "id": "job.2",
+          "type": "notebook",
+          "transition": {},
+          "retry_policy": {
+            "error_retry_limit": 0
+          },
+          "params": {
+            "kubernetes": {
+              "value": {
+                "image": {
+                  "value": "python:3",
+                  "type": "STRING"
+                }
+              },
+              "type": "MAP"
+            },
+            "notebook": {
+              "value": {
+                "init_command": {
+                    "value": "python3 -m pip --no-cache-dir install notebook papermill &&",
+                    "type": "STRING"
+                },
+                "input_path": {
+                  "value": "https://raw.githubusercontent.com/oss-maestro/maestro-notebook-templates/d51d251cbbb5660d343bc2bb0765881ebbfed6a0/examples/demo01.ipynb",
+                  "type": "STRING"
+                }
+              },
+              "type": "MAP"
+            },
+            "script": {
+                "value": "echo hello world && echo $$MAESTRO_OUTPUT_START'{\"params\":{\"foo\": {\"value\":\"bar\",\"type\":\"STRING\",\"evaluated_result\":\"bar\",\"evaluated_time\":1625871404000}},\"artifacts\":{\"maestro_dynamic_output\": {\"signal_outputs\":[{\"value\":{\"name\":{\"value\":\"demo_table\",\"type\":\"STRING\"}},\"type\":\"MAP\",\"evaluated_result\":{\"name\":\"demo_table\"},\"evaluated_time\": 1625871404000}],\"type\":\"DYNAMIC_OUTPUT\"}}}'$$MAESTRO_OUTPUT_END",
+                "type": "STRING"
+            },
+            "foo": {
+              "value": "default",
+              "type": "STRING"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

@@ -15,10 +15,10 @@ package com.netflix.maestro.engine.dao;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.database.AbstractDatabaseDao;
 import com.netflix.maestro.database.DatabaseConfiguration;
-import com.netflix.maestro.engine.dto.ExternalJobType;
 import com.netflix.maestro.engine.dto.OutputData;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.Constants;
+import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.utils.Checks;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -46,16 +46,15 @@ public class OutputDataDao extends AbstractDatabaseDao {
    * Return output data {@link OutputData} for specific step instance.
    *
    * @param externalJobId External Job ID such as a container instance id
-   * @param externalJobType ExternalJobType {@link ExternalJobType}
+   * @param jobType external job type, one of {@link StepType}
    * @return optional output data
    */
-  public Optional<OutputData> getOutputDataForExternalJob(
-      String externalJobId, ExternalJobType externalJobType) {
+  public Optional<OutputData> getOutputDataForExternalJob(String externalJobId, StepType jobType) {
     return withRetryableQuery(
         GET_OUTPUT_DATA_JOB_QUERY,
         stmt -> {
           stmt.setString(1, externalJobId);
-          stmt.setString(2, externalJobType.toString());
+          stmt.setString(2, jobType.getType());
         },
         this::outputDataFromResult);
   }

@@ -24,14 +24,12 @@ import lombok.ToString;
 @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(
-    value = {"output_path", "uploaded_params_path", "output_generated"},
+    value = {"output_path"},
     alphabetic = true)
 @Data
 @ToString
 public class NotebookArtifact implements Artifact {
   private String outputPath;
-  private String uploadedParamsPath;
-  private boolean outputGenerated;
 
   @JsonIgnore
   @Override
