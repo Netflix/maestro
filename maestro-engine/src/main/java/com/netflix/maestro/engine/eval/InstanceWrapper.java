@@ -39,6 +39,7 @@ public class InstanceWrapper {
   @Getter private final boolean isWorkflowParam;
   @Getter @NotNull private final String workflowId;
   @Getter private final Long workflowInstanceId;
+  @Getter private final Long workflowRunId;
   @Getter @NotNull private final Initiator initiator;
   @NotNull private final RunPolicy runPolicy;
   @NotNull private final RunProperties runProperties;
@@ -60,6 +61,7 @@ public class InstanceWrapper {
         .isWorkflowParam(false)
         .workflowId(workflowSummary.getWorkflowId())
         .workflowInstanceId(workflowSummary.getWorkflowInstanceId())
+        .workflowRunId(workflowSummary.getWorkflowRunId())
         .initiator(workflowSummary.getInitiator())
         .runPolicy(workflowSummary.getRunPolicy())
         .runProperties(workflowSummary.getRunProperties())

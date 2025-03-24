@@ -2,8 +2,7 @@
   "artifacts": {
     "maestro_notebook": {
       "output_path": "'s3://maestro-output/test/bdp.samplenoteworkflows.hellonotebook/Notebook/20210412113917__1_1_43ae39da-8cee-4d3d-a483-bb15998d62ca.ipynb'",
-      "type": "NOTEBOOK",
-      "uploaded_params_path": "s3://maestro/maestro-params/bdp.samplenoteworkflows.hellonotebook/43ae39da-8cee-4d3d-a483-bb15998d62ca/inputparams.json"
+      "type": "NOTEBOOK"
     },
     "maestro_titus": {
       "cmb_job_id": "5709de2e-5feb-421c-936b-0ac5f3d9014a",

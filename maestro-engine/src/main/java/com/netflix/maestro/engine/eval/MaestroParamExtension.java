@@ -505,6 +505,8 @@ public class MaestroParamExtension extends AbstractParamExtension {
         return instanceWrapper.getWorkflowId();
       case Constants.WORKFLOW_INSTANCE_ID_PARAM:
         return instanceWrapper.getWorkflowInstanceId();
+      case Constants.WORKFLOW_RUN_ID_PARAM:
+        return instanceWrapper.getWorkflowRunId();
       default:
         throw new MaestroValidationException(
             "Invalid field name [%s] for getFromInstance call", fieldName);

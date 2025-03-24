@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.netflix.maestro.models.artifact.Artifact;
+import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.parameter.Parameter;
 import java.util.Map;
 import lombok.AllArgsConstructor;
@@ -47,7 +48,7 @@ import lombok.ToString;
 @ToString
 @Builder
 public class OutputData {
-  @Setter private ExternalJobType externalJobType;
+  @Setter private StepType externalJobType;
   @Setter private String externalJobId;
   @Setter private String workflowId;
   @Setter private Long createTime;

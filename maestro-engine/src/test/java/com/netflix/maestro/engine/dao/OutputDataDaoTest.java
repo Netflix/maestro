@@ -24,10 +24,10 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.AssertHelper;
-import com.netflix.maestro.engine.dto.ExternalJobType;
 import com.netflix.maestro.engine.dto.OutputData;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.artifact.Artifact;
+import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.WorkflowDefinition;
 import com.netflix.maestro.models.parameter.Parameter;
 import java.io.IOException;
@@ -39,7 +39,7 @@ import org.junit.Test;
 
 public class OutputDataDaoTest extends MaestroDaoBaseTest {
   public static final String WORKFLOW_ID = "wid";
-  private static final ExternalJobType JOB_TYPE = ExternalJobType.TITUS;
+  private static final StepType JOB_TYPE = StepType.TITUS;
   private static final String EXT_JOB_ID = "JOB_123";
   private OutputDataDao dao;
   private Map<String, Parameter> params;
