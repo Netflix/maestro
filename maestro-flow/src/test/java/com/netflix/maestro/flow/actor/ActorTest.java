@@ -25,7 +25,7 @@ public class ActorTest extends ActorBaseTest {
 
   @Test
   public void testStartGroupActor() {
-    FlowGroup group = new FlowGroup(1, 2, "testAddress");
+    FlowGroup group = new FlowGroup(1, 2, "testAddress", 12345);
     GroupActor actor = (GroupActor) Actor.startGroupActor(group, context);
     verify(context, times(1)).run(any());
     // check if the group actor was started

@@ -34,8 +34,8 @@ public class FlowEngineProperties implements DatabaseConfiguration {
       "group.heartbeat.interval.millis";
   private static final long GROUP_HEARTBEAT_INTERVAL_DEFAULT_VALUE = TimeUnit.SECONDS.toMillis(11);
 
-  private static final String EXPIRATION_PROPERTY_NAME = "expiration.secs";
-  private static final long EXPIRATION_DEFAULT_VALUE = 56;
+  private static final String EXPIRATION_DURATION_PROPERTY_NAME = "expiration.duration.millis";
+  private static final long EXPIRATION_DURATION_DEFAULT_VALUE = TimeUnit.SECONDS.toMillis(56);
 
   private static final String INITIAL_MAINTENANCE_DELAY_PROPERTY_NAME =
       "initial.maintenance.delay.millis";
@@ -83,8 +83,8 @@ public class FlowEngineProperties implements DatabaseConfiguration {
         GROUP_HEARTBEAT_INTERVAL_PROPERTY_NAME, GROUP_HEARTBEAT_INTERVAL_DEFAULT_VALUE);
   }
 
-  public long getExpirationInSecs() {
-    return getLongProperty(EXPIRATION_PROPERTY_NAME, EXPIRATION_DEFAULT_VALUE);
+  public long getExpirationDurationInMillis() {
+    return getLongProperty(EXPIRATION_DURATION_PROPERTY_NAME, EXPIRATION_DURATION_DEFAULT_VALUE);
   }
 
   public long getInitialMaintenanceDelayInMillis() {

@@ -46,6 +46,11 @@ public class GroupActorTest extends ActorBaseTest {
   }
 
   @Test
+  public void testValidUntil() {
+    assertEquals(12345, groupActor.validUntil());
+  }
+
+  @Test
   public void testBeforeRunning() {
     groupActor.beforeRunning();
     verify(context, times(0)).schedule(any(), anyLong());
@@ -129,8 +134,12 @@ public class GroupActorTest extends ActorBaseTest {
 
   @Test
   public void testGroupHeartbeat() {
+    assertEquals(12345, groupActor.validUntil());
+    when(context.heartbeatGroup(any())).thenReturn(123456L);
+
     groupActor.runForAction(Action.GROUP_HEARTBEAT);
 
+    assertEquals(123456, groupActor.validUntil());
     verify(context, times(1)).heartbeatGroup(any());
     verify(context, times(1)).schedule(any(), anyLong());
     assertEquals(Set.of(Action.GROUP_HEARTBEAT), groupActor.getScheduledActions().keySet());

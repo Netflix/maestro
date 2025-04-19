@@ -75,6 +75,12 @@ public class BaseActorTest extends ActorBaseTest {
   }
 
   @Test
+  public void testValidUntil() {
+    assertEquals(12345, groupActor.validUntil());
+    assertEquals(12345, flowActor.validUntil());
+  }
+
+  @Test
   public void testRunActionFor() {
     groupActor.runActionFor(flowActor, Action.FLOW_START);
 
@@ -283,6 +289,17 @@ public class BaseActorTest extends ActorBaseTest {
     groupActor.schedule(Action.GROUP_START, 0);
     verify(context, times(0)).schedule(any(), anyLong());
     verifyActions(groupActor, Action.GROUP_START);
+  }
+
+  @Test
+  public void testScheduleWithoutDelayForDuplicateAction() {
+    var future = Mockito.mock(ScheduledFuture.class);
+    when(context.schedule(any(), anyLong())).thenReturn(future);
+
+    groupActor.schedule(Action.TASK_PING, 0);
+    groupActor.schedule(Action.TASK_PING, 0);
+    verify(context, times(0)).schedule(any(), anyLong());
+    verifyActions(groupActor, Action.TASK_PING, Action.TASK_PING);
   }
 
   @Test

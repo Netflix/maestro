@@ -14,6 +14,7 @@ package com.netflix.maestro.flow.dao;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -73,8 +74,8 @@ public class MaestroFlowDaoTest extends FlowBaseTest {
   @Before
   public void setUp() throws IOException {
     dao = new MaestroFlowDao(dataSource, mapper, config, metrics);
-    group = new FlowGroup(10, 1, "testAddress");
-    dao.insertGroup(group);
+    group = new FlowGroup(10, 1, "testAddress", 12345);
+    assertNotNull(dao.insertGroup(10, "testAddress"));
   }
 
   @After
@@ -86,7 +87,7 @@ public class MaestroFlowDaoTest extends FlowBaseTest {
   public void testInsertFlow() {
     Flow flow = createFlow();
     dao.insertFlow(flow);
-    var flows = dao.getFlows(new FlowGroup(10, 2, "testAddress"), 10, "test");
+    var flows = dao.getFlows(new FlowGroup(10, 2, "testAddress", 12345), 10, "test");
     assertEquals(1, flows.size());
     assertEquals(10, flows.getFirst().getGroupId());
     assertEquals("test-flow-id", flows.getFirst().getFlowId());
@@ -113,7 +114,7 @@ public class MaestroFlowDaoTest extends FlowBaseTest {
     Flow flow = createFlow();
     dao.insertFlow(flow);
     dao.deleteFlow(flow);
-    var flows = dao.getFlows(new FlowGroup(10, 2, "testAddress"), 10, "test");
+    var flows = dao.getFlows(new FlowGroup(10, 2, "testAddress", 12345), 10, "test");
     assertTrue(flows.isEmpty());
   }
 
@@ -121,11 +122,11 @@ public class MaestroFlowDaoTest extends FlowBaseTest {
   public void testGetFlows() {
     Flow flow = createFlow();
     dao.insertFlow(flow);
-    var flows = dao.getFlows(new FlowGroup(10, 1, "testAddress"), 10, "test");
+    var flows = dao.getFlows(new FlowGroup(10, 1, "testAddress", 12345), 10, "test");
     assertTrue(flows.isEmpty());
-    flows = dao.getFlows(new FlowGroup(9, 2, "testAddress"), 10, "test");
+    flows = dao.getFlows(new FlowGroup(9, 2, "testAddress", 12345), 10, "test");
     assertTrue(flows.isEmpty());
-    flows = dao.getFlows(new FlowGroup(9, 2, "testAddress"), 10, "z");
+    flows = dao.getFlows(new FlowGroup(9, 2, "testAddress", 12345), 10, "z");
     assertTrue(flows.isEmpty());
     dao.deleteFlow(flow);
   }
@@ -142,8 +143,8 @@ public class MaestroFlowDaoTest extends FlowBaseTest {
 
   @Test
   public void testHeartbeatGroup() {
-    assertTrue(dao.heartbeatGroup(group));
-    assertFalse(dao.heartbeatGroup(new FlowGroup(10, 2, "testAddress")));
+    assertNotNull(dao.heartbeatGroup(group));
+    assertNull(dao.heartbeatGroup(new FlowGroup(10, 2, "testAddress", 12345)));
   }
 
   @Test
@@ -163,6 +164,7 @@ public class MaestroFlowDaoTest extends FlowBaseTest {
     assertEquals(10, claimed.groupId());
     assertEquals(2, claimed.generation());
     assertEquals("address2", claimed.address());
+    assertTrue(claimed.heartbeatTs() > 12345);
   }
 
   @Test
@@ -170,12 +172,13 @@ public class MaestroFlowDaoTest extends FlowBaseTest {
     AssertHelper.assertThrows(
         "should throw and retry",
         MaestroRetryableError.class,
-        "insertGroup for group [10] is failed (res=[0])",
-        () -> dao.insertGroup(group));
+        "insertGroup for group [10] has a conflict and please retry",
+        () -> dao.insertGroup(10, "testAddress"));
     FlowGroup claimed = dao.claimExpiredGroup("address2", -100000);
     assertEquals(10, claimed.groupId());
     assertEquals(2, claimed.generation());
     assertEquals("address2", claimed.address());
+    assertTrue(claimed.heartbeatTs() > 12345);
   }
 
   @Test

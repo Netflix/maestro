@@ -68,7 +68,7 @@ public class ExecutionContextTest extends FlowBaseTest {
             properties,
             metrics);
     flow = createFlow();
-    group = new FlowGroup(1, 1, "testAddress");
+    group = new FlowGroup(1, 1, "testAddress", 12345);
   }
 
   @Test
@@ -255,8 +255,8 @@ public class ExecutionContextTest extends FlowBaseTest {
 
   @Test
   public void testTrySaveGroup() {
-    context.trySaveGroup(group);
-    verify(flowDao, times(1)).insertGroup(group);
+    context.trySaveGroup(group.groupId(), group.address());
+    verify(flowDao, times(1)).insertGroup(group.groupId(), group.address());
   }
 
   @Test
@@ -265,18 +265,20 @@ public class ExecutionContextTest extends FlowBaseTest {
     AssertHelper.assertThrows(
         "should throw during shutdown",
         MaestroRetryableError.class,
-        "ExecutionContext is shutdown and cannot save a group [FlowGroup[groupId=1, generation=1",
-        () -> context.trySaveGroup(group));
+        "ExecutionContext is shutdown and cannot save a group-[1] and please retry",
+        () -> context.trySaveGroup(group.groupId(), group.address()));
   }
 
   @Test
   public void testTrySaveGroupWithException() {
-    Mockito.doThrow(new MaestroInternalError("test")).when(flowDao).insertGroup(group);
+    Mockito.doThrow(new MaestroInternalError("test"))
+        .when(flowDao)
+        .insertGroup(group.groupId(), group.address());
     AssertHelper.assertThrows(
         "should throw and retry",
         MaestroRetryableError.class,
-        "insertGroup is failed for [FlowGroup[groupId=1, generation=1",
-        () -> context.trySaveGroup(group));
+        "insertGroup is failed for group-[1] and please retry",
+        () -> context.trySaveGroup(group.groupId(), group.address()));
   }
 
   @Test
@@ -287,9 +289,12 @@ public class ExecutionContextTest extends FlowBaseTest {
 
   @Test
   public void testHeartbeatGroup() {
-    when(flowDao.heartbeatGroup(group)).thenReturn(true);
-    context.heartbeatGroup(group);
+    when(flowDao.heartbeatGroup(group)).thenReturn(12345L);
+    when(properties.getExpirationDurationInMillis()).thenReturn(20000L);
+    var validUntil = context.heartbeatGroup(group);
+
     verify(flowDao, times(1)).heartbeatGroup(group);
+    assertEquals(32345, validUntil);
   }
 
   @Test

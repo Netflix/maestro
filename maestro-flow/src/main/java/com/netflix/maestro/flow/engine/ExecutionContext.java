@@ -290,18 +290,21 @@ public class ExecutionContext {
    * caller's responsibility to retry and find the right node who owns the group or if no one owns
    * it, try it again.
    *
-   * @param group flow group to persist
+   * @param groupId new flow group id
+   * @param address new flow group owner address
+   * @return the added flow group
    * @throws MaestroRetryableError error to retry
    */
-  public void trySaveGroup(FlowGroup group) {
+  public FlowGroup trySaveGroup(long groupId, String address) {
     if (executor.isShutdown() || scheduler.isShutdown()) {
       throw new MaestroRetryableError(
-          "ExecutionContext is shutdown and cannot save a group [%s] and please retry.", group);
+          "ExecutionContext is shutdown and cannot save a group-[%s] and please retry.", groupId);
     }
     try {
-      flowDao.insertGroup(group);
+      return flowDao.insertGroup(groupId, address);
     } catch (MaestroInternalError e) {
-      throw new MaestroRetryableError(e, "insertGroup is failed for [%s] and please retry", group);
+      throw new MaestroRetryableError(
+          e, "insertGroup is failed for group-[%s] and please retry", groupId);
     }
   }
 
@@ -311,21 +314,23 @@ public class ExecutionContext {
    */
   public FlowGroup claimGroup() {
     return flowDao.claimExpiredGroup(
-        properties.getEngineAddress(), properties.getExpirationInSecs());
+        properties.getEngineAddress(), properties.getExpirationDurationInMillis());
   }
 
   /**
    * It does heartbeat plus validating ownership. If losing ownership, it means this JVM is in
-   * trouble and let's brutally kill it to reduce the damage.
+   * trouble and let's brutally kill it to reduce the damage. If valid, it returns the valid until
+   * timestamp, which is the heartbeat timestamp plus the expiration duration.
    *
    * @param group flow group to heartbeat
    */
-  public void heartbeatGroup(FlowGroup group) {
-    boolean valid = flowDao.heartbeatGroup(group);
-    if (!valid) {
+  public long heartbeatGroup(FlowGroup group) {
+    Long heartbeatTs = flowDao.heartbeatGroup(group);
+    if (heartbeatTs == null) {
       LOG.error("heartbeat detects an invalid ownership for [{}]. Kill JVM to reconcile.", group);
       Runtime.getRuntime().halt(Constants.INVALID_OWNERSHIP_EXIT_CODE);
     }
+    return heartbeatTs + properties.getExpirationDurationInMillis();
   }
 
   public void releaseGroup(FlowGroup group) {

@@ -42,7 +42,7 @@ public abstract class ActorBaseTest extends FlowBaseTest {
   }
 
   GroupActor createGroupActor() {
-    FlowGroup group = new FlowGroup(1, 2, "testAddress");
+    FlowGroup group = new FlowGroup(1, 2, "testAddress", 12345);
     return new GroupActor(group, context);
   }
 

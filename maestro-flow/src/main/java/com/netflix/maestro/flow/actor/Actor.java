@@ -15,6 +15,8 @@ public sealed interface Actor extends Runnable permits BaseActor {
 
   long generation();
 
+  long validUntil();
+
   static Actor startGroupActor(FlowGroup group, ExecutionContext context) {
     var actor = new GroupActor(group, context);
     context.run(actor);
