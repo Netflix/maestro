@@ -38,7 +38,7 @@ public class MaestroFlowDao extends AbstractDatabaseDao {
   private static final String CLAIM_FLOW_GROUP_QUERY =
       "UPDATE maestro_flow_group SET (heartbeat_ts,generation,address)=(now(),generation+1,?) "
           + "WHERE group_id=(SELECT group_id FROM maestro_flow_group "
-          + "WHERE heartbeat_ts<(now()-INTERVAL '1 millisecond' * ?) FOR UPDATE SKIP LOCKED LIMIT 1)"
+          + "WHERE heartbeat_ts<(now()-INTERVAL '1 millisecond' * ?) FOR UPDATE SKIP LOCKED LIMIT 1) "
           + "RETURNING group_id,generation,heartbeat_ts";
   private static final String ADD_FLOW_GROUP_QUERY =
       "INSERT INTO maestro_flow_group (group_id,generation,address) VALUES (?,?,?) ON CONFLICT DO NOTHING RETURNING heartbeat_ts";
@@ -280,7 +280,7 @@ public class MaestroFlowDao extends AbstractDatabaseDao {
             groupId);
     if (heartbeatTs == null) {
       throw new MaestroRetryableError(
-          "insertGroup for group [%s] has a conflict and please retry", groupId);
+          "insertGroup for group-[%s] has a conflict and please retry", groupId);
     }
     return new FlowGroup(groupId, Constants.INITIAL_GENERATION_NUMBER, address, heartbeatTs);
   }

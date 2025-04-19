@@ -172,7 +172,7 @@ public class MaestroFlowDaoTest extends FlowBaseTest {
     AssertHelper.assertThrows(
         "should throw and retry",
         MaestroRetryableError.class,
-        "insertGroup for group [10] has a conflict and please retry",
+        "insertGroup for group-[10] has a conflict and please retry",
         () -> dao.insertGroup(10, "testAddress"));
     FlowGroup claimed = dao.claimExpiredGroup("address2", -100000);
     assertEquals(10, claimed.groupId());
