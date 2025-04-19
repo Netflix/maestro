@@ -30,17 +30,24 @@ final class GroupActor extends BaseActor {
   private final FlowGroup group;
   private final long heartbeatInterval;
   private final long fetchLimit;
+  private volatile long validUntil;
 
   GroupActor(FlowGroup group, ExecutionContext context) {
     super(context, null);
     this.group = group;
     this.heartbeatInterval = context.getProperties().getHeartbeatIntervalInMillis();
     this.fetchLimit = context.getProperties().getGroupFlowFetchLimit();
+    this.validUntil = group.heartbeatTs() + context.getProperties().getExpirationDurationInMillis();
   }
 
   @Override
   public long generation() {
     return group.generation();
+  }
+
+  @Override
+  public long validUntil() {
+    return validUntil;
   }
 
   @Override
@@ -130,7 +137,7 @@ final class GroupActor extends BaseActor {
     LOG.debug("Heartbeat the group: [{}]", group);
     getMetrics().gauge("current_running_groups", 1.0, getClass(), "group", reference());
     cleanupChildActors(); // cleanup finished flows
-    getContext().heartbeatGroup(group);
+    validUntil = getContext().heartbeatGroup(group);
     schedule(Action.GROUP_HEARTBEAT, heartbeatInterval);
   }
 }

@@ -16,6 +16,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -40,6 +41,8 @@ public class FlowExecutorTest extends ActorBaseTest {
     when(properties.getInitialMaintenanceDelayInMillis()).thenReturn(1L);
     when(properties.getMaintenanceDelayInMillis()).thenReturn(100000L);
     when(properties.getMaxGroupNumPerNode()).thenReturn(2L);
+    when(properties.getExpirationDurationInMillis()).thenReturn(12000L);
+    when(properties.getEngineAddress()).thenReturn("test-address");
     executor = new FlowExecutor(context);
   }
 
@@ -52,7 +55,7 @@ public class FlowExecutorTest extends ActorBaseTest {
 
   @Test
   public void testInitWithClaimingGroup() {
-    FlowGroup group = new FlowGroup(1, 1, "testAddress");
+    FlowGroup group = new FlowGroup(1, 1, "testAddress", 12345);
     when(context.claimGroup()).thenReturn(group);
     executor.init();
     verify(context, timeout(10000)).claimGroup();
@@ -77,8 +80,10 @@ public class FlowExecutorTest extends ActorBaseTest {
 
   @Test
   public void testStartFlow() {
+    when(context.trySaveGroup(1, "test-address"))
+        .thenReturn(new FlowGroup(1, 1, "test-address", 12345));
     var id = executor.startFlow(1, "test-id", "wf-1", new FlowDef(), Map.of());
-    verify(context, times(1)).trySaveGroup(any());
+    verify(context, times(1)).trySaveGroup(anyLong(), any());
     var actorCaptor = ArgumentCaptor.forClass(Actor.class);
     verify(context, times(1)).run(actorCaptor.capture());
     var flowCaptor = ArgumentCaptor.forClass(Flow.class);
@@ -91,6 +96,8 @@ public class FlowExecutorTest extends ActorBaseTest {
   @Test
   public void testWakeUp() {
     assertFalse(executor.wakeUp(1L, "wf-1", "task1"));
+    when(context.trySaveGroup(1, "test-address"))
+        .thenReturn(new FlowGroup(1, 1, "test-address", 12345));
 
     executor.startFlow(1, "test-id", "wf-1", new FlowDef(), Map.of());
     assertTrue(executor.wakeUp(1L, "wf-1", "task1"));

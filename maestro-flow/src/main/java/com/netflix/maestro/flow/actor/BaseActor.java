@@ -58,6 +58,15 @@ abstract sealed class BaseActor implements Actor permits GroupActor, FlowActor, 
         getClass().getSimpleName() + " does not support getting generation info for " + name());
   }
 
+  @Override
+  public long validUntil() {
+    if (parent != null) {
+      return parent.validUntil();
+    }
+    throw new UnsupportedOperationException(
+        getClass().getSimpleName() + " does not support getting validUntil info for " + name());
+  }
+
   /** best effort operations without retry support. */
   abstract void beforeRunning();
 
@@ -154,15 +163,15 @@ abstract sealed class BaseActor implements Actor permits GroupActor, FlowActor, 
   }
 
   void schedule(Action action, long delayInMillis) {
-    if (!isRunning()
+    if (delayInMillis <= 0) {
+      post(action);
+    } else if (!isRunning()
         || (scheduledActions.containsKey(action) && !scheduledActions.get(action).isDone())) {
       getLogger()
           .debug(
               "skip posting action [{}] as either it's not running or there is already one for [{}]",
               action,
               name());
-    } else if (delayInMillis <= 0) {
-      post(action);
     } else {
       getLogger()
           .debug(

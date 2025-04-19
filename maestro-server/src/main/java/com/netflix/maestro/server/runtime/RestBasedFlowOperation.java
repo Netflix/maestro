@@ -22,7 +22,6 @@ import com.netflix.maestro.flow.runtime.FlowOperation;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import org.springframework.web.client.RestTemplate;
 
 /** Implementation of FlowOperation using REST API. */
@@ -45,7 +44,7 @@ public class RestBasedFlowOperation implements FlowOperation {
     this.flowDao = flowDao;
     this.flowExecutor = executor;
     this.localAddress = properties.getEngineAddress();
-    this.expirationDuration = TimeUnit.SECONDS.toMillis(properties.getExpirationInSecs());
+    this.expirationDuration = properties.getExpirationDurationInMillis();
     this.addressCache = new ConcurrentHashMap<>();
   }
 

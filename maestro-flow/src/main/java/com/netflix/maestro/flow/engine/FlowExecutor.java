@@ -82,6 +82,22 @@ public class FlowExecutor {
    * a group from existing nodes.
    */
   private void maintenance() {
+    LOG.debug("[{}] tries to check if any group ownership is expired", address);
+    try {
+      readLock.lock();
+      long curTime = System.currentTimeMillis();
+      groupActors.forEach(
+          (groupId, actor) -> {
+            if (actor.validUntil() < curTime) {
+              LOG.error(
+                  "maintenance detects an invalid ownership for group-[{}]. Kill JVM to reconcile.",
+                  groupId);
+              Runtime.getRuntime().halt(Constants.INVALID_OWNERSHIP_EXIT_CODE);
+            }
+          });
+    } finally {
+      readLock.unlock();
+    }
     LOG.trace("[{}] tries to claim a group...", address);
     int groupNum = groupActors.size();
     context.getMetrics().gauge("num_of_groups", groupNum, getClass());
@@ -167,14 +183,13 @@ public class FlowExecutor {
    * @return the flow group actor
    */
   private Actor getOrCreateNewGroup(long groupId) {
-    FlowGroup group = new FlowGroup(groupId, Constants.INITIAL_GENERATION_NUMBER, address);
     try {
       readLock.lock();
       return groupActors.computeIfAbsent(
-          group.groupId(),
+          groupId,
           id -> {
-            context.trySaveGroup(group);
-            return Actor.startGroupActor(group, context);
+            FlowGroup newGroup = context.trySaveGroup(groupId, address);
+            return Actor.startGroupActor(newGroup, context);
           });
     } finally {
       readLock.unlock();
