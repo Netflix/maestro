@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 
 import com.netflix.maestro.engine.MaestroEngineBaseTest;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
+import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.flow.models.Flow;
 import com.netflix.maestro.flow.models.FlowDef;
 import com.netflix.maestro.flow.models.Task;
@@ -61,6 +62,12 @@ public class MaestroGateTaskTest extends MaestroEngineBaseTest {
     task1.setTaskId("test-join-id");
     TaskDef taskDef1 = new TaskDef("job1", Constants.MAESTRO_TASK_NAME, null, null);
     task1.setTaskDef(taskDef1);
+    var state = new StepRuntimeState();
+    state.setStatus(StepInstance.Status.COMPLETED_WITH_ERROR);
+    task1.setOutputData(
+        Map.of(
+            Constants.STEP_RUNTIME_SUMMARY_FIELD,
+            StepRuntimeSummary.builder().runtimeState(state).build()));
 
     flow = new Flow(1, "testWorkflowId", 1, 12345, "ref");
     flow.setStatus(Flow.Status.RUNNING);

@@ -17,8 +17,6 @@ import com.netflix.maestro.engine.dao.MaestroWorkflowDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
 import com.netflix.maestro.engine.execution.RunRequest;
 import com.netflix.maestro.engine.execution.RunResponse;
-import com.netflix.maestro.engine.jobevents.WorkflowVersionUpdateJobEvent;
-import com.netflix.maestro.engine.utils.ObjectHelper;
 import com.netflix.maestro.engine.utils.WorkflowHelper;
 import com.netflix.maestro.engine.validations.DryRunValidator;
 import com.netflix.maestro.exceptions.MaestroBadRequestException;
@@ -44,8 +42,11 @@ import com.netflix.maestro.models.instance.RunProperties;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.timeline.TimelineActionEvent;
 import com.netflix.maestro.models.timeline.TimelineEvent;
+import com.netflix.maestro.queue.jobevents.WorkflowVersionUpdateJobEvent;
 import com.netflix.maestro.utils.Checks;
+import com.netflix.maestro.utils.IdHelper;
 import com.netflix.maestro.utils.MapHelper;
+import com.netflix.maestro.utils.ObjectHelper;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -184,7 +185,6 @@ public class WorkflowActionHandler {
    * been decided to avoid race condition and ensure idempotency. It will bypass run strategy
    * manager as foreach manages its own inline workflow instances.
    *
-   * @param batchSize the batch size for run job instance uuids within a run job event.
    * @return the status of start foreach workflow instances.
    */
   public Optional<Details> runForeachBatch(
@@ -195,8 +195,7 @@ public class WorkflowActionHandler {
       String foreachStepId,
       ForeachArtifact artifact,
       List<RunRequest> requests,
-      List<Long> instanceIds,
-      int batchSize) {
+      List<Long> instanceIds) {
     if (ObjectHelper.isCollectionEmptyOrNull(requests)) {
       return Optional.empty();
     }
@@ -231,7 +230,7 @@ public class WorkflowActionHandler {
     if (ObjectHelper.isCollectionEmptyOrNull(instances)) {
       return Optional.empty();
     }
-    return instanceDao.runWorkflowInstances(workflow.getId(), instances, batchSize);
+    return instanceDao.runWorkflowInstances(workflow.getId(), instances);
   }
 
   private List<WorkflowInstance> createStartForeachInstances(
@@ -306,7 +305,7 @@ public class WorkflowActionHandler {
     workflowHelper.updateWorkflowInstance(instance, request);
     instance.setWorkflowRunId(restartRunId);
     return instanceDao.runWorkflowInstances(
-        instance.getWorkflowId(), Collections.singletonList(instance), 1);
+        instance.getWorkflowId(), Collections.singletonList(instance));
   }
 
   private boolean isRestartFromInlineRootMode(RunRequest request, Workflow workflow) {
@@ -468,20 +467,21 @@ public class WorkflowActionHandler {
   /**
    * Unblock the failed workflow instances with a provided workflow id.
    *
+   * <p>todo: this might not work well if there are millions of failed instances. If needed, we
+   * should rewrite it to keep a column in maestro_workflow to track it than updating the status of
+   * each failed instance.
+   *
    * @param workflowId workflow id
    */
   public TimelineEvent unblock(String workflowId, User caller) {
     TimelineActionEvent.TimelineActionEventBuilder eventBuilder =
         TimelineActionEvent.builder().author(caller).reason("Unblock workflow [%s]", workflowId);
-    int totalUnblocked = 0;
-    int unblocked = Constants.UNBLOCK_BATCH_SIZE;
-    while (unblocked == Constants.UNBLOCK_BATCH_SIZE) {
-      unblocked =
-          instanceDao.tryUnblockFailedWorkflowInstances(
-              workflowId, Constants.UNBLOCK_BATCH_SIZE, eventBuilder.build());
-      totalUnblocked += unblocked;
+    if (IdHelper.isInlineWorkflowId(workflowId)) {
+      return eventBuilder.message("Unblocked the workflow.").build();
     }
-    workflowHelper.publishStartWorkflowEvent(workflowId, totalUnblocked > 0);
+    int totalUnblocked =
+        instanceDao.tryUnblockFailedWorkflowInstances(
+            workflowId, Constants.UNBLOCK_BATCH_SIZE, eventBuilder.build());
     return eventBuilder
         .message("Unblocked [%s] failed workflow instances.", totalUnblocked)
         .build();

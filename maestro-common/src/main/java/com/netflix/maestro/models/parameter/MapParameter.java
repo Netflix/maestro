@@ -219,7 +219,14 @@ public final class MapParameter extends AbstractParameter {
               getName());
       Parameter param;
       if (isLiteral()) { // assemble the parameter
-        param = value.get(paramName).toParameter();
+        param =
+            Checks.notNull(
+                    value.get(paramName),
+                    "Cannot find param name [%s] in value but in evaluatedResult [%s] of map param [%s]",
+                    paramName,
+                    evaluatedResult,
+                    getName())
+                .toParameter();
       } else { // use the whole sel expression as the param expression
         param =
             ParamHelper.deriveTypedParameter(

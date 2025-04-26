@@ -12,12 +12,12 @@
  */
 package com.netflix.maestro.engine.transformation;
 
-import com.netflix.maestro.engine.utils.ObjectHelper;
 import com.netflix.maestro.flow.models.FlowDef;
 import com.netflix.maestro.flow.models.TaskDef;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.Defaults;
 import com.netflix.maestro.models.instance.WorkflowInstance;
+import com.netflix.maestro.utils.ObjectHelper;
 import java.util.List;
 import lombok.AllArgsConstructor;
 

@@ -13,6 +13,7 @@
 package com.netflix.maestro.engine.dao;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.annotations.VisibleForTesting;
 import com.netflix.maestro.database.AbstractDatabaseDao;
 import com.netflix.maestro.database.DatabaseConfiguration;
@@ -20,11 +21,7 @@ import com.netflix.maestro.engine.db.StepAction;
 import com.netflix.maestro.engine.execution.RunRequest;
 import com.netflix.maestro.engine.execution.RunResponse;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
-import com.netflix.maestro.engine.jobevents.StepInstanceUpdateJobEvent;
-import com.netflix.maestro.engine.jobevents.StepInstanceWakeUpEvent;
 import com.netflix.maestro.engine.properties.StepActionProperties;
-import com.netflix.maestro.engine.publisher.MaestroJobEventPublisher;
-import com.netflix.maestro.engine.utils.ObjectHelper;
 import com.netflix.maestro.engine.utils.TimeUtils;
 import com.netflix.maestro.exceptions.MaestroBadRequestException;
 import com.netflix.maestro.exceptions.MaestroInternalError;
@@ -40,7 +37,6 @@ import com.netflix.maestro.models.artifact.ForeachArtifact;
 import com.netflix.maestro.models.definition.FailureMode;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.User;
-import com.netflix.maestro.models.error.Details;
 import com.netflix.maestro.models.initiator.Initiator;
 import com.netflix.maestro.models.initiator.UpstreamInitiator;
 import com.netflix.maestro.models.instance.RestartConfig;
@@ -49,6 +45,13 @@ import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.StepRuntimeState;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.timeline.TimelineEvent;
+import com.netflix.maestro.queue.MaestroQueueSystem;
+import com.netflix.maestro.queue.jobevents.InstanceActionJobEvent;
+import com.netflix.maestro.queue.jobevents.MaestroJobEvent;
+import com.netflix.maestro.queue.jobevents.StepInstanceUpdateJobEvent;
+import com.netflix.maestro.queue.models.MessageDto;
+import com.netflix.maestro.utils.ObjectHelper;
+import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -58,7 +61,6 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import javax.sql.DataSource;
 import lombok.extern.slf4j.Slf4j;
 
@@ -72,6 +74,8 @@ import lombok.extern.slf4j.Slf4j;
 public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
   private static final String INSERT_ACTION_QUERY =
       "INSERT INTO maestro_step_instance_action (payload) VALUES (?) ON CONFLICT DO NOTHING";
+  private static final String UPSERT_ACTION_QUERY =
+      "UPSERT INTO maestro_step_instance_action (payload,create_ts) VALUES (?,CURRENT_TIMESTAMP)";
   private static final String INSTANCE_CONDITION =
       "workflow_id=? AND workflow_instance_id=? AND workflow_run_id=?";
   private static final String CONDITION_POSTFIX = "(" + INSTANCE_CONDITION + " AND step_id=?)";
@@ -86,7 +90,7 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
   private static final String DELETE_ACTIONS_QUERY = DELETE_ACTION_PREFIX + INSTANCE_CONDITION;
 
   private final MaestroStepInstanceDao stepInstanceDao;
-  private final MaestroJobEventPublisher eventPublisher;
+  private final MaestroQueueSystem queueSystem;
   private final long actionTimeout;
   private final long checkInterval;
 
@@ -97,11 +101,11 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
       DatabaseConfiguration config,
       StepActionProperties stepActionProperties,
       MaestroStepInstanceDao stepInstanceDao,
-      MaestroJobEventPublisher eventPublisher,
+      MaestroQueueSystem queueSystem,
       MaestroMetrics metrics) {
     super(dataSource, objectMapper, config, metrics);
     this.stepInstanceDao = stepInstanceDao;
-    this.eventPublisher = eventPublisher;
+    this.queueSystem = queueSystem;
     this.actionTimeout = stepActionProperties.getActionTimeout();
     this.checkInterval = stepActionProperties.getCheckInterval();
   }
@@ -116,7 +120,7 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
         getStepInstanceAndValidate(instance, stepId, runRequest.getRestartConfig());
     // prepare payload and then add to db
     StepAction stepAction = StepAction.createRestart(stepInstance, runRequest);
-    saveAction(stepInstance, stepAction);
+    saveAction(stepInstance, stepAction, false);
     if (blocking) {
       return waitResponseWithTimeout(stepInstance, stepAction);
     } else {
@@ -132,7 +136,7 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
         getStepInstanceAndValidateBypassStepDependencyConditions(instance, stepId);
 
     StepAction stepAction = StepAction.createBypassStepDependencies(stepInstance, user);
-    saveAction(stepInstance, stepAction);
+    saveAction(stepInstance, stepAction, false);
     if (blocking) {
       return waitBypassStepDependenciesResponseWithTimeout(stepInstance, stepAction);
     } else {
@@ -283,11 +287,25 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
     return stepInstance;
   }
 
-  private void saveAction(StepInstance stepInstance, StepAction stepAction) {
+  private void saveAction(StepInstance stepInstance, StepAction stepAction, boolean inserted) {
+    String sql = inserted ? UPSERT_ACTION_QUERY : INSERT_ACTION_QUERY;
     String payload = toJson(stepAction);
+    var jobEvent = InstanceActionJobEvent.create(stepInstance, stepAction.getAction());
+    MessageDto[] message = new MessageDto[1];
     int ret =
         withMetricLogError(
-            () -> withRetryableUpdate(INSERT_ACTION_QUERY, stmt -> stmt.setString(1, payload)),
+            () ->
+                withRetryableTransaction(
+                    conn -> {
+                      try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                        stmt.setString(1, payload);
+                        int res = stmt.executeUpdate();
+                        if (res == SUCCESS_WRITE_SIZE) {
+                          message[0] = queueSystem.enqueue(conn, jobEvent);
+                        }
+                        return res;
+                      }
+                    }),
             "saveAction",
             "Failed to save the action for step {}",
             stepInstance.getIdentity());
@@ -296,7 +314,7 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
           "There is an ongoing action for this step %s and please try it again later.",
           stepInstance.getIdentity());
     }
-    publishUserActionEvent(StepInstanceWakeUpEvent.create(stepInstance, stepAction));
+    queueSystem.notify(message[0]);
   }
 
   private RunResponse waitResponseWithTimeout(StepInstance stepInstance, StepAction action) {
@@ -423,7 +441,7 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
     StepAction stepAction =
         StepAction.createTerminate(
             action, stepInstance, user, "manual step instance API call", false);
-    saveAction(stepInstance, stepAction);
+    saveAction(stepInstance, stepAction, false);
 
     if (blocking) {
       long startTime = System.currentTimeMillis();
@@ -625,9 +643,7 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
     stepInstance.setGroupInfo(summary.getGroupInfo());
     StepAction stepAction = StepAction.createTerminate(action, stepInstance, user, reason, false);
 
-    upsertActions(
-        summary.getIdentity() + "[" + stepId + "]", Collections.singletonList(toJson(stepAction)));
-    publishUserActionEvent(StepInstanceWakeUpEvent.create(stepInstance, stepAction));
+    saveAction(stepInstance, stepAction, true);
   }
 
   /**
@@ -651,8 +667,12 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
       throw new MaestroInternalError("Unsupported workflow terminate action: " + action);
     }
 
-    Map<String, StepRuntimeState> stepStates =
-        instance.getRuntimeOverview().decodeStepOverview(instance.getRuntimeDag());
+    Map<String, StepRuntimeState> stepStates;
+    if (instance.getRuntimeOverview() == null) {
+      stepStates = Collections.emptyMap();
+    } else {
+      stepStates = instance.getRuntimeOverview().decodeStepOverview(instance.getRuntimeDag());
+    }
 
     StepInstance stepInstance = new StepInstance();
     stepInstance.setWorkflowId(instance.getWorkflowId());
@@ -675,45 +695,50 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
 
     // batch upsert them into DB.
     String workflowIdentity = instance.getIdentity();
-    int upsert =
-        IntStream.range(0, payloads.size())
-            .boxed()
-            .collect(
-                Collectors.groupingBy(
-                    partition -> (partition / Constants.TERMINATE_BATCH_LIMIT),
-                    Collectors.mapping(payloads::get, Collectors.toList())))
-            .values()
-            .stream()
-            // There is a chance of inconsistency if batches fail in the middle for manual
-            // termination case. Expect users to manually retry to terminate all of them.
-            .mapToInt(payloadList -> upsertActions(workflowIdentity, payloadList))
-            .sum();
-
+    var partitions = ObjectHelper.partitionList(payloads, Constants.TERMINATE_BATCH_LIMIT);
+    MessageDto[] message = new MessageDto[1];
+    int upsert = 0;
+    // There is a chance of inconsistency if batches fail in the middle for manual
+    // termination case. Expect users to manually retry to terminate all of them.
+    for (int i = 0; i < partitions.size(); ++i) {
+      var jobEvent =
+          i == partitions.size() - 1 ? InstanceActionJobEvent.create(instance, action) : null;
+      upsert += upsertActions(workflowIdentity, partitions.get(i), jobEvent, message);
+    }
+    // notify the action job event.
+    queueSystem.notify(message[0]);
     LOG.debug(
         "Found [{}] incomplete steps and upsert [{}] step actions for workflow {} to the step action table.",
         payloads.size(),
         upsert,
         workflowIdentity);
-
-    // publish the action job event.
-    publishUserActionEvent(StepInstanceWakeUpEvent.create(instance, action));
     return upsert;
   }
 
   /** Batch upsert step actions, payloads must fit into a single batch. */
-  private int upsertActions(String identity, List<String> payloads) {
+  private int upsertActions(
+      String identity,
+      List<String> payloads,
+      @Nullable MaestroJobEvent jobEvent,
+      MessageDto[] message) {
     String sql =
         String.format(
             UPSERT_ACTIONS_QUERY_TEMPLATE,
             String.join(",", Collections.nCopies(payloads.size(), VALUE_PLACE_HOLDER)));
     return withMetricLogError(
         () ->
-            withRetryableUpdate(
-                sql,
-                stmt -> {
-                  int idx = 0;
-                  for (String payload : payloads) {
-                    stmt.setString(++idx, payload);
+            withRetryableTransaction(
+                conn -> {
+                  try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                    int idx = 0;
+                    for (String payload : payloads) {
+                      stmt.setString(++idx, payload);
+                    }
+                    int res = stmt.executeUpdate();
+                    if (jobEvent != null) {
+                      message[0] = queueSystem.enqueue(conn, jobEvent);
+                    }
+                    return res;
                   }
                 }),
         "upsertActions",
@@ -724,20 +749,5 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
   /** Will consider all possible running steps, including failed ones. */
   private boolean incomplete(Map<String, StepRuntimeState> stepStates, String stepId) {
     return !stepStates.containsKey(stepId) || !stepStates.get(stepId).getStatus().isComplete();
-  }
-
-  /**
-   * Try to send wake up event for a user action. It's best effort and won't throw an exception if
-   * failed. The failure rate can be monitored using event publisher failure metric using jobEvent
-   * class as tag.
-   */
-  private void publishUserActionEvent(StepInstanceWakeUpEvent event) {
-    Optional<Details> details = eventPublisher.publish(event);
-    details.ifPresent(
-        detail ->
-            LOG.warn(
-                "Action event publish failed: {}. With error: {}",
-                detail.getMessage(),
-                detail.getErrors()));
   }
 }

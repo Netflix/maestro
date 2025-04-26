@@ -46,6 +46,7 @@ import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.instance.WorkflowRollupOverview;
 import com.netflix.maestro.models.parameter.MapParameter;
 import com.netflix.maestro.models.parameter.Parameter;
+import com.netflix.maestro.queue.MaestroQueueSystem;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -76,6 +77,7 @@ public class ForeachStepRuntimeTest extends MaestroEngineBaseTest {
   private MaestroWorkflowInstanceDao workflowInstanceDao;
   @Mock private MaestroStepInstanceDao stepInstanceDao;
   @Mock private MaestroStepInstanceActionDao stepInstanceActionDao;
+  @Mock private MaestroQueueSystem queueSystem;
   @Mock private InstanceStepConcurrencyHandler instanceStepConcurrencyHandler;
   @Mock private ForeachStepRuntimeProperties foreachProperties;
   private WorkflowSummary workflowSummary;
@@ -89,6 +91,7 @@ public class ForeachStepRuntimeTest extends MaestroEngineBaseTest {
             workflowInstanceDao,
             stepInstanceDao,
             stepInstanceActionDao,
+            queueSystem,
             instanceStepConcurrencyHandler,
             foreachProperties);
     doReturn(5).when(foreachProperties).getGetRollupBatchLimit();

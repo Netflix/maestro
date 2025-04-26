@@ -24,11 +24,6 @@ import com.netflix.maestro.engine.db.PropertiesUpdate;
 import com.netflix.maestro.engine.db.PropertiesUpdate.Type;
 import com.netflix.maestro.engine.dto.MaestroWorkflow;
 import com.netflix.maestro.engine.dto.MaestroWorkflowVersion;
-import com.netflix.maestro.engine.jobevents.DeleteWorkflowJobEvent;
-import com.netflix.maestro.engine.jobevents.MaestroJobEvent;
-import com.netflix.maestro.engine.jobevents.WorkflowVersionUpdateJobEvent;
-import com.netflix.maestro.engine.publisher.MaestroJobEventPublisher;
-import com.netflix.maestro.engine.utils.ObjectHelper;
 import com.netflix.maestro.engine.utils.TriggerSubscriptionClient;
 import com.netflix.maestro.exceptions.InvalidWorkflowVersionException;
 import com.netflix.maestro.exceptions.MaestroNotFoundException;
@@ -52,8 +47,14 @@ import com.netflix.maestro.models.timeline.TimelineEvent;
 import com.netflix.maestro.models.timeline.TimelineLogEvent;
 import com.netflix.maestro.models.timeline.WorkflowTimeline;
 import com.netflix.maestro.models.trigger.TriggerUuids;
+import com.netflix.maestro.queue.MaestroQueueSystem;
+import com.netflix.maestro.queue.jobevents.DeleteWorkflowJobEvent;
+import com.netflix.maestro.queue.jobevents.MaestroJobEvent;
+import com.netflix.maestro.queue.jobevents.WorkflowVersionUpdateJobEvent;
+import com.netflix.maestro.queue.models.MessageDto;
 import com.netflix.maestro.utils.Checks;
 import com.netflix.maestro.utils.IdHelper;
+import com.netflix.maestro.utils.ObjectHelper;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -193,7 +194,8 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
 
   private static final String GET_LATEST_WORKFLOW_INSTANCE_ID_FROM_WORKFLOW_DELETED_QUERY =
       "SELECT MAX((workflow->'latest_instance_id')::INT) as id FROM maestro_workflow_deleted WHERE workflow_id=?";
-  private final MaestroJobEventPublisher publisher;
+
+  private final MaestroQueueSystem queueSystem;
   private final TriggerSubscriptionClient subscriptionClient;
 
   /**
@@ -208,11 +210,11 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
       DataSource dataSource,
       ObjectMapper objectMapper,
       DatabaseConfiguration config,
-      MaestroJobEventPublisher publisher,
+      MaestroQueueSystem queueSystem,
       TriggerSubscriptionClient subscriptionClient,
       MaestroMetrics metrics) {
     super(dataSource, objectMapper, config, metrics);
-    this.publisher = publisher;
+    this.queueSystem = queueSystem;
     this.subscriptionClient = subscriptionClient;
   }
 
@@ -228,77 +230,80 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
     LOG.info("Adding a new workflow definition with an id [{}]", workflowDef.getWorkflow().getId());
     final Workflow workflow = workflowDef.getWorkflow();
     final Metadata metadata = workflowDef.getMetadata();
-    return withMetricLogError(
-        () ->
-            withRetryableTransaction(
-                conn -> {
-                  WorkflowInfo workflowInfo = getWorkflowInfoForUpdate(conn, workflow.getId());
-                  final long nextVersionId = workflowInfo.getLatestVersionId() + 1;
-                  // update the metadata with version info and then metadata is complete.
-                  metadata.setWorkflowVersionId(nextVersionId);
-                  TriggerUuids triggerUuids =
-                      insertMaestroWorkflowVersion(conn, metadata, workflow);
-                  PropertiesSnapshot snapshot =
-                      updateWorkflowProps(
-                          conn,
-                          workflow.getId(),
-                          metadata.getVersionAuthor(),
-                          metadata.getCreateTime(),
-                          workflowInfo.getPrevPropertiesSnapshot(),
-                          changes,
-                          new PropertiesUpdate(Type.ADD_WORKFLOW_DEFINITION));
-                  // add new snapshot to workflowDef
-                  if (snapshot != null) {
-                    workflowDef.setPropertiesSnapshot(snapshot);
-                  } else {
-                    workflowDef.setPropertiesSnapshot(workflowInfo.getPrevPropertiesSnapshot());
-                  }
+    MessageDto[] message = new MessageDto[1];
+    var ret =
+        withMetricLogError(
+            () ->
+                withRetryableTransaction(
+                    conn -> {
+                      WorkflowInfo workflowInfo = getWorkflowInfoForUpdate(conn, workflow.getId());
+                      final long nextVersionId = workflowInfo.getLatestVersionId() + 1;
+                      // update the metadata with version info and then metadata is complete.
+                      metadata.setWorkflowVersionId(nextVersionId);
+                      TriggerUuids triggerUuids =
+                          insertMaestroWorkflowVersion(conn, metadata, workflow);
+                      PropertiesSnapshot snapshot =
+                          updateWorkflowProps(
+                              conn,
+                              workflow.getId(),
+                              metadata.getVersionAuthor(),
+                              metadata.getCreateTime(),
+                              workflowInfo.getPrevPropertiesSnapshot(),
+                              changes,
+                              new PropertiesUpdate(Type.ADD_WORKFLOW_DEFINITION));
+                      // add new snapshot to workflowDef
+                      if (snapshot != null) {
+                        workflowDef.setPropertiesSnapshot(snapshot);
+                      } else {
+                        workflowDef.setPropertiesSnapshot(workflowInfo.getPrevPropertiesSnapshot());
+                      }
 
-                  final long[] upsertRes = upsertMaestroWorkflow(conn, workflowDef);
-                  Checks.notNull(
-                      upsertRes,
-                      "the upsert result should not be null for workflow [%s]",
-                      workflow.getId());
-                  workflowDef.setIsLatest(true); // a new version will always be latest
-                  // add default flag and modified_time and then workflowDef is complete
-                  workflowDef.setIsDefault(
-                      workflowInfo.getPrevActiveVersionId() == Constants.INACTIVE_VERSION_ID
-                          || workflowDef.getIsActive());
-                  workflowDef.setModifyTime(upsertRes[0]);
-                  workflowDef.setInternalId(upsertRes[1]);
+                      final long[] upsertRes = upsertMaestroWorkflow(conn, workflowDef);
+                      Checks.notNull(
+                          upsertRes,
+                          "the upsert result should not be null for workflow [%s]",
+                          workflow.getId());
+                      workflowDef.setIsLatest(true); // a new version will always be latest
+                      // add default flag and modified_time and then workflowDef is complete
+                      workflowDef.setIsDefault(
+                          workflowInfo.getPrevActiveVersionId() == Constants.INACTIVE_VERSION_ID
+                              || workflowDef.getIsActive());
+                      workflowDef.setModifyTime(upsertRes[0]);
+                      workflowDef.setInternalId(upsertRes[1]);
 
-                  if (workflowDef.getIsActive()) {
-                    workflowInfo.setNextActiveWorkflow(
-                        MaestroWorkflowVersion.builder()
-                            .definition(workflow)
-                            .triggerUuids(triggerUuids)
-                            .metadata(metadata)
-                            .build(),
-                        workflowDef.getPropertiesSnapshot());
-                  } else if (workflowInfo.getPrevActiveVersionId()
-                      != Constants.INACTIVE_VERSION_ID) {
-                    // getting an inactive new version but having an active old version
-                    updateWorkflowInfoForNextActiveWorkflow(
-                        conn,
-                        workflow.getId(),
-                        workflowInfo.getPrevActiveVersionId(),
-                        workflowInfo,
-                        workflowDef.getPropertiesSnapshot());
-                  }
-                  if (workflowInfo.withWorkflow()) {
-                    addWorkflowTriggersIfNeeded(conn, workflowInfo);
-                  }
+                      if (workflowDef.getIsActive()) {
+                        workflowInfo.setNextActiveWorkflow(
+                            MaestroWorkflowVersion.builder()
+                                .definition(workflow)
+                                .triggerUuids(triggerUuids)
+                                .metadata(metadata)
+                                .build(),
+                            workflowDef.getPropertiesSnapshot());
+                      } else if (workflowInfo.getPrevActiveVersionId()
+                          != Constants.INACTIVE_VERSION_ID) {
+                        // getting an inactive new version but having an active old version
+                        updateWorkflowInfoForNextActiveWorkflow(
+                            conn,
+                            workflow.getId(),
+                            workflowInfo.getPrevActiveVersionId(),
+                            workflowInfo,
+                            workflowDef.getPropertiesSnapshot());
+                      }
+                      if (workflowInfo.withWorkflow()) {
+                        addWorkflowTriggersIfNeeded(conn, workflowInfo);
+                      }
 
-                  MaestroJobEvent jobEvent =
-                      logToTimeline(
-                          conn, workflowDef, snapshot, workflowInfo.getPrevActiveVersionId());
-                  publisher.publishOrThrow(
-                      jobEvent, "Failed to publish maestro definition change job event.");
-                  return workflowDef;
-                }),
-        "addWorkflowDefinition",
-        "Failed creating a new workflow definition {}",
-        workflow.getId());
+                      MaestroJobEvent jobEvent =
+                          logToTimeline(
+                              conn, workflowDef, snapshot, workflowInfo.getPrevActiveVersionId());
+                      message[0] = queueSystem.enqueue(conn, jobEvent);
+                      return workflowDef;
+                    }),
+            "addWorkflowDefinition",
+            "Failed creating a new workflow definition {}",
+            workflow.getId());
+    queueSystem.notify(message[0]);
+    return ret;
   }
 
   /**
@@ -315,50 +320,54 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
     LOG.debug("Updating workflow properties for workflow id [{}]", workflowId);
     Checks.notNull(
         props, "properties changes to apply cannot be null for workflow [%s]", workflowId);
-    return withMetricLogError(
-        () ->
-            withRetryableTransaction(
-                conn -> {
-                  WorkflowInfo workflowInfo = getWorkflowInfoForUpdate(conn, workflowId);
-                  Checks.notNull(
-                      workflowInfo.getPrevPropertiesSnapshot(),
-                      "Cannot update workflow properties while the workflow [%s] does not exist",
-                      workflowId);
-                  PropertiesSnapshot snapshot =
-                      updateWorkflowProps(
-                          conn,
-                          workflowId,
-                          author,
-                          System.currentTimeMillis(),
+    MessageDto[] message = new MessageDto[1];
+    var ret =
+        withMetricLogError(
+            () ->
+                withRetryableTransaction(
+                    conn -> {
+                      WorkflowInfo workflowInfo = getWorkflowInfoForUpdate(conn, workflowId);
+                      Checks.notNull(
                           workflowInfo.getPrevPropertiesSnapshot(),
-                          props,
-                          update);
+                          "Cannot update workflow properties while the workflow [%s] does not exist",
+                          workflowId);
+                      PropertiesSnapshot snapshot =
+                          updateWorkflowProps(
+                              conn,
+                              workflowId,
+                              author,
+                              System.currentTimeMillis(),
+                              workflowInfo.getPrevPropertiesSnapshot(),
+                              props,
+                              update);
 
-                  List<StatementPreparer> preparers = new ArrayList<>();
-                  StringBuilder fields = prepareProperties(preparers, workflowId, snapshot);
+                      List<StatementPreparer> preparers = new ArrayList<>();
+                      StringBuilder fields = prepareProperties(preparers, workflowId, snapshot);
 
-                  long[] updateRes = executeTemplateUpdate(conn, fields, preparers);
+                      long[] updateRes = executeTemplateUpdate(conn, fields, preparers);
 
-                  if (updateRes != null) {
-                    if (workflowInfo.getPrevActiveVersionId() != Constants.INACTIVE_VERSION_ID) {
-                      updateWorkflowInfoForNextActiveWorkflow(
-                          conn,
-                          workflowId,
-                          workflowInfo.getPrevActiveVersionId(),
-                          workflowInfo,
-                          snapshot);
-                      addWorkflowTriggersIfNeeded(conn, workflowInfo);
-                    }
+                      if (updateRes != null) {
+                        if (workflowInfo.getPrevActiveVersionId()
+                            != Constants.INACTIVE_VERSION_ID) {
+                          updateWorkflowInfoForNextActiveWorkflow(
+                              conn,
+                              workflowId,
+                              workflowInfo.getPrevActiveVersionId(),
+                              workflowInfo,
+                              snapshot);
+                          addWorkflowTriggersIfNeeded(conn, workflowInfo);
+                        }
 
-                    MaestroJobEvent jobEvent = logToTimeline(conn, workflowId, snapshot);
-                    publisher.publishOrThrow(
-                        jobEvent, "Failed to publish maestro properties change job event.");
-                  }
-                  return snapshot;
-                }),
-        "updateWorkflowProperties",
-        "Failed updating the properties for workflow [{}]",
-        workflowId);
+                        MaestroJobEvent jobEvent = logToTimeline(conn, workflowId, snapshot);
+                        message[0] = queueSystem.enqueue(conn, jobEvent);
+                      }
+                      return snapshot;
+                    }),
+            "updateWorkflowProperties",
+            "Failed updating the properties for workflow [{}]",
+            workflowId);
+    queueSystem.notify(message[0]);
+    return ret;
   }
 
   private TriggerUuids getTriggerUuids(Connection conn, String workflowId, long versionId)
@@ -526,7 +535,7 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
       case EXACT:
       default:
         versionId =
-            Checks.toNumeric(version)
+            ObjectHelper.toNumeric(version)
                 .orElseThrow(() -> new InvalidWorkflowVersionException(workflowId, version));
         break;
     }
@@ -604,29 +613,30 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
                 + "All associated workflow data (e.g. versions and instances) will be deleted shortly.",
             author.getName());
 
+    MessageDto[] message = new MessageDto[1];
     final String infoString = toJson(info);
     Long res =
-        withRetryableStatement(
-            DELETE_MAESTRO_WORKFLOW_QUERY,
-            stmt -> {
-              int idx = 0;
-              stmt.setString(++idx, workflowId);
-              stmt.setString(++idx, workflowId);
-              stmt.setString(++idx, infoString);
-              try (ResultSet result =
-                  stmt.executeQuery()) { // unnecessary, to avoid PMD false positive
-                if (result.next()) {
-                  long internalId = result.getLong(1);
-                  Checks.checkTrue(
-                      !result.next(),
-                      "Aborting the deletion as there is already a deletion task in progress for workflow [%s]",
-                      workflowId);
-                  publisher.publishOrThrow(
-                      DeleteWorkflowJobEvent.create(workflowId, internalId, author),
-                      "Failed to publish maestro delete job event for workflow: " + workflowId);
-                  return internalId;
+        withRetryableTransaction(
+            conn -> {
+              try (PreparedStatement stmt = conn.prepareStatement(DELETE_MAESTRO_WORKFLOW_QUERY)) {
+                int idx = 0;
+                stmt.setString(++idx, workflowId);
+                stmt.setString(++idx, workflowId);
+                stmt.setString(++idx, infoString);
+                try (ResultSet result =
+                    stmt.executeQuery()) { // unnecessary, to avoid PMD false positive
+                  if (result.next()) {
+                    long internalId = result.getLong(1);
+                    Checks.checkTrue(
+                        !result.next(),
+                        "Aborting the deletion as there is already a deletion task in progress for workflow [%s]",
+                        workflowId);
+                    var jobEvent = DeleteWorkflowJobEvent.create(workflowId, internalId, author);
+                    message[0] = queueSystem.enqueue(conn, jobEvent);
+                    return internalId;
+                  }
+                  return null;
                 }
-                return null;
               }
             });
     if (res == null) {
@@ -634,6 +644,7 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
           "No workflow is deleted because workflow [%s] is non-existing or has queued or running instances.",
           workflowId);
     }
+    queueSystem.notify(message[0]);
     LOG.info(
         "User [{}] deleted workflow [{}] with a unique internalId [{}]. Send a delete job event to remove data",
         author.getName(),
@@ -1082,35 +1093,38 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
    * @return timeline info
    */
   public String deactivate(String workflowId, User caller) {
-    return withMetricLogError(
-        () ->
-            withRetryableTransaction(
-                conn -> {
-                  long versionId = deactivate(conn, workflowId, caller);
-                  String timeline;
-                  if (versionId == Constants.INACTIVE_VERSION_ID) {
-                    timeline =
-                        String.format(
-                            "Caller [%s] do nothing as there is no active workflow version for [%s]",
-                            caller.getName(), workflowId);
-                  } else {
-                    timeline =
-                        String.format(
-                            "Caller [%s] deactivated workflow [%s], whose last active version is [%s]",
-                            caller.getName(), workflowId, versionId);
-                  }
-                  MaestroJobEvent jobEvent =
-                      logToTimeline(conn, workflowId, null, versionId, caller, timeline);
-                  if (versionId != Constants.INACTIVE_VERSION_ID) {
-                    // no need to inform signal service or cron service about it
-                    publisher.publishOrThrow(
-                        jobEvent, "Failed to publish maestro deactivation job event.");
-                  }
-                  return timeline;
-                }),
-        "deactivate",
-        "Failed to activate workflow [{}]",
-        workflowId);
+    MessageDto[] message = new MessageDto[1];
+    var ret =
+        withMetricLogError(
+            () ->
+                withRetryableTransaction(
+                    conn -> {
+                      long versionId = deactivate(conn, workflowId, caller);
+                      String timeline;
+                      if (versionId == Constants.INACTIVE_VERSION_ID) {
+                        timeline =
+                            String.format(
+                                "Caller [%s] do nothing as there is no active workflow version for [%s]",
+                                caller.getName(), workflowId);
+                      } else {
+                        timeline =
+                            String.format(
+                                "Caller [%s] deactivated workflow [%s], whose last active version is [%s]",
+                                caller.getName(), workflowId, versionId);
+                      }
+                      MaestroJobEvent jobEvent =
+                          logToTimeline(conn, workflowId, null, versionId, caller, timeline);
+                      if (versionId != Constants.INACTIVE_VERSION_ID) {
+                        // no need to inform signal service or cron service about it
+                        message[0] = queueSystem.enqueue(conn, jobEvent);
+                      }
+                      return timeline;
+                    }),
+            "deactivate",
+            "Failed to activate workflow [{}]",
+            workflowId);
+    queueSystem.notify(message[0]);
+    return ret;
   }
 
   private long deactivate(Connection conn, String workflowId, User caller) throws SQLException {
@@ -1138,48 +1152,52 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
    * @return the timeline info
    */
   public MaestroJobEvent activate(String workflowId, String version, User caller) {
-    return withMetricLogError(
-        () ->
-            withRetryableTransaction(
-                conn -> {
-                  WorkflowInfo activatedResult = activate(conn, workflowId, version, caller);
-                  String timeline;
-                  if (activatedResult.withWorkflow()) {
-                    timeline =
-                        String.format(
-                            "Caller [%s] activates workflow version [%s][%s], previous active version is [%s]",
-                            caller.getName(),
-                            workflowId,
-                            activatedResult.getActiveVersionId(),
-                            activatedResult.getPrevActiveVersionId());
-                  } else {
-                    timeline =
-                        String.format(
-                            "Caller [%s] do nothing as workflow version [%s][%s] is already active",
-                            caller.getName(), workflowId, activatedResult.getPrevActiveVersionId());
-                  }
+    MessageDto[] message = new MessageDto[1];
+    var ret =
+        withMetricLogError(
+            () ->
+                withRetryableTransaction(
+                    conn -> {
+                      WorkflowInfo activatedResult = activate(conn, workflowId, version, caller);
+                      String timeline;
+                      if (activatedResult.withWorkflow()) {
+                        timeline =
+                            String.format(
+                                "Caller [%s] activates workflow version [%s][%s], previous active version is [%s]",
+                                caller.getName(),
+                                workflowId,
+                                activatedResult.getActiveVersionId(),
+                                activatedResult.getPrevActiveVersionId());
+                      } else {
+                        timeline =
+                            String.format(
+                                "Caller [%s] do nothing as workflow version [%s][%s] is already active",
+                                caller.getName(),
+                                workflowId,
+                                activatedResult.getPrevActiveVersionId());
+                      }
 
-                  MaestroJobEvent jobEvent =
-                      logToTimeline(
-                          conn,
-                          workflowId,
-                          activatedResult.getActiveVersionId(),
-                          activatedResult.getPrevActiveVersionId(),
-                          caller,
-                          timeline);
+                      MaestroJobEvent jobEvent =
+                          logToTimeline(
+                              conn,
+                              workflowId,
+                              activatedResult.getActiveVersionId(),
+                              activatedResult.getPrevActiveVersionId(),
+                              caller,
+                              timeline);
 
-                  if (activatedResult.withWorkflow()) {
-                    addWorkflowTriggersIfNeeded(conn, activatedResult);
-
-                    publisher.publishOrThrow(
-                        jobEvent, "Failed to publish maestro activation job event.");
-                  }
-                  return jobEvent;
-                }),
-        "activate",
-        "Failed to activate workflow version [{}][{}]",
-        workflowId,
-        version);
+                      if (activatedResult.withWorkflow()) {
+                        addWorkflowTriggersIfNeeded(conn, activatedResult);
+                        message[0] = queueSystem.enqueue(conn, jobEvent);
+                      }
+                      return jobEvent;
+                    }),
+            "activate",
+            "Failed to activate workflow version [{}][{}]",
+            workflowId,
+            version);
+    queueSystem.notify(message[0]);
+    return ret;
   }
 
   @Getter

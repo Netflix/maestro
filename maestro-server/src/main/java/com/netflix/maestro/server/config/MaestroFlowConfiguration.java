@@ -5,7 +5,6 @@ import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
 import com.netflix.maestro.engine.handlers.MaestroExecutionPreparer;
 import com.netflix.maestro.engine.listeners.MaestroFinalFlowStatusCallback;
-import com.netflix.maestro.engine.publisher.MaestroJobEventPublisher;
 import com.netflix.maestro.engine.tasks.MaestroEndTask;
 import com.netflix.maestro.engine.tasks.MaestroGateTask;
 import com.netflix.maestro.engine.tasks.MaestroStartTask;
@@ -52,12 +51,11 @@ public class MaestroFlowConfiguration {
       MaestroTask maestroTask,
       MaestroWorkflowInstanceDao instanceDao,
       MaestroStepInstanceDao stepInstanceDao,
-      MaestroJobEventPublisher publisher,
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
       MaestroMetrics metrics) {
     LOG.info("Creating maestro finalFlowStatusCallback within Spring boot...");
     return new MaestroFinalFlowStatusCallback(
-        maestroTask, instanceDao, stepInstanceDao, publisher, objectMapper, metrics);
+        maestroTask, instanceDao, stepInstanceDao, objectMapper, metrics);
   }
 
   @Bean

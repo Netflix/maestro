@@ -43,6 +43,7 @@ import com.netflix.maestro.engine.validations.DryRunValidator;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.StepType;
+import com.netflix.maestro.queue.MaestroQueueSystem;
 import com.netflix.maestro.server.properties.StepRuntimeProperties;
 import com.netflix.maestro.server.runtime.Fabric8RuntimeExecutor;
 import io.fabric8.kubernetes.client.ConfigBuilder;
@@ -171,6 +172,7 @@ public class MaestroStepRuntimeConfiguration {
       InstanceStepConcurrencyHandler instanceStepConcurrencyHandler,
       MaestroWorkflowInstanceDao instanceDao,
       MaestroStepInstanceDao stepInstanceDao,
+      MaestroQueueSystem queueSystem,
       StepRuntimeProperties stepRuntimeProperties) {
     LOG.info("Creating Subworkflow step within Spring boot...");
     Set<String> alwaysPassDownParamNames =
@@ -182,6 +184,7 @@ public class MaestroStepRuntimeConfiguration {
             instanceStepConcurrencyHandler,
             instanceDao,
             stepInstanceDao,
+            queueSystem,
             alwaysPassDownParamNames);
     stepRuntimeMap.put(StepType.SUBWORKFLOW, step);
     return step;
@@ -194,6 +197,7 @@ public class MaestroStepRuntimeConfiguration {
       MaestroWorkflowInstanceDao instanceDao,
       MaestroStepInstanceDao stepInstanceDao,
       MaestroStepInstanceActionDao actionDao,
+      MaestroQueueSystem queueSystem,
       InstanceStepConcurrencyHandler instanceStepConcurrencyHandler,
       StepRuntimeProperties stepRuntimeProperties) {
     LOG.info(
@@ -205,6 +209,7 @@ public class MaestroStepRuntimeConfiguration {
             instanceDao,
             stepInstanceDao,
             actionDao,
+            queueSystem,
             instanceStepConcurrencyHandler,
             stepRuntimeProperties.getForeach());
     stepRuntimeMap.put(StepType.FOREACH, step);

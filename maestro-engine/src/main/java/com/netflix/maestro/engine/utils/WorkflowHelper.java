@@ -17,9 +17,7 @@ import com.netflix.maestro.engine.eval.MaestroParamExtensionRepo;
 import com.netflix.maestro.engine.eval.ParamEvaluator;
 import com.netflix.maestro.engine.execution.RunRequest;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
-import com.netflix.maestro.engine.jobevents.StartWorkflowJobEvent;
 import com.netflix.maestro.engine.params.ParamsManager;
-import com.netflix.maestro.engine.publisher.MaestroJobEventPublisher;
 import com.netflix.maestro.engine.transformation.DagTranslator;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.Step;
@@ -35,6 +33,7 @@ import com.netflix.maestro.utils.Checks;
 import com.netflix.maestro.utils.DurationParser;
 import com.netflix.maestro.utils.IdHelper;
 import com.netflix.maestro.utils.MapHelper;
+import com.netflix.maestro.utils.ObjectHelper;
 import java.util.Collections;
 import java.util.Map;
 import lombok.AllArgsConstructor;
@@ -46,18 +45,7 @@ public class WorkflowHelper {
   private final ParamEvaluator paramEvaluator;
   private final DagTranslator dagTranslator;
   private final MaestroParamExtensionRepo paramExtensionRepo;
-  private final MaestroJobEventPublisher publisher;
   private final long maxGroupNum;
-
-  /**
-   * Returns workflow id if workflow name is missing and was not provided by the user.
-   *
-   * @param workflow workflow definition
-   * @return workflow name
-   */
-  public static String getWorkflowNameOrDefault(Workflow workflow) {
-    return workflow.getName() != null ? workflow.getName() : workflow.getId();
-  }
 
   /**
    * Create a workflow instance based on the workflow info, e.g. definition, run request, etc.
@@ -167,7 +155,7 @@ public class WorkflowHelper {
     summary.setWorkflowId(instance.getWorkflowId());
     summary.setInternalId(instance.getInternalId());
     summary.setWorkflowVersionId(instance.getWorkflowVersionId());
-    summary.setWorkflowName(getWorkflowNameOrDefault(instance.getRuntimeWorkflow()));
+    summary.setWorkflowName(instance.getRuntimeWorkflow().getWorkflowNameOrDefault());
     summary.setWorkflowInstanceId(instance.getWorkflowInstanceId());
     summary.setCreationTime(instance.getCreateTime());
     summary.setWorkflowRunId(instance.getWorkflowRunId());
@@ -237,18 +225,5 @@ public class WorkflowHelper {
     }
 
     instance.setParams(allParams);
-  }
-
-  /**
-   * Helper method to publish a start workflow event for a given workflow if flag is true and
-   * workflow id is valid and is not a foreach inline workflow.
-   */
-  public void publishStartWorkflowEvent(String workflowId, boolean flag) {
-    if (flag
-        && workflowId != null
-        && !workflowId.isEmpty()
-        && !IdHelper.isInlineWorkflowId(workflowId)) {
-      publisher.publishOrThrow(StartWorkflowJobEvent.create(workflowId));
-    }
   }
 }

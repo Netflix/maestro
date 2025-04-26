@@ -38,10 +38,7 @@ import com.netflix.maestro.engine.eval.ParamEvaluator;
 import com.netflix.maestro.engine.execution.RunRequest;
 import com.netflix.maestro.engine.execution.RunResponse;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
-import com.netflix.maestro.engine.jobevents.StartWorkflowJobEvent;
-import com.netflix.maestro.engine.jobevents.WorkflowVersionUpdateJobEvent;
 import com.netflix.maestro.engine.params.ParamsManager;
-import com.netflix.maestro.engine.publisher.MaestroJobEventPublisher;
 import com.netflix.maestro.engine.transformation.DagTranslator;
 import com.netflix.maestro.engine.utils.WorkflowHelper;
 import com.netflix.maestro.engine.validations.DryRunValidator;
@@ -73,6 +70,7 @@ import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.timeline.TimelineEvent;
 import com.netflix.maestro.models.trigger.TriggerUuids;
+import com.netflix.maestro.queue.jobevents.WorkflowVersionUpdateJobEvent;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -98,7 +96,6 @@ public class WorkflowActionHandlerTest extends MaestroEngineBaseTest {
   @Mock private ParamEvaluator evaluator;
   @Mock private DryRunValidator dryRunValidator;
   @Mock private MaestroParamExtensionRepo extensionRepo;
-  @Mock private MaestroJobEventPublisher maestroJobEventPublisher;
 
   private WorkflowDefinition definition;
   private WorkflowInstance instance;
@@ -110,14 +107,7 @@ public class WorkflowActionHandlerTest extends MaestroEngineBaseTest {
   public void before() throws Exception {
     ParamsManager paramsManager = mock(ParamsManager.class);
     this.workflowHelper =
-        spy(
-            new WorkflowHelper(
-                paramsManager,
-                evaluator,
-                dagTranslator,
-                extensionRepo,
-                maestroJobEventPublisher,
-                1));
+        spy(new WorkflowHelper(paramsManager, evaluator, dagTranslator, extensionRepo, 1));
     this.actionHandler =
         new WorkflowActionHandler(
             workflowDao, instanceDao, runStrategyDao, dryRunValidator, this.workflowHelper);
@@ -130,7 +120,7 @@ public class WorkflowActionHandlerTest extends MaestroEngineBaseTest {
             "fixtures/instances/sample-workflow-instance-created.json", WorkflowInstance.class);
     instance.setWorkflowId("sample-minimal-wf");
     when(workflowDao.getWorkflowDefinition("sample-minimal-wf", "active")).thenReturn(definition);
-    when(instanceDao.runWorkflowInstances(any(), any(), anyInt())).thenReturn(Optional.empty());
+    when(instanceDao.runWorkflowInstances(any(), any())).thenReturn(Optional.empty());
     when(runner.start(any())).thenReturn("test-uuid");
   }
 
@@ -408,10 +398,9 @@ public class WorkflowActionHandlerTest extends MaestroEngineBaseTest {
             "foreach-step",
             new ForeachArtifact(),
             Collections.singletonList(request),
-            Collections.singletonList(1L),
-            1);
+            Collections.singletonList(1L));
     assertFalse(errors.isPresent());
-    verify(instanceDao, times(1)).runWorkflowInstances(any(), any(), eq(1));
+    verify(instanceDao, times(1)).runWorkflowInstances(any(), any());
   }
 
   @Test
@@ -435,12 +424,11 @@ public class WorkflowActionHandlerTest extends MaestroEngineBaseTest {
             "foreach-step",
             artifact,
             Collections.singletonList(request),
-            Collections.singletonList(5L),
-            1);
+            Collections.singletonList(5L));
     assertFalse(errors.isPresent());
     ArgumentCaptor<List<WorkflowInstance>> captor = ArgumentCaptor.forClass(List.class);
     verify(instanceDao, times(1))
-        .runWorkflowInstances(eq(artifact.getForeachWorkflowId()), captor.capture(), eq(1));
+        .runWorkflowInstances(eq(artifact.getForeachWorkflowId()), captor.capture());
     List<WorkflowInstance> res = captor.getValue();
     assertEquals(1, res.size());
     assertEquals(artifact.getForeachWorkflowId(), res.get(0).getWorkflowId());
@@ -501,11 +489,10 @@ public class WorkflowActionHandlerTest extends MaestroEngineBaseTest {
             "foreach-step",
             artifact,
             Collections.singletonList(runRequest),
-            Collections.singletonList(2L),
-            3);
+            Collections.singletonList(2L));
     assertFalse(errors.isPresent());
 
-    verify(instanceDao, times(1)).runWorkflowInstances(any(), any(), anyInt());
+    verify(instanceDao, times(1)).runWorkflowInstances(any(), any());
 
     ArgumentCaptor<RunRequest> captor = ArgumentCaptor.forClass(RunRequest.class);
     verify(workflowHelper, times(1)).updateWorkflowInstance(any(), captor.capture());
@@ -566,11 +553,10 @@ public class WorkflowActionHandlerTest extends MaestroEngineBaseTest {
             "foreach-step",
             artifact,
             Collections.singletonList(runRequest),
-            Collections.singletonList(2L),
-            3);
+            Collections.singletonList(2L));
     assertFalse(errors.isPresent());
 
-    verify(instanceDao, times(1)).runWorkflowInstances(any(), any(), anyInt());
+    verify(instanceDao, times(1)).runWorkflowInstances(any(), any());
 
     ArgumentCaptor<RunRequest> captor = ArgumentCaptor.forClass(RunRequest.class);
     verify(workflowHelper, times(1)).updateWorkflowInstance(any(), captor.capture());
@@ -627,11 +613,10 @@ public class WorkflowActionHandlerTest extends MaestroEngineBaseTest {
             "foreach-step",
             artifact,
             Collections.singletonList(runRequest),
-            Collections.singletonList(2L),
-            3);
+            Collections.singletonList(2L));
     assertFalse(errors.isPresent());
 
-    verify(instanceDao, times(1)).runWorkflowInstances(any(), any(), anyInt());
+    verify(instanceDao, times(1)).runWorkflowInstances(any(), any());
 
     ArgumentCaptor<RunRequest> captor = ArgumentCaptor.forClass(RunRequest.class);
     verify(workflowHelper, times(1)).updateWorkflowInstance(any(), captor.capture());
@@ -673,7 +658,7 @@ public class WorkflowActionHandlerTest extends MaestroEngineBaseTest {
         actionHandler
             .restartForeachInstance(runRequest, instance, "foreach-step", 100)
             .isPresent());
-    verify(instanceDao, times(1)).runWorkflowInstances(any(), any(), anyInt());
+    verify(instanceDao, times(1)).runWorkflowInstances(any(), any());
     assertEquals(100, instance.getWorkflowRunId());
 
     ArgumentCaptor<RunRequest> captor = ArgumentCaptor.forClass(RunRequest.class);
@@ -782,25 +767,34 @@ public class WorkflowActionHandlerTest extends MaestroEngineBaseTest {
         .thenReturn(10);
     TimelineEvent event = actionHandler.unblock("sample-minimal-wf", tester);
     assertEquals("Unblocked [10] failed workflow instances.", event.getMessage());
-    verify(maestroJobEventPublisher, times(1)).publishOrThrow(any(StartWorkflowJobEvent.class));
+    verify(instanceDao, times(1))
+        .tryUnblockFailedWorkflowInstances(eq("sample-minimal-wf"), anyInt(), any());
   }
 
   @Test
   public void testUnblockReachingLimit() {
     when(instanceDao.tryUnblockFailedWorkflowInstances(eq("sample-minimal-wf"), anyInt(), any()))
-        .thenReturn(Constants.UNBLOCK_BATCH_SIZE)
-        .thenReturn(10);
+        .thenReturn(Constants.UNBLOCK_BATCH_SIZE + 10);
     TimelineEvent event = actionHandler.unblock("sample-minimal-wf", tester);
     assertEquals("Unblocked [110] failed workflow instances.", event.getMessage());
-    verify(maestroJobEventPublisher, times(1)).publishOrThrow(any(StartWorkflowJobEvent.class));
+    verify(instanceDao, times(1))
+        .tryUnblockFailedWorkflowInstances(eq("sample-minimal-wf"), anyInt(), any());
   }
 
   @Test
-  public void testUnblockNothing() {
+  public void testUnblockZero() {
     when(instanceDao.tryUnblockFailedWorkflowInstances(eq("sample-minimal-wf"), anyInt(), any()))
         .thenReturn(0);
     TimelineEvent event = actionHandler.unblock("sample-minimal-wf", tester);
     assertEquals("Unblocked [0] failed workflow instances.", event.getMessage());
-    verify(maestroJobEventPublisher, times(0)).publishOrThrow(any(StartWorkflowJobEvent.class));
+    verify(instanceDao, times(1))
+        .tryUnblockFailedWorkflowInstances(eq("sample-minimal-wf"), anyInt(), any());
+  }
+
+  @Test
+  public void testUnblockNothing() {
+    TimelineEvent event = actionHandler.unblock("maestro_foreach-sample-minimal-wf", tester);
+    assertEquals("Unblocked the workflow.", event.getMessage());
+    verify(instanceDao, times(0)).tryUnblockFailedWorkflowInstances(any(), anyInt(), any());
   }
 }

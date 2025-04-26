@@ -29,7 +29,7 @@ public class FlowTest extends FlowBaseTest {
   private Task task;
 
   @Before
-  public void init() {
+  public void setUp() {
     flow = createFlow();
     task = flow.newTask(new TaskDef("task1", "noop", null, null), false);
   }

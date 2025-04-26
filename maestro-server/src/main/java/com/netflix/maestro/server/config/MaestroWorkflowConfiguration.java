@@ -33,7 +33,6 @@ import com.netflix.maestro.engine.handlers.SignalHandler;
 import com.netflix.maestro.engine.handlers.WorkflowRunner;
 import com.netflix.maestro.engine.params.OutputDataManager;
 import com.netflix.maestro.engine.params.ParamsManager;
-import com.netflix.maestro.engine.publisher.MaestroJobEventPublisher;
 import com.netflix.maestro.engine.tasks.MaestroEndTask;
 import com.netflix.maestro.engine.tasks.MaestroGateTask;
 import com.netflix.maestro.engine.tasks.MaestroStartTask;
@@ -44,10 +43,12 @@ import com.netflix.maestro.engine.transformation.StepTranslator;
 import com.netflix.maestro.engine.transformation.WorkflowTranslator;
 import com.netflix.maestro.engine.utils.RollupAggregationHelper;
 import com.netflix.maestro.engine.utils.WorkflowHelper;
+import com.netflix.maestro.flow.dao.MaestroFlowDao;
 import com.netflix.maestro.flow.runtime.ExecutionPreparer;
 import com.netflix.maestro.flow.runtime.FlowOperation;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.Constants;
+import com.netflix.maestro.queue.MaestroQueueSystem;
 import com.netflix.maestro.server.properties.MaestroEngineProperties;
 import com.netflix.maestro.signal.dao.MaestroSignalBrokerDao;
 import com.netflix.maestro.signal.handler.MaestroSignalHandler;
@@ -87,11 +88,12 @@ public class MaestroWorkflowConfiguration {
 
   @Bean
   public WorkflowRunner workflowRunner(
+      MaestroFlowDao flowDao,
       FlowOperation flowOperation,
       WorkflowTranslator workflowTranslator,
       WorkflowHelper workflowHelper) {
     LOG.info("Creating Maestro WorkflowRunner within Spring boot...");
-    return new WorkflowRunner(flowOperation, workflowTranslator, workflowHelper);
+    return new WorkflowRunner(flowDao, flowOperation, workflowTranslator, workflowHelper);
   }
 
   @Bean
@@ -115,7 +117,6 @@ public class MaestroWorkflowConfiguration {
       ParamEvaluator paramEvaluator,
       DagTranslator dagTranslator,
       MaestroParamExtensionRepo paramExtensionRepo,
-      MaestroJobEventPublisher maestroJobEventPublisher,
       MaestroEngineProperties properties) {
     LOG.info("Creating WorkflowHelper via spring boot...");
     return new WorkflowHelper(
@@ -123,7 +124,6 @@ public class MaestroWorkflowConfiguration {
         paramEvaluator,
         dagTranslator,
         paramExtensionRepo,
-        maestroJobEventPublisher,
         properties.getMaxGroupNum());
   }
 
@@ -181,13 +181,13 @@ public class MaestroWorkflowConfiguration {
   @Bean
   public MaestroEndTask maestroEndTask(
       MaestroWorkflowInstanceDao instanceDao,
-      MaestroJobEventPublisher maestroJobEventPublisher,
+      MaestroQueueSystem queueSystem,
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
       RollupAggregationHelper rollupAggregationHelper,
       MaestroMetrics metricRepo) {
     LOG.info("Creating Maestro endTask within Spring boot...");
     return new MaestroEndTask(
-        instanceDao, maestroJobEventPublisher, objectMapper, rollupAggregationHelper, metricRepo);
+        instanceDao, queueSystem, objectMapper, rollupAggregationHelper, metricRepo);
   }
 
   @Bean
@@ -209,10 +209,9 @@ public class MaestroWorkflowConfiguration {
   }
 
   @Bean
-  public StepSyncManager stepSyncManager(
-      MaestroStepInstanceDao instanceDao, MaestroJobEventPublisher publisher) {
+  public StepSyncManager stepSyncManager(MaestroStepInstanceDao instanceDao) {
     LOG.info("Creating Maestro StepSyncManager within Spring boot...");
-    return new StepSyncManager(instanceDao, publisher);
+    return new StepSyncManager(instanceDao);
   }
 
   @Bean

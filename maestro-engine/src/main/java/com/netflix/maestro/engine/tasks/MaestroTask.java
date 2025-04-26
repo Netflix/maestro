@@ -39,7 +39,6 @@ import com.netflix.maestro.engine.tracing.MaestroTracingManager;
 import com.netflix.maestro.engine.transformation.Translator;
 import com.netflix.maestro.engine.utils.DagHelper;
 import com.netflix.maestro.engine.utils.DurationHelper;
-import com.netflix.maestro.engine.utils.ObjectHelper;
 import com.netflix.maestro.engine.utils.StepHelper;
 import com.netflix.maestro.engine.utils.TaskHelper;
 import com.netflix.maestro.exceptions.MaestroInternalError;
@@ -71,6 +70,7 @@ import com.netflix.maestro.models.signal.SignalOutputsDefinition;
 import com.netflix.maestro.models.timeline.TimelineLogEvent;
 import com.netflix.maestro.utils.DurationParser;
 import com.netflix.maestro.utils.MapHelper;
+import com.netflix.maestro.utils.ObjectHelper;
 import com.netflix.maestro.utils.RetryPolicyParser;
 import java.sql.SQLException;
 import java.time.Duration;
@@ -644,7 +644,7 @@ public class MaestroTask implements FlowTask {
             case BYPASS_STEP_DEPENDENCIES:
               if (status != StepInstance.Status.WAITING_FOR_SIGNALS) {
                 LOG.info("Ignore bypass dependency action as current status is: {}", status);
-                // todo better to delete byPassStepDependencies action
+                // todo better to delete the expired byPassStepDependencies action
               } else {
                 runtimeSummary.byPassSignalDependencies(action.getUser(), action.getCreateTime());
                 // skip adding the timeline info for action as its already taken care in the

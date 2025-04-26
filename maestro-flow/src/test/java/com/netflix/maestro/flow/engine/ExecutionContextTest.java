@@ -57,7 +57,7 @@ public class ExecutionContextTest extends FlowBaseTest {
   private FlowGroup group;
 
   @Before
-  public void init() {
+  public void setUp() {
     when(properties.getInternalWorkerNumber()).thenReturn(3);
     context =
         new ExecutionContext(

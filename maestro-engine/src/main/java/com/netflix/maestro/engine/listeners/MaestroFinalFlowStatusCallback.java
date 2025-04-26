@@ -17,9 +17,7 @@ import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
 import com.netflix.maestro.engine.execution.WorkflowRuntimeSummary;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
-import com.netflix.maestro.engine.jobevents.WorkflowInstanceUpdateJobEvent;
 import com.netflix.maestro.engine.metrics.MetricConstants;
-import com.netflix.maestro.engine.publisher.MaestroJobEventPublisher;
 import com.netflix.maestro.engine.tasks.MaestroStartTask;
 import com.netflix.maestro.engine.tasks.MaestroTask;
 import com.netflix.maestro.engine.utils.AggregatedViewHelper;
@@ -39,6 +37,7 @@ import com.netflix.maestro.models.instance.WorkflowRuntimeOverview;
 import com.netflix.maestro.models.instance.WorkflowStepStatusSummary;
 import com.netflix.maestro.models.timeline.TimelineDetailsEvent;
 import com.netflix.maestro.models.timeline.TimelineLogEvent;
+import com.netflix.maestro.queue.jobevents.WorkflowInstanceUpdateJobEvent;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Optional;
@@ -57,7 +56,6 @@ public class MaestroFinalFlowStatusCallback implements FinalFlowStatusCallback {
   private final MaestroTask maestroTask;
   private final MaestroWorkflowInstanceDao instanceDao;
   private final MaestroStepInstanceDao stepInstanceDao;
-  private final MaestroJobEventPublisher publisher;
   private final ObjectMapper objectMapper;
   private final MaestroMetrics metrics;
 
@@ -234,9 +232,23 @@ public class MaestroFinalFlowStatusCallback implements FinalFlowStatusCallback {
     if (errorDetails != null) {
       runtimeSummary.addTimeline(TimelineDetailsEvent.from(errorDetails));
     }
+    var jobEvent =
+        WorkflowInstanceUpdateJobEvent.create(
+            summary.getWorkflowId(),
+            summary.getWorkflowName(),
+            summary.getWorkflowInstanceId(),
+            summary.getWorkflowRunId(),
+            summary.getWorkflowUuid(),
+            summary.getCorrelationId(),
+            summary.getInitiator(),
+            summary.getGroupInfo(),
+            summary.getTags(),
+            runtimeSummary.getInstanceStatus(),
+            status,
+            markTime);
     Optional<Details> updated =
         instanceDao.updateWorkflowInstance(
-            summary, overview, runtimeSummary.getTimeline(), status, markTime);
+            summary, overview, runtimeSummary.getTimeline(), status, markTime, jobEvent);
     if (updated.isPresent()) {
       LOG.error(
           "Failed when finalizing workflow {} with execution_id [{}] due to {}, Will retry.",
@@ -251,11 +263,6 @@ public class MaestroFinalFlowStatusCallback implements FinalFlowStatusCallback {
       throw new MaestroRetryableError(
           updated.get(), "Failed to update workflow instance: " + summary.getIdentity());
     }
-
-    publisher.publishOrThrow(
-        WorkflowInstanceUpdateJobEvent.create(summary, runtimeSummary, status, markTime),
-        "Failed to publish maestro job event when finalizing workflow: " + summary.getIdentity());
-
     metrics.counter(
         MetricConstants.FINAL_FLOW_STATUS_CALL_BACK_METRIC,
         getClass(),

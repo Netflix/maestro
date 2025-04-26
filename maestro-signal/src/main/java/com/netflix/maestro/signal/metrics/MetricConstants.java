@@ -5,7 +5,7 @@ package com.netflix.maestro.signal.metrics;
  *
  * @author jun-he
  */
-public final class MetricConstants extends com.netflix.maestro.engine.metrics.MetricConstants {
+public final class MetricConstants extends com.netflix.maestro.metrics.MetricConstants {
   private MetricConstants() {}
 
   /** Metric to count for the signal trigger matched subscription found. */

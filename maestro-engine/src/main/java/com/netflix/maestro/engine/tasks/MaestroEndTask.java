@@ -16,10 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
 import com.netflix.maestro.engine.execution.WorkflowRuntimeSummary;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
-import com.netflix.maestro.engine.jobevents.TerminateInstancesJobEvent;
-import com.netflix.maestro.engine.jobevents.WorkflowInstanceUpdateJobEvent;
 import com.netflix.maestro.engine.metrics.MetricConstants;
-import com.netflix.maestro.engine.publisher.MaestroJobEventPublisher;
 import com.netflix.maestro.engine.steps.StepRuntime;
 import com.netflix.maestro.engine.utils.AggregatedViewHelper;
 import com.netflix.maestro.engine.utils.RollupAggregationHelper;
@@ -39,6 +36,9 @@ import com.netflix.maestro.models.instance.WorkflowRuntimeOverview;
 import com.netflix.maestro.models.timeline.TimelineDetailsEvent;
 import com.netflix.maestro.models.timeline.TimelineEvent;
 import com.netflix.maestro.models.timeline.TimelineLogEvent;
+import com.netflix.maestro.queue.MaestroQueueSystem;
+import com.netflix.maestro.queue.jobevents.TerminateThenRunJobEvent;
+import com.netflix.maestro.queue.jobevents.WorkflowInstanceUpdateJobEvent;
 import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -64,7 +64,7 @@ import lombok.extern.slf4j.Slf4j;
 public final class MaestroEndTask implements FlowTask {
   private static final long WORKFLOW_LONG_START_DELAY_INTERVAL = 180000;
   private final MaestroWorkflowInstanceDao instanceDao;
-  private final MaestroJobEventPublisher publisher;
+  private final MaestroQueueSystem queueSystem;
   private final ObjectMapper objectMapper;
   private final RollupAggregationHelper rollupAggregationHelper;
   private final MaestroMetrics metrics;
@@ -72,12 +72,12 @@ public final class MaestroEndTask implements FlowTask {
   /** Constructor. */
   public MaestroEndTask(
       MaestroWorkflowInstanceDao instanceDao,
-      MaestroJobEventPublisher publisher,
+      MaestroQueueSystem queueSystem,
       ObjectMapper objectMapper,
       RollupAggregationHelper rollupAggregationHelper,
       MaestroMetrics metricRepo) {
     this.instanceDao = instanceDao;
-    this.publisher = publisher;
+    this.queueSystem = queueSystem;
     this.objectMapper = objectMapper;
     this.rollupAggregationHelper = rollupAggregationHelper;
     this.metrics = metricRepo;
@@ -152,8 +152,8 @@ public final class MaestroEndTask implements FlowTask {
         && newOverview.getRollupOverview() != null
         && newOverview.getRollupOverview().getTotalLeafCount()
             > Constants.TOTAL_LEAF_STEP_COUNT_LIMIT) {
-      TerminateInstancesJobEvent jobEvent =
-          TerminateInstancesJobEvent.init(
+      TerminateThenRunJobEvent jobEvent =
+          TerminateThenRunJobEvent.init(
               summary.getWorkflowId(),
               Actions.WorkflowInstanceAction.STOP,
               StepRuntime.SYSTEM_USER,
@@ -165,7 +165,7 @@ public final class MaestroEndTask implements FlowTask {
       jobEvent.addOneRun(
           summary.getWorkflowInstanceId(), summary.getWorkflowRunId(), summary.getWorkflowUuid());
       LOG.info(jobEvent.getReason());
-      Optional<Details> errors = publisher.publish(jobEvent);
+      Optional<Details> errors = queueSystem.enqueue(jobEvent);
       if (errors.isPresent()) {
         LOG.warn(
             "Failed to publish TerminateInstancesJobEvent for {} and will retry next time",
@@ -267,23 +267,32 @@ public final class MaestroEndTask implements FlowTask {
       WorkflowRuntimeOverview newOverview,
       WorkflowInstance.Status nextStatus,
       long markTime) {
+    var jobEvent =
+        WorkflowInstanceUpdateJobEvent.create(
+            workflowSummary.getWorkflowId(),
+            workflowSummary.getWorkflowName(),
+            workflowSummary.getWorkflowInstanceId(),
+            workflowSummary.getWorkflowRunId(),
+            workflowSummary.getWorkflowUuid(),
+            workflowSummary.getCorrelationId(),
+            workflowSummary.getInitiator(),
+            workflowSummary.getGroupInfo(),
+            workflowSummary.getTags(),
+            runtimeSummary.getInstanceStatus(),
+            nextStatus,
+            markTime);
     Optional<Details> updated =
         instanceDao.updateWorkflowInstance(
-            workflowSummary, newOverview, runtimeSummary.getTimeline(), nextStatus, markTime);
+            workflowSummary,
+            newOverview,
+            runtimeSummary.getTimeline(),
+            nextStatus,
+            markTime,
+            jobEvent);
     if (updated.isPresent()) {
       runtimeSummary.addTimeline(TimelineDetailsEvent.from(updated.get()));
       return false;
     }
-
-    Optional<Details> sent =
-        publisher.publish(
-            WorkflowInstanceUpdateJobEvent.create(
-                workflowSummary, runtimeSummary, nextStatus, markTime));
-    if (sent.isPresent()) {
-      runtimeSummary.addTimeline(TimelineDetailsEvent.from(sent.get()));
-      return false;
-    }
-
     runtimeSummary.updateRuntimeState(nextStatus, newOverview, markTime);
     return true;
   }

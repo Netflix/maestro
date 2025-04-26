@@ -14,11 +14,12 @@ package com.netflix.maestro.engine.execution;
 
 import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
 import com.netflix.maestro.engine.db.DbOperation;
-import com.netflix.maestro.engine.jobevents.StepInstanceUpdateJobEvent;
-import com.netflix.maestro.engine.publisher.MaestroJobEventPublisher;
 import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.models.error.Details;
 import com.netflix.maestro.models.instance.StepInstance;
+import com.netflix.maestro.queue.jobevents.MaestroJobEvent;
+import com.netflix.maestro.queue.jobevents.NotificationJobEvent;
+import com.netflix.maestro.queue.jobevents.StepInstanceUpdateJobEvent;
 import java.util.Optional;
 import javax.validation.constraints.NotNull;
 
@@ -28,13 +29,10 @@ import javax.validation.constraints.NotNull;
  */
 public final class StepSyncManager {
   private final MaestroStepInstanceDao instanceDao;
-  private final MaestroJobEventPublisher jobEventPublisher;
 
   /** Step synchronization manager constructor. */
-  public StepSyncManager(
-      MaestroStepInstanceDao instanceDao, MaestroJobEventPublisher jobEventPublisher) {
+  public StepSyncManager(MaestroStepInstanceDao instanceDao) {
     this.instanceDao = instanceDao;
-    this.jobEventPublisher = jobEventPublisher;
   }
 
   /**
@@ -53,14 +51,21 @@ public final class StepSyncManager {
       @NotNull WorkflowSummary workflowSummary,
       @NotNull StepRuntimeSummary stepSummary) {
     try {
+      MaestroJobEvent jobEvent = null;
+      if (!stepSummary.getPendingRecords().isEmpty()) {
+        jobEvent = StepInstanceUpdateJobEvent.create(instance, stepSummary.getPendingRecords());
+        if (stepSummary.getDbOperation() == DbOperation.UPDATE) {
+          jobEvent = NotificationJobEvent.create(jobEvent);
+        }
+      }
       switch (stepSummary.getDbOperation()) {
         case INSERT:
         case UPSERT:
           instanceDao.insertOrUpsertStepInstance(
-              instance, stepSummary.getDbOperation() == DbOperation.UPSERT);
+              instance, stepSummary.getDbOperation() == DbOperation.UPSERT, jobEvent);
           break;
         case UPDATE:
-          instanceDao.updateStepInstance(workflowSummary, stepSummary);
+          instanceDao.updateStepInstance(workflowSummary, stepSummary, jobEvent);
           break;
         default:
           throw new MaestroInternalError(
@@ -68,10 +73,6 @@ public final class StepSyncManager {
               stepSummary.getDbOperation(),
               stepSummary.getStepId(),
               stepSummary.getStepAttemptId());
-      }
-      if (!stepSummary.getPendingRecords().isEmpty()) {
-        return jobEventPublisher.publish(
-            StepInstanceUpdateJobEvent.create(instance, stepSummary.getPendingRecords()));
       }
       return Optional.empty();
     } catch (RuntimeException e) {

@@ -32,6 +32,7 @@ import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.signal.SignalDependencies;
 import com.netflix.maestro.utils.Checks;
 import com.netflix.maestro.utils.IdHelper;
+import com.netflix.maestro.utils.ObjectHelper;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -245,6 +246,6 @@ public final class StepHelper {
 
   /** Returns the step type info - if subType is available, return it, else the step type. */
   public static String getStepTypeInfo(StepType stepType, String subType) {
-    return Checks.isNullOrEmpty(subType) ? stepType.name() : subType;
+    return ObjectHelper.isNullOrEmpty(subType) ? stepType.name() : subType;
   }
 }

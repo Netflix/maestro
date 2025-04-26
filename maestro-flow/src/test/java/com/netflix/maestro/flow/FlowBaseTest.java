@@ -12,26 +12,12 @@
  */
 package com.netflix.maestro.flow;
 
+import com.netflix.maestro.MaestroBaseTest;
 import com.netflix.maestro.flow.models.Flow;
 import com.netflix.maestro.flow.models.FlowDef;
 import java.util.Map;
-import org.junit.After;
-import org.junit.Before;
-import org.mockito.MockitoAnnotations;
 
-public abstract class FlowBaseTest {
-
-  private AutoCloseable closeable;
-
-  @Before
-  public void openMocks() {
-    closeable = MockitoAnnotations.openMocks(this);
-  }
-
-  @After
-  public void releaseMocks() throws Exception {
-    closeable.close();
-  }
+public abstract class FlowBaseTest extends MaestroBaseTest {
 
   protected Flow createFlow() {
     Flow flow =

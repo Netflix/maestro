@@ -32,6 +32,9 @@ public final class IdHelper {
   private static final int BASE = BASE62_CHARS.length;
   private static final int OFFSET = 37;
 
+  /** flow reference formatter to convert workflow identifier to a flow reference. */
+  private static final String FLOW_REFERENCE_FORMATTER = "[%s][%s]";
+
   private IdHelper() {}
 
   /** Return the input uuid string if not null. Otherwise, generate a random one. */
@@ -156,10 +159,18 @@ public final class IdHelper {
 
   /**
    * Return the group id for given workflow instance. It should be deterministically and evenly
+   * distributed. We don't include the run id in the groupingKey given one instance will always have
+   * a single run. So the restart will colocate in the same group but the instances are still evenly
    * distributed.
    */
   public static long deriveGroupId(WorkflowInstance instance) {
-    return deriveGroupId(instance.getIdentity(), instance.getGroupInfo());
+    String groupingKey = deriveFlowRef(instance.getWorkflowId(), instance.getWorkflowInstanceId());
+    return deriveGroupId(groupingKey, instance.getGroupInfo());
+  }
+
+  /** Return the grouping key based on workflow id and instance id. */
+  public static String deriveFlowRef(String workflowId, long instanceId) {
+    return String.format(FLOW_REFERENCE_FORMATTER, workflowId, instanceId);
   }
 
   public static long deriveGroupId(String groupingKey, long maxGroupNum) {

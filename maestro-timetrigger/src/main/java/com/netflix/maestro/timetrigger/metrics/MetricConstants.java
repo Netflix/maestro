@@ -13,7 +13,7 @@
 package com.netflix.maestro.timetrigger.metrics;
 
 /** Constants for time trigger metrics. */
-public final class MetricConstants extends com.netflix.maestro.engine.metrics.MetricConstants {
+public final class MetricConstants extends com.netflix.maestro.metrics.MetricConstants {
   private MetricConstants() {}
 
   /** Create timetrigger subscription metrics key. */

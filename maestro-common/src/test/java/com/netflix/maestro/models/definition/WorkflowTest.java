@@ -74,4 +74,12 @@ public class WorkflowTest extends MaestroBaseTest {
     expected.addAll(Collections.nCopies(Constants.STEP_LIST_SIZE_LIMIT - 1, "foo"));
     assertEquals(expected, workflow.getAllStepIds());
   }
+
+  @Test
+  public void testGetWorkflowNameOrDefault() {
+    Workflow wf = Workflow.builder().id("test-wf").build();
+    assertEquals("test-wf", wf.getWorkflowNameOrDefault());
+    wf = Workflow.builder().id("test-wf").name("test-name").build();
+    assertEquals("test-name", wf.getWorkflowNameOrDefault());
+  }
 }

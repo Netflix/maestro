@@ -25,6 +25,7 @@ import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.utils.Checks;
+import com.netflix.maestro.utils.ObjectHelper;
 import com.netflix.maestro.utils.StringParser;
 import java.io.IOException;
 import java.util.OptionalLong;
@@ -151,7 +152,7 @@ public final class ParsableLong {
       return operator.applyAsLong(longValue);
     } else {
       String parsed = StringParser.parseWithParam(stringValue, paramParser);
-      OptionalLong val = Checks.toNumeric(parsed);
+      OptionalLong val = ObjectHelper.toNumeric(parsed);
       if (val.isPresent()) {
         return operator.applyAsLong(val.getAsLong());
       } else {

@@ -25,9 +25,6 @@ public interface Translator<T, R> {
   /** flow engine task default reconciliation interval in seconds. */
   int DEFAULT_FLOW_TASK_RECONCILIATION_INTERVAL = 60;
 
-  /** flow reference formatter to convert workflow identifier to a flow reference. */
-  String FLOW_REFERENCE_FORMATTER = "[%s][%s][%s]";
-
   /**
    * Translate function.
    *

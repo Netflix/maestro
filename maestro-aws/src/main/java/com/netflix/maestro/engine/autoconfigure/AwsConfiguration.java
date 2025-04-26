@@ -20,35 +20,16 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.maestro.engine.listeners.SqsDeleteWorkflowJobListener;
-import com.netflix.maestro.engine.listeners.SqsPublishJobEventListener;
-import com.netflix.maestro.engine.listeners.SqsRunWorkflowInstancesJobListener;
 import com.netflix.maestro.engine.listeners.SqsSignalInstanceListener;
 import com.netflix.maestro.engine.listeners.SqsSignalTriggerExecutionListener;
 import com.netflix.maestro.engine.listeners.SqsSignalTriggerMatchListener;
-import com.netflix.maestro.engine.listeners.SqsStartWorkflowJobListener;
-import com.netflix.maestro.engine.listeners.SqsStepInstanceWakeUpJobListener;
-import com.netflix.maestro.engine.listeners.SqsTerminateInstancesJobListener;
-import com.netflix.maestro.engine.listeners.SqsTerminateThenRunInstanceJobListener;
 import com.netflix.maestro.engine.listeners.SqsTimeTriggerExecutionListener;
-import com.netflix.maestro.engine.metrics.MaestroMetricRepo;
-import com.netflix.maestro.engine.processors.DeleteWorkflowJobProcessor;
-import com.netflix.maestro.engine.processors.ExceptionEventDeletionPolicy;
-import com.netflix.maestro.engine.processors.PublishJobEventProcessor;
-import com.netflix.maestro.engine.processors.RunWorkflowInstancesJobProcessor;
-import com.netflix.maestro.engine.processors.SqsProcessorFinalizer;
-import com.netflix.maestro.engine.processors.StartWorkflowJobProcessor;
-import com.netflix.maestro.engine.processors.StepInstanceWakeUpEventProcessor;
-import com.netflix.maestro.engine.processors.TerminateInstancesJobProcessor;
-import com.netflix.maestro.engine.processors.TerminateThenRunInstanceJobProcessor;
 import com.netflix.maestro.engine.producer.SqsSignalQueueProducer;
 import com.netflix.maestro.engine.producer.SqsTimeTriggerProducer;
 import com.netflix.maestro.engine.properties.AwsProperties;
 import com.netflix.maestro.engine.properties.SqsProperties;
-import com.netflix.maestro.engine.publisher.MaestroJobEventPublisher;
 import com.netflix.maestro.engine.publisher.MaestroNotificationPublisher;
 import com.netflix.maestro.engine.publisher.SnsEventNotificationPublisher;
-import com.netflix.maestro.engine.publisher.SqsMaestroJobEventPublisher;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.signal.messageprocessors.SignalInstanceProcessor;
@@ -113,7 +94,7 @@ public class AwsConfiguration {
 
   /** create sync sqs. */
   @Bean(MAESTRO_AWS_SQS_SYNC)
-  @ConditionalOnProperty(value = "maestro.publisher.type", havingValue = "sqs")
+  @ConditionalOnProperty(value = "triggers.time-trigger.type", havingValue = "sqs")
   public AmazonSQS amazonSqsForPublisher(
       AWSCredentialsProvider awsCredentialsProvider, RegionProvider regionProvider) {
     LOG.info("Creating Maestro amazonSQSForPublisher within Spring boot...");
@@ -121,17 +102,6 @@ public class AwsConfiguration {
         .withRegion(regionProvider.getRegion().getName())
         .withCredentials(awsCredentialsProvider)
         .build();
-  }
-
-  @Bean
-  @ConditionalOnProperty(value = "maestro.publisher.type", havingValue = "sqs")
-  public MaestroJobEventPublisher sqsMaestroJobEventPublisher(
-      @Qualifier(MAESTRO_AWS_SQS_SYNC) AmazonSQS amazonSqs,
-      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
-      AwsProperties props,
-      MaestroMetrics metrics) {
-    LOG.info("Creating sqsMaestroJobEventPublisher within Spring boot...");
-    return new SqsMaestroJobEventPublisher(amazonSqs, objectMapper, props.getSqs(), metrics);
   }
 
   @Bean
@@ -186,81 +156,6 @@ public class AwsConfiguration {
       SignalTriggerExecutionProcessor processor, ObjectMapper mapper) {
     LOG.info("Creating sqsSignalTriggerExecutionListener within Spring boot...");
     return new SqsSignalTriggerExecutionListener(processor, mapper);
-  }
-
-  @Bean
-  @ConditionalOnProperty(value = "maestro.listener.type", havingValue = "sqs")
-  public SqsProcessorFinalizer sqsProcessorFinalizer(
-      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
-      MaestroMetricRepo metricRepo) {
-    LOG.info("Creating sqsProcessorFinalizer within Spring boot...");
-    return new SqsProcessorFinalizer(
-        objectMapper, metricRepo, ExceptionEventDeletionPolicy.DELETE_IF_MAESTRO_INTERNAL_ERROR);
-  }
-
-  @Bean
-  @ConditionalOnProperty(value = "maestro.listener.type", havingValue = "sqs")
-  public SqsRunWorkflowInstancesJobListener sqsRunWorkflowInstancesJobListener(
-      RunWorkflowInstancesJobProcessor runWorkflowInstancesJobProcessor,
-      SqsProcessorFinalizer sqsProcessorFinalizer) {
-    LOG.info("Creating runWorkflowInstancesJobListener within Spring boot...");
-    return new SqsRunWorkflowInstancesJobListener(
-        runWorkflowInstancesJobProcessor, sqsProcessorFinalizer);
-  }
-
-  @Bean
-  @ConditionalOnProperty(value = "maestro.listener.type", havingValue = "sqs")
-  public SqsStartWorkflowJobListener sqsStartWorkflowJobListener(
-      StartWorkflowJobProcessor startWorkflowJobProcessor,
-      SqsProcessorFinalizer sqsProcessorFinalizer) {
-    LOG.info("Creating sqsStartWorkflowJobListener within Spring boot...");
-    return new SqsStartWorkflowJobListener(startWorkflowJobProcessor, sqsProcessorFinalizer);
-  }
-
-  @Bean
-  @ConditionalOnProperty(value = "maestro.listener.type", havingValue = "sqs")
-  public SqsTerminateInstancesJobListener sqsTerminateInstancesJobListener(
-      TerminateInstancesJobProcessor terminateInstancesJobProcessor,
-      SqsProcessorFinalizer sqsProcessorFinalizer) {
-    LOG.info("Creating sqsTerminateInstancesJobListener within Spring boot...");
-    return new SqsTerminateInstancesJobListener(
-        terminateInstancesJobProcessor, sqsProcessorFinalizer);
-  }
-
-  @Bean
-  @ConditionalOnProperty(value = "maestro.listener.type", havingValue = "sqs")
-  public SqsTerminateThenRunInstanceJobListener sqsTerminateThenRunInstanceJobListener(
-      TerminateThenRunInstanceJobProcessor terminateThenRunInstanceJobProcessor,
-      SqsProcessorFinalizer sqsProcessorFinalizer) {
-    LOG.info("Creating sqsTerminateThenRunInstanceJobListener within Spring boot...");
-    return new SqsTerminateThenRunInstanceJobListener(
-        terminateThenRunInstanceJobProcessor, sqsProcessorFinalizer);
-  }
-
-  @Bean
-  @ConditionalOnProperty(value = "maestro.listener.type", havingValue = "sqs")
-  public SqsStepInstanceWakeUpJobListener sqsStepInstanceActionJobListener(
-      StepInstanceWakeUpEventProcessor processor, SqsProcessorFinalizer sqsProcessorFinalizer) {
-    LOG.info("Creating sqsStepInstanceActionJobListener within Spring boot...");
-    return new SqsStepInstanceWakeUpJobListener(processor, sqsProcessorFinalizer);
-  }
-
-  @Bean
-  @ConditionalOnProperty(value = "maestro.listener.type", havingValue = "sqs")
-  public SqsPublishJobEventListener sqsPublishJobEventListener(
-      PublishJobEventProcessor publishJobEventProcessor,
-      SqsProcessorFinalizer sqsProcessorFinalizer) {
-    LOG.info("Creating sqsPublishJobEventListener within Spring boot...");
-    return new SqsPublishJobEventListener(publishJobEventProcessor, sqsProcessorFinalizer);
-  }
-
-  @Bean
-  @ConditionalOnProperty(value = "maestro.listener.type", havingValue = "sqs")
-  public SqsDeleteWorkflowJobListener sqsDeleteWorkflowJobListener(
-      DeleteWorkflowJobProcessor deleteWorkflowJobProcessor,
-      SqsProcessorFinalizer sqsProcessorFinalizer) {
-    LOG.info("Creating sqsDeleteWorkflowJobListener within Spring boot...");
-    return new SqsDeleteWorkflowJobListener(deleteWorkflowJobProcessor, sqsProcessorFinalizer);
   }
 
   /** AmazonSQSAsync has already been created by springboot aws autoconfiguration . */

@@ -123,12 +123,6 @@ public final class Constants {
   public static final int BATCH_DELETION_LIMIT = 200;
 
   /**
-   * Invisible time for resending job event, e.g. resending start job event if queued instances are
-   * larger than the limit. If needed, make it configurable.
-   */
-  public static final long RESEND_JOB_EVENT_DELAY_IN_MILLISECONDS = TimeUnit.SECONDS.toMillis(2);
-
-  /**
    * The maximum number of steps defined in workflow definition. Note that this limit can only be
    * bumped up and cannot be decreased as it is related to the pushed data.
    * <li>Internal flow engine might not handle too large workflow well.

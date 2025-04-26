@@ -37,7 +37,7 @@ public class FlowExecutorTest extends ActorBaseTest {
   private FlowExecutor executor;
 
   @Before
-  public void init() {
+  public void setUp() {
     when(properties.getInitialMaintenanceDelayInMillis()).thenReturn(1L);
     when(properties.getMaintenanceDelayInMillis()).thenReturn(100000L);
     when(properties.getMaxGroupNumPerNode()).thenReturn(2L);

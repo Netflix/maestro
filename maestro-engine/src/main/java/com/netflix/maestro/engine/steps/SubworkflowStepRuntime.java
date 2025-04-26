@@ -21,7 +21,6 @@ import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
 import com.netflix.maestro.engine.handlers.WorkflowActionHandler;
 import com.netflix.maestro.engine.handlers.WorkflowInstanceActionHandler;
-import com.netflix.maestro.engine.utils.ObjectHelper;
 import com.netflix.maestro.engine.utils.StepHelper;
 import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.exceptions.MaestroNotFoundException;
@@ -42,6 +41,11 @@ import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.models.timeline.TimelineDetailsEvent;
 import com.netflix.maestro.models.timeline.TimelineEvent;
 import com.netflix.maestro.models.timeline.TimelineLogEvent;
+import com.netflix.maestro.queue.MaestroQueueSystem;
+import com.netflix.maestro.queue.jobevents.InstanceActionJobEvent;
+import com.netflix.maestro.queue.models.MessageDto;
+import com.netflix.maestro.utils.IdHelper;
+import com.netflix.maestro.utils.ObjectHelper;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -71,6 +75,7 @@ public class SubworkflowStepRuntime implements StepRuntime {
 
   private final MaestroWorkflowInstanceDao instanceDao;
   private final MaestroStepInstanceDao stepInstanceDao;
+  private final MaestroQueueSystem queueSystem;
   private final Set<String> alwaysPassDownParamNames;
 
   @Override
@@ -322,6 +327,7 @@ public class SubworkflowStepRuntime implements StepRuntime {
 
         if (!status.isTerminal()) {
           tryTerminateQueuedInstanceIfNeeded(artifact, status);
+          wakeUpUnderlyingActor(workflowSummary, runtimeSummary.getStepId(), artifact);
           throw new MaestroRetryableError(
               "Termination at subworkflow step %s%s is not done and will retry it.",
               workflowSummary.getIdentity(), runtimeSummary.getIdentity());
@@ -365,5 +371,21 @@ public class SubworkflowStepRuntime implements StepRuntime {
         artifact.getSubworkflowId(),
         artifact.getSubworkflowInstanceId(),
         artifact.getSubworkflowRunId());
+  }
+
+  private void wakeUpUnderlyingActor(
+      WorkflowSummary summary, String stepId, SubworkflowArtifact artifact) {
+    String flowReference =
+        IdHelper.deriveFlowRef(artifact.getSubworkflowId(), artifact.getSubworkflowInstanceId());
+    long groupId = IdHelper.deriveGroupId(flowReference, summary.getGroupInfo());
+    var jobEvent =
+        InstanceActionJobEvent.create(
+            summary.getWorkflowId(),
+            summary.getWorkflowInstanceId(),
+            stepId,
+            Map.of(groupId, Set.of(flowReference)));
+    queueSystem.notify(
+        new MessageDto(
+            Long.MAX_VALUE, jobEvent.getIdentity(), jobEvent, System.currentTimeMillis()));
   }
 }

@@ -1,11 +1,11 @@
 # This is a Gradle generated file for dependency locking.
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
-com.fasterxml.jackson.core:jackson-annotations:2.18.3=compileClasspath
-com.fasterxml.jackson.core:jackson-core:2.18.3=compileClasspath
+com.fasterxml.jackson.core:jackson-annotations:2.19.0=compileClasspath
+com.fasterxml.jackson.core:jackson-core:2.19.0=compileClasspath
 com.fasterxml.jackson.core:jackson-databind:2.15.4=compileClasspath
-com.fasterxml.jackson:jackson-bom:2.18.3=compileClasspath
-com.netflix.spectator:spectator-api:1.8.7=compileClasspath
+com.fasterxml.jackson:jackson-bom:2.19.0=compileClasspath
+com.netflix.spectator:spectator-api:1.8.12=compileClasspath
 com.zaxxer:HikariCP:4.0.3=compileClasspath
 io.zipkin.brave:brave:5.18.1=compileClasspath
 io.zipkin.reporter2:zipkin-reporter-brave:2.17.2=compileClasspath
@@ -13,6 +13,6 @@ io.zipkin.reporter2:zipkin-reporter:2.17.2=compileClasspath
 io.zipkin.zipkin2:zipkin:2.27.0=compileClasspath
 javax.validation:validation-api:2.0.1.Final=compileClasspath
 org.flywaydb:flyway-core:7.6.0=compileClasspath
-org.projectlombok:lombok:1.18.36=annotationProcessor,compileClasspath
+org.projectlombok:lombok:1.18.38=annotationProcessor,compileClasspath
 org.slf4j:slf4j-api:1.7.36=compileClasspath
 empty=

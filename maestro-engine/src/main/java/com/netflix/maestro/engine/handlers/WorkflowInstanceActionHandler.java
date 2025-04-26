@@ -33,6 +33,7 @@ import com.netflix.maestro.models.timeline.TimelineActionEvent;
 import com.netflix.maestro.models.timeline.TimelineEvent;
 import com.netflix.maestro.models.timeline.TimelineLogEvent;
 import com.netflix.maestro.utils.Checks;
+import com.netflix.maestro.utils.IdHelper;
 import java.util.Collections;
 import java.util.Optional;
 import lombok.AllArgsConstructor;
@@ -256,9 +257,9 @@ public class WorkflowInstanceActionHandler {
             .reason("[API] call to UNBLOCK a failed workflow instance run.")
             .build();
     boolean updated =
-        instanceDao.tryUnblockFailedWorkflowInstance(
-            workflowId, workflowInstanceId, instance.getWorkflowRunId(), event);
-    workflowHelper.publishStartWorkflowEvent(workflowId, updated);
+        !IdHelper.isInlineWorkflowId(workflowId)
+            && instanceDao.tryUnblockFailedWorkflowInstance(
+                workflowId, workflowInstanceId, instance.getWorkflowRunId(), event);
     return WorkflowInstanceActionResponse.from(instance, event, updated);
   }
 

@@ -14,6 +14,7 @@ package com.netflix.maestro.engine.dao;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.annotations.VisibleForTesting;
 import com.netflix.maestro.database.AbstractDatabaseDao;
@@ -21,7 +22,6 @@ import com.netflix.maestro.database.DatabaseConfiguration;
 import com.netflix.maestro.database.utils.ResultProcessor;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
-import com.netflix.maestro.engine.utils.ObjectHelper;
 import com.netflix.maestro.exceptions.MaestroNotFoundException;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.Constants;
@@ -38,7 +38,11 @@ import com.netflix.maestro.models.signal.SignalDependencies;
 import com.netflix.maestro.models.signal.SignalOutputs;
 import com.netflix.maestro.models.timeline.Timeline;
 import com.netflix.maestro.models.timeline.TimelineEvent;
+import com.netflix.maestro.queue.MaestroQueueSystem;
+import com.netflix.maestro.queue.jobevents.MaestroJobEvent;
+import com.netflix.maestro.queue.models.MessageDto;
 import com.netflix.maestro.utils.Checks;
+import com.netflix.maestro.utils.ObjectHelper;
 import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -170,6 +174,8 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
           + GET_STEP_FIELD_QUERY_FROM
           + "AND workflow_run_id=?) SELECT * FROM inner_ranked WHERE rank=1";
 
+  private final MaestroQueueSystem queueSystem;
+
   /**
    * Constructor for Maestro step instance DAO.
    *
@@ -181,16 +187,20 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
       DataSource dataSource,
       ObjectMapper objectMapper,
       DatabaseConfiguration config,
+      MaestroQueueSystem queueSystem,
       MaestroMetrics metrics) {
     super(dataSource, objectMapper, config, metrics);
+    this.queueSystem = queueSystem;
   }
 
   /**
-   * Create a new step instance data or update all of its data.
+   * Create a new step instance data or update all of its data. Within the transaction, it also
+   * sends the job event to the update processing queue with an exactly once guarantee.
    *
    * @param instance step instance
    */
-  public void insertOrUpsertStepInstance(StepInstance instance, boolean inserted) {
+  public void insertOrUpsertStepInstance(
+      StepInstance instance, boolean inserted, @Nullable MaestroJobEvent jobEvent) {
     final StepRuntimeState runtimeState = instance.getRuntimeState();
     final SignalDependencies dependencies = instance.getSignalDependencies();
     final SignalOutputs outputs = instance.getSignalOutputs();
@@ -211,27 +221,35 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
           timeline == null
               ? null
               : timeline.getTimelineEvents().stream().map(this::toJson).toArray(String[]::new);
-      withMetricLogError(
-          () ->
-              withRetryableTransaction(
-                  conn -> {
-                    try (PreparedStatement stmt =
-                        conn.prepareStatement(
-                            inserted ? UPSERT_STEP_INSTANCE_QUERY : CREATE_STEP_INSTANCE_QUERY)) {
-                      int idx = 0;
-                      stmt.setString(++idx, stepInstanceStr);
-                      stmt.setString(++idx, runtimeStateStr);
-                      stmt.setString(++idx, stepDependenciesSummariesStr);
-                      stmt.setString(++idx, outputsStr);
-                      stmt.setString(++idx, artifactsStr);
-                      stmt.setArray(++idx, conn.createArrayOf(ARRAY_TYPE_NAME, timelineArray));
-                      return stmt.executeUpdate();
-                    }
-                  }),
-          "insertOrUpsertStepInstance",
-          "Failed to insert or upsert step instance {}[{}]",
-          instance.getIdentity(),
-          instance.getStepAttemptId());
+      MessageDto message =
+          withMetricLogError(
+              () ->
+                  withRetryableTransaction(
+                      conn -> {
+                        try (PreparedStatement stmt =
+                            conn.prepareStatement(
+                                inserted
+                                    ? UPSERT_STEP_INSTANCE_QUERY
+                                    : CREATE_STEP_INSTANCE_QUERY)) {
+                          int idx = 0;
+                          stmt.setString(++idx, stepInstanceStr);
+                          stmt.setString(++idx, runtimeStateStr);
+                          stmt.setString(++idx, stepDependenciesSummariesStr);
+                          stmt.setString(++idx, outputsStr);
+                          stmt.setString(++idx, artifactsStr);
+                          stmt.setArray(++idx, conn.createArrayOf(ARRAY_TYPE_NAME, timelineArray));
+                          int res = stmt.executeUpdate();
+                          if (res == SUCCESS_WRITE_SIZE && jobEvent != null) {
+                            return queueSystem.enqueue(conn, jobEvent);
+                          }
+                          return null;
+                        }
+                      }),
+              "insertOrUpsertStepInstance",
+              "Failed to insert or upsert step instance {}[{}]",
+              instance.getIdentity(),
+              instance.getStepAttemptId());
+      queueSystem.notify(message);
     } finally {
       instance.setTimeline(timeline);
       instance.setArtifacts(artifacts);
@@ -242,12 +260,16 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
   }
 
   /**
-   * Update step instance table with runtime updates.
+   * Update step instance table with runtime updates. Within the transaction, it also sends the job
+   * event to the notification queue for external notification with an exactly once guarantee.
    *
    * @param workflowSummary workflow instance summary
    * @param stepSummary step instance runtime summary
    */
-  public void updateStepInstance(WorkflowSummary workflowSummary, StepRuntimeSummary stepSummary) {
+  public void updateStepInstance(
+      WorkflowSummary workflowSummary,
+      StepRuntimeSummary stepSummary,
+      @Nullable MaestroJobEvent jobEvent) {
     final String runtimeState = toJson(stepSummary.getRuntimeState());
     final String stepDependenciesSummariesStr = toJson(stepSummary.getSignalDependencies());
     final String artifacts = toJson(stepSummary.getArtifacts());
@@ -259,29 +281,36 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
             : stepSummary.getTimeline().getTimelineEvents().stream()
                 .map(this::toJson)
                 .toArray(String[]::new);
-    withMetricLogError(
-        () ->
-            withRetryableTransaction(
-                conn -> {
-                  try (PreparedStatement stmt = conn.prepareStatement(UPDATE_STEP_INSTANCE_QUERY)) {
-                    int idx = 0;
-                    stmt.setString(++idx, runtimeState);
-                    stmt.setString(++idx, stepDependenciesSummariesStr);
-                    stmt.setString(++idx, stepOutputs);
-                    stmt.setString(++idx, artifacts);
-                    stmt.setArray(++idx, conn.createArrayOf(ARRAY_TYPE_NAME, timelineArray));
-                    stmt.setString(++idx, workflowSummary.getWorkflowId());
-                    stmt.setLong(++idx, workflowSummary.getWorkflowInstanceId());
-                    stmt.setLong(++idx, workflowSummary.getWorkflowRunId());
-                    stmt.setString(++idx, stepSummary.getStepId());
-                    stmt.setLong(++idx, stepSummary.getStepAttemptId());
-                    return stmt.executeUpdate();
-                  }
-                }),
-        "updateStepInstance",
-        "Failed to update workflow instance {}'s step instance {}",
-        workflowSummary.getIdentity(),
-        stepSummary.getIdentity());
+    MessageDto message =
+        withMetricLogError(
+            () ->
+                withRetryableTransaction(
+                    conn -> {
+                      try (PreparedStatement stmt =
+                          conn.prepareStatement(UPDATE_STEP_INSTANCE_QUERY)) {
+                        int idx = 0;
+                        stmt.setString(++idx, runtimeState);
+                        stmt.setString(++idx, stepDependenciesSummariesStr);
+                        stmt.setString(++idx, stepOutputs);
+                        stmt.setString(++idx, artifacts);
+                        stmt.setArray(++idx, conn.createArrayOf(ARRAY_TYPE_NAME, timelineArray));
+                        stmt.setString(++idx, workflowSummary.getWorkflowId());
+                        stmt.setLong(++idx, workflowSummary.getWorkflowInstanceId());
+                        stmt.setLong(++idx, workflowSummary.getWorkflowRunId());
+                        stmt.setString(++idx, stepSummary.getStepId());
+                        stmt.setLong(++idx, stepSummary.getStepAttemptId());
+                        int res = stmt.executeUpdate();
+                        if (res == SUCCESS_WRITE_SIZE && jobEvent != null) {
+                          return queueSystem.enqueue(conn, jobEvent);
+                        }
+                        return null;
+                      }
+                    }),
+            "updateStepInstance",
+            "Failed to update workflow instance {}'s step instance {}",
+            workflowSummary.getIdentity(),
+            stepSummary.getIdentity());
+    queueSystem.notify(message);
   }
 
   /** Get step instance from DB for a given step instance attempt. */

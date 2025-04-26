@@ -13,18 +13,15 @@
 package com.netflix.maestro.engine.dao;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.annotations.VisibleForTesting;
 import com.netflix.maestro.database.AbstractDatabaseDao;
 import com.netflix.maestro.database.DatabaseConfiguration;
 import com.netflix.maestro.engine.db.ForeachIterationOverview;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
-import com.netflix.maestro.engine.jobevents.RunWorkflowInstancesJobEvent;
-import com.netflix.maestro.engine.jobevents.TerminateInstancesJobEvent;
-import com.netflix.maestro.engine.jobevents.WorkflowInstanceUpdateJobEvent;
-import com.netflix.maestro.engine.publisher.MaestroJobEventPublisher;
+import com.netflix.maestro.engine.steps.StepRuntime;
 import com.netflix.maestro.engine.utils.AggregatedViewHelper;
-import com.netflix.maestro.engine.utils.ObjectHelper;
 import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.exceptions.MaestroNotFoundException;
 import com.netflix.maestro.exceptions.MaestroRetryableError;
@@ -39,7 +36,15 @@ import com.netflix.maestro.models.instance.WorkflowRuntimeOverview;
 import com.netflix.maestro.models.timeline.Timeline;
 import com.netflix.maestro.models.timeline.TimelineEvent;
 import com.netflix.maestro.models.timeline.TimelineLogEvent;
+import com.netflix.maestro.queue.MaestroQueueSystem;
+import com.netflix.maestro.queue.jobevents.MaestroJobEvent;
+import com.netflix.maestro.queue.jobevents.StartWorkflowJobEvent;
+import com.netflix.maestro.queue.jobevents.TerminateThenRunJobEvent;
+import com.netflix.maestro.queue.jobevents.WorkflowInstanceUpdateJobEvent;
+import com.netflix.maestro.queue.models.InstanceRunUuid;
+import com.netflix.maestro.queue.models.MessageDto;
 import com.netflix.maestro.utils.Checks;
+import com.netflix.maestro.utils.ObjectHelper;
 import java.sql.Array;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -47,11 +52,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import javax.sql.DataSource;
@@ -218,7 +224,7 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
   private static final String TERMINATION_MESSAGE_TEMPLATE =
       "Workflow instance status becomes [%s] due to reason [%s]";
 
-  private final MaestroJobEventPublisher publisher;
+  private final MaestroQueueSystem queueSystem;
 
   /**
    * Constructor for Maestro workflow instance DAO.
@@ -231,10 +237,10 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
       DataSource dataSource,
       ObjectMapper objectMapper,
       DatabaseConfiguration config,
-      MaestroJobEventPublisher publisher,
+      MaestroQueueSystem queueSystem,
       MaestroMetrics metrics) {
     super(dataSource, objectMapper, config, metrics);
-    this.publisher = publisher;
+    this.queueSystem = queueSystem;
   }
 
   private void updateInstances(List<WorkflowInstance> instances) {
@@ -247,55 +253,46 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
   /**
    * The instance list has already been sized to fit into the batch size limit. max insertion is 10.
    *
-   * <p>It explicitly builds batch query because executeBatch won't work in some cases
+   * <p>It explicitly builds a batch query because executeBatch won't work in some cases
    */
-  private int[] insertMaestroWorkflowInstances(Connection conn, List<WorkflowInstance> instances)
+  private Set<Long> insertMaestroWorkflowInstances(
+      Connection conn,
+      List<WorkflowInstance> instances,
+      List<String> instanceStrs,
+      TerminateThenRunJobEvent jobEvent,
+      MessageDto[] message)
       throws SQLException {
     String sql =
         String.format(
             CREATE_WORKFLOW_INSTANCE_QUERY_TEMPLATE,
             String.join(",", Collections.nCopies(instances.size(), VALUE_PLACE_HOLDER)));
     try (PreparedStatement wfiStmt = conn.prepareStatement(sql)) {
-      int idx = 0;
-      for (WorkflowInstance instance : instances) {
-        wfiStmt.setString(++idx, toJson(instance));
-        wfiStmt.setString(++idx, instance.getStatus().name());
+      for (int i = 0; i < instances.size(); ++i) {
+        wfiStmt.setString(1 + 2 * i, instanceStrs.get(i));
+        wfiStmt.setString(2 + 2 * i, instances.get(i).getStatus().name());
       }
       try (ResultSet result = wfiStmt.executeQuery()) {
-        int[] res = new int[instances.size()];
-        idx = 0;
+        Set<Long> res = new HashSet<>(instances.size());
         while (result.next()) {
-          res[idx++] = result.getInt(1);
+          res.add(result.getLong(1));
         }
-        return res;
+        if (!res.isEmpty()) {
+          List<InstanceRunUuid> instanceRunUuids = new ArrayList<>(res.size());
+          for (WorkflowInstance instance : instances) {
+            if (res.contains(instance.getWorkflowInstanceId())) {
+              instanceRunUuids.add(
+                  new InstanceRunUuid(
+                      instance.getWorkflowInstanceId(),
+                      instance.getWorkflowRunId(),
+                      instance.getWorkflowUuid()));
+            }
+          }
+          jobEvent.setRunAfter(instanceRunUuids);
+          message[0] = queueSystem.enqueue(conn, jobEvent);
+        }
+        return res; // the inserted instance id
       }
     }
-  }
-
-  private int publishRunInstancesJobEvents(
-      String workflowId, List<WorkflowInstance> instances, int batchSize) {
-    RunWorkflowInstancesJobEvent startInstances = RunWorkflowInstancesJobEvent.init(workflowId);
-    int idx = 0;
-    for (WorkflowInstance instance : instances) {
-      startInstances.addOneRun(
-          instance.getWorkflowInstanceId(),
-          instance.getWorkflowRunId(),
-          instance.getWorkflowUuid());
-      idx++;
-      if (idx % batchSize == 0) {
-        publishRunInstancesJobEvent(startInstances);
-      }
-    }
-    if (startInstances.size() > 0) {
-      publishRunInstancesJobEvent(startInstances);
-    }
-    return idx;
-  }
-
-  private void publishRunInstancesJobEvent(RunWorkflowInstancesJobEvent startInstances) {
-    publisher.publishOrThrow(
-        startInstances, "Failed sending job events to run workflow instances, will retry.");
-    startInstances.getInstanceRunUuids().clear(); // be careful if startInstances object is reused
   }
 
   /**
@@ -308,23 +305,27 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
    */
   public boolean tryTerminateQueuedInstance(
       WorkflowInstance instance, WorkflowInstance.Status status, String reason) {
-    return withMetricLogError(
-        () ->
-            withRetryableTransaction(
-                conn -> {
-                  int res = terminateQueuedInstance(conn, instance, status, reason);
-                  if (res == SUCCESS_WRITE_SIZE) {
-                    publisher.publishOrThrow(
-                        WorkflowInstanceUpdateJobEvent.create(
-                            instance, status, System.currentTimeMillis()),
-                        "Failed sending job events when terminating queued instance");
-                    return true;
-                  }
-                  return false;
-                }),
-        "tryTerminateQueuedInstance",
-        "Failed to terminate the queued workflow instance {}",
-        instance.getIdentity());
+    MessageDto[] message = new MessageDto[1];
+    var ret =
+        withMetricLogError(
+            () ->
+                withRetryableTransaction(
+                    conn -> {
+                      int res = terminateQueuedInstance(conn, instance, status, reason);
+                      if (res == SUCCESS_WRITE_SIZE) {
+                        WorkflowInstanceUpdateJobEvent jobEvent =
+                            WorkflowInstanceUpdateJobEvent.create(
+                                instance, status, System.currentTimeMillis());
+                        message[0] = queueSystem.enqueue(conn, jobEvent);
+                        return true;
+                      }
+                      return false;
+                    }),
+            "tryTerminateQueuedInstance",
+            "Failed to terminate the queued workflow instance {}",
+            instance.getIdentity());
+    queueSystem.notify(message[0]);
+    return ret;
   }
 
   private int terminateQueuedInstance(
@@ -344,7 +345,7 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
   }
 
   /**
-   * Terminate queued workflow instances run if feasible. Otherwise, do nothing.
+   * Terminate queued workflow instances run if possible. Otherwise, do nothing.
    *
    * @param workflowId workflow id to terminate
    * @param limit the size limit to terminate
@@ -357,39 +358,41 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
     TimelineEvent timelineEvent =
         TimelineLogEvent.warn(TERMINATION_MESSAGE_TEMPLATE, status.name(), reason);
     String timelineEventStr = toJson(timelineEvent);
-    return withMetricLogError(
-        () ->
-            withRetryableTransaction(
-                conn -> {
-                  List<WorkflowInstance> stoppedInstances = new ArrayList<>();
-                  try (PreparedStatement stmt =
-                      conn.prepareStatement(TERMINATE_QUEUED_INSTANCES_QUERY)) {
-                    int idx = 0;
-                    stmt.setString(++idx, status.name());
-                    stmt.setString(++idx, timelineEventStr);
-                    stmt.setString(++idx, workflowId);
-                    stmt.setInt(++idx, limit);
-                    try (ResultSet result = stmt.executeQuery()) {
-                      while (result.next()) {
-                        WorkflowInstance instance =
-                            fromJson(result.getString(1), WorkflowInstance.class);
-                        stoppedInstances.add(instance);
+    List<WorkflowInstance> stoppedInstances = new ArrayList<>();
+    MessageDto[] message = new MessageDto[1];
+    int ret =
+        withMetricLogError(
+            () ->
+                withRetryableTransaction(
+                    conn -> {
+                      try (PreparedStatement stmt =
+                          conn.prepareStatement(TERMINATE_QUEUED_INSTANCES_QUERY)) {
+                        int idx = 0;
+                        stmt.setString(++idx, status.name());
+                        stmt.setString(++idx, timelineEventStr);
+                        stmt.setString(++idx, workflowId);
+                        stmt.setInt(++idx, limit);
+                        try (ResultSet result = stmt.executeQuery()) {
+                          while (result.next()) {
+                            WorkflowInstance instance =
+                                fromJson(result.getString(1), WorkflowInstance.class);
+                            stoppedInstances.add(instance);
+                          }
+                        }
+                        if (!stoppedInstances.isEmpty()) {
+                          WorkflowInstanceUpdateJobEvent jobEvent =
+                              WorkflowInstanceUpdateJobEvent.create(
+                                  stoppedInstances, status, System.currentTimeMillis());
+                          message[0] = queueSystem.enqueue(conn, jobEvent);
+                        }
                       }
-                    }
-                    if (!stoppedInstances.isEmpty()) {
-                      WorkflowInstanceUpdateJobEvent jobEvent =
-                          WorkflowInstanceUpdateJobEvent.create(
-                              stoppedInstances, status, System.currentTimeMillis());
-                      publisher.publishOrThrow(
-                          jobEvent,
-                          "Failed sending an update job event to notify stopping workflow instances.");
-                    }
-                  }
-                  return stoppedInstances.size();
-                }),
-        "terminateQueuedInstances",
-        "Failed to terminate the queued workflow instances for workflow {}",
-        workflowId);
+                      return stoppedInstances.size();
+                    }),
+            "terminateQueuedInstances",
+            "Failed to terminate the queued workflow instances for workflow {}",
+            workflowId);
+    queueSystem.notify(message[0]);
+    return ret;
   }
 
   /**
@@ -415,8 +418,8 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
               int stoppedRunning = 0;
               int stopped = limit;
               while (stopped == limit) {
-                TerminateInstancesJobEvent jobEvent =
-                    TerminateInstancesJobEvent.init(workflowId, action, caller, reason);
+                TerminateThenRunJobEvent jobEvent =
+                    TerminateThenRunJobEvent.init(workflowId, action, caller, reason);
                 withRetryableQuery(
                     sql,
                     wfiStmt -> {
@@ -437,8 +440,7 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
                 stopped = jobEvent.size();
                 stoppedRunning += stopped;
                 if (stopped > 0) {
-                  publisher.publishOrThrow(
-                      jobEvent, "Failed to send terminate job event for workflow " + workflowId);
+                  queueSystem.enqueueOrThrow(jobEvent);
                   lastInstanceId.set(
                       jobEvent.getInstanceRunUuids().get(stopped - 1).getInstanceId());
                 }
@@ -449,23 +451,31 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
   }
 
   /**
-   * Create a list of new workflow instance runs (with run_id = 1) in DB. It will skip if an
+   * Create a list of new workflow instance runs (with run_id already set) in DB. It will skip if an
    * instance id is duplicated and fail if the instance uuid is duplicated, The instance list has
    * already been sized to fit into the batch size limit.
    *
    * @param workflowId workflow id
    * @param instances the list of workflow instances to create
-   * @return the optional error details
+   * @return the created workflow instance ids
    */
   public Optional<Details> runWorkflowInstances(
-      String workflowId, List<WorkflowInstance> instances, int batchSize) {
+      String workflowId, List<WorkflowInstance> instances) {
     Checks.checkTrue(
         !ObjectHelper.isCollectionEmptyOrNull(instances),
         "cannot run null or empty workflow instances for %s",
         workflowId);
     updateInstances(instances);
+    List<String> instanceStrs = instances.stream().map(this::toJson).toList();
+    var jobEvent =
+        TerminateThenRunJobEvent.init(
+            workflowId,
+            Actions.WorkflowInstanceAction.STOP,
+            StepRuntime.SYSTEM_USER,
+            "Run workflow instance");
+    MessageDto[] message = new MessageDto[1];
     try {
-      int[] res =
+      Set<Long> ret =
           withRetryableTransaction(
               conn -> {
                 tryUpdateAncestorRunsStatus(
@@ -473,16 +483,15 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
                     workflowId,
                     instances.getFirst().getWorkflowInstanceId(),
                     instances.getLast());
-                return insertMaestroWorkflowInstances(conn, instances);
+                return insertMaestroWorkflowInstances(
+                    conn, instances, instanceStrs, jobEvent, message);
               });
-      LOG.debug(
-          "Created workflow instances {} for workflow_id [{}]", Arrays.toString(res), workflowId);
-      int cnt = publishRunInstancesJobEvents(workflowId, instances, batchSize);
+      LOG.debug("Created workflow instances {} for workflow_id [{}]", ret, workflowId);
+      queueSystem.notify(message[0]);
       LOG.info(
-          "Created {}/{} workflow instances and sent {} run job events for workflow id {}",
-          res.length,
+          "Created [{}]/[{}] workflow instances for workflow id [{}]",
+          ret.size(),
           instances.size(),
-          cnt,
           workflowId);
       return Optional.empty();
     } catch (MaestroInternalError error) { // non-retryable error
@@ -522,44 +531,76 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
   /** Try to unblock failed workflow instance by set its status to FAILED_1. */
   public boolean tryUnblockFailedWorkflowInstance(
       String workflowId, long workflowInstanceId, long workflowRunId, TimelineEvent event) {
+    var jobEvent = StartWorkflowJobEvent.create(workflowId);
+    String eventStr = toJson(event);
+    MessageDto[] message = new MessageDto[1];
     int updated =
         withMetricLogError(
             () ->
-                withRetryableUpdate(
-                    UNBLOCK_INSTANCE_FAILED_STATUS,
-                    stmt -> {
-                      int idx = 0;
-                      stmt.setString(++idx, toJson(event));
-                      stmt.setString(++idx, workflowId);
-                      stmt.setLong(++idx, workflowInstanceId);
-                      stmt.setLong(++idx, workflowRunId);
+                withRetryableTransaction(
+                    conn -> {
+                      try (PreparedStatement stmt =
+                          conn.prepareStatement(UNBLOCK_INSTANCE_FAILED_STATUS)) {
+                        int idx = 0;
+                        stmt.setString(++idx, eventStr);
+                        stmt.setString(++idx, workflowId);
+                        stmt.setLong(++idx, workflowInstanceId);
+                        stmt.setLong(++idx, workflowRunId);
+                        int res = stmt.executeUpdate();
+                        if (res == SUCCESS_WRITE_SIZE) {
+                          message[0] = queueSystem.enqueue(conn, jobEvent);
+                        }
+                        return res;
+                      }
                     }),
             "tryUnblockFailedWorkflowInstance",
             "Failed to try to unblock the failed workflow instance [{}][{}][{}]",
             workflowId,
             workflowInstanceId,
             workflowRunId);
+    queueSystem.notify(message[0]);
     return updated == SUCCESS_WRITE_SIZE;
   }
 
   /**
    * Try to unblock failed workflow instances for a given workflow id by set their status to
-   * FAILED_1.
+   * FAILED_1. It does the batch update. If there is any update, it will send a start workflow job
+   * event within the last batch update. It is possible that the update the failed in the middle and
+   * the caller should retry.
    */
-  public int tryUnblockFailedWorkflowInstances(String workflowId, int limit, TimelineEvent event) {
-    return withMetricLogError(
-        () ->
-            withRetryableUpdate(
-                UNBLOCK_INSTANCES_FAILED_STATUS,
-                stmt -> {
-                  int idx = 0;
-                  stmt.setString(++idx, toJson(event));
-                  stmt.setString(++idx, workflowId);
-                  stmt.setInt(++idx, limit);
-                }),
-        "tryUnblockFailedWorkflowInstances",
-        "Failed to try to unblock the failed workflow instances for workflow id[{}]",
-        workflowId);
+  public int tryUnblockFailedWorkflowInstances(
+      String workflowId, int batchLimit, TimelineEvent event) {
+    var jobEvent = StartWorkflowJobEvent.create(workflowId);
+    String eventStr = toJson(event);
+    MessageDto[] message = new MessageDto[1];
+    int[] totalUnblocked = new int[] {0};
+    int unblocked = batchLimit;
+    while (unblocked == batchLimit) {
+      unblocked =
+          withMetricLogError(
+              () ->
+                  withRetryableTransaction(
+                      conn -> {
+                        try (PreparedStatement stmt =
+                            conn.prepareStatement(UNBLOCK_INSTANCES_FAILED_STATUS)) {
+                          int idx = 0;
+                          stmt.setString(++idx, eventStr);
+                          stmt.setString(++idx, workflowId);
+                          stmt.setInt(++idx, batchLimit);
+                          int res = stmt.executeUpdate();
+                          if (res < batchLimit && totalUnblocked[0] > 0) {
+                            message[0] = queueSystem.enqueue(conn, jobEvent);
+                          }
+                          return res;
+                        }
+                      }),
+              "tryUnblockFailedWorkflowInstances",
+              "Failed to try to unblock the failed workflow instances for workflow id[{}]",
+              workflowId);
+      totalUnblocked[0] += unblocked;
+    }
+    queueSystem.notify(message[0]);
+    return totalUnblocked[0];
   }
 
   /**
@@ -575,14 +616,16 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
       WorkflowSummary summary,
       WorkflowRuntimeOverview overview,
       Timeline timeline,
-      WorkflowInstance.Status status,
-      long markTime) {
+      @Nullable WorkflowInstance.Status status,
+      long markTime,
+      @Nullable MaestroJobEvent jobEvent) {
     try {
       String sqlQuery = deriveSqlQuery(status);
       final String[] timelineArray =
           timeline == null
               ? null
               : timeline.getTimelineEvents().stream().map(this::toJson).toArray(String[]::new);
+      MessageDto[] message = new MessageDto[1];
       int updated =
           withRetryableTransaction(
               conn -> {
@@ -597,7 +640,11 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
                   stmt.setString(++idx, summary.getWorkflowId());
                   stmt.setLong(++idx, summary.getWorkflowInstanceId());
                   stmt.setLong(++idx, summary.getWorkflowRunId());
-                  return stmt.executeUpdate();
+                  int ret = stmt.executeUpdate();
+                  if (ret == SUCCESS_WRITE_SIZE && jobEvent != null) {
+                    message[0] = queueSystem.enqueue(conn, jobEvent);
+                  }
+                  return ret;
                 }
               });
       if (updated != SUCCESS_WRITE_SIZE) {
@@ -606,6 +653,7 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
                 "ERROR: updated [%s] (expecting 1) rows for workflow instance %s",
                 updated, summary.getIdentity()));
       }
+      queueSystem.notify(message[0]);
       return Optional.empty();
     } catch (RuntimeException e) {
       return Optional.of(
@@ -677,7 +725,7 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
    */
   public Optional<Details> updateRuntimeOverview(
       WorkflowSummary summary, WorkflowRuntimeOverview overview, Timeline timeline) {
-    return updateWorkflowInstance(summary, overview, timeline, null, 0);
+    return updateWorkflowInstance(summary, overview, timeline, null, 0, null);
   }
 
   /**

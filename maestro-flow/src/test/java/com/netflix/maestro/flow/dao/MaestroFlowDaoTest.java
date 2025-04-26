@@ -18,17 +18,14 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.database.DatabaseConfiguration;
-import com.netflix.maestro.database.DatabaseSourceProvider;
+import com.netflix.maestro.database.MaestroDatabaseHelper;
 import com.netflix.maestro.exceptions.MaestroRetryableError;
 import com.netflix.maestro.flow.FlowBaseTest;
 import com.netflix.maestro.flow.models.Flow;
 import com.netflix.maestro.flow.models.FlowGroup;
 import com.netflix.maestro.metrics.MaestroMetrics;
-import com.netflix.maestro.utils.JsonHelper;
-import java.io.IOException;
 import javax.sql.DataSource;
 import org.junit.After;
 import org.junit.Before;
@@ -37,43 +34,22 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 public class MaestroFlowDaoTest extends FlowBaseTest {
+  private static MaestroMetrics METRICS;
 
-  private static DatabaseConfiguration config;
-  private static DataSource dataSource;
-  private static ObjectMapper mapper;
-  private static MaestroMetrics metrics;
-
-  private static class MaestroDBTestConfiguration implements DatabaseConfiguration {
-    @Override
-    public String getJdbcUrl() {
-      return "jdbc:tc:cockroach:v22.2.19:///maestro";
-    }
-
-    @Override
-    public int getConnectionPoolMaxSize() {
-      return 10;
-    }
-
-    @Override
-    public int getConnectionPoolMinIdle() {
-      return getConnectionPoolMaxSize();
-    }
-  }
+  private final DatabaseConfiguration config = MaestroDatabaseHelper.getConfig();
+  private final DataSource dataSource = MaestroDatabaseHelper.getDataSource();
 
   @BeforeClass
   public static void init() {
-    config = new MaestroDBTestConfiguration();
-    dataSource = new DatabaseSourceProvider(config).get();
-    mapper = JsonHelper.objectMapper();
-    metrics = Mockito.mock(MaestroMetrics.class);
+    METRICS = Mockito.mock(MaestroMetrics.class);
   }
 
   private MaestroFlowDao dao;
   private FlowGroup group;
 
   @Before
-  public void setUp() throws IOException {
-    dao = new MaestroFlowDao(dataSource, mapper, config, metrics);
+  public void setUp() {
+    dao = new MaestroFlowDao(dataSource, MAPPER, config, METRICS);
     group = new FlowGroup(10, 1, "testAddress", 12345);
     assertNotNull(dao.insertGroup(10, "testAddress"));
   }

@@ -15,5 +15,6 @@ dependencies {
 
     testFixturesImplementation junitDep
     testFixturesImplementation jacksonDatabindDep
+    testFixturesImplementation mockitoCoreDep
     testFixturesRuntimeOnly junitEngineDep
 }

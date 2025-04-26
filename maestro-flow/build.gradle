@@ -10,4 +10,5 @@ dependencies {
     testImplementation testcontainerDep
     testImplementation postgresqlDep
     testImplementation(testFixtures(project(':maestro-common')))
+    testImplementation(testFixtures(project(':maestro-database')))
 }

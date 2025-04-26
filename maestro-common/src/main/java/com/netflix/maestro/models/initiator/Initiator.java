@@ -78,4 +78,10 @@ public interface Initiator {
   /** Get a timeline info with initiator identity. */
   @JsonIgnore
   TimelineEvent getTimelineEvent();
+
+  /** Get the parent of the current workflow instance. */
+  @JsonIgnore
+  default UpstreamInitiator.Info getParent() {
+    return null;
+  }
 }

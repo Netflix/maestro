@@ -25,6 +25,7 @@ import com.netflix.maestro.models.instance.StepRuntimeState;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -45,13 +46,14 @@ public class MaestroGateTask implements FlowTask {
 
   /**
    * The execution is not expected to throw an exception. If it happens, the exception will be
-   * handled by the upstream caller (i.e. the flow engine will retry).
+   * handled by the upstream caller (i.e., the flow engine will retry).
    */
   @Override
   public boolean execute(Flow flow, Task task) {
     Map<String, Task> taskMap = TaskHelper.getTaskMap(flow);
     Optional<Task.Status> done = executeJoin(task, taskMap);
-    if (done.isPresent() && confirmDone(flow, task)) { // update task status if it is done
+    if (done.isPresent() && confirmDone(flow, task, false) && confirmDone(flow, task, true)) {
+      // update task status if it is done
       task.setStatus(done.get());
       return true;
     }
@@ -59,28 +61,50 @@ public class MaestroGateTask implements FlowTask {
     return false;
   }
 
-  private boolean confirmDone(Flow flow, Task task) {
+  private boolean confirmDone(Flow flow, Task task, boolean isStepData) {
     List<String> joinOn = getJoinOnSteps(task);
     LOG.debug(
-        "Confirming steps [{}] are actually completed in the flow [{}].",
+        "Confirming steps [{}] are actually completed in the flow [{}] with flag isStepData=[{}]",
         joinOn,
-        flow.getReference());
-    WorkflowSummary workflowSummary =
-        StepHelper.retrieveWorkflowSummary(objectMapper, flow.getInput());
+        flow.getReference(),
+        isStepData);
+    Map<String, StepRuntimeState> status;
+    if (isStepData) {
+      WorkflowSummary workflowSummary =
+          StepHelper.retrieveWorkflowSummary(objectMapper, flow.getInput());
+      status =
+          stepInstanceDao.getStepStates(
+              workflowSummary.getWorkflowId(),
+              workflowSummary.getWorkflowInstanceId(),
+              workflowSummary.getWorkflowRunId(),
+              joinOn);
+    } else {
+      status =
+          TaskHelper.getTaskMap(flow).entrySet().stream()
+              .collect(
+                  Collectors.toMap(
+                      Map.Entry::getKey,
+                      e ->
+                          StepHelper.retrieveStepRuntimeState(
+                              e.getValue().getOutputData(), objectMapper)));
+    }
 
-    Map<String, StepRuntimeState> status =
-        stepInstanceDao.getStepStates(
-            workflowSummary.getWorkflowId(),
-            workflowSummary.getWorkflowInstanceId(),
-            workflowSummary.getWorkflowRunId(),
-            joinOn);
     for (String joinOnRef : joinOn) {
       StepRuntimeState state = status.get(joinOnRef);
       if (state == null || !state.getStatus().isComplete()) {
-        LOG.warn(
-            "Steps [{}] is not completed yet although the task status is done. Will try the task [{}] again.",
-            joinOnRef,
-            task.getTaskId());
+        if (isStepData) {
+          LOG.warn(
+              "Steps [{}] is not completed yet although the task status is done. Will try the flow task [{}][{}] again.",
+              joinOnRef,
+              flow.getReference(),
+              task.referenceTaskName());
+        } else {
+          LOG.debug(
+              "Steps [{}] is not completed yet. Will try the flow task [{}][{}] again.",
+              joinOnRef,
+              flow.getReference(),
+              task.referenceTaskName());
+        }
         return false;
       }
     }

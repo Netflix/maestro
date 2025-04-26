@@ -577,7 +577,6 @@ public class WorkflowInstanceActionHandlerTest extends MaestroEngineBaseTest {
     verify(instanceDao, times(1)).getLatestWorkflowInstanceRun("test-workflow", 1);
     verify(instanceDao, times(1))
         .tryUnblockFailedWorkflowInstance(eq("test-workflow"), eq(1L), eq(1L), any());
-    verify(workflowHelper, times(1)).publishStartWorkflowEvent(eq("test-workflow"), eq(true));
   }
 
   @Test
@@ -592,7 +591,6 @@ public class WorkflowInstanceActionHandlerTest extends MaestroEngineBaseTest {
     verify(instanceDao, times(1)).getLatestWorkflowInstanceRun("test-workflow", 1);
     verify(instanceDao, times(1))
         .tryUnblockFailedWorkflowInstance(eq("test-workflow"), eq(1L), eq(1L), any());
-    verify(workflowHelper, times(1)).publishStartWorkflowEvent(eq("test-workflow"), eq(true));
   }
 
   @Test

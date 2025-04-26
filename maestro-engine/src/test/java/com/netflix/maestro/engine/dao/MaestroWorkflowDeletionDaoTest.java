@@ -22,12 +22,12 @@ import static org.mockito.Mockito.times;
 
 import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.engine.MaestroTestHelper;
-import com.netflix.maestro.engine.jobevents.DeleteWorkflowJobEvent;
-import com.netflix.maestro.engine.publisher.MaestroJobEventPublisher;
 import com.netflix.maestro.engine.utils.TriggerSubscriptionClient;
 import com.netflix.maestro.exceptions.MaestroNotFoundException;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.definition.WorkflowDefinition;
+import com.netflix.maestro.queue.MaestroQueueSystem;
+import com.netflix.maestro.queue.jobevents.DeleteWorkflowJobEvent;
 import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.Before;
@@ -39,7 +39,7 @@ import org.mockito.Mockito;
 public class MaestroWorkflowDeletionDaoTest extends MaestroDaoBaseTest {
   private static final String TEST_WORKFLOW_ID1 = "sample-active-wf-with-props";
 
-  @Mock private MaestroJobEventPublisher publisher;
+  @Mock private MaestroQueueSystem queueSystem;
 
   private MaestroWorkflowDeletionDao deletionDao;
   private MaestroWorkflowDao workflowDao;
@@ -52,7 +52,7 @@ public class MaestroWorkflowDeletionDaoTest extends MaestroDaoBaseTest {
             dataSource,
             MAPPER,
             config,
-            publisher,
+            queueSystem,
             mock(TriggerSubscriptionClient.class),
             metricRepo);
   }
@@ -60,7 +60,7 @@ public class MaestroWorkflowDeletionDaoTest extends MaestroDaoBaseTest {
   @After
   public void tearDown() {
     MaestroTestHelper.removeWorkflow(dataSource, TEST_WORKFLOW_ID1);
-    reset(publisher);
+    reset(queueSystem);
   }
 
   @Test
@@ -76,11 +76,12 @@ public class MaestroWorkflowDeletionDaoTest extends MaestroDaoBaseTest {
   public void testIsDeletionInitialized() throws Exception {
     WorkflowDefinition wfd = loadWorkflow(TEST_WORKFLOW_ID1);
     workflowDao.addWorkflowDefinition(wfd, wfd.getPropertiesSnapshot().extractProperties());
-    reset(publisher);
+    reset(queueSystem);
     ArgumentCaptor<DeleteWorkflowJobEvent> argumentCaptor =
         ArgumentCaptor.forClass(DeleteWorkflowJobEvent.class);
     workflowDao.deleteWorkflow(TEST_WORKFLOW_ID1, User.create("tester"));
-    Mockito.verify(publisher, times(1)).publishOrThrow(argumentCaptor.capture(), any());
+    Mockito.verify(queueSystem, times(1)).enqueue(any(), argumentCaptor.capture());
+    Mockito.verify(queueSystem, times(1)).notify(any());
 
     DeleteWorkflowJobEvent deleteWorkflowJobEvent = argumentCaptor.getValue();
     assertEquals(TEST_WORKFLOW_ID1, deleteWorkflowJobEvent.getWorkflowId());
@@ -100,11 +101,12 @@ public class MaestroWorkflowDeletionDaoTest extends MaestroDaoBaseTest {
   public void testDeleteWorkflowData() throws Exception {
     WorkflowDefinition wfd = loadWorkflow(TEST_WORKFLOW_ID1);
     workflowDao.addWorkflowDefinition(wfd, wfd.getPropertiesSnapshot().extractProperties());
-    reset(publisher);
+    reset(queueSystem);
     ArgumentCaptor<DeleteWorkflowJobEvent> argumentCaptor =
         ArgumentCaptor.forClass(DeleteWorkflowJobEvent.class);
     workflowDao.deleteWorkflow(TEST_WORKFLOW_ID1, User.create("tester"));
-    Mockito.verify(publisher, times(1)).publishOrThrow(argumentCaptor.capture(), any());
+    Mockito.verify(queueSystem, times(1)).enqueue(any(), argumentCaptor.capture());
+    Mockito.verify(queueSystem, times(1)).notify(any());
 
     DeleteWorkflowJobEvent deleteWorkflowJobEvent = argumentCaptor.getValue();
     assertEquals(TEST_WORKFLOW_ID1, deleteWorkflowJobEvent.getWorkflowId());

@@ -20,10 +20,12 @@
   "action": "STOP",
   "user": "tester",
   "reason": "test reason",
-  "run_after": {
-    "instance_id": 5,
-    "run_id": 1,
-    "uuid": "d2969163-a6f1-3eee-8f72-2eca318b827c"
-  },
-  "type": "TERMINATE_THEN_RUN_JOB_EVENT"
+  "run_after": [
+    {
+      "instance_id": 5,
+      "run_id": 1,
+      "uuid": "d2969163-a6f1-3eee-8f72-2eca318b827c"
+    }
+  ],
+  "type": "TERMINATE_THEN_RUN"
 }

@@ -36,7 +36,7 @@ public class TaskActorTest extends ActorBaseTest {
   private TaskActor taskActor;
 
   @Before
-  public void init() {
+  public void setUp() {
     flow = createFlow();
     task = flow.newTask(new TaskDef("task1", "noop", null, null), false);
     flowActor = new FlowActor(flow, createGroupActor(), context);

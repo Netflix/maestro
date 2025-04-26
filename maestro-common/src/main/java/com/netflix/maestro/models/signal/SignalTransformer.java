@@ -5,7 +5,7 @@ import com.netflix.maestro.models.instance.StepDependencyMatchStatus;
 import com.netflix.maestro.models.parameter.MapParameter;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.StringParamDefinition;
-import com.netflix.maestro.utils.Checks;
+import com.netflix.maestro.utils.ObjectHelper;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -128,7 +128,7 @@ public final class SignalTransformer {
               } else if (v instanceof String) {
                 params.put(k, SignalParamValue.of((String) v));
               } else {
-                var val = Checks.toNumeric(String.valueOf(v));
+                var val = ObjectHelper.toNumeric(String.valueOf(v));
                 if (val.isPresent()) {
                   params.put(k, SignalParamValue.of(val.getAsLong()));
                 } else {
