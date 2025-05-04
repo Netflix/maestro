@@ -165,13 +165,14 @@ public class MaestroExecutionPreparerTest extends MaestroEngineBaseTest {
     instance.setStatus(WorkflowInstance.Status.IN_PROGRESS);
     var stepInstance =
         loadObject("fixtures/instances/sample-step-instance-running.json", StepInstance.class);
-    when(instanceDao.getWorkflowInstanceRun("sample-dag-test-3", 1, 1)).thenReturn(instance);
+    when(instanceDao.getWorkflowInstanceRunByUuid("sample-dag-test-3", "test-flow-id"))
+        .thenReturn(instance);
     when(workflowHelper.createWorkflowSummaryFromInstance(instance)).thenCallRealMethod();
     when(stepInstanceDao.getStepInstanceViews("sample-dag-test-3", 1, 1))
         .thenReturn(List.of(stepInstance));
 
     assertFalse(executionPreparer.resume(flow));
-    verify(instanceDao, times(1)).getWorkflowInstanceRun(any(), anyLong(), anyLong());
+    verify(instanceDao, times(1)).getWorkflowInstanceRunByUuid("sample-dag-test-3", "test-flow-id");
     verify(workflowHelper, times(1)).createWorkflowSummaryFromInstance(any());
     verify(stepInstanceDao, times(1)).getStepInstanceViews(any(), anyLong(), anyLong());
     assertEquals(Flow.Status.RUNNING, flow.getStatus());
@@ -197,11 +198,12 @@ public class MaestroExecutionPreparerTest extends MaestroEngineBaseTest {
         loadObject(
             "fixtures/instances/sample-workflow-instance-created.json", WorkflowInstance.class);
     instance.setStatus(WorkflowInstance.Status.FAILED);
-    when(instanceDao.getWorkflowInstanceRun("sample-dag-test-3", 1, 1)).thenReturn(instance);
+    when(instanceDao.getWorkflowInstanceRunByUuid("sample-dag-test-3", "test-flow-id"))
+        .thenReturn(instance);
     when(workflowHelper.createWorkflowSummaryFromInstance(instance)).thenCallRealMethod();
 
     assertFalse(executionPreparer.resume(flow));
-    verify(instanceDao, times(1)).getWorkflowInstanceRun(any(), anyLong(), anyLong());
+    verify(instanceDao, times(1)).getWorkflowInstanceRunByUuid("sample-dag-test-3", "test-flow-id");
     verify(workflowHelper, times(1)).createWorkflowSummaryFromInstance(any());
     verify(stepInstanceDao, times(0)).getStepInstanceViews(any(), anyLong(), anyLong());
     assertEquals(Flow.Status.COMPLETED, flow.getStatus());
@@ -227,11 +229,12 @@ public class MaestroExecutionPreparerTest extends MaestroEngineBaseTest {
         loadObject(
             "fixtures/instances/sample-workflow-instance-created.json", WorkflowInstance.class);
     instance.setExecutionId(null);
-    when(instanceDao.getWorkflowInstanceRun("sample-dag-test-3", 1, 1)).thenReturn(instance);
+    when(instanceDao.getWorkflowInstanceRunByUuid("sample-dag-test-3", "test-flow-id"))
+        .thenReturn(instance);
     when(workflowHelper.createWorkflowSummaryFromInstance(instance)).thenCallRealMethod();
 
     assertTrue(executionPreparer.resume(flow));
-    verify(instanceDao, times(1)).getWorkflowInstanceRun(any(), anyLong(), anyLong());
+    verify(instanceDao, times(1)).getWorkflowInstanceRunByUuid("sample-dag-test-3", "test-flow-id");
     verify(workflowHelper, times(1)).createWorkflowSummaryFromInstance(any());
     verify(stepInstanceDao, times(0)).getStepInstanceViews(any(), anyLong(), anyLong());
     assertEquals(Flow.Status.RUNNING, flow.getStatus());

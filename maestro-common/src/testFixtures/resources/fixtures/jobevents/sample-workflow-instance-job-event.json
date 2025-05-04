@@ -47,5 +47,5 @@
     }
   ],
   "sync_time": 1610671075650,
-  "type": "WORKFLOW_INSTANCE_UPDATE_JOB_EVENT"
+  "type": "WORKFLOW_INSTANCE_UPDATE"
 }

@@ -151,4 +151,14 @@ public class Workflow {
           }
         });
   }
+
+  /**
+   * Returns workflow id if workflow name is missing and was not provided by the user.
+   *
+   * @return workflow name
+   */
+  @JsonIgnore
+  public String getWorkflowNameOrDefault() {
+    return getName() != null ? getName() : getId();
+  }
 }

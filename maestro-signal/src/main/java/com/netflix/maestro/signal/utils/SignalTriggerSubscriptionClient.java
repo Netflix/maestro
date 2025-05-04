@@ -1,6 +1,5 @@
 package com.netflix.maestro.signal.utils;
 
-import com.netflix.maestro.engine.utils.ObjectHelper;
 import com.netflix.maestro.engine.utils.TriggerSubscriptionClient;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.definition.Workflow;
@@ -8,6 +7,7 @@ import com.netflix.maestro.models.trigger.TriggerUuids;
 import com.netflix.maestro.signal.dao.MaestroSignalBrokerDao;
 import com.netflix.maestro.signal.metrics.MetricConstants;
 import com.netflix.maestro.signal.models.SignalTriggerDef;
+import com.netflix.maestro.utils.ObjectHelper;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collections;

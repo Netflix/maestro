@@ -12,8 +12,6 @@
  */
 package com.netflix.maestro.utils;
 
-import java.util.OptionalDouble;
-import java.util.OptionalLong;
 import java.util.function.Supplier;
 
 /** Similar to guava Preconditions to avoid adding guava dependency. */
@@ -64,34 +62,5 @@ public final class Checks {
       throw new NullPointerException(String.format(template, args));
     }
     return input;
-  }
-
-  /** Check if the string is a numeric number in string format and return it if yes. */
-  public static OptionalLong toNumeric(String input) {
-    if (input == null) {
-      return OptionalLong.empty();
-    }
-    try {
-      return OptionalLong.of(Long.parseLong(input));
-    } catch (NumberFormatException nfe) {
-      return OptionalLong.empty();
-    }
-  }
-
-  /** Check if the string is a double number in string format and return it if yes. */
-  public static OptionalDouble toDouble(String input) {
-    if (input == null) {
-      return OptionalDouble.empty();
-    }
-    try {
-      return OptionalDouble.of(Double.parseDouble(input));
-    } catch (NumberFormatException nfe) {
-      return OptionalDouble.empty();
-    }
-  }
-
-  /** Check if Char sequence is empty or null. */
-  public static boolean isNullOrEmpty(CharSequence cs) {
-    return cs == null || cs.isEmpty();
   }
 }

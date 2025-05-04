@@ -16,7 +16,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -25,9 +24,7 @@ import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.engine.MaestroEngineBaseTest;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
-import com.netflix.maestro.engine.jobevents.WorkflowInstanceUpdateJobEvent;
 import com.netflix.maestro.engine.metrics.MetricConstants;
-import com.netflix.maestro.engine.publisher.MaestroJobEventPublisher;
 import com.netflix.maestro.engine.tasks.MaestroStartTask;
 import com.netflix.maestro.engine.tasks.MaestroTask;
 import com.netflix.maestro.exceptions.MaestroRetryableError;
@@ -56,7 +53,6 @@ import org.mockito.Mock;
 public class MaestroFinalFlowStatusCallbackTest extends MaestroEngineBaseTest {
   @Mock private MaestroWorkflowInstanceDao instanceDao;
   @Mock private MaestroStepInstanceDao stepInstanceDao;
-  @Mock private MaestroJobEventPublisher publisher;
   @Mock private Flow flow;
   @Mock private MaestroTask maestroTask;
 
@@ -66,7 +62,7 @@ public class MaestroFinalFlowStatusCallbackTest extends MaestroEngineBaseTest {
   public void before() throws Exception {
     statusListener =
         new MaestroFinalFlowStatusCallback(
-            maestroTask, instanceDao, stepInstanceDao, publisher, MAPPER, metricRepo);
+            maestroTask, instanceDao, stepInstanceDao, MAPPER, metricRepo);
     when(flow.getFlowId()).thenReturn("test-workflow-id");
     Task task = new Task();
     TaskDef taskDef = new TaskDef("foo", Constants.MAESTRO_TASK_NAME, null, null);
@@ -210,8 +206,7 @@ public class MaestroFinalFlowStatusCallbackTest extends MaestroEngineBaseTest {
             .count());
     verify(instanceDao, times(1))
         .updateWorkflowInstance(
-            any(), any(), any(), eq(WorkflowInstance.Status.SUCCEEDED), anyLong());
-    verify(publisher, times(1)).publishOrThrow(any(), any());
+            any(), any(), any(), eq(WorkflowInstance.Status.SUCCEEDED), anyLong(), any());
   }
 
   @Test
@@ -236,8 +231,8 @@ public class MaestroFinalFlowStatusCallbackTest extends MaestroEngineBaseTest {
                 "FAILED")
             .count());
     verify(instanceDao, times(1))
-        .updateWorkflowInstance(any(), any(), any(), eq(WorkflowInstance.Status.FAILED), anyLong());
-    verify(publisher, times(1)).publishOrThrow(any(), any());
+        .updateWorkflowInstance(
+            any(), any(), any(), eq(WorkflowInstance.Status.FAILED), anyLong(), any());
   }
 
   @Test
@@ -259,8 +254,7 @@ public class MaestroFinalFlowStatusCallbackTest extends MaestroEngineBaseTest {
             .count());
     verify(instanceDao, times(1))
         .updateWorkflowInstance(
-            any(), any(), any(), eq(WorkflowInstance.Status.TIMED_OUT), anyLong());
-    verify(publisher, times(1)).publishOrThrow(any(), any());
+            any(), any(), any(), eq(WorkflowInstance.Status.TIMED_OUT), anyLong(), any());
   }
 
   @Test
@@ -282,8 +276,7 @@ public class MaestroFinalFlowStatusCallbackTest extends MaestroEngineBaseTest {
             .count());
     verify(instanceDao, times(1))
         .updateWorkflowInstance(
-            any(), any(), any(), eq(WorkflowInstance.Status.STOPPED), anyLong());
-    verify(publisher, times(1)).publishOrThrow(any(), any());
+            any(), any(), any(), eq(WorkflowInstance.Status.STOPPED), anyLong(), any());
   }
 
   @Test
@@ -305,8 +298,8 @@ public class MaestroFinalFlowStatusCallbackTest extends MaestroEngineBaseTest {
                 "TERMINATED")
             .count());
     verify(instanceDao, times(1))
-        .updateWorkflowInstance(any(), any(), any(), eq(WorkflowInstance.Status.FAILED), anyLong());
-    verify(publisher, times(1)).publishOrThrow(any(), any());
+        .updateWorkflowInstance(
+            any(), any(), any(), eq(WorkflowInstance.Status.FAILED), anyLong(), any());
   }
 
   @Test
@@ -326,8 +319,8 @@ public class MaestroFinalFlowStatusCallbackTest extends MaestroEngineBaseTest {
                 "status",
                 "FAILED")
             .count());
-    verify(instanceDao, times(0)).updateWorkflowInstance(any(), any(), any(), any(), anyLong());
-    verify(publisher, times(0)).publishOrThrow(any(), any());
+    verify(instanceDao, times(0))
+        .updateWorkflowInstance(any(), any(), any(), any(), anyLong(), any());
   }
 
   @Test
@@ -373,8 +366,7 @@ public class MaestroFinalFlowStatusCallbackTest extends MaestroEngineBaseTest {
 
     verify(instanceDao, times(1))
         .updateWorkflowInstance(
-            any(), any(), any(), eq(WorkflowInstance.Status.STOPPED), anyLong());
-    verify(publisher, times(1)).publishOrThrow(any(), any());
+            any(), any(), any(), eq(WorkflowInstance.Status.STOPPED), anyLong(), any());
     verify(maestroTask, times(1)).cancel(flow, task);
   }
 
@@ -410,8 +402,7 @@ public class MaestroFinalFlowStatusCallbackTest extends MaestroEngineBaseTest {
 
     verify(instanceDao, times(1))
         .updateWorkflowInstance(
-            any(), any(), any(), eq(WorkflowInstance.Status.STOPPED), anyLong());
-    verify(publisher, times(1)).publishOrThrow(any(WorkflowInstanceUpdateJobEvent.class), any());
+            any(), any(), any(), eq(WorkflowInstance.Status.STOPPED), anyLong(), any());
     verify(maestroTask, times(1)).cancel(flow, task);
   }
 
@@ -448,7 +439,12 @@ public class MaestroFinalFlowStatusCallbackTest extends MaestroEngineBaseTest {
     ArgumentCaptor<Timeline> timelineCaptor = ArgumentCaptor.forClass(Timeline.class);
     verify(instanceDao, times(1))
         .updateWorkflowInstance(
-            any(), any(), timelineCaptor.capture(), eq(WorkflowInstance.Status.FAILED), anyLong());
+            any(),
+            any(),
+            timelineCaptor.capture(),
+            eq(WorkflowInstance.Status.FAILED),
+            anyLong(),
+            any());
     Timeline timeline = timelineCaptor.getValue();
     Assert.assertEquals(2, timeline.getTimelineEvents().size());
     Assert.assertEquals(
@@ -457,7 +453,6 @@ public class MaestroFinalFlowStatusCallbackTest extends MaestroEngineBaseTest {
     Assert.assertEquals(
         "Invalid status [RUNNING] onFlowFinalized",
         timeline.getTimelineEvents().get(1).getMessage());
-    verify(publisher, times(1)).publishOrThrow(any(), any());
   }
 
   @Test
@@ -465,39 +460,12 @@ public class MaestroFinalFlowStatusCallbackTest extends MaestroEngineBaseTest {
     when(flow.getStatus()).thenReturn(Flow.Status.TERMINATED);
     when(instanceDao.getWorkflowInstanceStatus(eq("test-workflow-id"), anyLong(), anyLong()))
         .thenReturn(WorkflowInstance.Status.IN_PROGRESS);
-    when(instanceDao.updateWorkflowInstance(any(), any(), any(), any(), anyLong()))
+    when(instanceDao.updateWorkflowInstance(any(), any(), any(), any(), anyLong(), any()))
         .thenReturn(Optional.of(Details.create("test errors")));
     AssertHelper.assertThrows(
         "instance dao failure and will retry",
         MaestroRetryableError.class,
         "Failed to update workflow instance",
-        () -> statusListener.onFlowFinalized(flow));
-    Assert.assertEquals(
-        1L,
-        metricRepo
-            .getCounter(
-                MetricConstants.FINAL_FLOW_STATUS_CALL_BACK_METRIC,
-                MaestroFinalFlowStatusCallback.class,
-                "type",
-                "onFlowFinalized",
-                "status",
-                "TERMINATED")
-            .count());
-  }
-
-  @Test
-  public void testPublishErrorOnFlowFinalized() {
-    when(flow.getStatus()).thenReturn(Flow.Status.TERMINATED);
-    when(instanceDao.getWorkflowInstanceStatus(eq("test-workflow-id"), anyLong(), anyLong()))
-        .thenReturn(WorkflowInstance.Status.IN_PROGRESS);
-    doCallRealMethod().when(publisher).publishOrThrow(any(), any());
-    doCallRealMethod().when(publisher).publishOrThrow(any(), anyLong(), any());
-    when(publisher.publish(any(), anyLong()))
-        .thenReturn(Optional.of(Details.create("test errors")));
-    AssertHelper.assertThrows(
-        "maestro event publish failure and will retry",
-        MaestroRetryableError.class,
-        "Failed to publish maestro job event",
         () -> statusListener.onFlowFinalized(flow));
     Assert.assertEquals(
         1L,
@@ -560,13 +528,17 @@ public class MaestroFinalFlowStatusCallbackTest extends MaestroEngineBaseTest {
     ArgumentCaptor<Timeline> timelineCaptor = ArgumentCaptor.forClass(Timeline.class);
     verify(instanceDao, times(1))
         .updateWorkflowInstance(
-            any(), any(), timelineCaptor.capture(), eq(WorkflowInstance.Status.STOPPED), anyLong());
+            any(),
+            any(),
+            timelineCaptor.capture(),
+            eq(WorkflowInstance.Status.STOPPED),
+            anyLong(),
+            any());
     Timeline timeline = timelineCaptor.getValue();
     Assert.assertEquals(1, timeline.getTimelineEvents().size());
     Assert.assertEquals(
         "Workflow instance status is updated to [STOPPED] due to [test-reason]",
-        timeline.getTimelineEvents().get(0).getMessage());
-    verify(publisher, times(1)).publishOrThrow(any(), any());
+        timeline.getTimelineEvents().getFirst().getMessage());
   }
 
   @Test
@@ -629,7 +601,12 @@ public class MaestroFinalFlowStatusCallbackTest extends MaestroEngineBaseTest {
     ArgumentCaptor<Timeline> timelineCaptor = ArgumentCaptor.forClass(Timeline.class);
     verify(instanceDao, times(1))
         .updateWorkflowInstance(
-            any(), any(), timelineCaptor.capture(), eq(WorkflowInstance.Status.FAILED), anyLong());
+            any(),
+            any(),
+            timelineCaptor.capture(),
+            eq(WorkflowInstance.Status.FAILED),
+            anyLong(),
+            any());
     Timeline timeline = timelineCaptor.getValue();
     Assert.assertEquals(2, timeline.getTimelineEvents().size());
     Assert.assertEquals(
@@ -638,6 +615,5 @@ public class MaestroFinalFlowStatusCallbackTest extends MaestroEngineBaseTest {
     Assert.assertEquals(
         "Invalid state: stepId [foo] should not have any status",
         timeline.getTimelineEvents().get(1).getMessage());
-    verify(publisher, times(1)).publishOrThrow(any(), any());
   }
 }

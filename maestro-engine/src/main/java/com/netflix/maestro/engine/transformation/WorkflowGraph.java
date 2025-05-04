@@ -13,13 +13,13 @@
 package com.netflix.maestro.engine.transformation;
 
 import com.netflix.maestro.annotations.VisibleForTesting;
-import com.netflix.maestro.engine.utils.ObjectHelper;
 import com.netflix.maestro.models.definition.AbstractStep;
 import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.definition.StepTransition;
 import com.netflix.maestro.models.definition.Workflow;
 import com.netflix.maestro.utils.Checks;
 import com.netflix.maestro.utils.MapHelper;
+import com.netflix.maestro.utils.ObjectHelper;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;

@@ -34,6 +34,7 @@ import com.netflix.maestro.models.parameter.ParamType;
 import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.models.signal.SignalDependencies;
 import com.netflix.maestro.utils.Checks;
+import com.netflix.maestro.utils.ObjectHelper;
 import com.netflix.sel.ext.AbstractParamExtension;
 import java.util.Map;
 import java.util.OptionalLong;
@@ -309,7 +310,7 @@ public class MaestroParamExtension extends AbstractParamExtension {
         instanceWrapper.getStepInstanceAttributes().getSignalDependencies();
     if (dependencies != null) {
       int size = dependencies.getDependencies().size();
-      OptionalLong idx = Checks.toNumeric(signalDependencyIndex);
+      OptionalLong idx = ObjectHelper.toNumeric(signalDependencyIndex);
       Checks.checkTrue(
           idx.isPresent() && idx.getAsLong() < size,
           "Signal dependency index is out of bound [%s > %s]",

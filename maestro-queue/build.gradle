@@ -1,0 +1,12 @@
+dependencies {
+    implementation project(':maestro-database')
+    implementation project(':maestro-common')
+    implementation jacksonDatabindDep
+
+    testImplementation junitDep
+    testImplementation mockitoCoreDep
+    testImplementation testcontainerDep
+    testImplementation postgresqlDep
+    testImplementation(testFixtures(project(':maestro-common')))
+    testImplementation(testFixtures(project(':maestro-database')))
+}

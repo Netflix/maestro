@@ -28,10 +28,13 @@ import com.netflix.maestro.models.instance.RestartConfig;
 import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.StepInstanceTransition;
 import com.netflix.maestro.models.instance.StepRuntimeState;
+import com.netflix.maestro.models.instance.WorkflowInstance;
+import com.netflix.maestro.models.instance.WorkflowRuntimeOverview;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.signal.SignalDependencies;
 import com.netflix.maestro.utils.Checks;
 import com.netflix.maestro.utils.IdHelper;
+import com.netflix.maestro.utils.ObjectHelper;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -245,6 +248,25 @@ public final class StepHelper {
 
   /** Returns the step type info - if subType is available, return it, else the step type. */
   public static String getStepTypeInfo(StepType stepType, String subType) {
-    return Checks.isNullOrEmpty(subType) ? stepType.name() : subType;
+    return ObjectHelper.isNullOrEmpty(subType) ? stepType.name() : subType;
+  }
+
+  /**
+   * Build a workflow instance from the workflow summary and overview for termination.
+   *
+   * @param summary workflow summary
+   * @param overview workflow runtime overview
+   * @return a workflow instance used for termination
+   */
+  public static WorkflowInstance buildTerminateWorkflowInstance(
+      WorkflowSummary summary, WorkflowRuntimeOverview overview) {
+    WorkflowInstance toTerminate = new WorkflowInstance();
+    toTerminate.setWorkflowId(summary.getWorkflowId());
+    toTerminate.setWorkflowInstanceId(summary.getWorkflowInstanceId());
+    toTerminate.setWorkflowRunId(summary.getWorkflowRunId());
+    toTerminate.setGroupInfo(summary.getGroupInfo());
+    toTerminate.setRuntimeDag(summary.getRuntimeDag());
+    toTerminate.setRuntimeOverview(overview);
+    return toTerminate;
   }
 }

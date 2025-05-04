@@ -28,6 +28,7 @@ import com.netflix.maestro.timetrigger.properties.TimeTriggerProperties;
 import com.netflix.maestro.timetrigger.utils.MaestroWorkflowLauncher;
 import com.netflix.maestro.timetrigger.utils.TimeTriggerExecutionPlanner;
 import com.netflix.maestro.utils.Checks;
+import com.netflix.maestro.utils.ObjectHelper;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -36,7 +37,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.function.Supplier;
-import java.util.stream.IntStream;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -74,7 +74,7 @@ public class TimeTriggerExecutionProcessor {
         plannedTimeTriggerExecutions.subList(
             0, Math.min(props.getMaxTriggersPerMessage(), plannedTimeTriggerExecutions.size()));
     List<List<PlannedTimeTriggerExecution>> partitionedBatch =
-        partitionList(executionBatch, props.getTriggerBatchSize());
+        ObjectHelper.partitionList(executionBatch, props.getTriggerBatchSize());
 
     for (List<PlannedTimeTriggerExecution> batch : partitionedBatch) {
       boolean terminateCondition = false;
@@ -146,12 +146,6 @@ public class TimeTriggerExecutionProcessor {
         "Finished processing timeTriggerExecution [{}] and spent [{}] ms",
         timeTriggerExecution,
         System.currentTimeMillis() - start);
-  }
-
-  private <T> List<List<T>> partitionList(List<T> list, int batchSize) {
-    return IntStream.range(0, (list.size() + batchSize - 1) / batchSize)
-        .mapToObj(i -> list.subList(i * batchSize, Math.min(list.size(), (i + 1) * batchSize)))
-        .toList();
   }
 
   private long calculateMessageDelay(Date firstExecutionDate) {

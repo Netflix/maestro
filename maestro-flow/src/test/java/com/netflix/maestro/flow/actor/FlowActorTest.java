@@ -43,7 +43,7 @@ public class FlowActorTest extends ActorBaseTest {
   private Flow flow;
 
   @Before
-  public void init() {
+  public void setUp() {
     when(properties.getFlowRefreshIntervalInMillis()).thenReturn(3000L);
     groupActor = createGroupActor();
     flow = createFlow();

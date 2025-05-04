@@ -20,11 +20,11 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.exceptions.MaestroUnprocessableEntityException;
-import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.parameter.ParamSource;
 import com.netflix.maestro.models.timeline.TimelineEvent;
 import com.netflix.maestro.models.timeline.TimelineLogEvent;
 import com.netflix.maestro.utils.Checks;
+import com.netflix.maestro.utils.IdHelper;
 import java.util.List;
 import lombok.Data;
 
@@ -49,6 +49,7 @@ public abstract class UpstreamInitiator implements Initiator {
 
   /** helper method to get the parent. */
   @JsonIgnore
+  @Override
   public Info getParent() {
     return ancestors.getLast();
   }
@@ -108,7 +109,7 @@ public abstract class UpstreamInitiator implements Initiator {
 
     @JsonIgnore
     public boolean isInline() {
-      return workflowId.startsWith(Constants.MAESTRO_PREFIX);
+      return IdHelper.isInlineWorkflowId(workflowId);
     }
   }
 

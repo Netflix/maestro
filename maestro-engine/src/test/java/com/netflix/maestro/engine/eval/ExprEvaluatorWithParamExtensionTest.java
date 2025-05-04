@@ -14,13 +14,12 @@ package com.netflix.maestro.engine.eval;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.MaestroBaseTest;
-import com.netflix.maestro.database.DatabaseConfiguration;
-import com.netflix.maestro.database.DatabaseSourceProvider;
-import com.netflix.maestro.engine.MaestroDBTestConfiguration;
+import com.netflix.maestro.database.MaestroDatabaseHelper;
 import com.netflix.maestro.engine.MaestroTestHelper;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
@@ -37,6 +36,7 @@ import com.netflix.maestro.models.parameter.StringParameter;
 import com.netflix.maestro.models.signal.SignalInstance;
 import com.netflix.maestro.models.signal.SignalParamValue;
 import com.netflix.maestro.models.trigger.SignalTrigger;
+import com.netflix.maestro.queue.MaestroQueueSystem;
 import com.netflix.spectator.api.DefaultRegistry;
 import java.io.IOException;
 import java.util.Collections;
@@ -65,11 +65,14 @@ public class ExprEvaluatorWithParamExtensionTest extends MaestroBaseTest {
   @BeforeClass
   public static void init() {
     MaestroBaseTest.init();
-    DatabaseConfiguration config = new MaestroDBTestConfiguration();
-    dataSource = new DatabaseSourceProvider(config).get();
+    dataSource = MaestroDatabaseHelper.getDataSource();
     stepDao =
         new MaestroStepInstanceDao(
-            dataSource, MAPPER, config, new MaestroMetricRepo(new DefaultRegistry()));
+            dataSource,
+            MAPPER,
+            MaestroDatabaseHelper.getConfig(),
+            mock(MaestroQueueSystem.class),
+            new MaestroMetricRepo(new DefaultRegistry()));
     extensionRepo = new MaestroParamExtensionRepo(stepDao, "test", MAPPER);
     exprEvaluator =
         new ExprEvaluator(
@@ -96,7 +99,7 @@ public class ExprEvaluatorWithParamExtensionTest extends MaestroBaseTest {
   @Before
   public void setUp() throws Exception {
     StepInstance si = loadObject(TEST_STEP_INSTANCE, StepInstance.class);
-    stepDao.insertOrUpsertStepInstance(si, false);
+    stepDao.insertOrUpsertStepInstance(si, false, null);
   }
 
   @After

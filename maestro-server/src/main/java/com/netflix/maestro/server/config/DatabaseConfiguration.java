@@ -22,11 +22,12 @@ import com.netflix.maestro.engine.dao.MaestroWorkflowDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowDeletionDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
 import com.netflix.maestro.engine.dao.OutputDataDao;
-import com.netflix.maestro.engine.publisher.MaestroJobEventPublisher;
 import com.netflix.maestro.engine.utils.TriggerSubscriptionClient;
 import com.netflix.maestro.flow.dao.MaestroFlowDao;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.Constants;
+import com.netflix.maestro.queue.MaestroQueueSystem;
+import com.netflix.maestro.queue.dao.MaestroQueueDao;
 import com.netflix.maestro.server.properties.MaestroEngineProperties;
 import com.netflix.maestro.server.properties.MaestroProperties;
 import com.netflix.maestro.signal.dao.MaestroSignalBrokerDao;
@@ -60,8 +61,19 @@ public class DatabaseConfiguration {
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
       MaestroEngineProperties props,
       MaestroMetrics metrics) {
-    LOG.info("Creating IndexDAO within Spring boot...");
+    LOG.info("Creating maestroFlowDao within Spring boot...");
     return new MaestroFlowDao(maestroDataSource, objectMapper, props, metrics);
+  }
+
+  // below are maestro queue DB Daos
+  @Bean
+  public MaestroQueueDao maestroQueueDao(
+      DataSource maestroDataSource,
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
+      MaestroEngineProperties props,
+      MaestroMetrics metrics) {
+    LOG.info("Creating maestroQueueDao within Spring boot...");
+    return new MaestroQueueDao(maestroDataSource, objectMapper, props, metrics);
   }
 
   // below are maestro DB Daos
@@ -70,17 +82,12 @@ public class DatabaseConfiguration {
       DataSource maestroDataSource,
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
       MaestroEngineProperties props,
-      MaestroJobEventPublisher maestroJobEventPublisher,
+      MaestroQueueSystem queueSystem,
       TriggerSubscriptionClient triggerSubscriptionClient,
       MaestroMetrics metrics) {
     LOG.info("Creating maestroWorkflowDao within Spring boot...");
     return new MaestroWorkflowDao(
-        maestroDataSource,
-        objectMapper,
-        props,
-        maestroJobEventPublisher,
-        triggerSubscriptionClient,
-        metrics);
+        maestroDataSource, objectMapper, props, queueSystem, triggerSubscriptionClient, metrics);
   }
 
   @Bean
@@ -98,11 +105,11 @@ public class DatabaseConfiguration {
       DataSource maestroDataSource,
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
       MaestroEngineProperties props,
-      MaestroJobEventPublisher maestroJobEventPublisher,
+      MaestroQueueSystem queueSystem,
       MaestroMetrics metrics) {
     LOG.info("Creating maestroWorkflowInstanceDao within Spring boot...");
     return new MaestroWorkflowInstanceDao(
-        maestroDataSource, objectMapper, props, maestroJobEventPublisher, metrics);
+        maestroDataSource, objectMapper, props, queueSystem, metrics);
   }
 
   @Bean
@@ -110,11 +117,10 @@ public class DatabaseConfiguration {
       DataSource maestroDataSource,
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
       MaestroEngineProperties props,
-      MaestroJobEventPublisher maestroJobEventPublisher,
+      MaestroQueueSystem queueSystem,
       MaestroMetrics metrics) {
     LOG.info("Creating maestroRunStrategyDao within Spring boot...");
-    return new MaestroRunStrategyDao(
-        maestroDataSource, objectMapper, props, maestroJobEventPublisher, metrics);
+    return new MaestroRunStrategyDao(maestroDataSource, objectMapper, props, queueSystem, metrics);
   }
 
   @Bean
@@ -122,9 +128,10 @@ public class DatabaseConfiguration {
       DataSource maestroDataSource,
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
       MaestroEngineProperties props,
+      MaestroQueueSystem queueSystem,
       MaestroMetrics metrics) {
     LOG.info("Creating maestroStepInstanceDAO within Spring boot...");
-    return new MaestroStepInstanceDao(maestroDataSource, objectMapper, props, metrics);
+    return new MaestroStepInstanceDao(maestroDataSource, objectMapper, props, queueSystem, metrics);
   }
 
   @Bean
@@ -134,7 +141,7 @@ public class DatabaseConfiguration {
       MaestroEngineProperties props,
       MaestroProperties maestroProperties,
       MaestroStepInstanceDao stepInstanceDao,
-      MaestroJobEventPublisher maestroJobEventPublisher,
+      MaestroQueueSystem queueSystem,
       MaestroMetrics metrics) {
     LOG.info("Creating maestroInstanceActionDao within Spring boot...");
     return new MaestroStepInstanceActionDao(
@@ -143,7 +150,7 @@ public class DatabaseConfiguration {
         props,
         maestroProperties.getStepAction(),
         stepInstanceDao,
-        maestroJobEventPublisher,
+        queueSystem,
         metrics);
   }
 

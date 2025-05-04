@@ -28,6 +28,5 @@ import lombok.ToString;
 public class ForeachStepRuntimeProperties {
   private final int loopBatchLimit;
   private final int insertBatchLimit;
-  private final int runJobBatchLimit;
   private final int getRollupBatchLimit;
 }

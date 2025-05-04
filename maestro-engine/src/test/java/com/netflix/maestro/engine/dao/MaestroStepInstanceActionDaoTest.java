@@ -20,6 +20,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -29,10 +30,7 @@ import com.netflix.maestro.engine.db.StepAction;
 import com.netflix.maestro.engine.execution.RunRequest;
 import com.netflix.maestro.engine.execution.RunResponse;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
-import com.netflix.maestro.engine.jobevents.StepInstanceUpdateJobEvent;
-import com.netflix.maestro.engine.jobevents.StepInstanceWakeUpEvent;
 import com.netflix.maestro.engine.properties.StepActionProperties;
-import com.netflix.maestro.engine.publisher.MaestroJobEventPublisher;
 import com.netflix.maestro.exceptions.MaestroBadRequestException;
 import com.netflix.maestro.exceptions.MaestroInvalidStatusException;
 import com.netflix.maestro.exceptions.MaestroNotFoundException;
@@ -58,6 +56,10 @@ import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.instance.WorkflowRuntimeOverview;
 import com.netflix.maestro.models.instance.WorkflowStepStatusSummary;
 import com.netflix.maestro.models.parameter.ParamDefinition;
+import com.netflix.maestro.queue.MaestroQueueSystem;
+import com.netflix.maestro.queue.jobevents.InstanceActionJobEvent;
+import com.netflix.maestro.queue.jobevents.StepInstanceUpdateJobEvent;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
@@ -68,7 +70,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 
 public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
 
@@ -76,7 +77,7 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
   private MaestroStepInstanceDao stepInstanceDao;
   private WorkflowInstance instance;
   private StepInstance stepInstance;
-  @Mock private MaestroJobEventPublisher publisher;
+  @Mock private MaestroQueueSystem queueSystem;
 
   private final User user = User.create("tester");
   private final WorkflowSummary summary = new WorkflowSummary();
@@ -84,18 +85,19 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
 
   @Before
   public void setUp() throws Exception {
-    stepInstanceDao = new MaestroStepInstanceDao(dataSource, MAPPER, config, metricRepo);
+    stepInstanceDao =
+        new MaestroStepInstanceDao(dataSource, MAPPER, config, queueSystem, metricRepo);
     actionDao =
         new MaestroStepInstanceActionDao(
-            dataSource, MAPPER, config, properties, stepInstanceDao, publisher, metricRepo);
+            dataSource, MAPPER, config, properties, stepInstanceDao, queueSystem, metricRepo);
     instance =
         loadObject(
             "fixtures/instances/sample-workflow-instance-created.json", WorkflowInstance.class);
     stepInstance =
         loadObject("fixtures/instances/sample-step-instance-running.json", StepInstance.class);
-    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true);
+    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true, null);
     actionDao.deleteAction(stepInstance, null);
-    when(publisher.publish(any())).thenReturn(Optional.empty());
+    when(queueSystem.enqueue(any(), any())).thenReturn(null);
 
     summary.setWorkflowId(instance.getWorkflowId());
     summary.setWorkflowInstanceId(instance.getWorkflowInstanceId());
@@ -124,25 +126,26 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
   }
 
   @Test
-  public void testRestartDirectlyWithBlocking() {
+  public void testRestartDirectlyWithBlocking() throws Exception {
     RunResponse restartStepInfo = setupRestartStepInfoForRestartDirectly();
     RunRequest runRequest = setupRestartRunRequest();
     MaestroStepInstanceActionDao spyDao = getSpyActionDao(10000);
     Thread.ofVirtual().start(() -> spyDao.restartDirectly(restartStepInfo, runRequest, true));
 
-    verify(publisher, timeout(3000).times(1)).publish(any(StepInstanceWakeUpEvent.class));
+    verify(queueSystem, timeout(3000).times(1)).enqueue(any(), any(InstanceActionJobEvent.class));
+    verify(queueSystem, times(3)).notify(any());
     // assert that the action was saved
     Assert.assertTrue(actionDao.tryGetAction(summary, "job1").isPresent());
     Assert.assertEquals(RESTART, actionDao.tryGetAction(summary, "job1").get().getAction());
 
     stepInstance.getRuntimeState().setStatus(StepInstance.Status.RUNNING);
-    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true);
+    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true, null);
     verify(spyDao, timeout(3000).times(1)).deleteAction(any(), any());
     Assert.assertTrue(spyDao.tryGetAction(summary, "job1").isEmpty());
   }
 
   @Test
-  public void testRestartDirectlyWithBlockingAfterTimeout() {
+  public void testRestartDirectlyWithBlockingAfterTimeout() throws Exception {
     RunResponse restartStepInfo = setupRestartStepInfoForRestartDirectly();
     RunRequest runRequest = setupRestartRunRequest();
     MaestroStepInstanceActionDao spyDao = getSpyActionDao(300);
@@ -152,7 +155,8 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
         MaestroTimeoutException.class,
         "RESTART action for the step [sample-dag-test-3][1][1][job1] is timed out and please retry",
         () -> spyDao.restartDirectly(restartStepInfo, runRequest, true));
-    verify(publisher, timeout(3000).times(1)).publish(any(StepInstanceWakeUpEvent.class));
+    verify(queueSystem, timeout(3000).times(1)).enqueue(any(), any(InstanceActionJobEvent.class));
+    verify(queueSystem, times(3)).notify(any());
     verify(spyDao, timeout(3000).times(1)).deleteAction(any(), any());
     Assert.assertTrue(spyDao.tryGetAction(summary, "job1").isEmpty());
   }
@@ -161,7 +165,7 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
     stepInstance.getRuntimeState().setStatus(StepInstance.Status.FATALLY_FAILED);
     stepInstance.getStepRetry().setRetryable(false);
     ((TypedStep) stepInstance.getDefinition()).setFailureMode(FailureMode.FAIL_AFTER_RUNNING);
-    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true);
+    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true, null);
     return RunResponse.builder().instance(instance).stepId("job1").build();
   }
 
@@ -185,18 +189,18 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
             config,
             new StepActionProperties(timeout, 100),
             stepInstanceDao,
-            publisher,
+            queueSystem,
             metricRepo));
   }
 
   @Test
-  public void testRestartDirectlyWithTerminatedStep() {
+  public void testRestartDirectlyWithTerminatedStep() throws Exception {
     stepInstance.getRuntimeState().setStatus(StepInstance.Status.FATALLY_FAILED);
     // emulate restarted step finishes
     stepInstance.getRuntimeState().setCreateTime(System.currentTimeMillis() + 3600 * 1000);
     stepInstance.getStepRetry().setRetryable(false);
     ((TypedStep) stepInstance.getDefinition()).setFailureMode(FailureMode.FAIL_AFTER_RUNNING);
-    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true);
+    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true, null);
     RunResponse restartStepInfo = RunResponse.builder().instance(instance).stepId("job1").build();
     RunRequest runRequest = setupRestartRunRequest();
 
@@ -209,11 +213,12 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
     Assert.assertEquals(
         "User [tester] take action [RESTART] on the step",
         response.getTimelineEvent().getMessage());
-    Mockito.verify(publisher, Mockito.times(1)).publish(any(StepInstanceWakeUpEvent.class));
+    verify(queueSystem, times(1)).enqueue(any(), any(InstanceActionJobEvent.class));
+    verify(queueSystem, times(3)).notify(any());
   }
 
   @Test
-  public void testRestartDirectlyFromAggregatedView() {
+  public void testRestartDirectlyFromAggregatedView() throws Exception {
     stepInstance.getRuntimeState().setStatus(StepInstance.Status.USER_FAILED);
     stepInstance.getStepRetry().setRetryable(true);
     stepInstance.setWorkflowRunId(2);
@@ -222,7 +227,7 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
         .getStepAggregatedViews()
         .put("job1", StepAggregatedView.builder().workflowRunId(2L).build());
     ((TypedStep) stepInstance.getDefinition()).setFailureMode(FailureMode.FAIL_IMMEDIATELY);
-    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true);
+    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true, null);
     RunResponse restartStepInfo = RunResponse.builder().instance(instance).stepId("job1").build();
     RunRequest runRequest = setupRestartRunRequest();
     RunResponse response = actionDao.restartDirectly(restartStepInfo, runRequest, false);
@@ -234,7 +239,8 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
     Assert.assertEquals(
         "User [tester] take action [RESTART] on the step",
         response.getTimelineEvent().getMessage());
-    Mockito.verify(publisher, Mockito.times(1)).publish(any(StepInstanceWakeUpEvent.class));
+    verify(queueSystem, times(1)).enqueue(any(), any(InstanceActionJobEvent.class));
+    verify(queueSystem, times(3)).notify(any());
   }
 
   @Test
@@ -248,7 +254,7 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
     artifact.getForeachOverview().addOne(10, WorkflowInstance.Status.FAILED, null);
     artifact.getForeachOverview().refreshDetail();
     stepInstance.setArtifacts(Collections.singletonMap(Artifact.Type.FOREACH.key(), artifact));
-    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true);
+    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true, null);
     RunResponse restartStepInfo = RunResponse.builder().instance(instance).stepId("job1").build();
     RunRequest runRequest =
         RunRequest.builder()
@@ -278,7 +284,7 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
         () -> actionDao.restartDirectly(restartStepInfo, runRequest, false));
 
     artifact.setNextLoopIndex(9);
-    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true);
+    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true, null);
     AssertHelper.assertThrows(
         "Cannot manually RESTART the step",
         MaestroInvalidStatusException.class,
@@ -287,7 +293,7 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
 
     artifact.setNextLoopIndex(10);
     artifact.setPendingAction(ForeachAction.builder().build());
-    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true);
+    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true, null);
     AssertHelper.assertThrows(
         "Cannot manually RESTART the step",
         MaestroResourceConflictException.class,
@@ -296,7 +302,7 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
   }
 
   @Test
-  public void testGetAction() {
+  public void testGetAction() throws Exception {
     Optional<StepAction> stepAction = actionDao.tryGetAction(summary, "job1");
     Assert.assertFalse(stepAction.isPresent());
     testRestartDirectly();
@@ -314,7 +320,8 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
               Collections.singletonMap("foo", ParamDefinition.buildParamDefinition("foo", "bar")),
               action.getRunParams());
         });
-    Mockito.verify(publisher, Mockito.times(1)).publish(any(StepInstanceWakeUpEvent.class));
+    verify(queueSystem, times(1)).enqueue(any(), any(InstanceActionJobEvent.class));
+    verify(queueSystem, times(3)).notify(any());
   }
 
   @Test
@@ -322,7 +329,7 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
     DataSource dataSource1 = spy(dataSource);
     MaestroStepInstanceActionDao actionDao1 =
         new MaestroStepInstanceActionDao(
-            dataSource1, MAPPER, config, properties, stepInstanceDao, publisher, metricRepo);
+            dataSource1, MAPPER, config, properties, stepInstanceDao, queueSystem, metricRepo);
     doThrow(new RuntimeException("test-exception")).when(dataSource1).getConnection();
 
     Optional<StepAction> stepAction = actionDao1.tryGetAction(summary, "job1");
@@ -330,7 +337,7 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
   }
 
   @Test
-  public void testGetActionFromUpstream() {
+  public void testGetActionFromUpstream() throws Exception {
     SubworkflowInitiator initiator = new SubworkflowInitiator();
     UpstreamInitiator.Info parent = new UpstreamInitiator.Info();
     parent.setWorkflowId("sample-subworkflow-wf");
@@ -417,7 +424,8 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
 
     Assert.assertEquals(1, actionDao.cleanUp("sample-root-wf", 3, 2));
     Assert.assertEquals(1, actionDao.cleanUp("sample-subworkflow-wf", 1, 2));
-    Mockito.verify(publisher, Mockito.times(6)).publish(any(StepInstanceWakeUpEvent.class));
+    verify(queueSystem, times(6)).enqueue(any(), any(InstanceActionJobEvent.class));
+    verify(queueSystem, times(8)).notify(any());
   }
 
   @Test
@@ -460,7 +468,7 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
         () -> actionDao.restartDirectly(restartStepInfo4, runRequest, true));
 
     stepInstance.getRuntimeState().setStatus(StepInstance.Status.USER_FAILED);
-    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true);
+    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true, null);
 
     AssertHelper.assertThrows(
         "Cannot manually RESTART the step",
@@ -470,7 +478,7 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
 
     stepInstance.getRuntimeState().setStatus(StepInstance.Status.FATALLY_FAILED);
     stepInstance.getStepRetry().setRetryable(false);
-    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true);
+    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true, null);
 
     AssertHelper.assertThrows(
         "Cannot manually RESTART the step",
@@ -479,7 +487,7 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
         () -> actionDao.restartDirectly(restartStepInfo3, runRequest, true));
 
     ((TypedStep) stepInstance.getDefinition()).setFailureMode(FailureMode.FAIL_AFTER_RUNNING);
-    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true);
+    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true, null);
     actionDao.restartDirectly(restartStepInfo3, runRequest, false);
 
     AssertHelper.assertThrows(
@@ -490,7 +498,7 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
   }
 
   @Test
-  public void testStop() {
+  public void testStop() throws SQLException {
     StepInstanceActionResponse response = actionDao.terminate(instance, "job1", user, STOP, false);
     Assert.assertEquals("sample-dag-test-3", response.getWorkflowId());
     Assert.assertEquals(1, response.getWorkflowInstanceId());
@@ -500,11 +508,12 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
     Assert.assertEquals(
         "User [tester] take action [STOP] on the step due to reason: [manual step instance API call]",
         response.getTimelineEvent().getMessage());
-    Mockito.verify(publisher, Mockito.times(1)).publish(any(StepInstanceWakeUpEvent.class));
+    verify(queueSystem, times(1)).enqueue(any(), any(InstanceActionJobEvent.class));
+    verify(queueSystem, times(2)).notify(any());
   }
 
   @Test
-  public void testKill() {
+  public void testKill() throws SQLException {
     StepInstanceActionResponse response = actionDao.terminate(instance, "job1", user, KILL, false);
     Assert.assertEquals("sample-dag-test-3", response.getWorkflowId());
     Assert.assertEquals(1, response.getWorkflowInstanceId());
@@ -514,11 +523,12 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
     Assert.assertEquals(
         "User [tester] take action [KILL] on the step due to reason: [manual step instance API call]",
         response.getTimelineEvent().getMessage());
-    Mockito.verify(publisher, Mockito.times(1)).publish(any(StepInstanceWakeUpEvent.class));
+    verify(queueSystem, times(1)).enqueue(any(), any(InstanceActionJobEvent.class));
+    verify(queueSystem, times(2)).notify(any());
   }
 
   @Test
-  public void testSkip() {
+  public void testSkip() throws SQLException {
     StepInstanceActionResponse response = actionDao.terminate(instance, "job1", user, SKIP, false);
     Assert.assertEquals("sample-dag-test-3", response.getWorkflowId());
     Assert.assertEquals(1, response.getWorkflowInstanceId());
@@ -528,7 +538,8 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
     Assert.assertEquals(
         "User [tester] take action [SKIP] on the step due to reason: [manual step instance API call]",
         response.getTimelineEvent().getMessage());
-    Mockito.verify(publisher, Mockito.times(1)).publish(any(StepInstanceWakeUpEvent.class));
+    verify(queueSystem, times(1)).enqueue(any(), any(InstanceActionJobEvent.class));
+    verify(queueSystem, times(2)).notify(any());
   }
 
   @Test
@@ -547,11 +558,12 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
   }
 
   @Test
-  public void testBypassSignalDependenciesWithBlocking() {
+  public void testBypassSignalDependenciesWithBlocking() throws SQLException {
     MaestroStepInstanceActionDao spyDao = prepareActionDaoForBypassDependencies(10000);
 
     Thread.ofVirtual().start(() -> spyDao.bypassStepDependencies(instance, "job1", user, true));
-    verify(publisher, timeout(3000).times(1)).publish(any(StepInstanceWakeUpEvent.class));
+    verify(queueSystem, timeout(3000).times(1)).enqueue(any(), any(InstanceActionJobEvent.class));
+    verify(queueSystem, times(3)).notify(any());
     // assert that the action was saved
     Assert.assertTrue(actionDao.tryGetAction(summary, "job1").isPresent());
     Assert.assertEquals(
@@ -559,13 +571,13 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
         actionDao.tryGetAction(summary, "job1").get().getAction());
 
     stepInstance.getRuntimeState().setStatus(StepInstance.Status.RUNNING);
-    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true);
+    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true, null);
     verify(spyDao, timeout(3000).times(1)).deleteAction(any(), any());
     Assert.assertTrue(spyDao.tryGetAction(summary, "job1").isEmpty());
   }
 
   @Test
-  public void testBypassDependenciesWithBlockingAfterTimeout() {
+  public void testBypassDependenciesWithBlockingAfterTimeout() throws SQLException {
     MaestroStepInstanceActionDao spyDao = prepareActionDaoForBypassDependencies(300);
 
     AssertHelper.assertThrows(
@@ -573,7 +585,8 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
         MaestroTimeoutException.class,
         "bypass-step-dependencies action for the step [sample-dag-test-3][1][1][job1] is timed out",
         () -> spyDao.bypassStepDependencies(instance, "job1", user, true));
-    verify(publisher, timeout(3000).times(1)).publish(any(StepInstanceWakeUpEvent.class));
+    verify(queueSystem, timeout(3000).times(1)).enqueue(any(), any(InstanceActionJobEvent.class));
+    verify(queueSystem, times(3)).notify(any());
     verify(spyDao, timeout(3000).times(1)).deleteAction(any(), any());
     Assert.assertTrue(spyDao.tryGetAction(summary, "job1").isEmpty());
   }
@@ -582,7 +595,7 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
     stepInstance.getRuntimeState().setStatus(StepInstance.Status.WAITING_FOR_SIGNALS);
     stepInstance.getStepRetry().setRetryable(false);
     ((TypedStep) stepInstance.getDefinition()).setFailureMode(FailureMode.FAIL_AFTER_RUNNING);
-    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true);
+    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true, null);
   }
 
   private MaestroStepInstanceActionDao prepareActionDaoForBypassDependencies(long timeout) {
@@ -599,7 +612,7 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
         () -> actionDao.bypassStepDependencies(instance, "not-existing", user, true));
 
     stepInstance.getRuntimeState().setStatus(StepInstance.Status.RUNNING);
-    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true);
+    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true, null);
 
     AssertHelper.assertThrows(
         "Cannot manually bypass the step dependencies",
@@ -623,7 +636,7 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
         () -> actionDao.terminate(instance, "job.2", user, KILL, false));
 
     stepInstance.getRuntimeState().setStatus(StepInstance.Status.FATALLY_FAILED);
-    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true);
+    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true, null);
     AssertHelper.assertThrows(
         "Cannot manually restart the step",
         MaestroInvalidStatusException.class,
@@ -631,7 +644,7 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
         () -> actionDao.terminate(instance, "job1", user, SKIP, false));
 
     stepInstance.getRuntimeState().setStatus(StepInstance.Status.RUNNING);
-    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true);
+    stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true, null);
     actionDao.terminate(instance, "job1", user, KILL, false);
 
     AssertHelper.assertThrows(
@@ -676,7 +689,7 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
   }
 
   @Test
-  public void testTerminateStep() {
+  public void testTerminateStep() throws SQLException {
     testRestartDirectly();
     summary.setGroupInfo(10);
     Optional<StepAction> stepAction = actionDao.tryGetAction(summary, "job1");
@@ -703,14 +716,15 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
           Assert.assertEquals(STOP, action.getAction());
           Assert.assertEquals(user, action.getUser());
         });
-    var event = ArgumentCaptor.forClass(StepInstanceWakeUpEvent.class);
-    Mockito.verify(publisher, Mockito.times(2)).publish(event.capture());
+    var event = ArgumentCaptor.forClass(InstanceActionJobEvent.class);
+    verify(queueSystem, times(2)).enqueue(any(), event.capture());
+    verify(queueSystem, times(4)).notify(any());
     Assert.assertEquals(8, event.getAllValues().getFirst().getGroupInfo());
     Assert.assertEquals(10, event.getAllValues().getLast().getGroupInfo());
   }
 
   @Test
-  public void testTerminateWorkflow() {
+  public void testTerminateWorkflow() throws SQLException {
     Assert.assertEquals(
         4, actionDao.terminate(instance, user, Actions.WorkflowInstanceAction.STOP, "test-reason"));
     Assert.assertEquals(
@@ -799,6 +813,113 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
             instance.getWorkflowId(),
             instance.getWorkflowInstanceId(),
             instance.getWorkflowRunId()));
-    Mockito.verify(publisher, Mockito.times(6)).publish(any(StepInstanceWakeUpEvent.class));
+    verify(queueSystem, times(6)).enqueue(any(), any(InstanceActionJobEvent.class));
+    verify(queueSystem, times(7)).notify(any());
+  }
+
+  @Test
+  public void testTerminateFlowInMemory() throws Exception {
+    Assert.assertEquals(
+        4,
+        actionDao.terminate(
+            instance, user, Actions.WorkflowInstanceAction.STOP, "test-reason", true));
+    Assert.assertEquals(
+        4,
+        actionDao.cleanUp(
+            instance.getWorkflowId(),
+            instance.getWorkflowInstanceId(),
+            instance.getWorkflowRunId()));
+
+    instance.setRuntimeOverview(
+        WorkflowRuntimeOverview.of(
+            4,
+            singletonEnumMap(
+                StepInstance.Status.FATALLY_FAILED,
+                WorkflowStepStatusSummary.of(1L).addStep(Arrays.asList(1L, 2L, 3L, 4L))),
+            null));
+    Assert.assertEquals(
+        4,
+        actionDao.terminate(
+            instance, user, Actions.WorkflowInstanceAction.STOP, "test-reason", true));
+    Assert.assertEquals(
+        4,
+        actionDao.cleanUp(
+            instance.getWorkflowId(),
+            instance.getWorkflowInstanceId(),
+            instance.getWorkflowRunId()));
+
+    instance.setRuntimeOverview(
+        WorkflowRuntimeOverview.of(
+            4,
+            singletonEnumMap(
+                StepInstance.Status.RUNNING,
+                WorkflowStepStatusSummary.of(1L).addStep(Arrays.asList(1L, 2L, 3L, 4L))),
+            null));
+    Assert.assertEquals(
+        4,
+        actionDao.terminate(
+            instance, user, Actions.WorkflowInstanceAction.STOP, "test-reason", true));
+    Assert.assertEquals(
+        4,
+        actionDao.cleanUp(
+            instance.getWorkflowId(),
+            instance.getWorkflowInstanceId(),
+            instance.getWorkflowRunId()));
+
+    instance.setRuntimeOverview(
+        WorkflowRuntimeOverview.of(
+            4,
+            singletonEnumMap(
+                StepInstance.Status.NOT_CREATED,
+                WorkflowStepStatusSummary.of(1L).addStep(Arrays.asList(1L, 2L, 3L, 4L))),
+            null));
+    Assert.assertEquals(
+        4,
+        actionDao.terminate(
+            instance, user, Actions.WorkflowInstanceAction.STOP, "test-reason", true));
+    Assert.assertEquals(
+        4,
+        actionDao.cleanUp(
+            instance.getWorkflowId(),
+            instance.getWorkflowInstanceId(),
+            instance.getWorkflowRunId()));
+
+    instance.setRuntimeOverview(
+        WorkflowRuntimeOverview.of(
+            4,
+            singletonEnumMap(
+                StepInstance.Status.SUCCEEDED,
+                WorkflowStepStatusSummary.of(1L).addStep(Arrays.asList(1L, 2L, 3L, 4L))),
+            null));
+    Assert.assertEquals(
+        3,
+        actionDao.terminate(
+            instance, user, Actions.WorkflowInstanceAction.STOP, "test-reason", true));
+    Assert.assertEquals(
+        3,
+        actionDao.cleanUp(
+            instance.getWorkflowId(),
+            instance.getWorkflowInstanceId(),
+            instance.getWorkflowRunId()));
+
+    instance.setRuntimeOverview(
+        WorkflowRuntimeOverview.of(
+            4,
+            singletonEnumMap(
+                StepInstance.Status.COMPLETED_WITH_ERROR,
+                WorkflowStepStatusSummary.of(1L).addStep(Arrays.asList(1L, 2L, 3L, 4L))),
+            null));
+    Assert.assertEquals(
+        3,
+        actionDao.terminate(
+            instance, user, Actions.WorkflowInstanceAction.STOP, "test-reason", true));
+    Assert.assertEquals(
+        3,
+        actionDao.cleanUp(
+            instance.getWorkflowId(),
+            instance.getWorkflowInstanceId(),
+            instance.getWorkflowRunId()));
+    verify(queueSystem, times(0)).enqueue(any(), any(InstanceActionJobEvent.class));
+    verify(queueSystem, times(7)).notify(any());
   }
 }

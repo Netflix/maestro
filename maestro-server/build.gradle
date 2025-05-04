@@ -38,6 +38,7 @@ dependencies {
     implementation project(':maestro-timetrigger')
     implementation project(':maestro-signal')
     implementation project(':maestro-kubernetes')
+    implementation project(':maestro-queue')
 
     implementation('io.fabric8:kubernetes-client:7.+'){
         exclude group: 'org.slf4j'

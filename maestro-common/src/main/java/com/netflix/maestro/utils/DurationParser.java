@@ -46,7 +46,7 @@ public final class DurationParser {
     long timeout = 0;
     while (m.find()) {
       for (TimeUnit unit : TIME_UNITS) {
-        long t = Checks.toNumeric(m.group(unit.name())).orElse(0L);
+        long t = ObjectHelper.toNumeric(m.group(unit.name())).orElse(0L);
         timeout += unit.toMillis(t);
       }
     }

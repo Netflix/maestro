@@ -81,7 +81,7 @@ public class ForeachStepOverview {
     runningRollup.aggregate(overview);
   }
 
-  /** Add a given iteration info including its rollup overview to the foreach step overview. */
+  /** Add given iteration info including its rollup overview to the foreach step overview. */
   @JsonIgnore
   public void addOne(
       long iterationId, WorkflowInstance.Status status, WorkflowRollupOverview overview) {
@@ -121,10 +121,10 @@ public class ForeachStepOverview {
   }
 
   /**
-   * Get iteration count from running stats map.
+   * Get iteration count from the running stats map.
    *
    * @param strict if true, count the total number of instances after the smallest running
-   *     iterations, otherwise, only count the non-terminal instances. strict_ordering need to set
+   *     iterations, otherwise, only count the non-terminal instances. strict_ordering needs to set
    *     strict to be true.
    * @return the iteration count.
    */
@@ -214,7 +214,7 @@ public class ForeachStepOverview {
   }
 
   /**
-   * This method return a set of iterations ids, including both iterations (no less than the
+   * This method returns a set of iteration ids, including both iterations (no less than the
    * checkpoint), which are in the terminal state, and the restarted iterations. When we refresh the
    * iteration overview, we don't need to check the status of those iterations in the base run.
    */
@@ -235,7 +235,7 @@ public class ForeachStepOverview {
 
   /**
    * This method scans the previous foreach step overview and then find out the maximum iteration id
-   * launched previously. It also sets its own details by using all the succeeded iterations from
+   * launched previously. It also sets its own details by using all the successful iterations from
    * the previous overview minus the specific iteration to reset.
    *
    * @param prev the previous ForeachStepOverview
@@ -263,8 +263,7 @@ public class ForeachStepOverview {
                 : (WorkflowInstance.Status::isTerminal));
 
     // checkpoint can be set to the first restartable instance id - 1
-    List<Long> instanceIds =
-        toKeep.values().stream().flatMap(Collection::stream).sorted().collect(Collectors.toList());
+    List<Long> instanceIds = toKeep.values().stream().flatMap(Collection::stream).sorted().toList();
     checkpoint = instanceIds.size();
     for (int i = 0; i < instanceIds.size(); ++i) {
       if (instanceIds.get(i) != i + 1) {

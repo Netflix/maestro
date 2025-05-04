@@ -13,19 +13,20 @@
 package com.netflix.maestro.engine.tasks;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.netflix.maestro.engine.MaestroEngineBaseTest;
+import com.netflix.maestro.engine.dao.MaestroStepInstanceActionDao;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.engine.execution.WorkflowRuntimeSummary;
-import com.netflix.maestro.engine.jobevents.TerminateInstancesJobEvent;
-import com.netflix.maestro.engine.jobevents.WorkflowInstanceUpdateJobEvent;
-import com.netflix.maestro.engine.publisher.MaestroJobEventPublisher;
 import com.netflix.maestro.engine.utils.RollupAggregationHelper;
 import com.netflix.maestro.flow.models.Flow;
 import com.netflix.maestro.flow.models.FlowDef;
@@ -57,7 +58,7 @@ public class MaestroEndTaskTest extends MaestroEngineBaseTest {
 
   @Mock private MaestroWorkflowInstanceDao instanceDao;
   @Mock private MaestroStepInstanceDao stepInstanceDao;
-  @Mock private MaestroJobEventPublisher publisher;
+  @Mock private MaestroStepInstanceActionDao actionDao;
 
   private MaestroEndTask endTask;
   private Flow flow;
@@ -76,7 +77,7 @@ public class MaestroEndTaskTest extends MaestroEngineBaseTest {
     doReturn(workflowInstance).when(instanceDao).getWorkflowInstanceRun("testWorkflowId", 123L, 1L);
     rollupAggregationHelper = spy(new RollupAggregationHelper(stepInstanceDao));
     endTask =
-        new MaestroEndTask(instanceDao, publisher, MAPPER, rollupAggregationHelper, metricRepo);
+        new MaestroEndTask(instanceDao, actionDao, MAPPER, rollupAggregationHelper, metricRepo);
 
     testTask = new Task();
     TaskDef taskDef =
@@ -140,7 +141,7 @@ public class MaestroEndTaskTest extends MaestroEngineBaseTest {
             .getRollupOverview()
             .getTotalLeafCount());
 
-    verify(publisher, times(1)).publish(any(TerminateInstancesJobEvent.class));
+    verify(actionDao, times(1)).terminate(any(), any(), any(), anyString(), eq(true));
   }
 
   @Test
@@ -186,8 +187,8 @@ public class MaestroEndTaskTest extends MaestroEngineBaseTest {
             .getRollupBase()
             .getOverview()
             .size());
-
-    verify(publisher, times(1)).publish(any(WorkflowInstanceUpdateJobEvent.class));
+    verify(instanceDao, times(1))
+        .updateWorkflowInstance(any(), any(), any(), any(), anyLong(), any());
     WorkflowRuntimeSummary runtimeSummary =
         (WorkflowRuntimeSummary) testTask.getOutputData().get("maestro_workflow_runtime_summary");
     Assert.assertEquals(WorkflowInstance.Status.IN_PROGRESS, runtimeSummary.getInstanceStatus());
@@ -199,6 +200,6 @@ public class MaestroEndTaskTest extends MaestroEngineBaseTest {
             .message("Workflow instance is dequeued.")
             .level(TimelineEvent.Level.INFO)
             .build(),
-        runtimeSummary.getTimeline().getTimelineEvents().get(0));
+        runtimeSummary.getTimeline().getTimelineEvents().getFirst());
   }
 }

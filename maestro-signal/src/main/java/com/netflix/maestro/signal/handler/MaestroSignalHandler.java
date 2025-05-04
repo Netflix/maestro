@@ -3,7 +3,6 @@ package com.netflix.maestro.signal.handler;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
 import com.netflix.maestro.engine.handlers.SignalHandler;
-import com.netflix.maestro.engine.utils.ObjectHelper;
 import com.netflix.maestro.exceptions.MaestroRetryableError;
 import com.netflix.maestro.models.api.SignalCreateRequest;
 import com.netflix.maestro.models.instance.StepDependencyMatchStatus;
@@ -13,6 +12,7 @@ import com.netflix.maestro.models.timeline.TimelineLogEvent;
 import com.netflix.maestro.signal.dao.MaestroSignalBrokerDao;
 import com.netflix.maestro.signal.models.SignalInstanceSource;
 import com.netflix.maestro.signal.models.SignalMatchDto;
+import com.netflix.maestro.utils.ObjectHelper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

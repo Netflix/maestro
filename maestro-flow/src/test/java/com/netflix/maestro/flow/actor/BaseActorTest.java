@@ -37,7 +37,7 @@ public class BaseActorTest extends ActorBaseTest {
   private FlowActor flowActor;
 
   @Before
-  public void init() {
+  public void setUp() {
     groupActor = createGroupActor();
     flowActor = new FlowActor(createFlow(), groupActor, context);
   }

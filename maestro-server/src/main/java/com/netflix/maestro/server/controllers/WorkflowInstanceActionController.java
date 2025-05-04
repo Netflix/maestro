@@ -4,12 +4,12 @@ import com.netflix.maestro.engine.execution.RunRequest;
 import com.netflix.maestro.engine.execution.RunResponse;
 import com.netflix.maestro.engine.handlers.StepInstanceActionHandler;
 import com.netflix.maestro.engine.handlers.WorkflowInstanceActionHandler;
-import com.netflix.maestro.engine.utils.ObjectHelper;
 import com.netflix.maestro.models.api.WorkflowInstanceActionResponse;
 import com.netflix.maestro.models.api.WorkflowInstanceRestartRequest;
 import com.netflix.maestro.models.api.WorkflowInstanceRestartResponse;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.instance.RestartConfig;
+import com.netflix.maestro.utils.ObjectHelper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.LinkedHashMap;
@@ -119,5 +119,40 @@ public class WorkflowInstanceActionController {
       @Valid @NotNull @PathVariable("workflowId") String workflowId,
       @PathVariable("workflowInstanceId") long workflowInstanceId) {
     return actionHandler.unblockLatest(workflowId, workflowInstanceId, callerBuilder.build());
+  }
+
+  @PutMapping(
+      value = "/{workflowId}/instances/{workflowInstanceId}/runs/{workflowRunId}/actions/stop",
+      consumes = MediaType.ALL_VALUE)
+  @Operation(summary = "Stop a given workflow instance run if it is in a non-terminal state")
+  public WorkflowInstanceActionResponse stopWorkflowInstance(
+      @Valid @NotNull @PathVariable("workflowId") String workflowId,
+      @PathVariable("workflowInstanceId") long workflowInstanceId,
+      @PathVariable("workflowRunId") long workflowRunId) {
+    return actionHandler.stop(workflowId, workflowInstanceId, workflowRunId, callerBuilder.build());
+  }
+
+  @PutMapping(
+      value = "/{workflowId}/instances/{workflowInstanceId}/runs/{workflowRunId}/actions/kill",
+      consumes = MediaType.ALL_VALUE)
+  @Operation(summary = "Kill a given workflow instance run if it is in a non-terminal state")
+  public WorkflowInstanceActionResponse killWorkflowInstance(
+      @Valid @NotNull @PathVariable("workflowId") String workflowId,
+      @PathVariable("workflowInstanceId") long workflowInstanceId,
+      @PathVariable("workflowRunId") long workflowRunId) {
+    return actionHandler.kill(workflowId, workflowInstanceId, workflowRunId, callerBuilder.build());
+  }
+
+  @PutMapping(
+      value = "/{workflowId}/instances/{workflowInstanceId}/runs/{workflowRunId}/actions/unblock",
+      consumes = MediaType.ALL_VALUE)
+  @Operation(
+      summary = "Unblock a failed workflow instance run due to the strict sequential run strategy.")
+  public WorkflowInstanceActionResponse unblockWorkflowInstance(
+      @Valid @NotNull @PathVariable("workflowId") String workflowId,
+      @PathVariable("workflowInstanceId") long workflowInstanceId,
+      @PathVariable("workflowRunId") long workflowRunId) {
+    return actionHandler.unblock(
+        workflowId, workflowInstanceId, workflowRunId, callerBuilder.build());
   }
 }

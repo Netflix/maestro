@@ -1,0 +1,9 @@
+{
+  "workflow_id": "sample-dag-test-3",
+  "workflow_instance_id": 1,
+  "workflow_run_id": 1,
+  "group_info": 3,
+  "workflow_action": "STOP",
+  "entity_type": "WORKFLOW",
+  "type": "INSTANCE_ACTION"
+}

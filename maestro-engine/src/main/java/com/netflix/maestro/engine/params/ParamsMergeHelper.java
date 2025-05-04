@@ -14,7 +14,6 @@ package com.netflix.maestro.engine.params;
 
 import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.engine.execution.RunRequest;
-import com.netflix.maestro.engine.utils.ObjectHelper;
 import com.netflix.maestro.exceptions.MaestroValidationException;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.Defaults;
@@ -32,6 +31,7 @@ import com.netflix.maestro.models.parameter.ParamValidator;
 import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.utils.Checks;
 import com.netflix.maestro.utils.MapHelper;
+import com.netflix.maestro.utils.ObjectHelper;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;

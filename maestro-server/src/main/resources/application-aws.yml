@@ -12,12 +12,25 @@ server:
   port: 8080
 
 maestro:
+  queue:
+    properties:
+      1:
+        worker-num: 8
+        scan-interval: 5000
+      2:
+        worker-num: 12
+        scan-interval: 5000
+      3:
+        worker-num: 17
+        scan-interval: 5000
+      4:
+        worker-num: 3
+        scan-interval: 5000
+      5:
+        worker-num: 3
+        scan-interval: 10000
   notifier:
     type: sns
-  publisher:
-    type: sqs
-  listener:
-    type: sqs
   alerting:
     type: noop
   redis:
@@ -64,7 +77,6 @@ stepruntime:
   foreach:
     loop-batch-limit: 50
     insert-batch-limit: 10
-    run-job-batch-limit: 5
     get-rollup-batch-limit: 100
   subworkflow:
     always-pass-down-param-names: []
@@ -104,13 +116,6 @@ aws:
     topic: arn:aws:sns:us-east-1:000000000000:maestro-test
     endpoint: http://localhost:4566
   sqs:
-    start-workflow-job-queue-url: http://localhost:4566/000000000000/maestro-start-workflow-job
-    run-workflow-instances-job-queue-url: http://localhost:4566/000000000000/maestro-run-workflow-instances-job.fifo
-    terminate-instances-job-queue-url: http://localhost:4566/000000000000/maestro-terminate-instances-job
-    terminate-then-run-instance-job-queue-url: http://localhost:4566/000000000000/maestro-terminate-then-run-instance-job
-    publish-job-queue-url: http://localhost:4566/000000000000/maestro-publish-job-event
-    delete-workflow-job-queue-url: http://localhost:4566/000000000000/maestro-delete-workflow-job
-    step-wake-up-job-queue-url: http://localhost:4566/000000000000/maestro-step-wake-up-job.fifo
     time-trigger-execution-queue-url: http://localhost:4566/000000000000/maestro-time-trigger-execution
     signal-instance-queue-url: http://localhost:4566/000000000000/maestro-signal-instance.fifo
     signal-trigger-match-queue-url: http://localhost:4566/000000000000/maestro-signal-trigger-match.fifo

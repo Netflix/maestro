@@ -19,6 +19,9 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.engine.MaestroTestHelper;
@@ -44,6 +47,8 @@ import com.netflix.maestro.models.signal.SignalOutputs;
 import com.netflix.maestro.models.signal.SignalOutputsDefinition;
 import com.netflix.maestro.models.signal.SignalTransformer;
 import com.netflix.maestro.models.timeline.Timeline;
+import com.netflix.maestro.queue.MaestroQueueSystem;
+import com.netflix.maestro.queue.jobevents.MaestroJobEvent;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -64,14 +69,18 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
   private static final String TEST_STEP_INSTANCE_SUBWORKFLOW =
       "fixtures/instances/sample-subworkflow-step-instance-running.json";
 
+  private MaestroQueueSystem queueSystem;
   private MaestroStepInstanceDao stepDao;
   private StepInstance si;
 
   @Before
   public void setUp() throws Exception {
-    stepDao = new MaestroStepInstanceDao(dataSource, MAPPER, config, metricRepo);
+    queueSystem = Mockito.mock(MaestroQueueSystem.class);
+    stepDao = new MaestroStepInstanceDao(dataSource, MAPPER, config, queueSystem, metricRepo);
     si = loadObject(TEST_STEP_INSTANCE, StepInstance.class);
-    stepDao.insertOrUpsertStepInstance(si, false);
+    stepDao.insertOrUpsertStepInstance(si, false, null);
+    verify(queueSystem, times(1)).notify(any());
+    reset(queueSystem);
   }
 
   @After
@@ -85,9 +94,11 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
   }
 
   @Test
-  public void testInsertStepInstance() {
+  public void testInsertStepInstance() throws Exception {
     tearDown();
-    stepDao.insertOrUpsertStepInstance(si, false);
+    stepDao.insertOrUpsertStepInstance(si, false, Mockito.mock(MaestroJobEvent.class));
+    verify(queueSystem, times(1)).enqueue(any(), any());
+    verify(queueSystem, times(1)).notify(any());
     StepInstance instance = stepDao.getStepInstance(TEST_WORKFLOW_ID, 1, 1, "job1", "1");
     assertEquals(2, instance.getDefinition().getSignalOutputs().definitions().size());
     assertTrue(instance.getArtifacts().isEmpty());
@@ -101,7 +112,7 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
   public void testInsertStepInstanceWithoutOutputSignalSummary() {
     tearDown();
     si.setSignalOutputs(null);
-    stepDao.insertOrUpsertStepInstance(si, false);
+    stepDao.insertOrUpsertStepInstance(si, false, null);
     StepInstance instance = stepDao.getStepInstance(TEST_WORKFLOW_ID, 1, 1, "job1", "1");
     assertNull(instance.getSignalOutputs());
     instance.setArtifacts(null);
@@ -115,20 +126,20 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
         "cannot insert the same step instance twice",
         MaestroDatabaseError.class,
         "INTERNAL_ERROR - ERROR: duplicate key value",
-        () -> stepDao.insertOrUpsertStepInstance(si, false));
+        () -> stepDao.insertOrUpsertStepInstance(si, false, null));
   }
 
   @Test
   public void testUpsertStepInstance() {
     si.setArtifacts(Collections.emptyMap());
     si.setTimeline(new Timeline(Collections.emptyList()));
-    stepDao.insertOrUpsertStepInstance(si, true);
+    stepDao.insertOrUpsertStepInstance(si, true, null);
     StepInstance instance = stepDao.getStepInstance(TEST_WORKFLOW_ID, 1, 1, "job1", "1");
     Assertions.assertThat(instance).usingRecursiveComparison().isEqualTo(si);
   }
 
   @Test
-  public void testUpdateStepInstance() {
+  public void testUpdateStepInstance() throws Exception {
     si.getRuntimeState().setStatus(StepInstance.Status.SUCCEEDED);
     SignalOutputs outputs = new SignalOutputs();
     SignalOutputs.SignalOutput output =
@@ -158,7 +169,9 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
             .signalOutputs(si.getSignalOutputs())
             .timeline(si.getTimeline())
             .build();
-    stepDao.updateStepInstance(workflowSummary, summary);
+    stepDao.updateStepInstance(workflowSummary, summary, Mockito.mock(MaestroJobEvent.class));
+    verify(queueSystem, times(1)).enqueue(any(), any());
+    verify(queueSystem, times(1)).notify(any());
     StepInstance instance = stepDao.getStepInstance(TEST_WORKFLOW_ID, 1, 1, "job1", "1");
     assertEquals(StepInstance.Status.SUCCEEDED, instance.getRuntimeState().getStatus());
     Assertions.assertThat(instance).usingRecursiveComparison().isEqualTo(si);
@@ -246,7 +259,7 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
   public void testGetAllStepInstances() {
     List<StepInstance> instances = stepDao.getAllStepInstances(TEST_WORKFLOW_ID, 1, 1);
     assertEquals(1, instances.size());
-    StepInstance instance = instances.get(0);
+    StepInstance instance = instances.getFirst();
     assertEquals(StepInstance.Status.RUNNING, instance.getRuntimeState().getStatus());
     assertFalse(instance.getSignalDependencies().isSatisfied());
     assertEquals(2, instance.getDefinition().getSignalOutputs().definitions().size());
@@ -261,7 +274,7 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
   public void testGetStepInstances() {
     List<StepInstance> instances = stepDao.getStepInstances(TEST_WORKFLOW_ID, 1, 1, "job1");
     assertEquals(1, instances.size());
-    StepInstance instance = instances.get(0);
+    StepInstance instance = instances.getFirst();
     assertEquals(StepInstance.Status.RUNNING, instance.getRuntimeState().getStatus());
     assertFalse(instance.getSignalDependencies().isSatisfied());
     assertEquals(2, instance.getSignalOutputs().getOutputs().size());
@@ -288,9 +301,9 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
   @Test
   public void testGetAllLatestStepStatusFromAncestors() throws Exception {
     si = loadObject("fixtures/instances/sample-step-instance-finishing.json", StepInstance.class);
-    stepDao.insertOrUpsertStepInstance(si, true);
+    stepDao.insertOrUpsertStepInstance(si, true, null);
     si = loadObject("fixtures/instances/sample-step-instance-failed.json", StepInstance.class);
-    stepDao.insertOrUpsertStepInstance(si, true);
+    stepDao.insertOrUpsertStepInstance(si, true, null);
     Map<String, StepInstance.Status> res =
         stepDao.getAllLatestStepStatusFromRuns("sample-dag-test-3", 1L);
     assertEquals(Collections.singletonMap("job1", StepInstance.Status.FINISHING), res);
@@ -299,11 +312,11 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
   @Test
   public void testGetAllLatestStepFromAncestors() throws Exception {
     si = loadObject("fixtures/instances/sample-step-instance-finishing.json", StepInstance.class);
-    stepDao.insertOrUpsertStepInstance(si, true);
+    stepDao.insertOrUpsertStepInstance(si, true, null);
     StepInstance expected = si;
     expected.setArtifacts(Collections.emptyMap());
     si = loadObject("fixtures/instances/sample-step-instance-failed.json", StepInstance.class);
-    stepDao.insertOrUpsertStepInstance(si, true);
+    stepDao.insertOrUpsertStepInstance(si, true, null);
 
     Map<String, StepInstance> res =
         stepDao.getAllLatestStepFromAncestors("sample-dag-test-3", 1L, List.of("job1"));
@@ -318,7 +331,7 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
     si =
         loadObject(
             "fixtures/instances/sample-subworkflow-step-instance-running.json", StepInstance.class);
-    stepDao.insertOrUpsertStepInstance(si, true);
+    stepDao.insertOrUpsertStepInstance(si, true, null);
     artifact = stepDao.getLatestSubworkflowArtifact("sample-subworkflow-wf", 1L, "job1");
     assertEquals("sample-dag-test-3", artifact.getSubworkflowId());
     assertEquals(1L, artifact.getSubworkflowVersionId());
@@ -341,7 +354,7 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
     si =
         loadObject(
             "fixtures/instances/sample-foreach-step-instance-running.json", StepInstance.class);
-    stepDao.insertOrUpsertStepInstance(si, true);
+    stepDao.insertOrUpsertStepInstance(si, true, null);
     artifact = stepDao.getLatestForeachArtifact("sample-foreach-wf", 1L, "foreach-step1");
     assertEquals(
         "maestro_foreach_Ib2_11_94587073c5c260cfd048a0d09251a917", artifact.getForeachWorkflowId());
@@ -355,9 +368,9 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
   @Test
   public void testGetStepInstanceView() throws Exception {
     si = loadObject("fixtures/instances/sample-step-instance-finishing.json", StepInstance.class);
-    stepDao.insertOrUpsertStepInstance(si, true);
+    stepDao.insertOrUpsertStepInstance(si, true, null);
     si = loadObject("fixtures/instances/sample-step-instance-failed.json", StepInstance.class);
-    stepDao.insertOrUpsertStepInstance(si, true);
+    stepDao.insertOrUpsertStepInstance(si, true, null);
     StepInstance instance = stepDao.getStepInstanceView("sample-dag-test-3", 1L, "job1");
     assertEquals(2L, instance.getWorkflowRunId());
     assertEquals(2L, instance.getStepAttemptId());
@@ -369,9 +382,9 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
     // sample-step-instance-running.json is inserted as part of the setup, before this test
 
     si = loadObject("fixtures/instances/sample-step-instance-finishing.json", StepInstance.class);
-    stepDao.insertOrUpsertStepInstance(si, true);
+    stepDao.insertOrUpsertStepInstance(si, true, null);
     si = loadObject("fixtures/instances/sample-step-instance-failed.json", StepInstance.class);
-    stepDao.insertOrUpsertStepInstance(si, true);
+    stepDao.insertOrUpsertStepInstance(si, true, null);
     List<StepAttemptState> instances =
         stepDao.getStepAttemptStates("sample-dag-test-3", 1L, "job1");
 
@@ -405,7 +418,7 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
   public void testGetForeachParamType() throws Exception {
     si = loadObject("fixtures/instances/sample-step-instance-succeeded.json", StepInstance.class);
     si.setStepAttemptId(10);
-    stepDao.insertOrUpsertStepInstance(si, false);
+    stepDao.insertOrUpsertStepInstance(si, false, null);
     assertEquals(
         ParamType.LONG, stepDao.getForeachParamType("sample-dag-test-3", "job1", "sleep_seconds"));
   }
@@ -414,7 +427,7 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
   public void testGetEvaluatedResultsFromForeach() throws Exception {
     si = loadObject("fixtures/instances/sample-step-instance-succeeded.json", StepInstance.class);
     si.setStepAttemptId(10);
-    stepDao.insertOrUpsertStepInstance(si, false);
+    stepDao.insertOrUpsertStepInstance(si, false, null);
     assertEquals(
         Collections.singletonMap(1L, "15"),
         stepDao.getEvaluatedResultsFromForeach("sample-dag-test-3", "job1", "sleep_seconds"));
@@ -424,7 +437,7 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
   public void testParamExtensionSqlInjection() throws Exception {
     si = loadObject("fixtures/instances/sample-step-instance-succeeded.json", StepInstance.class);
     si.setStepAttemptId(10);
-    stepDao.insertOrUpsertStepInstance(si, false);
+    stepDao.insertOrUpsertStepInstance(si, false, null);
     AssertHelper.assertThrows(
         "sql injection won't work",
         MaestroNotFoundException.class,
@@ -465,7 +478,7 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
       siSubWf.setStepId("step_" + i);
       siSubWf.setWorkflowRunId(runId);
       stepIdToRunId.put("step_" + i, runId);
-      stepDaoSpy.insertOrUpsertStepInstance(siSubWf, false);
+      stepDaoSpy.insertOrUpsertStepInstance(siSubWf, false, null);
       if (i == numberOfInstancesToInsert / 2) {
         runId = 2;
       }
@@ -496,14 +509,14 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
     siSubWf.setStepId("step_100");
     siSubWf.setWorkflowRunId(1);
     stepIdToRunId.put("step_100", 1L);
-    stepDaoSpy.insertOrUpsertStepInstance(siSubWf, false);
+    stepDaoSpy.insertOrUpsertStepInstance(siSubWf, false, null);
 
     List<Map<String, Artifact>> artifacts =
         stepDaoSpy.getBatchStepInstancesArtifactsFromList(
             siSubWf.getWorkflowId(), siSubWf.getWorkflowInstanceId(), stepIdToRunId);
 
     assertEquals(1, artifacts.size());
-    assertEquals(siSubWf.getArtifacts(), artifacts.get(0));
+    assertEquals(siSubWf.getArtifacts(), artifacts.getFirst());
     Mockito.verify(stepDaoSpy, Mockito.times(1))
         .getBatchStepInstancesArtifactsFromListLimited(
             eq(siSubWf.getWorkflowId()), eq(siSubWf.getWorkflowInstanceId()), any());
@@ -536,12 +549,12 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
       siSubWf.setStepId("step_for_null_test_" + i);
       siSubWf.setWorkflowRunId(runId);
       stepIdToRunId.put("step_for_null_test_" + i, runId);
-      stepDaoSpy.insertOrUpsertStepInstance(siSubWf, false);
+      stepDaoSpy.insertOrUpsertStepInstance(siSubWf, false, null);
     }
 
     siSubWf.setStepId("step_for_null_test_" + numberOfInstancesToInsert + 1);
     siSubWf.setArtifacts(null);
-    stepDaoSpy.insertOrUpsertStepInstance(siSubWf, false);
+    stepDaoSpy.insertOrUpsertStepInstance(siSubWf, false, null);
     stepIdToRunId.put("step_for_null_test_" + numberOfInstancesToInsert + 1, runId);
 
     List<Map<String, Artifact>> artifacts =
@@ -556,10 +569,10 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
   public void testGetStepInstanceViews() throws Exception {
     StepInstance si1 =
         loadObject("fixtures/instances/sample-step-instance-finishing.json", StepInstance.class);
-    stepDao.insertOrUpsertStepInstance(si1, true);
+    stepDao.insertOrUpsertStepInstance(si1, true, null);
     StepInstance si2 =
         loadObject("fixtures/instances/sample-step-instance-failed.json", StepInstance.class);
-    stepDao.insertOrUpsertStepInstance(si2, true);
+    stepDao.insertOrUpsertStepInstance(si2, true, null);
 
     List<StepInstance> res = stepDao.getStepInstanceViews("sample-dag-test-3", 1L, 1L);
     assertEquals(1, res.size());

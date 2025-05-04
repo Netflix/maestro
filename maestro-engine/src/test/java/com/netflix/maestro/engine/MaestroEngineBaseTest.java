@@ -19,11 +19,8 @@ import com.netflix.maestro.engine.eval.ParamEvaluator;
 import com.netflix.maestro.engine.metrics.MaestroMetricRepo;
 import com.netflix.maestro.engine.properties.SelProperties;
 import com.netflix.spectator.api.DefaultRegistry;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
-import org.mockito.MockitoAnnotations;
 
 /** Maestro engine test base class. */
 public abstract class MaestroEngineBaseTest extends MaestroBaseTest {
@@ -59,18 +56,6 @@ public abstract class MaestroEngineBaseTest extends MaestroBaseTest {
   public static void destroy() {
     evaluator.preDestroy();
     MaestroBaseTest.destroy();
-  }
-
-  private AutoCloseable closeable;
-
-  @Before
-  public void openMocks() {
-    closeable = MockitoAnnotations.openMocks(this);
-  }
-
-  @After
-  public void releaseMocks() throws Exception {
-    closeable.close();
   }
 
   static {

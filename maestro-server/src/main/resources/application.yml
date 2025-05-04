@@ -23,12 +23,25 @@ server:
   port: 8080
 
 maestro:
+  queue:
+    properties:
+      1:
+        worker-num: 8
+        scan-interval: 5000
+      2:
+        worker-num: 12
+        scan-interval: 5000
+      3:
+        worker-num: 17
+        scan-interval: 5000
+      4:
+        worker-num: 3
+        scan-interval: 5000
+      5:
+        worker-num: 3
+        scan-interval: 10000
   notifier:
     type: noop
-  publisher:
-    type: in-memory
-  listener:
-    type: in-memory
   alerting:
     type: noop
   redis:
@@ -75,7 +88,6 @@ stepruntime:
   foreach:
     loop-batch-limit: 50
     insert-batch-limit: 10
-    run-job-batch-limit: 5
     get-rollup-batch-limit: 100
   subworkflow:
     always-pass-down-param-names: []

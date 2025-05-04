@@ -14,7 +14,6 @@ package com.netflix.maestro.engine.execution;
 
 import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.annotations.SuppressFBWarnings;
-import com.netflix.maestro.engine.utils.ObjectHelper;
 import com.netflix.maestro.models.Defaults;
 import com.netflix.maestro.models.api.RestartPolicy;
 import com.netflix.maestro.models.artifact.Artifact;
@@ -28,6 +27,7 @@ import com.netflix.maestro.models.instance.RunPolicy;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.utils.Checks;
+import com.netflix.maestro.utils.ObjectHelper;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;

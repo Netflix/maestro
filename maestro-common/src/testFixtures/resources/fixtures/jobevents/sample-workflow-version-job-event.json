@@ -6,5 +6,5 @@
   "event_time": 1610740278741,
   "sync_time": 1610740278805,
   "log": "Created a new workflow version [1] for workflow id [sample-dag-test-3]",
-  "type": "WORKFLOW_VERSION_UPDATE_JOB_EVENT"
+  "type": "WORKFLOW_VERSION_UPDATE"
 }

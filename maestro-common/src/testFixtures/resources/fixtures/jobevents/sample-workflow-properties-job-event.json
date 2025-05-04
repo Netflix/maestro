@@ -5,5 +5,5 @@
   "event_time": 1610740278741,
   "sync_time": 1610740278805,
   "log": "Update the properties for workflow: sample-dag-test-3",
-  "type": "WORKFLOW_VERSION_UPDATE_JOB_EVENT"
+  "type": "WORKFLOW_VERSION_UPDATE"
 }

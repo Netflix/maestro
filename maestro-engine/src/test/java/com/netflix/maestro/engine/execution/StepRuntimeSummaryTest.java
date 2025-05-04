@@ -376,7 +376,7 @@ public class StepRuntimeSummaryTest extends MaestroEngineBaseTest {
         loadObject(
             "fixtures/execution/sample-step-runtime-summary-1.json", StepRuntimeSummary.class);
     assertTrue(summary.isSynced());
-    TimelineEvent curEvent = summary.getTimeline().getTimelineEvents().get(0);
+    TimelineEvent curEvent = summary.getTimeline().getTimelineEvents().getFirst();
     TimelineEvent newEvent = TimelineLogEvent.builder().message("world").build();
     summary.mergeRuntimeUpdate(Collections.singletonList(newEvent), null);
     assertFalse(summary.isSynced());

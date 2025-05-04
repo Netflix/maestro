@@ -3,5 +3,5 @@
   "internal_id": 12345,
   "author": "tester",
   "timestamp": 1610739643352,
-  "type": "DELETE_WORKFLOW_JOB_EVENT"
+  "type": "DELETE_WORKFLOW"
 }

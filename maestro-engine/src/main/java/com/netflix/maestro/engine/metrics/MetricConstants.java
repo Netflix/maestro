@@ -13,12 +13,9 @@
 package com.netflix.maestro.engine.metrics;
 
 /** Class for Metric constants such as keys / tags for engine package. */
-public class MetricConstants {
+public final class MetricConstants extends com.netflix.maestro.metrics.MetricConstants {
 
-  protected MetricConstants() {}
-
-  /** Metric tag for type. */
-  public static final String TYPE_TAG = "type";
+  private MetricConstants() {}
 
   /** Candidate selected tag for launch. */
   public static final String CANDIDATE_TAG_VALUE = "candidate";
