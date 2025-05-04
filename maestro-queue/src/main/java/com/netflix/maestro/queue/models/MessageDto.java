@@ -13,7 +13,9 @@
 package com.netflix.maestro.queue.models;
 
 import com.netflix.maestro.annotations.Nullable;
+import com.netflix.maestro.queue.jobevents.InstanceActionJobEvent;
 import com.netflix.maestro.queue.jobevents.MaestroJobEvent;
+import java.util.Set;
 
 /**
  * The message data transfer object.
@@ -29,6 +31,13 @@ public record MessageDto(
   /** The constant for the system operational message. */
   public static final MessageDto SCAN_CMD_MSG =
       new MessageDto(Long.MAX_VALUE, "maestro-queue-scan", null, System.currentTimeMillis());
+
+  public static MessageDto createMessageForWakeUp(
+      String workflowId, long groupInfo, Set<Long> instanceIds) {
+    var jobEvent = InstanceActionJobEvent.create(workflowId, groupInfo, instanceIds);
+    return new MessageDto(
+        Long.MAX_VALUE, jobEvent.getIdentity(), jobEvent, System.currentTimeMillis());
+  }
 
   /** Get the event type from the event. */
   public MaestroJobEvent.Type type() {

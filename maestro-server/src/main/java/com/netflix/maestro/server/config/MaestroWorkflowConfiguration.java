@@ -48,7 +48,6 @@ import com.netflix.maestro.flow.runtime.ExecutionPreparer;
 import com.netflix.maestro.flow.runtime.FlowOperation;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.Constants;
-import com.netflix.maestro.queue.MaestroQueueSystem;
 import com.netflix.maestro.server.properties.MaestroEngineProperties;
 import com.netflix.maestro.signal.dao.MaestroSignalBrokerDao;
 import com.netflix.maestro.signal.handler.MaestroSignalHandler;
@@ -181,13 +180,13 @@ public class MaestroWorkflowConfiguration {
   @Bean
   public MaestroEndTask maestroEndTask(
       MaestroWorkflowInstanceDao instanceDao,
-      MaestroQueueSystem queueSystem,
+      MaestroStepInstanceActionDao actionDao,
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
       RollupAggregationHelper rollupAggregationHelper,
       MaestroMetrics metricRepo) {
     LOG.info("Creating Maestro endTask within Spring boot...");
     return new MaestroEndTask(
-        instanceDao, queueSystem, objectMapper, rollupAggregationHelper, metricRepo);
+        instanceDao, actionDao, objectMapper, rollupAggregationHelper, metricRepo);
   }
 
   @Bean

@@ -250,5 +250,21 @@ public class InstanceActionJobEventProcessorTest extends MaestroEngineBaseTest {
   @Test
   public void testFlowAction() {
     event.setEntityType(InstanceActionJobEvent.EntityType.FLOW);
+    event.setInstanceIds(Set.of(2L, 3L, 1L));
+    Assert.assertTrue(processor.process(event).isEmpty());
+
+    Mockito.verifyNoInteractions(stepInstanceDao);
+    Mockito.verifyNoInteractions(instanceDao);
+    Mockito.verify(flowOperation, Mockito.times(1))
+        .wakeUp(0, Set.of("[sample-test-workflow-id][1]"));
+    Mockito.verify(flowOperation, Mockito.times(1))
+        .wakeUp(7, Set.of("[sample-test-workflow-id][2]"));
+    Mockito.verify(flowOperation, Mockito.times(1))
+        .wakeUp(2, Set.of("[sample-test-workflow-id][3]"));
+    Mockito.reset(flowOperation);
+
+    Mockito.when(flowOperation.wakeUp(anyLong(), any())).thenReturn(false);
+    Assert.assertTrue(processor.process(event).isEmpty());
+    Mockito.verify(flowOperation, Mockito.times(3)).wakeUp(anyLong(), any());
   }
 }

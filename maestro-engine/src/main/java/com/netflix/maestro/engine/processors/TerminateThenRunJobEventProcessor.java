@@ -24,7 +24,9 @@ import com.netflix.maestro.queue.jobevents.TerminateThenRunJobEvent;
 import com.netflix.maestro.queue.models.InstanceRunUuid;
 import com.netflix.maestro.queue.processors.MaestroEventProcessor;
 import com.netflix.maestro.utils.Checks;
+import com.netflix.maestro.utils.ObjectHelper;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import lombok.AllArgsConstructor;
@@ -45,12 +47,19 @@ public class TerminateThenRunJobEventProcessor
 
   @Override
   public Optional<MaestroJobEvent> process(TerminateThenRunJobEvent jobEvent) {
-    List<InstanceRunUuid> terminated = tryTerminateWorkflowInstances(jobEvent);
-
-    // then monitor the termination for workflows marked as terminated
-    checkProgress(jobEvent.getWorkflowId(), terminated);
-    // update the event in case that the run fails
-    jobEvent.getInstanceRunUuids().clear();
+    if (!ObjectHelper.isCollectionEmptyOrNull(jobEvent.getInstanceRunUuids())) {
+      List<InstanceRunUuid> terminated = tryTerminateWorkflowInstances(jobEvent);
+      // update the in-memory event in case that the run fails
+      jobEvent.setInstanceRunUuids(Collections.emptyList());
+      // update the in-memory event to mark the workflow instances to check the progress
+      jobEvent.setTerminating(terminated);
+    }
+    if (!ObjectHelper.isCollectionEmptyOrNull(jobEvent.getTerminating())) {
+      // then monitor the termination for workflows marked as terminated
+      checkProgress(jobEvent.getWorkflowId(), jobEvent.getTerminating());
+      // update the in-memory event in case that the run fails
+      jobEvent.setTerminating(Collections.emptyList());
+    }
     // after that, run the workflow instances directly without enqueueing a job
     var instanceRunUuids = jobEvent.getRunAfter();
     if (instanceRunUuids != null) {

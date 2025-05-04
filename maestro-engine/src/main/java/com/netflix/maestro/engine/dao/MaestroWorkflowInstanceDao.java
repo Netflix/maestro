@@ -145,6 +145,11 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
   private static final String GET_LATEST_WORKFLOW_INSTANCE_RUN_QUERY =
       String.format(GET_WORKFLOW_INSTANCE_FIELDS_TEMPLATE, ALL_FIELDS, LATEST_RUN_CONDITION);
 
+  private static final String GET_WORKFLOW_INSTANCE_BY_UUID_QUERY =
+      String.format(
+          "SELECT %s FROM maestro_workflow_instance@workflow_unique_index WHERE workflow_id=? AND uuid=?",
+          ALL_FIELDS);
+
   private static final String GET_WORKFLOW_INSTANCE_STATUS_QUERY =
       String.format(GET_WORKFLOW_INSTANCE_FIELDS_TEMPLATE, STATUS_COLUMN, RUN_ID_CONDITION);
 
@@ -799,6 +804,34 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
    */
   public WorkflowInstance getLatestWorkflowInstanceRun(String workflowId, long workflowInstanceId) {
     return getWorkflowInstanceRun(workflowId, workflowInstanceId, Constants.LATEST_ONE);
+  }
+
+  /**
+   * Get the instance data of a specific workflow instance run based on its uuid, including the
+   * summary of its step instances.
+   *
+   * @param workflowId workflow id
+   * @param uuid workflow instance uuid
+   */
+  public WorkflowInstance getWorkflowInstanceRunByUuid(String workflowId, String uuid) {
+    return withMetricLogError(
+        () ->
+            withRetryableQuery(
+                GET_WORKFLOW_INSTANCE_BY_UUID_QUERY,
+                stmt -> {
+                  stmt.setString(1, workflowId);
+                  stmt.setString(2, uuid);
+                },
+                result -> {
+                  if (result.next()) {
+                    return workflowInstanceFromResult(result);
+                  }
+                  return null;
+                }),
+        "getWorkflowInstanceRunByUuid",
+        "Failed to get the workflow instance for [{}][{}]",
+        workflowId,
+        uuid);
   }
 
   /**

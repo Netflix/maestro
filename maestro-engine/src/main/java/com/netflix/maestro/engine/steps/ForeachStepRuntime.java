@@ -51,16 +51,14 @@ import com.netflix.maestro.models.timeline.TimelineDetailsEvent;
 import com.netflix.maestro.models.timeline.TimelineEvent;
 import com.netflix.maestro.models.timeline.TimelineLogEvent;
 import com.netflix.maestro.queue.MaestroQueueSystem;
-import com.netflix.maestro.queue.jobevents.InstanceActionJobEvent;
 import com.netflix.maestro.queue.models.MessageDto;
 import com.netflix.maestro.utils.Checks;
 import com.netflix.maestro.utils.HashHelper;
 import com.netflix.maestro.utils.IdHelper;
 import com.netflix.maestro.utils.ObjectHelper;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -965,7 +963,7 @@ public class ForeachStepRuntime implements StepRuntime {
       boolean done = artifact.getForeachOverview().getRunningStatsCount(false) == 0;
       if (!done) {
         tryTerminateQueuedInstancesIfNeeded(artifact);
-        wakeUpUnderlyingActors(workflowSummary, runtimeSummary.getStepId(), artifact);
+        wakeUpUnderlyingActors(workflowSummary, artifact);
         throw new MaestroRetryableError(
             "Termination at foreach step %s%s is not done and will retry it.",
             workflowSummary.getIdentity(), runtimeSummary.getIdentity());
@@ -1006,34 +1004,16 @@ public class ForeachStepRuntime implements StepRuntime {
     }
   }
 
-  private void wakeUpUnderlyingActors(
-      WorkflowSummary summary, String stepId, ForeachArtifact artifact) {
-    String workflowId = artifact.getForeachWorkflowId();
-    long groupInfo = summary.getGroupInfo();
+  private void wakeUpUnderlyingActors(WorkflowSummary summary, ForeachArtifact artifact) {
     if (artifact.getForeachOverview().getDetails() != null) {
-      var groupedRefs = new HashMap<Long, Set<String>>();
-      artifact
-          .getForeachOverview()
-          .getDetails()
-          .flatten(e -> !e.isTerminal())
-          .forEach(
-              (status, instanceIds) ->
-                  instanceIds.forEach(
-                      instanceId -> {
-                        String flowRef = IdHelper.deriveFlowRef(workflowId, instanceId);
-                        long groupId = IdHelper.deriveGroupId(flowRef, groupInfo);
-                        if (!groupedRefs.containsKey(groupId)) {
-                          groupedRefs.put(groupId, new HashSet<>());
-                        }
-                        groupedRefs.get(groupId).add(flowRef);
-                      }));
-
-      var jobEvent =
-          InstanceActionJobEvent.create(
-              summary.getWorkflowId(), summary.getWorkflowInstanceId(), stepId, groupedRefs);
-      queueSystem.notify(
-          new MessageDto(
-              Long.MAX_VALUE, jobEvent.getIdentity(), jobEvent, System.currentTimeMillis()));
+      var instanceIds =
+          artifact.getForeachOverview().getDetails().flatten(e -> !e.isTerminal()).values().stream()
+              .flatMap(Collection::stream)
+              .collect(Collectors.toSet());
+      var msg =
+          MessageDto.createMessageForWakeUp(
+              artifact.getForeachWorkflowId(), summary.getGroupInfo(), instanceIds);
+      queueSystem.notify(msg);
     }
   }
 }

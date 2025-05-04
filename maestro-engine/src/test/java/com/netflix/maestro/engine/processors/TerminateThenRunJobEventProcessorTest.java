@@ -17,6 +17,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.netflix.maestro.AssertHelper;
@@ -35,6 +36,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 
 public class TerminateThenRunJobEventProcessorTest extends MaestroEngineBaseTest {
   @Mock private WorkflowRunner workflowRunner;
@@ -97,17 +99,28 @@ public class TerminateThenRunJobEventProcessorTest extends MaestroEngineBaseTest
     when(instanceDao.getWorkflowInstanceStatus(workflowId, 1L, 1L)).thenReturn(null);
     when(instanceDao.getWorkflowInstanceStatus(workflowId, 2L, 1L))
         .thenReturn(WorkflowInstance.Status.STOPPED);
-
+    Assert.assertEquals(2, jobEvent1.getInstanceRunUuids().size());
     AssertHelper.assertThrows(
         "throw MaestroRetryableError to retry",
         MaestroRetryableError.class,
         "[InstanceRunUuid(instanceId=1, runId=1, uuid=uuid1)] is still terminating and will check it again",
         () -> processor.process(jobEvent1));
 
+    Assert.assertTrue(jobEvent1.getInstanceRunUuids().isEmpty());
+    Assert.assertEquals(2, jobEvent1.getTerminating().size());
     verify(actionDao, times(2)).terminate(any(), any(), any(), anyString());
     verify(actionDao, times(1))
         .terminate(instance1, tester, Actions.WorkflowInstanceAction.STOP, "test-reason");
     verify(workflowRunner, times(0)).run(any(WorkflowInstance.class), any());
+
+    reset(actionDao);
+    AssertHelper.assertThrows(
+        "throw MaestroRetryableError to retry",
+        MaestroRetryableError.class,
+        "[InstanceRunUuid(instanceId=1, runId=1, uuid=uuid1)] is still terminating and will check it again",
+        () -> processor.process(jobEvent1));
+    verifyNoInteractions(actionDao);
+    Assert.assertEquals(2, jobEvent1.getTerminating().size());
   }
 
   @Test
@@ -122,7 +135,11 @@ public class TerminateThenRunJobEventProcessorTest extends MaestroEngineBaseTest
         .thenReturn(WorkflowInstance.Status.FAILED);
     when(instanceDao.getWorkflowInstanceStatus(workflowId, 2L, 1L))
         .thenReturn(WorkflowInstance.Status.STOPPED);
+    Assert.assertEquals(2, jobEvent1.getInstanceRunUuids().size());
     Assert.assertTrue(processor.process(jobEvent1).isEmpty());
+
+    Assert.assertTrue(jobEvent1.getInstanceRunUuids().isEmpty());
+    Assert.assertTrue(jobEvent1.getTerminating().isEmpty());
     verify(actionDao, times(2)).terminate(any(), any(), any(), anyString());
     verify(actionDao, times(1))
         .terminate(instance1, tester, Actions.WorkflowInstanceAction.STOP, "test-reason");
@@ -147,6 +164,7 @@ public class TerminateThenRunJobEventProcessorTest extends MaestroEngineBaseTest
         .thenReturn(WorkflowInstance.Status.STOPPED);
     when(instanceDao.getWorkflowInstanceStatus(workflowId, 3L, 1L))
         .thenReturn(WorkflowInstance.Status.CREATED);
+    Assert.assertEquals(3, jobEvent2.getInstanceRunUuids().size());
 
     AssertHelper.assertThrows(
         "throw MaestroRetryableError to retry",
@@ -154,6 +172,8 @@ public class TerminateThenRunJobEventProcessorTest extends MaestroEngineBaseTest
         "[InstanceRunUuid(instanceId=1, runId=1, uuid=uuid1)] is still terminating and will check it again",
         () -> processor.process(jobEvent2));
 
+    Assert.assertTrue(jobEvent2.getInstanceRunUuids().isEmpty());
+    Assert.assertEquals(3, jobEvent2.getTerminating().size());
     verify(actionDao, times(3)).terminate(any(), any(), any(), anyString());
     verify(actionDao, times(1))
         .terminate(instance1, tester, Actions.WorkflowInstanceAction.KILL, "test-reason");
@@ -178,7 +198,11 @@ public class TerminateThenRunJobEventProcessorTest extends MaestroEngineBaseTest
         .thenReturn(WorkflowInstance.Status.STOPPED);
     when(instanceDao.getWorkflowInstanceStatus(workflowId, 3L, 1L))
         .thenReturn(WorkflowInstance.Status.FAILED);
+    Assert.assertEquals(3, jobEvent2.getInstanceRunUuids().size());
     Assert.assertTrue(processor.process(jobEvent2).isEmpty());
+
+    Assert.assertTrue(jobEvent2.getInstanceRunUuids().isEmpty());
+    Assert.assertTrue(jobEvent2.getTerminating().isEmpty());
     verify(actionDao, times(2)).terminate(any(), any(), any(), anyString());
     verify(actionDao, times(1))
         .terminate(instance2, tester, Actions.WorkflowInstanceAction.KILL, "test-reason");

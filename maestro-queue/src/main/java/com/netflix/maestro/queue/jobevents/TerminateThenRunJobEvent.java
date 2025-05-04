@@ -45,6 +45,7 @@ public class TerminateThenRunJobEvent implements MaestroJobEvent {
   private User user;
   private String reason;
   @Nullable private List<InstanceRunUuid> runAfter;
+  @JsonIgnore @Nullable private List<InstanceRunUuid> terminating;
 
   /** Static method to initialize a {@link TerminateThenRunJobEvent}. */
   public static TerminateThenRunJobEvent init(

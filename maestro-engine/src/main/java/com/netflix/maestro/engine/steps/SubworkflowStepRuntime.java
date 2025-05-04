@@ -42,9 +42,7 @@ import com.netflix.maestro.models.timeline.TimelineDetailsEvent;
 import com.netflix.maestro.models.timeline.TimelineEvent;
 import com.netflix.maestro.models.timeline.TimelineLogEvent;
 import com.netflix.maestro.queue.MaestroQueueSystem;
-import com.netflix.maestro.queue.jobevents.InstanceActionJobEvent;
 import com.netflix.maestro.queue.models.MessageDto;
-import com.netflix.maestro.utils.IdHelper;
 import com.netflix.maestro.utils.ObjectHelper;
 import java.sql.SQLException;
 import java.util.Collections;
@@ -327,7 +325,7 @@ public class SubworkflowStepRuntime implements StepRuntime {
 
         if (!status.isTerminal()) {
           tryTerminateQueuedInstanceIfNeeded(artifact, status);
-          wakeUpUnderlyingActor(workflowSummary, runtimeSummary.getStepId(), artifact);
+          wakeUpUnderlyingActor(workflowSummary);
           throw new MaestroRetryableError(
               "Termination at subworkflow step %s%s is not done and will retry it.",
               workflowSummary.getIdentity(), runtimeSummary.getIdentity());
@@ -373,19 +371,12 @@ public class SubworkflowStepRuntime implements StepRuntime {
         artifact.getSubworkflowRunId());
   }
 
-  private void wakeUpUnderlyingActor(
-      WorkflowSummary summary, String stepId, SubworkflowArtifact artifact) {
-    String flowReference =
-        IdHelper.deriveFlowRef(artifact.getSubworkflowId(), artifact.getSubworkflowInstanceId());
-    long groupId = IdHelper.deriveGroupId(flowReference, summary.getGroupInfo());
-    var jobEvent =
-        InstanceActionJobEvent.create(
+  private void wakeUpUnderlyingActor(WorkflowSummary summary) {
+    var msg =
+        MessageDto.createMessageForWakeUp(
             summary.getWorkflowId(),
-            summary.getWorkflowInstanceId(),
-            stepId,
-            Map.of(groupId, Set.of(flowReference)));
-    queueSystem.notify(
-        new MessageDto(
-            Long.MAX_VALUE, jobEvent.getIdentity(), jobEvent, System.currentTimeMillis()));
+            summary.getGroupInfo(),
+            Set.of(summary.getWorkflowInstanceId()));
+    queueSystem.notify(msg);
   }
 }

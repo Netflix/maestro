@@ -58,6 +58,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -165,7 +166,7 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
 
   /**
    * Before get step instance, it does multiple validation checks, including aggregated view check,
-   * status check, and is restartable and retryable check, and also checks the failure mode as well.
+   * status check, and is restartable and retryable check, and checks the failure mode as well.
    */
   private StepInstance getStepInstanceAndValidate(
       WorkflowInstance instance, String stepId, RestartConfig restartConfig) {
@@ -652,6 +653,27 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
    */
   public int terminate(
       WorkflowInstance instance, User user, Actions.WorkflowInstanceAction action, String reason) {
+    return terminate(instance, user, action, reason, false);
+  }
+
+  /**
+   * Terminate all non-terminal steps in a given workflow instance. It overwrites any current action
+   * for all steps with a flag to indicate if the InstanceActionJobEvent should be sent in-memory or
+   * persist to the queue table and then notify.
+   *
+   * @param instance the workflow instance to terminate
+   * @param user the user taking the action
+   * @param action the terminate action
+   * @param reason reason to terminate
+   * @param inMemory indicate if the InstanceActionJobEvent should be directly sent in-memory
+   * @return the number of upserted actions
+   */
+  public int terminate(
+      WorkflowInstance instance,
+      User user,
+      Actions.WorkflowInstanceAction action,
+      String reason,
+      boolean inMemory) {
     LOG.info(
         "User [{}] {}-ing workflow instance: {}",
         user.getName(),
@@ -702,8 +724,15 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
     // termination case. Expect users to manually retry to terminate all of them.
     for (int i = 0; i < partitions.size(); ++i) {
       var jobEvent =
-          i == partitions.size() - 1 ? InstanceActionJobEvent.create(instance, action) : null;
-      upsert += upsertActions(workflowIdentity, partitions.get(i), jobEvent, message);
+          i == partitions.size() - 1 && !inMemory
+              ? InstanceActionJobEvent.create(instance, action)
+              : null;
+      upsert += upsertActions(workflowIdentity, upsert, partitions.get(i), jobEvent, message);
+    }
+    if (upsert > 0 && inMemory) {
+      message[0] =
+          MessageDto.createMessageForWakeUp(
+              workflowIdentity, instance.getGroupInfo(), Set.of(instance.getWorkflowInstanceId()));
     }
     // notify the action job event.
     queueSystem.notify(message[0]);
@@ -718,6 +747,7 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
   /** Batch upsert step actions, payloads must fit into a single batch. */
   private int upsertActions(
       String identity,
+      int upserted,
       List<String> payloads,
       @Nullable MaestroJobEvent jobEvent,
       MessageDto[] message) {
@@ -735,7 +765,7 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
                       stmt.setString(++idx, payload);
                     }
                     int res = stmt.executeUpdate();
-                    if (jobEvent != null) {
+                    if (upserted + res > 0 && jobEvent != null) {
                       message[0] = queueSystem.enqueue(conn, jobEvent);
                     }
                     return res;

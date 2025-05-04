@@ -25,6 +25,8 @@ import com.netflix.maestro.queue.jobevents.MaestroJobEvent;
 import com.netflix.maestro.queue.processors.MaestroEventProcessor;
 import com.netflix.maestro.utils.Checks;
 import com.netflix.maestro.utils.IdHelper;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import lombok.AllArgsConstructor;
@@ -130,49 +132,54 @@ public class InstanceActionJobEventProcessor
   }
 
   private void wakeUpUnderlyingActor(InstanceActionJobEvent jobEvent) {
-    String flowReference =
+    String flowRef =
         IdHelper.deriveFlowRef(jobEvent.getWorkflowId(), jobEvent.getWorkflowInstanceId());
-    long groupId = IdHelper.deriveGroupId(flowReference, jobEvent.getGroupInfo());
+    long groupId = IdHelper.deriveGroupId(flowRef, jobEvent.getGroupInfo());
     try {
       boolean done =
           jobEvent.getStepId() == null
-              ? flowOperation.wakeUp(groupId, Set.of(flowReference))
-              : flowOperation.wakeUp(groupId, flowReference, jobEvent.getStepId());
+              ? flowOperation.wakeUp(groupId, Set.of(flowRef))
+              : flowOperation.wakeUp(groupId, flowRef, jobEvent.getStepId());
       if (!done) {
         throw new MaestroRetryableError(
             "The underlying task [%s] in flow [%s] for group [%s] is not woken up successfully. Will try again.",
-            jobEvent.getStepId(), flowReference, groupId);
+            jobEvent.getStepId(), flowRef, groupId);
       }
     } catch (MaestroRuntimeException e) {
       LOG.info(
           "running into an exception while waking up underlying task [{}][{}][{}], will try again",
           groupId,
-          flowReference,
+          flowRef,
           jobEvent.getStepId());
       throw e; // retry if exception is a MaestroRetryableError
     }
   }
 
+  // Best effort wakeup the actors. It ignores any error or if wakeup is not done.
   private void processForFlowEntity(InstanceActionJobEvent jobEvent) {
+    String workflowId = jobEvent.getWorkflowId();
+    long groupInfo = jobEvent.getGroupInfo();
+    var groupedRefs = new HashMap<Long, Set<String>>();
+    for (long instanceId : jobEvent.getInstanceIds()) {
+      String flowRef = IdHelper.deriveFlowRef(workflowId, instanceId);
+      long groupId = IdHelper.deriveGroupId(flowRef, groupInfo);
+      if (!groupedRefs.containsKey(groupId)) {
+        groupedRefs.put(groupId, new HashSet<>());
+      }
+      groupedRefs.get(groupId).add(flowRef);
+    }
+
     // todo if too many groups, we can use parallel() to speed up
-    jobEvent
-        .getGroupedRefs()
-        .forEach(
-            (groupId, refs) -> {
-              try {
-                boolean done = flowOperation.wakeUp(groupId, refs);
-                if (!done) {
-                  throw new MaestroRetryableError(
-                      "Underlying flows [%s] for group [%s] are not woken up successfully. Will try again.",
-                      refs, groupId);
-                }
-              } catch (MaestroRuntimeException e) {
-                LOG.info(
-                    "running into an exception while waking up underlying flows [{}][{}], will try again",
-                    groupId,
-                    refs);
-                throw e; // retry if exception is a MaestroRetryableError
-              }
-            });
+    groupedRefs.forEach(
+        (groupId, refs) -> {
+          try {
+            flowOperation.wakeUp(groupId, refs); // if not done or failed, no retry here.
+          } catch (MaestroRuntimeException e) {
+            LOG.info(
+                "running into an exception while waking up underlying flows [{}][{}], will ignore it",
+                groupId,
+                refs);
+          }
+        });
   }
 }

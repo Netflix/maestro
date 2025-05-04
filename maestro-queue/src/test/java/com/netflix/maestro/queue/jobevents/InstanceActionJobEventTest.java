@@ -13,6 +13,7 @@
 package com.netflix.maestro.queue.jobevents;
 
 import com.netflix.maestro.MaestroBaseTest;
+import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -20,13 +21,17 @@ public class InstanceActionJobEventTest extends MaestroBaseTest {
 
   @Test
   public void testRoundTripSerde() throws Exception {
-    InstanceActionJobEvent sampleEvent =
-        loadObject(
-            "fixtures/jobevents/sample-instance-action-job-event.json",
-            InstanceActionJobEvent.class);
-    Assert.assertEquals(
-        sampleEvent,
-        MaestroBaseTest.MAPPER.readValue(
-            MaestroBaseTest.MAPPER.writeValueAsString(sampleEvent), InstanceActionJobEvent.class));
+    for (String json :
+        List.of(
+            "fixtures/jobevents/sample-instance-step-action-job-event.json",
+            "fixtures/jobevents/sample-instance-workflow-action-job-event.json",
+            "fixtures/jobevents/sample-instance-flow-action-job-event.json")) {
+      InstanceActionJobEvent sampleEvent = loadObject(json, InstanceActionJobEvent.class);
+      Assert.assertEquals(
+          sampleEvent,
+          MaestroBaseTest.MAPPER.readValue(
+              MaestroBaseTest.MAPPER.writeValueAsString(sampleEvent),
+              InstanceActionJobEvent.class));
+    }
   }
 }

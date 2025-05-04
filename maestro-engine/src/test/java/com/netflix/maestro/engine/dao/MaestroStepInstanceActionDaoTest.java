@@ -816,4 +816,110 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
     verify(queueSystem, times(6)).enqueue(any(), any(InstanceActionJobEvent.class));
     verify(queueSystem, times(7)).notify(any());
   }
+
+  @Test
+  public void testTerminateFlowInMemory() throws Exception {
+    Assert.assertEquals(
+        4,
+        actionDao.terminate(
+            instance, user, Actions.WorkflowInstanceAction.STOP, "test-reason", true));
+    Assert.assertEquals(
+        4,
+        actionDao.cleanUp(
+            instance.getWorkflowId(),
+            instance.getWorkflowInstanceId(),
+            instance.getWorkflowRunId()));
+
+    instance.setRuntimeOverview(
+        WorkflowRuntimeOverview.of(
+            4,
+            singletonEnumMap(
+                StepInstance.Status.FATALLY_FAILED,
+                WorkflowStepStatusSummary.of(1L).addStep(Arrays.asList(1L, 2L, 3L, 4L))),
+            null));
+    Assert.assertEquals(
+        4,
+        actionDao.terminate(
+            instance, user, Actions.WorkflowInstanceAction.STOP, "test-reason", true));
+    Assert.assertEquals(
+        4,
+        actionDao.cleanUp(
+            instance.getWorkflowId(),
+            instance.getWorkflowInstanceId(),
+            instance.getWorkflowRunId()));
+
+    instance.setRuntimeOverview(
+        WorkflowRuntimeOverview.of(
+            4,
+            singletonEnumMap(
+                StepInstance.Status.RUNNING,
+                WorkflowStepStatusSummary.of(1L).addStep(Arrays.asList(1L, 2L, 3L, 4L))),
+            null));
+    Assert.assertEquals(
+        4,
+        actionDao.terminate(
+            instance, user, Actions.WorkflowInstanceAction.STOP, "test-reason", true));
+    Assert.assertEquals(
+        4,
+        actionDao.cleanUp(
+            instance.getWorkflowId(),
+            instance.getWorkflowInstanceId(),
+            instance.getWorkflowRunId()));
+
+    instance.setRuntimeOverview(
+        WorkflowRuntimeOverview.of(
+            4,
+            singletonEnumMap(
+                StepInstance.Status.NOT_CREATED,
+                WorkflowStepStatusSummary.of(1L).addStep(Arrays.asList(1L, 2L, 3L, 4L))),
+            null));
+    Assert.assertEquals(
+        4,
+        actionDao.terminate(
+            instance, user, Actions.WorkflowInstanceAction.STOP, "test-reason", true));
+    Assert.assertEquals(
+        4,
+        actionDao.cleanUp(
+            instance.getWorkflowId(),
+            instance.getWorkflowInstanceId(),
+            instance.getWorkflowRunId()));
+
+    instance.setRuntimeOverview(
+        WorkflowRuntimeOverview.of(
+            4,
+            singletonEnumMap(
+                StepInstance.Status.SUCCEEDED,
+                WorkflowStepStatusSummary.of(1L).addStep(Arrays.asList(1L, 2L, 3L, 4L))),
+            null));
+    Assert.assertEquals(
+        3,
+        actionDao.terminate(
+            instance, user, Actions.WorkflowInstanceAction.STOP, "test-reason", true));
+    Assert.assertEquals(
+        3,
+        actionDao.cleanUp(
+            instance.getWorkflowId(),
+            instance.getWorkflowInstanceId(),
+            instance.getWorkflowRunId()));
+
+    instance.setRuntimeOverview(
+        WorkflowRuntimeOverview.of(
+            4,
+            singletonEnumMap(
+                StepInstance.Status.COMPLETED_WITH_ERROR,
+                WorkflowStepStatusSummary.of(1L).addStep(Arrays.asList(1L, 2L, 3L, 4L))),
+            null));
+    Assert.assertEquals(
+        3,
+        actionDao.terminate(
+            instance, user, Actions.WorkflowInstanceAction.STOP, "test-reason", true));
+    Assert.assertEquals(
+        3,
+        actionDao.cleanUp(
+            instance.getWorkflowId(),
+            instance.getWorkflowInstanceId(),
+            instance.getWorkflowRunId()));
+    verify(queueSystem, times(0)).enqueue(any(), any(InstanceActionJobEvent.class));
+    verify(queueSystem, times(7)).notify(any());
+  }
 }

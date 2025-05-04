@@ -33,7 +33,6 @@ import com.netflix.maestro.engine.handlers.SignalHandler;
 import com.netflix.maestro.engine.metrics.MetricConstants;
 import com.netflix.maestro.engine.params.OutputDataManager;
 import com.netflix.maestro.engine.params.ParamsManager;
-import com.netflix.maestro.engine.steps.StepRuntime;
 import com.netflix.maestro.engine.tracing.MaestroTracingContext;
 import com.netflix.maestro.engine.tracing.MaestroTracingManager;
 import com.netflix.maestro.engine.transformation.Translator;
@@ -55,6 +54,7 @@ import com.netflix.maestro.models.definition.FailureMode;
 import com.netflix.maestro.models.definition.RetryPolicy;
 import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.definition.Tag;
+import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.error.Details;
 import com.netflix.maestro.models.instance.RestartConfig;
 import com.netflix.maestro.models.instance.RunPolicy;
@@ -86,10 +86,10 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Maestro task implementation, which is a proxy to bridge maestro engine and maestro flow.
  *
- * <p>It is responsible to retrieve Maestro data model from maestro internal flow data and pass it
+ * <p>It is responsible to retrieve a Maestro data model from maestro internal flow data and pass it
  * to Maestro step runtime.
  *
- * <p>It encapsulates Maestro internal flow engine execution model. Thus, all maestro step runtime
+ * <p>It encapsulates a Maestro internal flow engine execution model. Thus, all maestro step runtime
  * will be independent of the maestro flow engine.
  *
  * <p>It also handles the at-least once step status change publishing and the maestro step instance
@@ -100,6 +100,7 @@ public class MaestroTask implements FlowTask {
   private static final Set<String> RETRYABLE_SQL_ERROR_STATES = Collections.singleton("08006");
   private static final Set<String> RETRYABLE_SQL_ERROR_MSGS =
       Collections.singleton("Connection is closed");
+  private static final User MAESTRO_TASK_USER = User.create(Constants.MAESTRO_TASK_NAME);
 
   private final StepRuntimeManager stepRuntimeManager;
   private final StepSyncManager stepSyncManager;
@@ -908,24 +909,17 @@ public class MaestroTask implements FlowTask {
    * retryable error.
    */
   private void terminateAllSteps(Flow flow, WorkflowSummary summary, String stepId) {
-    WorkflowInstance toTerminate = new WorkflowInstance();
-    toTerminate.setWorkflowId(summary.getWorkflowId());
-    toTerminate.setWorkflowInstanceId(summary.getWorkflowInstanceId());
-    toTerminate.setWorkflowRunId(summary.getWorkflowRunId());
-    toTerminate.setGroupInfo(summary.getGroupInfo());
-
     Map<String, Task> realTaskMap =
         TaskHelper.getUserDefinedRealTaskMap(flow.getFinishedTasks().stream());
     // passing rollupBase as null because this overview is used to terminate steps
     // and thus having steps from prev runs is useless
     WorkflowRuntimeOverview overview =
         TaskHelper.computeOverview(objectMapper, summary, null, realTaskMap);
-    toTerminate.setRuntimeDag(summary.getRuntimeDag());
-    toTerminate.setRuntimeOverview(overview);
+    WorkflowInstance toTerminate = StepHelper.buildTerminateWorkflowInstance(summary, overview);
     try {
       actionDao.terminate(
           toTerminate,
-          StepRuntime.SYSTEM_USER,
+          MAESTRO_TASK_USER,
           Actions.WorkflowInstanceAction.STOP,
           String.format(
               "Stop all steps because step [%s] with FAIL_IMMEDIATELY mode is failed.", stepId));
@@ -1128,7 +1122,7 @@ public class MaestroTask implements FlowTask {
           actionDao.terminate(
               workflowSummary,
               runtimeSummary.getStepId(),
-              StepRuntime.SYSTEM_USER,
+              MAESTRO_TASK_USER,
               Actions.StepInstanceAction.STOP,
               "step is stopped due to timeout");
         }
