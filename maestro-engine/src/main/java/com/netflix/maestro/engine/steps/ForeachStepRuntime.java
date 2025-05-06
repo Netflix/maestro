@@ -802,7 +802,7 @@ public class ForeachStepRuntime implements StepRuntime {
         Math.max(0L, concurrencyLimit - nonTerminalCount), properties.getLoopBatchLimit());
   }
 
-  private void refreshIterationOverview(ForeachArtifact artifact) {
+  private Map<Long, Long> refreshIterationOverview(ForeachArtifact artifact) {
     ForeachStepOverview stepOverview = artifact.getForeachOverview();
 
     List<ForeachIterationOverview> restartResults;
@@ -870,6 +870,11 @@ public class ForeachStepRuntime implements StepRuntime {
                     result.getInstanceId(), result.getStatus(), result.getRollupOverview()));
 
     stepOverview.refreshDetail();
+
+    return restartResults.stream()
+        .collect(
+            Collectors.toMap(
+                ForeachIterationOverview::getInstanceId, ForeachIterationOverview::getRunId));
   }
 
   /**
@@ -959,11 +964,11 @@ public class ForeachStepRuntime implements StepRuntime {
     if (runtimeSummary.getArtifacts().containsKey(Artifact.Type.FOREACH.key())) {
       ForeachArtifact artifact =
           runtimeSummary.getArtifacts().get(Artifact.Type.FOREACH.key()).asForeach();
-      refreshIterationOverview(artifact);
+      var restartRunIdMap = refreshIterationOverview(artifact);
       boolean done = artifact.getForeachOverview().getRunningStatsCount(false) == 0;
       if (!done) {
         tryTerminateQueuedInstancesIfNeeded(artifact);
-        wakeUpUnderlyingActors(workflowSummary, artifact);
+        wakeUpUnderlyingActors(workflowSummary, artifact, restartRunIdMap);
         throw new MaestroRetryableError(
             "Termination at foreach step %s%s is not done and will retry it.",
             workflowSummary.getIdentity(), runtimeSummary.getIdentity());
@@ -1004,15 +1009,22 @@ public class ForeachStepRuntime implements StepRuntime {
     }
   }
 
-  private void wakeUpUnderlyingActors(WorkflowSummary summary, ForeachArtifact artifact) {
+  private void wakeUpUnderlyingActors(
+      WorkflowSummary summary, ForeachArtifact artifact, Map<Long, Long> restartRunIdMap) {
     if (artifact.getForeachOverview().getDetails() != null) {
-      var instanceIds =
+      var instanceRunIds =
           artifact.getForeachOverview().getDetails().flatten(e -> !e.isTerminal()).values().stream()
               .flatMap(Collection::stream)
-              .collect(Collectors.toSet());
+              .collect(Collectors.toMap(e -> e, v -> artifact.getForeachRunId()));
+      restartRunIdMap.forEach(
+          (k, v) -> {
+            if (instanceRunIds.containsKey(k)) {
+              instanceRunIds.put(k, v);
+            }
+          });
       var msg =
           MessageDto.createMessageForWakeUp(
-              artifact.getForeachWorkflowId(), summary.getGroupInfo(), instanceIds);
+              artifact.getForeachWorkflowId(), summary.getGroupInfo(), instanceRunIds);
       queueSystem.notify(msg);
     }
   }

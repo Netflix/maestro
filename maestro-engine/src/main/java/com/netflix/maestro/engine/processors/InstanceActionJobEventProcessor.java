@@ -133,7 +133,10 @@ public class InstanceActionJobEventProcessor
 
   private void wakeUpUnderlyingActor(InstanceActionJobEvent jobEvent) {
     String flowRef =
-        IdHelper.deriveFlowRef(jobEvent.getWorkflowId(), jobEvent.getWorkflowInstanceId());
+        IdHelper.deriveFlowRef(
+            jobEvent.getWorkflowId(),
+            jobEvent.getWorkflowInstanceId(),
+            jobEvent.getWorkflowRunId());
     long groupId = IdHelper.deriveGroupId(flowRef, jobEvent.getGroupInfo());
     try {
       boolean done =
@@ -160,8 +163,8 @@ public class InstanceActionJobEventProcessor
     String workflowId = jobEvent.getWorkflowId();
     long groupInfo = jobEvent.getGroupInfo();
     var groupedRefs = new HashMap<Long, Set<String>>();
-    for (long instanceId : jobEvent.getInstanceIds()) {
-      String flowRef = IdHelper.deriveFlowRef(workflowId, instanceId);
+    for (var entry : jobEvent.getInstanceRunIds().entrySet()) {
+      String flowRef = IdHelper.deriveFlowRef(workflowId, entry.getKey(), entry.getValue());
       long groupId = IdHelper.deriveGroupId(flowRef, groupInfo);
       if (!groupedRefs.containsKey(groupId)) {
         groupedRefs.put(groupId, new HashSet<>());

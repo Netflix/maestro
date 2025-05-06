@@ -108,7 +108,7 @@ public class WorkflowRunner {
     return flowOperation.startFlow(
         IdHelper.deriveGroupId(instance),
         instance.getWorkflowUuid(),
-        IdHelper.deriveFlowRef(instance.getWorkflowId(), instance.getWorkflowInstanceId()),
+        IdHelper.deriveFlowRef(instance),
         translator.translate(instance),
         Collections.singletonMap(
             Constants.WORKFLOW_SUMMARY_FIELD,

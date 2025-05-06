@@ -128,7 +128,7 @@ public class InstanceActionJobEventProcessorTest extends MaestroEngineBaseTest {
     Assert.assertTrue(processor.process(event).isEmpty());
 
     Mockito.verify(flowOperation, Mockito.times(1))
-        .wakeUp(7, "[sample-test-workflow-id][2]", stepId);
+        .wakeUp(2, "[sample-test-workflow-id][2][3]", stepId);
     Mockito.verifyNoInteractions(stepInstanceDao);
     Mockito.verifyNoInteractions(instanceDao);
 
@@ -136,10 +136,10 @@ public class InstanceActionJobEventProcessorTest extends MaestroEngineBaseTest {
     AssertHelper.assertThrows(
         "Underlying task is not woken up and should retry",
         MaestroRetryableError.class,
-        "group [7] is not woken up successfully. Will try again",
+        "group [2] is not woken up successfully. Will try again",
         () -> processor.process(event));
     Mockito.verify(flowOperation, Mockito.times(2))
-        .wakeUp(7, "[sample-test-workflow-id][2]", stepId);
+        .wakeUp(2, "[sample-test-workflow-id][2][3]", stepId);
   }
 
   @Test
@@ -193,7 +193,7 @@ public class InstanceActionJobEventProcessorTest extends MaestroEngineBaseTest {
     event.setStepAction(Actions.StepInstanceAction.RESTART);
     Assert.assertTrue(processor.process(event).isEmpty());
     Mockito.verify(flowOperation, Mockito.times(1))
-        .wakeUp(7, "[sample-test-workflow-id][2]", stepId);
+        .wakeUp(2, "[sample-test-workflow-id][2][3]", stepId);
     Mockito.verifyNoInteractions(stepInstanceDao);
     Mockito.verifyNoInteractions(instanceDao);
     Mockito.reset(flowOperation);
@@ -202,7 +202,7 @@ public class InstanceActionJobEventProcessorTest extends MaestroEngineBaseTest {
     setStepInstanceDefinition(StepType.SUBWORKFLOW);
     Assert.assertTrue(processor.process(event).isEmpty());
     Mockito.verify(flowOperation, Mockito.times(1))
-        .wakeUp(7, "[sample-test-workflow-id][2]", stepId);
+        .wakeUp(2, "[sample-test-workflow-id][2][3]", stepId);
     Mockito.verifyNoInteractions(stepInstanceDao);
     Mockito.verifyNoInteractions(instanceDao);
   }
@@ -217,7 +217,7 @@ public class InstanceActionJobEventProcessorTest extends MaestroEngineBaseTest {
     Mockito.verify(instanceDao, Mockito.times(1))
         .getWorkflowInstanceRun(workflowId, workflowInstanceId, workflowRunId);
     Mockito.verify(flowOperation, Mockito.times(1))
-        .wakeUp(7, Set.of("[sample-test-workflow-id][2]"));
+        .wakeUp(2, Set.of("[sample-test-workflow-id][2][3]"));
   }
 
   @Test
@@ -235,32 +235,32 @@ public class InstanceActionJobEventProcessorTest extends MaestroEngineBaseTest {
     Mockito.verify(instanceDao, Mockito.times(1))
         .getWorkflowInstanceRun(workflowId, workflowInstanceId, workflowRunId);
     Mockito.verify(flowOperation, Mockito.times(1))
-        .wakeUp(7, Set.of("[sample-test-workflow-id][2]"));
+        .wakeUp(2, Set.of("[sample-test-workflow-id][2][3]"));
 
     when(flowOperation.wakeUp(anyLong(), any())).thenReturn(false);
     AssertHelper.assertThrows(
         "Underlying flow is not woken up and should retry",
         MaestroRetryableError.class,
-        "group [7] is not woken up successfully. Will try again",
+        "group [2] is not woken up successfully. Will try again",
         () -> processor.process(event));
     Mockito.verify(flowOperation, Mockito.times(2))
-        .wakeUp(7, Set.of("[sample-test-workflow-id][2]"));
+        .wakeUp(2, Set.of("[sample-test-workflow-id][2][3]"));
   }
 
   @Test
   public void testFlowAction() {
     event.setEntityType(InstanceActionJobEvent.EntityType.FLOW);
-    event.setInstanceIds(Set.of(2L, 3L, 1L));
+    event.setInstanceRunIds(Map.of(2L, 1L, 3L, 2L, 1L, 3L));
     Assert.assertTrue(processor.process(event).isEmpty());
 
     Mockito.verifyNoInteractions(stepInstanceDao);
     Mockito.verifyNoInteractions(instanceDao);
     Mockito.verify(flowOperation, Mockito.times(1))
-        .wakeUp(0, Set.of("[sample-test-workflow-id][1]"));
+        .wakeUp(1, Set.of("[sample-test-workflow-id][1][3]"));
     Mockito.verify(flowOperation, Mockito.times(1))
-        .wakeUp(7, Set.of("[sample-test-workflow-id][2]"));
+        .wakeUp(0, Set.of("[sample-test-workflow-id][2][1]"));
     Mockito.verify(flowOperation, Mockito.times(1))
-        .wakeUp(2, Set.of("[sample-test-workflow-id][3]"));
+        .wakeUp(8, Set.of("[sample-test-workflow-id][3][2]"));
     Mockito.reset(flowOperation);
 
     Mockito.when(flowOperation.wakeUp(anyLong(), any())).thenReturn(false);

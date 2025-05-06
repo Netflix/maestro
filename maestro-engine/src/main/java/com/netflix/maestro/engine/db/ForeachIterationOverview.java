@@ -12,18 +12,21 @@
  */
 package com.netflix.maestro.engine.db;
 
+import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.instance.WorkflowRollupOverview;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
 
 /** Wrapper class for foreach iteration overview from DB. */
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Getter
 @ToString
 public class ForeachIterationOverview {
   private final long instanceId;
   private final WorkflowInstance.Status status;
   private final WorkflowRollupOverview rollupOverview;
+  @Nullable @Setter private Long runId;
 }

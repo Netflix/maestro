@@ -376,7 +376,7 @@ public class SubworkflowStepRuntime implements StepRuntime {
         MessageDto.createMessageForWakeUp(
             summary.getWorkflowId(),
             summary.getGroupInfo(),
-            Set.of(summary.getWorkflowInstanceId()));
+            Map.of(summary.getWorkflowInstanceId(), summary.getWorkflowRunId()));
     queueSystem.notify(msg);
   }
 }

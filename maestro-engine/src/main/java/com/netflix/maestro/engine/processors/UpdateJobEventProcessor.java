@@ -108,7 +108,8 @@ public class UpdateJobEventProcessor implements MaestroEventProcessor<MaestroJob
       return;
     }
     try {
-      String flowReference = IdHelper.deriveFlowRef(parent.getWorkflowId(), parent.getInstanceId());
+      String flowReference =
+          IdHelper.deriveFlowRef(parent.getWorkflowId(), parent.getInstanceId(), parent.getRunId());
       long groupId = IdHelper.deriveGroupId(flowReference, groupInfo);
       flowOperation.wakeUp(groupId, flowReference, parent.getStepId());
     } catch (RuntimeException e) {

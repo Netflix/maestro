@@ -83,7 +83,7 @@ public class IdHelperTest {
     Assert.assertEquals(0, IdHelper.deriveGroupId(instance));
 
     instance.setGroupInfo(10);
-    Assert.assertEquals(9, IdHelper.deriveGroupId(instance));
+    Assert.assertEquals(5, IdHelper.deriveGroupId(instance));
 
     Assert.assertEquals(0, IdHelper.deriveGroupId("test-key", 3));
     Assert.assertTrue("negative-test".hashCode() < 0);

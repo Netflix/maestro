@@ -566,14 +566,6 @@ public class MaestroWorkflowInstanceDaoTest extends MaestroDaoBaseTest {
   }
 
   @Test
-  public void testGetWorkflowInstanceRunByUuid() {
-    WorkflowInstance instanceRun =
-        instanceDao.getWorkflowInstanceRunByUuid(wfi.getWorkflowId(), wfi.getWorkflowUuid());
-    instanceRun.setModifyTime(null);
-    assertEquals(wfi, instanceRun);
-  }
-
-  @Test
   public void testGetLatestWorkflowInstanceRun() {
     instanceDao.tryTerminateQueuedInstance(wfi, WorkflowInstance.Status.FAILED, "kill the test");
     wfi.setWorkflowUuid("test-uuid");
@@ -792,7 +784,7 @@ public class MaestroWorkflowInstanceDaoTest extends MaestroDaoBaseTest {
         instanceDao.getForeachIterationOverviewWithCheckpoint(wfi.getWorkflowId(), 0, 0, false);
     assertTrue(stats.isEmpty());
     stats = instanceDao.getForeachIterationOverviewWithCheckpoint(wfi.getWorkflowId(), 0, 0, true);
-    checkSingletonStats(stats, 1L, WorkflowInstance.Status.CREATED);
+    checkSingletonStats(stats, 1L, 1L, WorkflowInstance.Status.CREATED);
 
     wfi.setWorkflowRunId(2);
     wfi.setStatus(WorkflowInstance.Status.IN_PROGRESS);
@@ -804,7 +796,7 @@ public class MaestroWorkflowInstanceDaoTest extends MaestroDaoBaseTest {
     verify(queueSystem, times(1)).notify(any());
 
     stats = instanceDao.getForeachIterationOverviewWithCheckpoint(wfi.getWorkflowId(), 0, 0, true);
-    checkSingletonStats(stats, 1L, WorkflowInstance.Status.IN_PROGRESS);
+    checkSingletonStats(stats, 1L, 2L, WorkflowInstance.Status.IN_PROGRESS);
     assertNull(stats.getFirst().getRollupOverview());
 
     WorkflowSummary summary = new WorkflowSummary();
@@ -831,7 +823,7 @@ public class MaestroWorkflowInstanceDaoTest extends MaestroDaoBaseTest {
     assertNotNull(stats.getFirst().getRollupOverview());
 
     stats = instanceDao.getForeachIterationOverviewWithCheckpoint(wfi.getWorkflowId(), 0, 0, true);
-    checkSingletonStats(stats, 1L, WorkflowInstance.Status.SUCCEEDED);
+    checkSingletonStats(stats, 1L, 2L, WorkflowInstance.Status.SUCCEEDED);
     assertNotNull(stats.getFirst().getRollupOverview());
 
     stats = instanceDao.getForeachIterationOverviewWithCheckpoint(wfi.getWorkflowId(), 0, 2, true);
@@ -843,6 +835,18 @@ public class MaestroWorkflowInstanceDaoTest extends MaestroDaoBaseTest {
     assertEquals(1, stats.size());
     assertEquals(1, instanceId);
     assertEquals(status, stats.getFirst().getStatus());
+    assertNull(stats.getFirst().getRunId());
+  }
+
+  private void checkSingletonStats(
+      List<ForeachIterationOverview> stats,
+      long instanceId,
+      long runId,
+      WorkflowInstance.Status status) {
+    assertEquals(1, stats.size());
+    assertEquals(1, instanceId);
+    assertEquals(status, stats.getFirst().getStatus());
+    assertEquals(runId, stats.getFirst().getRunId().longValue());
   }
 
   @Test
@@ -1029,7 +1033,7 @@ public class MaestroWorkflowInstanceDaoTest extends MaestroDaoBaseTest {
         instanceDao.getBatchForeachLatestRunRollupForIterations(
             TEST_WORKFLOW_ID, Arrays.asList(101L, 102L));
     assertEquals(2, result.size());
-    assertEquals(20, result.get(0).getTotalLeafCount());
+    assertEquals(20, result.getFirst().getTotalLeafCount());
     assertEquals(5, result.get(1).getTotalLeafCount());
     MaestroTestHelper.removeWorkflowInstance(dataSource, TEST_WORKFLOW_ID, 101);
     MaestroTestHelper.removeWorkflowInstance(dataSource, TEST_WORKFLOW_ID, 102);

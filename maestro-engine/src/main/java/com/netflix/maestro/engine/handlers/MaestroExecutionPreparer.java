@@ -207,10 +207,12 @@ public class MaestroExecutionPreparer implements ExecutionPreparer {
     }
   }
 
+  @SuppressWarnings("checkstyle:MagicNumber")
   private WorkflowInstance getWorkflowInstance(Flow flow) {
     String reference = flow.getReference();
     String[] refs = reference.split("[\\[\\]]");
-    return instanceDao.getWorkflowInstanceRunByUuid(refs[1], flow.getFlowId());
+    return instanceDao.getWorkflowInstanceRun(
+        refs[1], Long.parseLong(refs[3]), Long.parseLong(refs[5]));
   }
 
   private void loadTasks(Flow flow, WorkflowInstance instance) {

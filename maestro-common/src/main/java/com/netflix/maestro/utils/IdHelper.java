@@ -33,7 +33,7 @@ public final class IdHelper {
   private static final int OFFSET = 37;
 
   /** flow reference formatter to convert workflow identifier to a flow reference. */
-  private static final String FLOW_REFERENCE_FORMATTER = "[%s][%s]";
+  private static final String FLOW_REFERENCE_FORMATTER = "[%s][%s][%s]";
 
   private IdHelper() {}
 
@@ -164,13 +164,23 @@ public final class IdHelper {
    * distributed.
    */
   public static long deriveGroupId(WorkflowInstance instance) {
-    String groupingKey = deriveFlowRef(instance.getWorkflowId(), instance.getWorkflowInstanceId());
+    String groupingKey = deriveFlowRef(instance);
     return deriveGroupId(groupingKey, instance.getGroupInfo());
   }
 
-  /** Return the grouping key based on workflow id and instance id. */
-  public static String deriveFlowRef(String workflowId, long instanceId) {
-    return String.format(FLOW_REFERENCE_FORMATTER, workflowId, instanceId);
+  /** Return the grouping key based on workflow instance. */
+  public static String deriveFlowRef(WorkflowInstance instance) {
+    return deriveFlowRef(
+        instance.getWorkflowId(), instance.getWorkflowInstanceId(), instance.getWorkflowRunId());
+  }
+
+  /**
+   * Return the grouping key based on workflow id and instance id and run id. Note that although it
+   * is impossible for maestro engine to have to runs in running state, it is possible two runs of
+   * the same workflow instances are in the flow engine due to the async termination mechanism.
+   */
+  public static String deriveFlowRef(String workflowId, long instanceId, long runId) {
+    return String.format(FLOW_REFERENCE_FORMATTER, workflowId, instanceId, runId);
   }
 
   public static long deriveGroupId(String groupingKey, long maxGroupNum) {
