@@ -145,11 +145,6 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
   private static final String GET_LATEST_WORKFLOW_INSTANCE_RUN_QUERY =
       String.format(GET_WORKFLOW_INSTANCE_FIELDS_TEMPLATE, ALL_FIELDS, LATEST_RUN_CONDITION);
 
-  private static final String GET_WORKFLOW_INSTANCE_BY_UUID_QUERY =
-      String.format(
-          "SELECT %s FROM maestro_workflow_instance@workflow_unique_index WHERE workflow_id=? AND uuid=?",
-          ALL_FIELDS);
-
   private static final String GET_WORKFLOW_INSTANCE_STATUS_QUERY =
       String.format(GET_WORKFLOW_INSTANCE_FIELDS_TEMPLATE, STATUS_COLUMN, RUN_ID_CONDITION);
 
@@ -189,7 +184,7 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
           + "ORDER BY instance_id DESC";
 
   private static final String GET_RESTARTING_FOREACH_ITERATION_OVERVIEW_QUERY =
-      "SELECT DISTINCT ON (instance_id) instance_id as id, status, runtime_overview->'rollup_overview' as payload "
+      "SELECT DISTINCT ON (instance_id) instance_id as id,run_id,status,runtime_overview->'rollup_overview' as payload "
           + FROM_FOREACH_WORKFLOW_INSTANCE_TABLE
           + "WHERE workflow_id=? AND run_id>? AND instance_id>=? AND initiator_type='FOREACH' "
           + ORDER_BY_INSTANCE_ID_RUN_ID_DESC;
@@ -807,34 +802,6 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
   }
 
   /**
-   * Get the instance data of a specific workflow instance run based on its uuid, including the
-   * summary of its step instances.
-   *
-   * @param workflowId workflow id
-   * @param uuid workflow instance uuid
-   */
-  public WorkflowInstance getWorkflowInstanceRunByUuid(String workflowId, String uuid) {
-    return withMetricLogError(
-        () ->
-            withRetryableQuery(
-                GET_WORKFLOW_INSTANCE_BY_UUID_QUERY,
-                stmt -> {
-                  stmt.setString(1, workflowId);
-                  stmt.setString(2, uuid);
-                },
-                result -> {
-                  if (result.next()) {
-                    return workflowInstanceFromResult(result);
-                  }
-                  return null;
-                }),
-        "getWorkflowInstanceRunByUuid",
-        "Failed to get the workflow instance for [{}][{}]",
-        workflowId,
-        uuid);
-  }
-
-  /**
    * Get the latest workflow instance run for a specific workflow id between an instance id range.
    *
    * @param workflowId workflow id
@@ -1027,7 +994,8 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
    * stats using follower read mode.
    *
    * @param workflowId workflow id
-   * @return the aggregated stats (status, count) for non-terminal and failed workflow instances.
+   * @return the list of ForeachIterationOverview since the checkpoint. For the restart case, the
+   *     result also includes the latest run_id of the restarted iteration.
    */
   @SuppressWarnings({"PMD.AvoidInstantiatingObjectsInLoops"})
   public List<ForeachIterationOverview> getForeachIterationOverviewWithCheckpoint(
@@ -1056,7 +1024,11 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
                       rollup =
                           fromJson(result.getString(PAYLOAD_COLUMN), WorkflowRollupOverview.class);
                     }
-                    overviews.add(new ForeachIterationOverview(instanceId, status, rollup));
+                    var overview = new ForeachIterationOverview(instanceId, status, rollup);
+                    if (isRestarting) {
+                      overview.setRunId(result.getLong(2));
+                    }
+                    overviews.add(overview);
                   }
                   return overviews;
                 }),

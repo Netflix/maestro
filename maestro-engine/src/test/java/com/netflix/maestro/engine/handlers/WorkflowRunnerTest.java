@@ -70,6 +70,9 @@ public class WorkflowRunnerTest extends MaestroEngineBaseTest {
     when(instance1.getWorkflowInstanceId()).thenReturn(1L);
     when(instance2.getWorkflowInstanceId()).thenReturn(2L);
     when(instance3.getWorkflowInstanceId()).thenReturn(3L);
+    when(instance1.getWorkflowRunId()).thenReturn(1L);
+    when(instance2.getWorkflowRunId()).thenReturn(1L);
+    when(instance3.getWorkflowRunId()).thenReturn(1L);
   }
 
   @Test
@@ -91,14 +94,14 @@ public class WorkflowRunnerTest extends MaestroEngineBaseTest {
 
     verify(flowDao, times(3)).existFlowWithSameKeys(anyLong(), anyString());
     verify(flowDao, times(1)).existFlowWithSameKeys(0L, instance1.getWorkflowUuid());
-    verify(flowDao, times(1)).existFlowWithSameKeys(0L, instance2.getWorkflowUuid());
-    verify(flowDao, times(1)).existFlowWithSameKeys(2L, instance3.getWorkflowUuid());
+    verify(flowDao, times(1)).existFlowWithSameKeys(1L, instance2.getWorkflowUuid());
+    verify(flowDao, times(1)).existFlowWithSameKeys(1L, instance3.getWorkflowUuid());
     verify(flowOperation, times(1))
-        .startFlow(eq(0L), eq("uuid1"), eq("[sample-minimal-wf][1]"), any(), any());
+        .startFlow(eq(0L), eq("uuid1"), eq("[sample-minimal-wf][1][1]"), any(), any());
     verify(flowOperation, times(1))
-        .startFlow(eq(0L), eq("uuid2"), eq("[sample-minimal-wf][2]"), any(), any());
+        .startFlow(eq(1L), eq("uuid2"), eq("[sample-minimal-wf][2][1]"), any(), any());
     verify(flowOperation, times(1))
-        .startFlow(eq(2L), eq("uuid3"), eq("[sample-minimal-wf][3]"), any(), any());
+        .startFlow(eq(1L), eq("uuid3"), eq("[sample-minimal-wf][3][1]"), any(), any());
   }
 
   @Test
@@ -117,9 +120,9 @@ public class WorkflowRunnerTest extends MaestroEngineBaseTest {
     verify(instance1, times(0)).getWorkflowUuid();
     verify(flowDao, times(0)).existFlowWithSameKeys(0, "uuid1");
     verify(instance2, times(2)).getWorkflowUuid();
-    verify(flowDao, times(0)).existFlowWithSameKeys(0, "uuid2");
+    verify(flowDao, times(0)).existFlowWithSameKeys(1, "uuid2");
     verify(instance3, times(2)).getWorkflowUuid();
-    verify(flowDao, times(1)).existFlowWithSameKeys(2, "uuid3");
+    verify(flowDao, times(1)).existFlowWithSameKeys(1, "uuid3");
     verify(flowDao, times(1)).existFlowWithSameKeys(anyLong(), anyString());
     verify(flowOperation, times(0)).startFlow(anyLong(), any(), any(), any(), any());
   }
@@ -180,11 +183,11 @@ public class WorkflowRunnerTest extends MaestroEngineBaseTest {
 
     verify(flowDao, times(3)).existFlowWithSameKeys(anyLong(), anyString());
     verify(flowOperation, times(1))
-        .startFlow(eq(0L), eq("uuid1"), eq("[sample-minimal-wf][1]"), any(), any());
+        .startFlow(eq(0L), eq("uuid1"), eq("[sample-minimal-wf][1][1]"), any(), any());
     verify(flowOperation, times(1))
-        .startFlow(eq(0L), eq("uuid2"), eq("[sample-minimal-wf][2]"), any(), any());
+        .startFlow(eq(0L), eq("uuid2"), eq("[sample-minimal-wf][2][2]"), any(), any());
     verify(flowOperation, times(1))
-        .startFlow(eq(2L), eq("uuid3"), eq("[sample-minimal-wf][3]"), any(), any());
+        .startFlow(eq(2L), eq("uuid3"), eq("[sample-minimal-wf][3][2]"), any(), any());
   }
 
   @Test

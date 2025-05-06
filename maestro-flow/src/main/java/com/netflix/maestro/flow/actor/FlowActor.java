@@ -211,7 +211,7 @@ final class FlowActor extends BaseActor {
     if (task.getStatus().isRestartable()) {
       long delay = TimeUnit.SECONDS.toMillis(task.getStartDelayInSeconds());
       if (task.getEndTime() == null) {
-        LOG.warn(
+        LOG.error(
             "Critical warning for an unexpected case: Flow task [{}][{}] has status [{}] but endTime is unset.",
             reference(),
             task.referenceTaskName(),

@@ -126,7 +126,7 @@ final class GroupActor extends BaseActor {
   private void runFlow(Action.FlowLaunch action) {
     Flow flow = action.flow();
     if (containsChild(flow.getReference())) {
-      LOG.warn("Unexpected and the flow [{}] already exists, ignoring it", flow.getReference());
+      LOG.error("Unexpected and the flow [{}] already exists, ignoring it", flow.getReference());
       return;
     }
     var actor = new FlowActor(flow, this, getContext());

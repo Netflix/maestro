@@ -1,7 +1,11 @@
 {
   "workflow_id": "sample-dag-test-3",
   "group_info": 3,
-  "instance_ids": [1, 2, 5],
+  "instance_run_ids": {
+    "1": 2,
+    "2": 3,
+    "5": 6
+  },
   "entity_type": "FLOW",
   "type": "INSTANCE_ACTION"
 }

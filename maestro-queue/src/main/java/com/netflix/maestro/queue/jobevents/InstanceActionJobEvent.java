@@ -22,7 +22,7 @@ import com.netflix.maestro.models.Actions;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.WorkflowInstance;
-import java.util.Set;
+import java.util.Map;
 import lombok.Data;
 
 @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
@@ -39,7 +39,7 @@ import lombok.Data;
       "step_type",
       "step_action",
       "workflow_action",
-      "instance_ids",
+      "instance_run_ids",
       "entity_type"
     },
     alphabetic = true)
@@ -54,7 +54,7 @@ public class InstanceActionJobEvent implements MaestroJobEvent {
   @Nullable private String stepAttemptId;
   @Nullable private Actions.StepInstanceAction stepAction;
   @Nullable private Actions.WorkflowInstanceAction workflowAction;
-  @Nullable private Set<Long> instanceIds;
+  @Nullable private Map<Long, Long> instanceRunIds;
   private EntityType entityType;
 
   @Override
@@ -122,15 +122,15 @@ public class InstanceActionJobEvent implements MaestroJobEvent {
    * in the memory and does not need any guarantee.
    *
    * @param workflowId the workflow id to stop
-   * @param instanceIds instance ids for the given workflow to stop
+   * @param instanceRunIds instance run id map for the given workflow to stop
    * @return a flow action event object
    */
   public static InstanceActionJobEvent create(
-      String workflowId, long groupInfo, Set<Long> instanceIds) {
+      String workflowId, long groupInfo, Map<Long, Long> instanceRunIds) {
     InstanceActionJobEvent event = new InstanceActionJobEvent();
     event.workflowId = workflowId;
     event.groupInfo = groupInfo;
-    event.instanceIds = instanceIds;
+    event.instanceRunIds = instanceRunIds;
     event.entityType = EntityType.FLOW;
     return event;
   }
@@ -156,7 +156,8 @@ public class InstanceActionJobEvent implements MaestroJobEvent {
               stepId,
               stepAttemptId == null ? Constants.LATEST_INSTANCE_RUN : stepAttemptId,
               stepAction.name());
-      case FLOW -> String.format("[%s][%s]%s", entityType.name(), workflowId, instanceIds.size());
+      case FLOW ->
+          String.format("[%s][%s]%s", entityType.name(), workflowId, instanceRunIds.size());
     };
   }
 }
