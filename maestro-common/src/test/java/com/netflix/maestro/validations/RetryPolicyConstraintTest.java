@@ -18,8 +18,8 @@ import static org.junit.Assert.assertTrue;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.ParsableLong;
 import com.netflix.maestro.models.definition.RetryPolicy;
+import jakarta.validation.ConstraintViolation;
 import java.util.Set;
-import javax.validation.ConstraintViolation;
 import org.junit.Test;
 
 public class RetryPolicyConstraintTest extends BaseConstraintTest {

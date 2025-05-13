@@ -19,9 +19,9 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.validations.TimeZoneConstraint;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import java.util.Locale;
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
 import lombok.Data;
 
 /** Predefined Time Trigger. */

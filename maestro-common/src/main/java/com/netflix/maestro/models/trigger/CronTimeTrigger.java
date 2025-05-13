@@ -18,7 +18,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.validations.CronConstraint;
 import com.netflix.maestro.validations.TimeZoneConstraint;
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import lombok.Data;
 
 /** Cron based time trigger. */

@@ -14,8 +14,8 @@ package com.netflix.maestro.validations;
 
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.ParsableLong;
+import jakarta.validation.ConstraintViolation;
 import java.util.Set;
-import javax.validation.ConstraintViolation;
 import org.junit.Assert;
 import org.junit.Test;
 

@@ -1,17 +1,16 @@
 package com.netflix.maestro.engine.producer;
 
-import com.amazonaws.services.sqs.AmazonSQS;
-import com.amazonaws.services.sqs.model.SendMessageRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.engine.metrics.AwsMetricConstants;
-import com.netflix.maestro.engine.metrics.MetricConstants;
 import com.netflix.maestro.engine.properties.SqsProperties;
 import com.netflix.maestro.metrics.MaestroMetrics;
+import com.netflix.maestro.metrics.MetricConstants;
 import com.netflix.maestro.models.signal.SignalInstance;
 import com.netflix.maestro.signal.models.SignalTriggerExecution;
 import com.netflix.maestro.signal.models.SignalTriggerMatch;
 import com.netflix.maestro.signal.producer.SignalQueueProducer;
 import com.netflix.maestro.utils.IdHelper;
+import io.awspring.cloud.sqs.operations.SqsTemplate;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -24,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class SqsSignalQueueProducer implements SignalQueueProducer {
   private static final String KEY_FORMAT = "[%s][%s]";
-  private final AmazonSQS amazonSqs;
+  private final SqsTemplate amazonSqs;
   private final ObjectMapper objectMapper;
   private final SqsProperties props;
   private final MaestroMetrics metrics;
@@ -58,13 +57,13 @@ public class SqsSignalQueueProducer implements SignalQueueProducer {
   private void send(Object message, String queueUrl, String groupKey) {
     try {
       String strRequest = objectMapper.writeValueAsString(message);
-      SendMessageRequest sendMsgRequest =
-          new SendMessageRequest()
-              .withQueueUrl(queueUrl)
-              .withMessageBody(strRequest)
-              .withMessageGroupId(groupKey)
-              .withMessageDeduplicationId(IdHelper.createUuid(strRequest).toString());
-      amazonSqs.sendMessage(sendMsgRequest);
+      amazonSqs.send(
+          sqsSendOptions ->
+              sqsSendOptions
+                  .queue(queueUrl)
+                  .payload(strRequest)
+                  .messageGroupId(groupKey)
+                  .messageDeduplicationId(IdHelper.createUuid(strRequest).toString()));
       metrics.counter(
           AwsMetricConstants.SQS_SIGNAL_PUBLISH_SUCCESS_METRIC,
           getClass(),

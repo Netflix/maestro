@@ -13,19 +13,15 @@
 package com.netflix.maestro.engine.properties;
 
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
-import lombok.ToString;
+import lombok.Setter;
 
 /**
  * Subworkflow Properties. Please check the class {@link
  * com.netflix.maestro.engine.steps.SubworkflowStepRuntime} about how they are used.
  */
 @Getter
-@AllArgsConstructor
-@ToString
-@Builder
+@Setter
 public class SubworkflowStepRuntimeProperties {
-  private final List<String> alwaysPassDownParamNames;
+  private List<String> alwaysPassDownParamNames;
 }

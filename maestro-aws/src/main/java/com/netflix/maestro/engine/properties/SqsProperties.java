@@ -21,25 +21,18 @@ import lombok.Setter;
 public class SqsProperties {
   /**
    * Max pool size is based on SQS implementation in {@link
-   * org.springframework.cloud.aws.messaging.listener.SimpleMessageListenerContainer} where we have
-   * one spinning thread per-queue and worker threads equal to message batch size of the queue.
-   * Since we have 8 queues in maestro we do 8 * ({@link
-   * SqsProperties#DEFAULT_LISTENER_MAX_NUMBER_OF_MESSAGES} + 1) = 25 core pool size.
+   * io.awspring.cloud.sqs.config.SqsMessageListenerContainerFactory} where we have one spinning
+   * thread per-queue and worker threads equal to message batch size of the queue. Since we have 4
+   * queues in maestro, we do 4 * ({@link SqsProperties#DEFAULT_LISTENER_MAX_NUMBER_OF_MESSAGES} +
+   * 1) = 13 core pool size.
    */
-  private static final int DEFAULT_MAX_POOL_SIZE = 25;
+  private static final int DEFAULT_MAX_POOL_SIZE = 13;
 
   private static final int DEFAULT_CORE_POOL_SIZE = 10;
   private static final int DEFAULT_LISTENER_CAPACITY = 0;
   private static final int DEFAULT_LISTENER_MAX_NUMBER_OF_MESSAGES = 3;
   private static final int DEFAULT_LISTENER_WAIT_TIMEOUT_IN_SECS = 1;
 
-  private String startWorkflowJobQueueUrl;
-  private String runWorkflowInstancesJobQueueUrl;
-  private String terminateInstancesJobQueueUrl;
-  private String terminateThenRunInstanceJobQueueUrl;
-  private String publishJobQueueUrl;
-  private String deleteWorkflowJobQueueUrl;
-  private String stepWakeUpJobQueueUrl;
   private String timeTriggerExecutionQueueUrl;
   private String signalInstanceQueueUrl;
   private String signalTriggerMatchQueueUrl;

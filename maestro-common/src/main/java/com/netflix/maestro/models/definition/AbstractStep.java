@@ -27,9 +27,9 @@ import com.netflix.maestro.validations.SignalDependenciesDefinitionConstraint;
 import com.netflix.maestro.validations.SignalOutputsDefinitionConstraint;
 import com.netflix.maestro.validations.TagListConstraint;
 import com.netflix.maestro.validations.TimeoutConstraint;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 import java.util.Map;
-import javax.validation.Valid;
-import javax.validation.constraints.Size;
 import lombok.Data;
 import lombok.Getter;
 

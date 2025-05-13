@@ -12,21 +12,17 @@
  */
 package com.netflix.maestro.engine.properties;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
-import lombok.ToString;
+import lombok.Setter;
 
 /**
  * Foreach Properties. Please check the method of launchForeachIterations in {@link
  * com.netflix.maestro.engine.steps.ForeachStepRuntime} about how they are used.
  */
 @Getter
-@AllArgsConstructor
-@ToString
-@Builder
+@Setter
 public class ForeachStepRuntimeProperties {
-  private final int loopBatchLimit;
-  private final int insertBatchLimit;
-  private final int getRollupBatchLimit;
+  private int loopBatchLimit;
+  private int insertBatchLimit;
+  private int getRollupBatchLimit;
 }

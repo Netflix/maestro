@@ -39,7 +39,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -47,7 +46,6 @@ import org.springframework.context.annotation.Primary;
 /** beans for maestro engine related classes. */
 @Configuration
 @Slf4j
-@EnableCaching
 @EnableConfigurationProperties({MaestroProperties.class, StepRuntimeProperties.class})
 public class MaestroEngineConfiguration {
   private static final String OBJECT_MAPPER_WITH_YAML_QUALIFIER = "ObjectMapperWithYaml";

@@ -12,14 +12,13 @@
  */
 package com.netflix.maestro.engine.producer;
 
-import com.amazonaws.services.sqs.AmazonSQS;
-import com.amazonaws.services.sqs.model.SendMessageRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.engine.metrics.AwsMetricConstants;
 import com.netflix.maestro.engine.properties.SqsProperties;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.timetrigger.models.TimeTriggerExecution;
 import com.netflix.maestro.timetrigger.producer.TimeTriggerProducer;
+import io.awspring.cloud.sqs.operations.SqsTemplate;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -27,7 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 @AllArgsConstructor
 @Slf4j
 public class SqsTimeTriggerProducer implements TimeTriggerProducer {
-  private final AmazonSQS amazonSqs;
+  private final SqsTemplate amazonSqs;
   private final ObjectMapper objectMapper;
   private final SqsProperties props;
   private final MaestroMetrics metrics;
@@ -37,14 +36,12 @@ public class SqsTimeTriggerProducer implements TimeTriggerProducer {
     try {
       LOG.debug("Publishing time trigger execution: [{}] with delay [{}]", execution, delaySecs);
       String strRequest = objectMapper.writeValueAsString(execution);
-      SendMessageRequest sendMsgRequest =
-          new SendMessageRequest()
-              .withQueueUrl(props.getTimeTriggerExecutionQueueUrl())
-              .withMessageBody(strRequest);
-      if (delaySecs > 0) {
-        sendMsgRequest = sendMsgRequest.withDelaySeconds(delaySecs);
-      }
-      amazonSqs.sendMessage(sendMsgRequest);
+      amazonSqs.send(
+          sqsSendOptions ->
+              sqsSendOptions
+                  .queue(props.getTimeTriggerExecutionQueueUrl())
+                  .payload(strRequest)
+                  .delaySeconds(delaySecs));
       metrics.counter(
           AwsMetricConstants.SQS_TIME_TRIGGER_PUBLISH_SUCCESS_METRIC,
           getClass(),

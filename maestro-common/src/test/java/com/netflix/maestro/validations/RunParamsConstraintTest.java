@@ -19,13 +19,13 @@ import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.StringParamDefinition;
 import com.netflix.maestro.utils.MapHelper;
+import jakarta.validation.ConstraintViolation;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.IntStream;
-import javax.validation.ConstraintViolation;
 import org.junit.Test;
 
 public class RunParamsConstraintTest extends BaseConstraintTest {

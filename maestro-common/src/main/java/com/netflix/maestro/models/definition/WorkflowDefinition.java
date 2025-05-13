@@ -21,8 +21,8 @@ import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.models.Defaults;
 import com.netflix.maestro.models.trigger.TriggerUuids;
 import com.netflix.maestro.validations.WorkflowConstraint;
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 /**

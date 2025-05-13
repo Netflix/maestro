@@ -34,19 +34,16 @@ public abstract class MaestroEngineBaseTest extends MaestroBaseTest {
   public static void init() {
     MaestroBaseTest.init();
     paramExtensionRepo = new MaestroParamExtensionRepo(null, null, MaestroBaseTest.MAPPER);
-    evaluator =
-        new ExprEvaluator(
-            SelProperties.builder()
-                .threadNum(3)
-                .timeoutMillis(120000)
-                .stackLimit(128)
-                .loopLimit(10000)
-                .arrayLimit(10000)
-                .lengthLimit(10000)
-                .visitLimit(100000000L)
-                .memoryLimit(10000000L)
-                .build(),
-            paramExtensionRepo);
+    var props = new SelProperties();
+    props.setThreadNum(3);
+    props.setTimeoutMillis(120000);
+    props.setStackLimit(128);
+    props.setLoopLimit(10000);
+    props.setArrayLimit(10000);
+    props.setLengthLimit(10000);
+    props.setVisitLimit(100000000L);
+    props.setMemoryLimit(10000000L);
+    evaluator = new ExprEvaluator(props, paramExtensionRepo);
     evaluator.postConstruct();
     paramEvaluator = new ParamEvaluator(evaluator, MaestroBaseTest.MAPPER);
   }

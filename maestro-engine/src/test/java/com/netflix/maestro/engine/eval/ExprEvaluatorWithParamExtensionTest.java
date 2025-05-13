@@ -74,19 +74,16 @@ public class ExprEvaluatorWithParamExtensionTest extends MaestroBaseTest {
             mock(MaestroQueueSystem.class),
             new MaestroMetricRepo(new DefaultRegistry()));
     extensionRepo = new MaestroParamExtensionRepo(stepDao, "test", MAPPER);
-    exprEvaluator =
-        new ExprEvaluator(
-            SelProperties.builder()
-                .threadNum(3)
-                .timeoutMillis(120000)
-                .stackLimit(128)
-                .loopLimit(10000)
-                .arrayLimit(10000)
-                .lengthLimit(10000)
-                .visitLimit(100000000L)
-                .memoryLimit(10000000L)
-                .build(),
-            extensionRepo);
+    var props = new SelProperties();
+    props.setThreadNum(3);
+    props.setTimeoutMillis(120000);
+    props.setStackLimit(128);
+    props.setLoopLimit(10000);
+    props.setArrayLimit(10000);
+    props.setLengthLimit(10000);
+    props.setVisitLimit(100000000L);
+    props.setMemoryLimit(10000000L);
+    exprEvaluator = new ExprEvaluator(props, extensionRepo);
     exprEvaluator.postConstruct();
   }
 

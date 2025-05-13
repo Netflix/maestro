@@ -81,10 +81,12 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
 
   private final User user = User.create("tester");
   private final WorkflowSummary summary = new WorkflowSummary();
-  private final StepActionProperties properties = new StepActionProperties(30000, 1000);
+  private final StepActionProperties properties = new StepActionProperties();
 
   @Before
   public void setUp() throws Exception {
+    properties.setActionTimeout(30000);
+    properties.setCheckInterval(1000);
     stepInstanceDao =
         new MaestroStepInstanceDao(dataSource, MAPPER, config, queueSystem, metricRepo);
     actionDao =
@@ -182,15 +184,12 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
   }
 
   private MaestroStepInstanceActionDao getSpyActionDao(long timeout) {
+    var props = new StepActionProperties();
+    props.setActionTimeout(timeout);
+    props.setCheckInterval(100);
     return spy(
         new MaestroStepInstanceActionDao(
-            dataSource,
-            MAPPER,
-            config,
-            new StepActionProperties(timeout, 100),
-            stepInstanceDao,
-            queueSystem,
-            metricRepo));
+            dataSource, MAPPER, config, props, stepInstanceDao, queueSystem, metricRepo));
   }
 
   @Test

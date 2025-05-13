@@ -1,5 +1,5 @@
 plugins {
-    id 'org.springframework.boot' version '2.7.+'
+    id 'org.springframework.boot' version '3.+'
 }
 
 sourceSets {
@@ -15,9 +15,9 @@ configurations {
 }
 
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-web:2.7.+'
-    implementation 'org.springframework.boot:spring-boot-starter-validation:2.7.+'
-    implementation 'org.springframework.cloud:spring-cloud-starter-sleuth:3.+'
+    implementation 'org.springframework.boot:spring-boot-starter-web:3.+'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator:3.+'
+    implementation 'io.micrometer:micrometer-tracing-bridge-brave:1.+'
     implementation 'io.swagger.core.v3:swagger-annotations:2.+'
 
     implementation hikaricpDep
@@ -25,7 +25,7 @@ dependencies {
     implementation flywayDep
 
     implementation spectatorApiDep
-    implementation javaxValidationDep
+    implementation jakartaValidationDep
     implementation bvalJsrDep
     runtimeOnly testcontainerDep
 
@@ -33,12 +33,12 @@ dependencies {
     implementation project(':maestro-common')
     implementation project(':maestro-flow')
     implementation project(':maestro-database')
-    implementation project(':netflix-sel')
-    implementation project(':maestro-aws')
+    implementation project(':maestro-queue')
     implementation project(':maestro-timetrigger')
     implementation project(':maestro-signal')
+    implementation project(':netflix-sel')
+    implementation project(':maestro-aws')
     implementation project(':maestro-kubernetes')
-    implementation project(':maestro-queue')
 
     implementation('io.fabric8:kubernetes-client:7.+'){
         exclude group: 'org.slf4j'

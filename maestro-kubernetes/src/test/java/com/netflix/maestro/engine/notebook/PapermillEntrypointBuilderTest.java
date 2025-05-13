@@ -46,19 +46,17 @@ public class PapermillEntrypointBuilderTest extends MaestroBaseTest {
 
   @BeforeClass
   public static void init() {
+    var props = new SelProperties();
+    props.setThreadNum(3);
+    props.setTimeoutMillis(120000);
+    props.setStackLimit(128);
+    props.setLoopLimit(10000);
+    props.setArrayLimit(10000);
+    props.setLengthLimit(10000);
+    props.setVisitLimit(100000000L);
+    props.setMemoryLimit(10000000L);
     ExprEvaluator evaluator =
-        new ExprEvaluator(
-            SelProperties.builder()
-                .threadNum(3)
-                .timeoutMillis(120000)
-                .stackLimit(128)
-                .loopLimit(10000)
-                .arrayLimit(10000)
-                .lengthLimit(10000)
-                .visitLimit(100000000L)
-                .memoryLimit(10000000L)
-                .build(),
-            new MaestroParamExtensionRepo(null, null, MAPPER));
+        new ExprEvaluator(props, new MaestroParamExtensionRepo(null, null, MAPPER));
     evaluator.postConstruct();
     EVALUATOR = new ParamEvaluator(evaluator, MaestroBaseTest.MAPPER);
   }

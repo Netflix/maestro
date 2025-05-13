@@ -22,11 +22,11 @@ import com.netflix.maestro.models.definition.TypedStep;
 import com.netflix.maestro.models.definition.Workflow;
 import com.netflix.maestro.models.parameter.MapParamDefinition;
 import com.netflix.maestro.models.parameter.ParamDefinition;
+import jakarta.validation.ConstraintViolation;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
-import javax.validation.ConstraintViolation;
 import org.junit.Test;
 
 public class WorkflowConstraintTest extends BaseConstraintTest {

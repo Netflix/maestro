@@ -3,10 +3,14 @@ spring:
     name: maestro
   autoconfigure:
     exclude:
-  sleuth:
-    sampler:
-      # disable tracing
-      probability: 0.0
+  cloud:
+    aws:
+      credentials:
+        access-key: foo
+        secret-key: bar
+      region:
+        static: us-east-1
+      endpoint: http://127.0.0.1:4566
 
 server:
   port: 8080
@@ -112,25 +116,12 @@ triggers:
     type: sqs
 
 aws:
-  sns:
-    topic: arn:aws:sns:us-east-1:000000000000:maestro-test
-    endpoint: http://localhost:4566
+  sns-topic: arn:aws:sns:us-east-1:000000000000:maestro-test
   sqs:
     time-trigger-execution-queue-url: http://localhost:4566/000000000000/maestro-time-trigger-execution
     signal-instance-queue-url: http://localhost:4566/000000000000/maestro-signal-instance.fifo
     signal-trigger-match-queue-url: http://localhost:4566/000000000000/maestro-signal-trigger-match.fifo
     signal-trigger-execution-queue-url: http://localhost:4566/000000000000/maestro-signal-trigger-execution.fifo
-
-cloud:
-  aws:
-    credentials:
-      access-key: ${AWS_ACCESS_KEY_ID}
-      secret-key: ${AWS_SECRET_ACCESS_KEY}
-    region:
-      static: ${AWS_DEFAULT_REGION}
-      auto: false
-    stack:
-      auto: false
 
 logging:
   level:

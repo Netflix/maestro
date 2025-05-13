@@ -25,6 +25,7 @@ import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.server.properties.MaestroEngineProperties;
 import com.netflix.maestro.server.runtime.RestBasedFlowOperation;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +34,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
@@ -94,7 +96,8 @@ public class MaestroFlowConfiguration {
                   }
 
                   @Override
-                  public void handleError(ClientHttpResponse response) throws IOException {
+                  public void handleError(URI url, HttpMethod method, ClientHttpResponse response)
+                      throws IOException {
                     throw new MaestroRetryableError(
                         "Got a http error: [%s]",
                         new String(response.getBody().readAllBytes(), StandardCharsets.UTF_8));

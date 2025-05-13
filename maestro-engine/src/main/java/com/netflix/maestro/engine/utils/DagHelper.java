@@ -18,6 +18,7 @@ import com.netflix.maestro.models.instance.RestartConfig;
 import com.netflix.maestro.models.instance.RunPolicy;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.utils.Checks;
+import jakarta.validation.constraints.NotNull;
 import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Deque;
@@ -28,7 +29,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javax.validation.constraints.NotNull;
 
 /** Utility class for Dag algorithms. */
 public final class DagHelper {

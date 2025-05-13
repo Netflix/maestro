@@ -12,26 +12,22 @@
  */
 package com.netflix.maestro.engine.properties;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
-import lombok.ToString;
+import lombok.Setter;
 
 /**
  * SEL evaluator properties. Please check {@link com.netflix.sel.SelEvaluator} about how they are
  * used.
  */
 @Getter
-@AllArgsConstructor
-@ToString
-@Builder
+@Setter
 public class SelProperties {
-  private final int threadNum;
-  private final int timeoutMillis;
-  private final int stackLimit;
-  private final int loopLimit;
-  private final int arrayLimit;
-  private final int lengthLimit;
-  private final long visitLimit;
-  private final long memoryLimit;
+  private int threadNum;
+  private int timeoutMillis;
+  private int stackLimit;
+  private int loopLimit;
+  private int arrayLimit;
+  private int lengthLimit;
+  private long visitLimit;
+  private long memoryLimit;
 }

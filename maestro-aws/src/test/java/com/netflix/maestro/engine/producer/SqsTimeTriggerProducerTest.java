@@ -19,7 +19,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.amazonaws.services.sqs.AmazonSQS;
 import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.MaestroBaseTest;
 import com.netflix.maestro.engine.metrics.AwsMetricConstants;
@@ -29,12 +28,13 @@ import com.netflix.maestro.models.trigger.CronTimeTrigger;
 import com.netflix.maestro.timetrigger.models.TimeTriggerExecution;
 import com.netflix.maestro.timetrigger.models.TimeTriggerWithWatermark;
 import com.netflix.spectator.api.DefaultRegistry;
+import io.awspring.cloud.sqs.operations.SqsTemplate;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 
 public class SqsTimeTriggerProducerTest extends MaestroBaseTest {
-  private AmazonSQS amazonSqs;
+  private SqsTemplate amazonSqs;
   private MaestroMetricRepo metricRepo;
 
   private SqsTimeTriggerProducer timeTriggerProducer;
@@ -42,7 +42,7 @@ public class SqsTimeTriggerProducerTest extends MaestroBaseTest {
 
   @Before
   public void setup() {
-    amazonSqs = mock(AmazonSQS.class);
+    amazonSqs = mock(SqsTemplate.class);
     SqsProperties sqsProperties = new SqsProperties();
     sqsProperties.setTimeTriggerExecutionQueueUrl("time-trigger-execution-queue-url");
     metricRepo = new MaestroMetricRepo(new DefaultRegistry());
@@ -64,7 +64,7 @@ public class SqsTimeTriggerProducerTest extends MaestroBaseTest {
   @Test
   public void testPushWithNoDelay() {
     timeTriggerProducer.push(execution, 0);
-    verify(amazonSqs, times(1)).sendMessage(any());
+    verify(amazonSqs, times(1)).send(any());
     assertEquals(
         1,
         metricRepo
@@ -79,7 +79,7 @@ public class SqsTimeTriggerProducerTest extends MaestroBaseTest {
   @Test
   public void testPushWithNegativeDelay() {
     timeTriggerProducer.push(execution, -100);
-    verify(amazonSqs, times(1)).sendMessage(any());
+    verify(amazonSqs, times(1)).send(any());
     assertEquals(
         1,
         metricRepo
@@ -94,7 +94,7 @@ public class SqsTimeTriggerProducerTest extends MaestroBaseTest {
   @Test
   public void testPushWithDelay() {
     timeTriggerProducer.push(execution, 100);
-    verify(amazonSqs, times(1)).sendMessage(any());
+    verify(amazonSqs, times(1)).send(any());
     assertEquals(
         1,
         metricRepo
@@ -108,7 +108,7 @@ public class SqsTimeTriggerProducerTest extends MaestroBaseTest {
 
   @Test
   public void testPushWithError() {
-    when(amazonSqs.sendMessage(any())).thenThrow(new RuntimeException("test"));
+    when(amazonSqs.send(any())).thenThrow(new RuntimeException("test"));
     AssertHelper.assertThrows(
         "Should throw the error",
         RuntimeException.class,

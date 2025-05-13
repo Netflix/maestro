@@ -4,10 +4,10 @@ import com.netflix.maestro.models.signal.SignalMatchParam;
 import com.netflix.maestro.models.signal.SignalOperator;
 import com.netflix.maestro.models.signal.SignalParamValue;
 import com.netflix.maestro.models.trigger.SignalTrigger;
+import jakarta.validation.ConstraintViolation;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.validation.ConstraintViolation;
 import org.junit.Assert;
 import org.junit.Test;
 

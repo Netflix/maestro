@@ -4,20 +4,8 @@ spring:
   autoconfigure:
     exclude:
       - com.netflix.maestro.engine.autoconfigure.AwsConfiguration
-      - org.springframework.cloud.aws.autoconfigure.cache.ElastiCacheAutoConfiguration
-      - org.springframework.cloud.aws.autoconfigure.context.ContextCredentialsAutoConfiguration
-      - org.springframework.cloud.aws.autoconfigure.context.ContextInstanceDataAutoConfiguration
-      - org.springframework.cloud.aws.autoconfigure.context.ContextRegionProviderAutoConfiguration
-      - org.springframework.cloud.aws.autoconfigure.context.ContextResourceLoaderAutoConfiguration
-      - org.springframework.cloud.aws.autoconfigure.context.ContextStackAutoConfiguration
-      - org.springframework.cloud.aws.autoconfigure.jdbc.AmazonRdsDatabaseAutoConfiguration
-      - org.springframework.cloud.aws.autoconfigure.mail.MailSenderAutoConfiguration
-      - org.springframework.cloud.aws.autoconfigure.messaging.MessagingAutoConfiguration
-      - org.springframework.cloud.aws.autoconfigure.metrics.CloudWatchExportAutoConfiguration
-  sleuth:
-    sampler:
-      # disable tracing
-      probability: 0.0
+      - io.awspring.cloud.autoconfigure.sns.SnsAutoConfiguration
+      - io.awspring.cloud.autoconfigure.sqs.SqsAutoConfiguration
 
 server:
   port: 8080

@@ -20,8 +20,8 @@ import com.netflix.maestro.models.definition.Alerting;
 import com.netflix.maestro.models.definition.PropertiesSnapshot;
 import com.netflix.maestro.models.definition.TagList;
 import com.netflix.maestro.models.definition.User;
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 /** Properties snapshot when the workflow instance starts. */
