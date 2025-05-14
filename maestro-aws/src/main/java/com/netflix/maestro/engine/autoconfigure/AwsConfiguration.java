@@ -136,7 +136,8 @@ public class AwsConfiguration {
             options -> {
               options.componentsTaskExecutor(createDefaultTaskExecutor(props.getSqs()));
               options.maxConcurrentMessages(props.getSqs().getListenerMaxNumberOfMessages());
-              options.pollTimeout(Duration.ofMillis(props.getSqs().getListenerWaitTimeoutInSecs()));
+              options.pollTimeout(
+                  Duration.ofSeconds(props.getSqs().getListenerWaitTimeoutInSecs()));
               options.autoStartup(true);
               options.acknowledgementMode(AcknowledgementMode.ON_SUCCESS);
             })
