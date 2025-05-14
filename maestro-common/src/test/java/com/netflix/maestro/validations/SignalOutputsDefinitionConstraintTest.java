@@ -14,10 +14,10 @@ package com.netflix.maestro.validations;
 
 import com.netflix.maestro.models.parameter.StringParamDefinition;
 import com.netflix.maestro.models.signal.SignalOutputsDefinition;
+import jakarta.validation.ConstraintViolation;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
-import javax.validation.ConstraintViolation;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.assertj.core.api.Assertions;

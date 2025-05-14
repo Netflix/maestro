@@ -16,18 +16,14 @@ import com.netflix.maestro.engine.properties.CallbackDelayConfig;
 import com.netflix.maestro.engine.properties.ForeachStepRuntimeProperties;
 import com.netflix.maestro.engine.properties.SubworkflowStepRuntimeProperties;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
-import lombok.ToString;
+import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.ConstructorBinding;
 
 /** Properties for step runtime. */
 @AllArgsConstructor
 @Getter
-@ConstructorBinding
 @ConfigurationProperties(prefix = "stepruntime")
-@ToString
 public class StepRuntimeProperties {
   private final String env;
 
@@ -40,13 +36,11 @@ public class StepRuntimeProperties {
 
   /** Cache Properties. */
   @Getter
-  @AllArgsConstructor
-  @ToString
-  @Builder
+  @Setter
   public static class Cache {
-    private final long defaultShaCacheMinutes;
-    private final long customShaCacheMinutes;
-    private final int defaultShaMaxSize;
-    private final int customShaMaxSize;
+    private long defaultShaCacheMinutes;
+    private long customShaCacheMinutes;
+    private int defaultShaMaxSize;
+    private int customShaMaxSize;
   }
 }

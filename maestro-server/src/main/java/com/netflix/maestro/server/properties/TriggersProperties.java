@@ -16,12 +16,10 @@ import com.netflix.maestro.timetrigger.properties.TimeTriggerProperties;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.ConstructorBinding;
 
 /** Maestro engine related config properties. */
 @AllArgsConstructor
 @Getter
-@ConstructorBinding
 @ConfigurationProperties(prefix = "triggers")
 public class TriggersProperties {
   private final TimeTriggerProperties timeTrigger;

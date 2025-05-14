@@ -14,16 +14,12 @@ package com.netflix.maestro.engine.properties;
 
 import com.netflix.maestro.models.instance.StepInstance;
 import java.util.Map;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
-import lombok.ToString;
+import lombok.Setter;
 
 /** StepRuntime fixed callback Properties. */
 @Getter
-@AllArgsConstructor
-@ToString
-@Builder
+@Setter
 public class CallbackDelayConfig {
   private Map<StepInstance.Status, Map<String, Long>> fixedCallbackDelayInSecs;
 }

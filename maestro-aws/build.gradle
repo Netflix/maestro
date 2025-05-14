@@ -1,13 +1,17 @@
 dependencies {
-    implementation 'org.springframework.cloud:spring-cloud-starter-aws:2.+'
-    implementation 'org.springframework.cloud:spring-cloud-starter-aws-messaging:2.+'
+    implementation('io.awspring.cloud:spring-cloud-aws-starter-sns:3.+') {
+        exclude group: 'ch.qos.logback'
+    }
+    implementation('io.awspring.cloud:spring-cloud-aws-starter-sqs:3.+') {
+        exclude group: 'ch.qos.logback'
+    }
 
     implementation project(':maestro-common')
     implementation project(':maestro-engine')
     implementation project(':maestro-timetrigger')
     implementation project(':maestro-signal')
-    implementation spectatorApiDep
 
+    testImplementation spectatorApiDep
     testImplementation junitDep
     testImplementation mockitoCoreDep
     testImplementation(testFixtures(project(':maestro-common')))

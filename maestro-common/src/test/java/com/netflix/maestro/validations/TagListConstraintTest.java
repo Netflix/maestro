@@ -16,10 +16,10 @@ import static org.junit.Assert.assertEquals;
 
 import com.netflix.maestro.models.definition.Tag;
 import com.netflix.maestro.models.definition.TagList;
+import jakarta.validation.ConstraintViolation;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-import javax.validation.ConstraintViolation;
 import org.junit.Test;
 
 public class TagListConstraintTest extends BaseConstraintTest {

@@ -2,7 +2,7 @@ dependencies {
     implementation zipkinDep
     implementation jacksonAnnotationsDep
     implementation jacksonDatabindDep
-    implementation javaxValidationDep
+    implementation jakartaValidationDep
 
     implementation project(':maestro-common')
     implementation project(':maestro-flow')

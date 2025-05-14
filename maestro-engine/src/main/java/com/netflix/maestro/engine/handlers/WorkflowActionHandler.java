@@ -47,6 +47,7 @@ import com.netflix.maestro.utils.Checks;
 import com.netflix.maestro.utils.IdHelper;
 import com.netflix.maestro.utils.MapHelper;
 import com.netflix.maestro.utils.ObjectHelper;
+import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -54,7 +55,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javax.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

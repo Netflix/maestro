@@ -13,36 +13,32 @@
 package com.netflix.maestro.engine.publisher;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-import com.amazonaws.services.sns.AmazonSNS;
-import com.amazonaws.services.sns.model.PublishResult;
 import com.netflix.maestro.MaestroBaseTest;
 import com.netflix.maestro.models.events.MaestroEvent;
 import com.netflix.maestro.models.events.WorkflowDefinitionChangeEvent;
+import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
+import software.amazon.awssdk.services.sns.SnsClient;
 
 public class SnsEventNotificationPublisherTest extends MaestroBaseTest {
-  private AmazonSNS amazonSns;
+  private SnsClient amazonSns;
   private SnsEventNotificationPublisher client;
 
   @Before
   public void setup() {
-    amazonSns = mock(AmazonSNS.class);
+    amazonSns = mock(SnsClient.class);
     client = new SnsEventNotificationPublisher(amazonSns, "sns-topic-test", MAPPER);
   }
 
   @Test
   public void testSend() {
     MaestroEvent event = WorkflowDefinitionChangeEvent.builder().workflowId("test-wf").build();
-    when(amazonSns.publish(eq("sns-topic-test"), any())).thenReturn(mock(PublishResult.class));
     client.send(event);
-    verify(amazonSns, Mockito.times(1)).publish(anyString(), any());
+    verify(amazonSns, Mockito.times(1)).publish(any(Consumer.class));
   }
 }

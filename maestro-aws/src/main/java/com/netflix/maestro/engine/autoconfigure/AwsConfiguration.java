@@ -12,13 +12,6 @@
  */
 package com.netflix.maestro.engine.autoconfigure;
 
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.client.builder.AwsClientBuilder;
-import com.amazonaws.services.sns.AmazonSNS;
-import com.amazonaws.services.sns.AmazonSNSClientBuilder;
-import com.amazonaws.services.sqs.AmazonSQS;
-import com.amazonaws.services.sqs.AmazonSQSAsync;
-import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.engine.listeners.SqsSignalInstanceListener;
 import com.netflix.maestro.engine.listeners.SqsSignalTriggerExecutionListener;
@@ -38,17 +31,20 @@ import com.netflix.maestro.signal.messageprocessors.SignalTriggerMatchProcessor;
 import com.netflix.maestro.signal.producer.SignalQueueProducer;
 import com.netflix.maestro.timetrigger.messageprocessors.TimeTriggerExecutionProcessor;
 import com.netflix.maestro.timetrigger.producer.TimeTriggerProducer;
+import io.awspring.cloud.sqs.config.SqsMessageListenerContainerFactory;
+import io.awspring.cloud.sqs.listener.acknowledgement.handler.AcknowledgementMode;
+import io.awspring.cloud.sqs.operations.SqsTemplate;
+import java.time.Duration;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.cloud.aws.core.region.RegionProvider;
-import org.springframework.cloud.aws.messaging.config.SimpleMessageListenerContainerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sqs.SqsAsyncClient;
 
 @Slf4j
 @Configuration
@@ -57,57 +53,28 @@ public class AwsConfiguration {
   /** qualifier for Maestro Aws SQS Sync Publishers bean. */
   private static final String MAESTRO_AWS_SQS_SYNC = "maestroAwsSqsSync";
 
-  /** create sns. */
-  @Primary
-  @Bean
-  @ConditionalOnProperty(value = "maestro.notifier.type", havingValue = "sns")
-  public AmazonSNS amazonSns(
-      AWSCredentialsProvider awsCredentialsProvider,
-      RegionProvider regionProvider,
-      AwsProperties props) {
-    LOG.info("Creating Maestro amazonSns within Spring boot...");
-    if (props.getSns().endpoint() == null) {
-      return AmazonSNSClientBuilder.standard()
-          .withCredentials(awsCredentialsProvider)
-          .withRegion(regionProvider.getRegion().getName())
-          .build();
-    } else {
-      return AmazonSNSClientBuilder.standard()
-          .withCredentials(awsCredentialsProvider)
-          .withEndpointConfiguration(
-              new AwsClientBuilder.EndpointConfiguration(
-                  props.getSns().endpoint(), regionProvider.getRegion().getName()))
-          .build();
-    }
-  }
-
   /** create event notification client wrapper. */
   @Bean
   @ConditionalOnProperty(value = "maestro.notifier.type", havingValue = "sns")
   public MaestroNotificationPublisher notificationPublisher(
-      AmazonSNS amazonSns,
+      SnsClient amazonSns,
       AwsProperties props,
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper) {
     LOG.info("Creating Maestro notificationPublisher within Spring boot...");
-    return new SnsEventNotificationPublisher(amazonSns, props.getSns().topic(), objectMapper);
+    return new SnsEventNotificationPublisher(amazonSns, props.getSnsTopic(), objectMapper);
   }
 
-  /** create sync sqs. */
+  /** create sqs template. */
   @Bean(MAESTRO_AWS_SQS_SYNC)
   @ConditionalOnProperty(value = "triggers.time-trigger.type", havingValue = "sqs")
-  public AmazonSQS amazonSqsForPublisher(
-      AWSCredentialsProvider awsCredentialsProvider, RegionProvider regionProvider) {
-    LOG.info("Creating Maestro amazonSQSForPublisher within Spring boot...");
-    return AmazonSQSClientBuilder.standard()
-        .withRegion(regionProvider.getRegion().getName())
-        .withCredentials(awsCredentialsProvider)
-        .build();
+  public SqsTemplate sqsTemplate(SqsAsyncClient sqsAsyncClient) {
+    return SqsTemplate.builder().sqsAsyncClient(sqsAsyncClient).build();
   }
 
   @Bean
   @ConditionalOnProperty(value = "triggers.time-trigger.type", havingValue = "sqs")
   public TimeTriggerProducer sqsTimeTriggerProducer(
-      @Qualifier(MAESTRO_AWS_SQS_SYNC) AmazonSQS amazonSqs,
+      @Qualifier(MAESTRO_AWS_SQS_SYNC) SqsTemplate amazonSqs,
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
       AwsProperties props,
       MaestroMetrics metrics) {
@@ -126,7 +93,7 @@ public class AwsConfiguration {
   @Bean
   @ConditionalOnProperty(value = "triggers.signal-trigger.type", havingValue = "sqs")
   public SignalQueueProducer sqsSignalQueueProducer(
-      @Qualifier(MAESTRO_AWS_SQS_SYNC) AmazonSQS amazonSqs,
+      @Qualifier(MAESTRO_AWS_SQS_SYNC) SqsTemplate amazonSqs,
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
       AwsProperties props,
       MaestroMetrics metrics) {
@@ -158,19 +125,24 @@ public class AwsConfiguration {
     return new SqsSignalTriggerExecutionListener(processor, mapper);
   }
 
-  /** AmazonSQSAsync has already been created by springboot aws autoconfiguration . */
+  /** SqsAsyncClient has already been created by springboot sqs autoconfiguration. */
   @Bean
-  @ConditionalOnProperty(value = "maestro.listener.type", havingValue = "sqs")
-  public SimpleMessageListenerContainerFactory simpleMessageListenerContainerFactory(
-      AmazonSQSAsync amazonSqs, AwsProperties props) {
+  @ConditionalOnProperty(value = "maestro.time-trigger.type", havingValue = "sqs")
+  public SqsMessageListenerContainerFactory<Object> simpleMessageListenerContainerFactory(
+      SqsAsyncClient amazonSqs, AwsProperties props) {
     LOG.info("Creating simpleMessageListenerContainerFactory within Spring boot...");
-    SimpleMessageListenerContainerFactory factory = new SimpleMessageListenerContainerFactory();
-    factory.setAmazonSqs(amazonSqs);
-    factory.setTaskExecutor(createDefaultTaskExecutor(props.getSqs()));
-    factory.setMaxNumberOfMessages(props.getSqs().getListenerMaxNumberOfMessages());
-    factory.setWaitTimeOut(props.getSqs().getListenerWaitTimeoutInSecs());
-    factory.setAutoStartup(true);
-    return factory;
+    return SqsMessageListenerContainerFactory.builder()
+        .configure(
+            options -> {
+              options.componentsTaskExecutor(createDefaultTaskExecutor(props.getSqs()));
+              options.maxConcurrentMessages(props.getSqs().getListenerMaxNumberOfMessages());
+              options.pollTimeout(
+                  Duration.ofSeconds(props.getSqs().getListenerWaitTimeoutInSecs()));
+              options.autoStartup(true);
+              options.acknowledgementMode(AcknowledgementMode.ON_SUCCESS);
+            })
+        .sqsAsyncClient(amazonSqs)
+        .build();
   }
 
   private AsyncTaskExecutor createDefaultTaskExecutor(SqsProperties props) {

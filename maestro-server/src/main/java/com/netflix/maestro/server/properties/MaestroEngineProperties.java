@@ -17,11 +17,9 @@ import java.util.Locale;
 import java.util.Map;
 import lombok.AllArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.ConstructorBinding;
 
 /** Flow related Maestro engine configuration properties. */
 @AllArgsConstructor
-@ConstructorBinding
 @ConfigurationProperties(prefix = "engine")
 public class MaestroEngineProperties extends FlowEngineProperties {
 

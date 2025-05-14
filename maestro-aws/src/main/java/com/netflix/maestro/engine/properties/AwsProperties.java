@@ -12,20 +12,15 @@
  */
 package com.netflix.maestro.engine.properties;
 
-import com.netflix.maestro.annotations.Nullable;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.ConstructorBinding;
 
 /** AWS configuration properties. */
-@AllArgsConstructor
 @Getter
-@ConstructorBinding
-@ConfigurationProperties("aws")
+@Setter
+@ConfigurationProperties(prefix = "aws")
 public class AwsProperties {
-  private final SqsProperties sqs;
-  private final SnsProperties sns;
-
-  public record SnsProperties(String topic, @Nullable String endpoint) {}
+  private String snsTopic;
+  private SqsProperties sqs;
 }

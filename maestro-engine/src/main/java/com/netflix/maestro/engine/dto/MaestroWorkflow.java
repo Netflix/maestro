@@ -24,7 +24,7 @@ import com.netflix.maestro.models.definition.Workflow;
 import com.netflix.maestro.models.definition.WorkflowDefinition;
 import com.netflix.maestro.models.trigger.TriggerUuids;
 import com.netflix.maestro.utils.Checks;
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Setter;

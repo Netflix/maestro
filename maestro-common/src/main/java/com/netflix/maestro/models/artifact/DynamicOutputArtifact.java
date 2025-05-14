@@ -20,8 +20,8 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.models.parameter.MapParameter;
 import com.netflix.maestro.models.timeline.TimelineLogEvent;
+import jakarta.validation.Valid;
 import java.util.List;
-import javax.validation.Valid;
 import lombok.Data;
 
 /** Signals artifact to store dynamic signals generated at step runtime. */

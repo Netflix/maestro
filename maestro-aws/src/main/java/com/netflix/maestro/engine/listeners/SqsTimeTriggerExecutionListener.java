@@ -16,11 +16,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.timetrigger.messageprocessors.TimeTriggerExecutionProcessor;
 import com.netflix.maestro.timetrigger.models.TimeTriggerExecution;
+import io.awspring.cloud.sqs.annotation.SqsListener;
 import java.io.IOException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy;
-import org.springframework.cloud.aws.messaging.listener.annotation.SqsListener;
 
 /**
  * Listener class to configure TimeTriggerExecution queue. It requires a delay queue support and has
@@ -35,7 +34,7 @@ public class SqsTimeTriggerExecutionListener {
   /** Listener configuration for SQS TimeTriggerExecution message. */
   @SqsListener(
       value = "${aws.sqs.time-trigger-execution-queue-url}",
-      deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
+      acknowledgementMode = "ON_SUCCESS")
   public void process(String payload) {
     LOG.info("TimeTriggerExecutionSqsListener got message: [{}]", payload);
     processor.process(

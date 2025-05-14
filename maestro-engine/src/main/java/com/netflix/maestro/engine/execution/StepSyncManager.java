@@ -20,8 +20,8 @@ import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.queue.jobevents.MaestroJobEvent;
 import com.netflix.maestro.queue.jobevents.NotificationJobEvent;
 import com.netflix.maestro.queue.jobevents.StepInstanceUpdateJobEvent;
+import jakarta.validation.constraints.NotNull;
 import java.util.Optional;
-import javax.validation.constraints.NotNull;
 
 /**
  * Step synchronization manager to write the update to maestro step instance table and also publish

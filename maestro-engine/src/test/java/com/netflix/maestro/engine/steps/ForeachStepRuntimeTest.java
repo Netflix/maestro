@@ -84,7 +84,7 @@ public class ForeachStepRuntimeTest extends MaestroEngineBaseTest {
 
   @Before
   public void setup() {
-    workflowInstanceDao = Mockito.spy(Mockito.mock(MaestroWorkflowInstanceDao.class));
+    workflowInstanceDao = Mockito.mock(MaestroWorkflowInstanceDao.class);
     foreachStepRuntime =
         new ForeachStepRuntime(
             workflowActionHandler,

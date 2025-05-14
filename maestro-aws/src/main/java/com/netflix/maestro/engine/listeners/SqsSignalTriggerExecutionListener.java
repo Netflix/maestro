@@ -4,11 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.signal.messageprocessors.SignalTriggerExecutionProcessor;
 import com.netflix.maestro.signal.models.SignalTriggerExecution;
+import io.awspring.cloud.sqs.annotation.SqsListener;
 import java.io.IOException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy;
-import org.springframework.cloud.aws.messaging.listener.annotation.SqsListener;
 
 /**
  * Listener class to configure SignalTriggerExecution queue. It should be based on a FIFO queue
@@ -25,7 +24,7 @@ public class SqsSignalTriggerExecutionListener {
   /** Listener configuration for SQS SignalTriggerExecution message. */
   @SqsListener(
       value = "${aws.sqs.signal-trigger-execution-queue-url}",
-      deletionPolicy = SqsMessageDeletionPolicy.ON_SUCCESS)
+      acknowledgementMode = "ON_SUCCESS")
   public void process(String payload) {
     LOG.info("SqsSignalTriggerExecutionListener got message: [{}]", payload);
     processor.process(

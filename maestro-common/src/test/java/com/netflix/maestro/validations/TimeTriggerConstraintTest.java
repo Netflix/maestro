@@ -14,10 +14,10 @@ package com.netflix.maestro.validations;
 
 import com.netflix.maestro.models.trigger.CronTimeTrigger;
 import com.netflix.maestro.models.trigger.TimeTrigger;
+import jakarta.validation.ConstraintViolation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import javax.validation.ConstraintViolation;
 import org.junit.Assert;
 import org.junit.Test;
 

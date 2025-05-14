@@ -7,7 +7,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.amazonaws.services.sqs.AmazonSQS;
 import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.MaestroBaseTest;
 import com.netflix.maestro.engine.metrics.AwsMetricConstants;
@@ -17,6 +16,7 @@ import com.netflix.maestro.models.signal.SignalInstance;
 import com.netflix.maestro.signal.models.SignalTriggerExecution;
 import com.netflix.maestro.signal.models.SignalTriggerMatch;
 import com.netflix.spectator.api.DefaultRegistry;
+import io.awspring.cloud.sqs.operations.SqsTemplate;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -26,7 +26,7 @@ import org.junit.Test;
  * @author jun-he
  */
 public class SqsSignalQueueProducerTest extends MaestroBaseTest {
-  private AmazonSQS amazonSqs;
+  private SqsTemplate amazonSqs;
   private MaestroMetricRepo metricRepo;
 
   private SqsSignalQueueProducer signalTriggerProducer;
@@ -36,7 +36,7 @@ public class SqsSignalQueueProducerTest extends MaestroBaseTest {
 
   @Before
   public void setup() {
-    amazonSqs = mock(AmazonSQS.class);
+    amazonSqs = mock(SqsTemplate.class);
     SqsProperties sqsProperties = new SqsProperties();
     sqsProperties.setSignalInstanceQueueUrl("signal-instance-queue-url");
     sqsProperties.setSignalTriggerMatchQueueUrl("signal-trigger-match-queue-url");
@@ -54,7 +54,7 @@ public class SqsSignalQueueProducerTest extends MaestroBaseTest {
   @Test
   public void testPushSignalInstance() {
     signalTriggerProducer.push(signalInstance);
-    verify(amazonSqs, times(1)).sendMessage(any());
+    verify(amazonSqs, times(1)).send(any());
     assertEquals(
         1,
         metricRepo
@@ -68,7 +68,7 @@ public class SqsSignalQueueProducerTest extends MaestroBaseTest {
 
   @Test
   public void testPushSignalInstanceWithError() {
-    when(amazonSqs.sendMessage(any())).thenThrow(new RuntimeException("test"));
+    when(amazonSqs.send(any())).thenThrow(new RuntimeException("test"));
     AssertHelper.assertThrows(
         "Should throw the error",
         RuntimeException.class,
@@ -88,7 +88,7 @@ public class SqsSignalQueueProducerTest extends MaestroBaseTest {
   @Test
   public void testPushSignalTriggerMatch() {
     signalTriggerProducer.push(signalTriggerMatch);
-    verify(amazonSqs, times(1)).sendMessage(any());
+    verify(amazonSqs, times(1)).send(any());
     assertEquals(
         1,
         metricRepo
@@ -102,7 +102,7 @@ public class SqsSignalQueueProducerTest extends MaestroBaseTest {
 
   @Test
   public void testPushSignalTriggerMatchWithError() {
-    when(amazonSqs.sendMessage(any())).thenThrow(new RuntimeException("test"));
+    when(amazonSqs.send(any())).thenThrow(new RuntimeException("test"));
     AssertHelper.assertThrows(
         "Should throw the error",
         RuntimeException.class,
@@ -122,7 +122,7 @@ public class SqsSignalQueueProducerTest extends MaestroBaseTest {
   @Test
   public void testPushSignalTriggerExecution() {
     signalTriggerProducer.push(signalTriggerExecution);
-    verify(amazonSqs, times(1)).sendMessage(any());
+    verify(amazonSqs, times(1)).send(any());
     assertEquals(
         1,
         metricRepo
@@ -136,7 +136,7 @@ public class SqsSignalQueueProducerTest extends MaestroBaseTest {
 
   @Test
   public void testPushSignalTriggerExecutionWithError() {
-    when(amazonSqs.sendMessage(any())).thenThrow(new RuntimeException("test"));
+    when(amazonSqs.send(any())).thenThrow(new RuntimeException("test"));
     AssertHelper.assertThrows(
         "Should throw the error",
         RuntimeException.class,

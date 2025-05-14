@@ -12,8 +12,6 @@
  */
 package com.netflix.maestro.engine.publisher;
 
-import com.amazonaws.services.sns.AmazonSNS;
-import com.amazonaws.services.sns.model.PublishResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.exceptions.MaestroRetryableError;
@@ -21,12 +19,14 @@ import com.netflix.maestro.exceptions.MaestroUnprocessableEntityException;
 import com.netflix.maestro.models.events.MaestroEvent;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sns.model.PublishResponse;
 
 /** SNS Event notification publisher implementation for MaestroNotificationPublisher. */
 @Slf4j
 @AllArgsConstructor
 public class SnsEventNotificationPublisher implements MaestroNotificationPublisher {
-  private final AmazonSNS amazonSns;
+  private final SnsClient amazonSns;
   private final String snsTopic;
   private final ObjectMapper objectMapper;
 
@@ -34,11 +34,12 @@ public class SnsEventNotificationPublisher implements MaestroNotificationPublish
   public void send(MaestroEvent event) {
     try {
       String payload = objectMapper.writeValueAsString(event);
-      PublishResult result = amazonSns.publish(snsTopic, payload);
+      PublishResponse result =
+          amazonSns.publish(request -> request.topicArn(snsTopic).message(payload));
       LOG.info(
           "Published a maestro event [{}] to sns with message id: [{}]",
           payload,
-          result.getMessageId());
+          result == null ? "n/a" : result.messageId());
     } catch (JsonProcessingException je) {
       throw new MaestroUnprocessableEntityException("cannot serialize maestro event: " + event, je);
     } catch (RuntimeException e) {

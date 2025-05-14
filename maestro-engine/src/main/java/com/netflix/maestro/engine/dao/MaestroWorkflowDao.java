@@ -55,6 +55,7 @@ import com.netflix.maestro.queue.models.MessageDto;
 import com.netflix.maestro.utils.Checks;
 import com.netflix.maestro.utils.IdHelper;
 import com.netflix.maestro.utils.ObjectHelper;
+import jakarta.validation.constraints.NotNull;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -70,7 +71,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import javax.sql.DataSource;
-import javax.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
