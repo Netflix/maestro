@@ -14,7 +14,7 @@ package com.netflix.maestro.models.trigger;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.models.parameter.ParamDefinition;
@@ -24,7 +24,7 @@ import lombok.Data;
 import lombok.ToString;
 
 /** Data model for signal trigger defined in the workflow definition. */
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonPropertyOrder(
     value = {"definitions", "params", "condition", "dedup_expr"},
     alphabetic = true)
@@ -54,7 +54,7 @@ public class SignalTrigger {
    */
   @Nullable private String dedupExpr;
 
-  @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+  @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
   @JsonPropertyOrder(
       value = {"match_params", "join_keys"},
       alphabetic = true)

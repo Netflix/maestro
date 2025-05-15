@@ -13,7 +13,7 @@
 package com.netflix.maestro.models.api;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -22,7 +22,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /** Request to set a tag permit. */
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonPropertyOrder(
     value = {"tag", "max_allowed"},
     alphabetic = true)

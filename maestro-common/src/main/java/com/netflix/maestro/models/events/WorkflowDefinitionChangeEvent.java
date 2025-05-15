@@ -14,7 +14,7 @@ package com.netflix.maestro.models.events;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
@@ -24,7 +24,7 @@ import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 /** Workflow definition change event schema. It will be sent externally. */
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(
     value = {
@@ -64,7 +64,7 @@ public final class WorkflowDefinitionChangeEvent extends WorkflowChangeEvent {
 
   /** builder class for lombok and jackson. */
   @JsonPOJOBuilder(withPrefix = "")
-  @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+  @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
   static final class WorkflowDefinitionChangeEventBuilderImpl
       extends WorkflowDefinitionChangeEventBuilder<
           WorkflowDefinitionChangeEvent, WorkflowDefinitionChangeEventBuilderImpl> {}

@@ -14,7 +14,7 @@ package com.netflix.maestro.models.instance;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.parameter.BooleanParameter;
@@ -27,7 +27,7 @@ import java.util.Map;
 import lombok.Data;
 
 /** Step instance transition data model. */
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @JsonPropertyOrder(
     value = {"predecessors", "successors"},

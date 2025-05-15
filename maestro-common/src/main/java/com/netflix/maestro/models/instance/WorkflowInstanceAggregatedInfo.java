@@ -14,7 +14,7 @@ package com.netflix.maestro.models.instance;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -34,7 +34,7 @@ import lombok.Data;
  * baseline workflowInstanceStatus to the callers. Instead, it should use workflow instance status
  * or run_status.
  */
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @JsonPropertyOrder(
     value = {"workflow_instance_status", "step_aggregated_views"},

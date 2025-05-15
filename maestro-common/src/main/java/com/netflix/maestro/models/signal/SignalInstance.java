@@ -3,7 +3,7 @@ package com.netflix.maestro.models.signal;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.models.api.SignalCreateRequest;
@@ -18,7 +18,7 @@ import lombok.ToString;
  *
  * @author jun-he
  */
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @JsonPropertyOrder(
     value = {

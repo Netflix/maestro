@@ -13,7 +13,7 @@
 package com.netflix.maestro.models.api;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
@@ -24,7 +24,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonPropertyOrder(
     value = {
       "page_info",
@@ -39,7 +39,7 @@ import lombok.ToString;
 @ToString
 public class PaginationResult<T> {
 
-  @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+  @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
   @JsonPropertyOrder(
       value = {
         "start_cursor",
@@ -62,7 +62,7 @@ public class PaginationResult<T> {
     private final Long startIndex;
 
     /** builder class for lombok and jackson. */
-    @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     @JsonPOJOBuilder(withPrefix = "")
     public static final class PageInfoBuilder {}
   }
@@ -71,7 +71,7 @@ public class PaginationResult<T> {
   private final long totalCount;
   @NotNull private final List<T> elements;
 
-  @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+  @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
   @JsonPOJOBuilder(withPrefix = "")
   public static final class PaginationResultBuilder<T> {}
 }

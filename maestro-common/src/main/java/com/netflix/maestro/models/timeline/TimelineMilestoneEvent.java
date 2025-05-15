@@ -15,7 +15,7 @@ package com.netflix.maestro.models.timeline;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
@@ -26,7 +26,7 @@ import lombok.Getter;
 import lombok.ToString;
 
 /** Timeline milestone event to record compute related milestones. */
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(
     value = {"timestamp", "type", "status", "milestone_type", "source_id", "info"},
@@ -82,7 +82,7 @@ public class TimelineMilestoneEvent implements TimelineEvent {
 
   /** builder class for lombok and jackson. */
   @JsonPOJOBuilder(withPrefix = "")
-  @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+  @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
   public static final class TimelineMilestoneEventBuilder {}
 
   /** static method to generate a {@link TimelineStatusEvent}. */

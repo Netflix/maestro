@@ -15,7 +15,7 @@ package com.netflix.maestro.queue.jobevents;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.models.Actions;
@@ -32,7 +32,7 @@ import lombok.Data;
  * event is used within a DB transaction for applying first_only and last_only run strategy. If
  * runAfter is null, it just terminates the instances without running any new instance.
  */
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(
     value = {"workflow_id", "instance_run_uuids", "action", "user", "reason", "run_after"},

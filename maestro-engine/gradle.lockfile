@@ -3,11 +3,11 @@
 # This file is expected to be part of source control.
 com.fasterxml.jackson.core:jackson-annotations:2.19.0=compileClasspath
 com.fasterxml.jackson.core:jackson-core:2.19.0=compileClasspath
-com.fasterxml.jackson.core:jackson-databind:2.15.4=compileClasspath
+com.fasterxml.jackson.core:jackson-databind:2.19.0=compileClasspath
 com.fasterxml.jackson.dataformat:jackson-dataformat-toml:2.19.0=compileClasspath
 com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.0=compileClasspath
 com.fasterxml.jackson:jackson-bom:2.19.0=compileClasspath
-com.netflix.spectator:spectator-api:1.8.12=compileClasspath
+com.netflix.spectator:spectator-api:1.8.13=compileClasspath
 com.zaxxer:HikariCP:6.3.0=compileClasspath
 io.zipkin.brave:brave:5.18.1=compileClasspath
 io.zipkin.reporter2:zipkin-reporter-brave:2.17.2=compileClasspath

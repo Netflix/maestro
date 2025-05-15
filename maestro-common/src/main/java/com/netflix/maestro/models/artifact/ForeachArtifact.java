@@ -15,7 +15,7 @@ package com.netflix.maestro.models.artifact;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.models.instance.ForeachAction;
@@ -24,7 +24,7 @@ import com.netflix.maestro.models.instance.RunPolicy;
 import lombok.Data;
 
 /** Foreach artifact to store foreach step loop stats overview at runtime. */
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(
     value = {

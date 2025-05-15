@@ -14,7 +14,7 @@ package com.netflix.maestro.models.instance;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
@@ -26,7 +26,7 @@ import lombok.Getter;
 import lombok.ToString;
 
 /** Action for foreach step that is still running. */
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(
     value = {"instance_id", "instance_run_id", "restart_config", "action", "user", "create_time"},
@@ -47,6 +47,6 @@ public class ForeachAction {
 
   /** builder class for lombok and jackson. */
   @JsonPOJOBuilder(withPrefix = "")
-  @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+  @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
   public static final class ForeachActionBuilder {}
 }

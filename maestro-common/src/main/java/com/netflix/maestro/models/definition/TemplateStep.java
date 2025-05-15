@@ -15,7 +15,7 @@ package com.netflix.maestro.models.definition;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -28,7 +28,7 @@ import lombok.ToString;
  * <p>Note that there is no step retry for template step. It might fail due to various reasons, e.g.
  * invalid SEL expression evaluation, etc. But retries won't help in those cases.
  */
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(alphabetic = true)
 @Data

@@ -14,7 +14,7 @@ package com.netflix.maestro.queue.jobevents;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.events.MaestroEvent;
@@ -25,7 +25,7 @@ import lombok.Data;
  * Maestro internal job event to DELETE all related data for a given workflow id. It is sent after
  * the workflow basic info is deleted. It requires exactly-once semantics.
  */
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(
     value = {"workflow_id", "internal_id", "author", "timestamp", "type"},

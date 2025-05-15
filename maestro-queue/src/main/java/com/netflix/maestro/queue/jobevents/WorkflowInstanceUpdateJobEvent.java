@@ -14,7 +14,7 @@ package com.netflix.maestro.queue.jobevents;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.models.definition.TagList;
 import com.netflix.maestro.models.events.WorkflowInstanceStatusChangeEvent;
@@ -28,7 +28,7 @@ import java.util.stream.Stream;
 import lombok.Data;
 
 /** Workflow instance pending change event schema. */
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(
     value = {"workflow_id", "workflow_name", "change_records", "sync_time"},
@@ -41,7 +41,7 @@ public class WorkflowInstanceUpdateJobEvent implements MaestroJobEvent {
   private long syncTime; // the moment that the event is synced internally
 
   /** Workflow instance status change record. */
-  @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+  @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
   @JsonInclude(JsonInclude.Include.NON_NULL)
   @JsonPropertyOrder(
       value = {

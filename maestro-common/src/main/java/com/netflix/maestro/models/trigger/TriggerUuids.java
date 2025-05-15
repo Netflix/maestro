@@ -14,7 +14,7 @@ package com.netflix.maestro.models.trigger;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
@@ -26,7 +26,7 @@ import lombok.Getter;
 import lombok.ToString;
 
 /** Trigger Uuids to hold time trigger uuid and signal trigger uuids. */
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(
     value = {"time_trigger_uuid", "signal_trigger_uuids"},
@@ -41,7 +41,7 @@ public class TriggerUuids {
   @Nullable private final Map<String, Integer> signalTriggerUuids;
 
   /** builder class for lombok and jackson. */
-  @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+  @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
   @JsonPOJOBuilder(withPrefix = "")
   public static final class TriggerUuidsBuilder {}
 }

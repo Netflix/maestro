@@ -2,7 +2,7 @@ package com.netflix.maestro.models.signal;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
@@ -21,7 +21,7 @@ import lombok.ToString;
  *
  * @author jun-he
  */
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @JsonPropertyOrder(
     value = {"param", "operator"},
@@ -36,7 +36,7 @@ public class SignalMatchParamDef {
   private final SignalOperator operator;
 
   /** Builder class for {@link SignalMatchParamDef}. */
-  @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+  @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
   @JsonPOJOBuilder(withPrefix = "")
   public static final class SignalMatchParamDefBuilder {
     /** build method with param type check. */
