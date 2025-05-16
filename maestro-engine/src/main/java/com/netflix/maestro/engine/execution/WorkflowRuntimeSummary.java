@@ -14,7 +14,7 @@ package com.netflix.maestro.engine.execution;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.instance.WorkflowInstance;
@@ -31,7 +31,7 @@ import lombok.Data;
  * Workflow instance runtime summary, which carries runtime states persisted in the special
  * DEFAULT_END_STEP_NAME task output.
  */
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(
     value = {

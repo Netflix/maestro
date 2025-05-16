@@ -2,7 +2,7 @@ package com.netflix.maestro.signal.models;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import java.util.Map;
@@ -13,7 +13,7 @@ import lombok.Data;
  *
  * @author jun-he
  */
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @JsonPropertyOrder(
     value = {"workflow_id", "trigger_uuid", "signal_ids", "condition", "dedup_expr", "params"},

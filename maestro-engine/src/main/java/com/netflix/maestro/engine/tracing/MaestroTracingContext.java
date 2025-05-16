@@ -15,7 +15,7 @@ package com.netflix.maestro.engine.tracing;
 import brave.propagation.TraceContext;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
@@ -33,7 +33,7 @@ import lombok.ToString;
  * step attempts.
  */
 @JsonDeserialize(builder = MaestroTracingContext.MaestroTracingContextBuilder.class)
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(
     value = {"trace_id_high", "trace_id_low", "span_id", "parent_span_id", "sampled"},
@@ -61,7 +61,7 @@ public final class MaestroTracingContext {
 
   /** builder class for lombok and jackson. */
   @JsonPOJOBuilder(withPrefix = "")
-  @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+  @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
   public static final class MaestroTracingContextBuilder {}
 
   /** Create a {@link MaestroTracingContext} from brave's {@link TraceContext}. */

@@ -15,7 +15,7 @@ package com.netflix.maestro.queue.jobevents;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.models.events.StepInstanceStatusChangeEvent;
 import com.netflix.maestro.models.instance.StepInstance;
@@ -28,7 +28,7 @@ import lombok.Data;
  * Step instance pending change batch event schema. This is used to publish a batch of pending
  * changes wrapped within a single maestro event.
  */
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(
     value = {
@@ -106,7 +106,7 @@ public class StepInstanceUpdateJobEvent implements MaestroJobEvent {
   }
 
   /** Step instance pending record schema. */
-  @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+  @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
   @JsonInclude(JsonInclude.Include.NON_NULL)
   @JsonPropertyOrder(
       value = {"old_status", "new_status", "event_time"},

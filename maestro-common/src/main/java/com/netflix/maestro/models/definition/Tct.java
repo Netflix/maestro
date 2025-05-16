@@ -15,7 +15,7 @@ package com.netflix.maestro.models.definition;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.models.parameter.LongParamDefinition;
@@ -23,7 +23,7 @@ import com.netflix.maestro.models.parameter.ParamDefinition;
 import lombok.Data;
 
 /** Target completion time (TCT) configurations. */
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(
     value = {"completed_by_hour", "duration_minutes", "completed_by_ts", "tz"},

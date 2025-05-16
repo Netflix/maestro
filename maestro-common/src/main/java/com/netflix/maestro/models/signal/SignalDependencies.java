@@ -15,7 +15,7 @@ package com.netflix.maestro.models.signal;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.models.definition.User;
@@ -27,7 +27,7 @@ import java.util.Map;
 import lombok.Data;
 
 /** Summarizes all the step dependencies current match status for a given type. */
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonPropertyOrder(
     value = {"dependencies", "info"},
     alphabetic = true)
@@ -61,7 +61,7 @@ public class SignalDependencies {
             .build();
   }
 
-  @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+  @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
   @JsonPropertyOrder(
       value = {"name", "status", "match_params", "signal_id"},
       alphabetic = true)

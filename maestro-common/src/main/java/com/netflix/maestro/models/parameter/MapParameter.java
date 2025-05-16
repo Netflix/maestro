@@ -15,7 +15,7 @@ package com.netflix.maestro.models.parameter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
@@ -48,7 +48,7 @@ import lombok.experimental.SuperBuilder;
  * <p>SHOULD NOT mutate the evaluated string map data.
  */
 @SuppressWarnings("unchecked")
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(
     value = {
@@ -72,7 +72,7 @@ public final class MapParameter extends AbstractParameter {
 
   private Map<String, Object> evaluatedResult;
 
-  @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+  @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
   @JsonPOJOBuilder(withPrefix = "")
   static final class MapParameterBuilderImpl
       extends MapParameterBuilder<MapParameter, MapParameterBuilderImpl> {
