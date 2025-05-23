@@ -125,7 +125,8 @@ public class MaestroRestExceptionHandler extends ResponseEntityExceptionHandler 
     LOG.info("Handle HandlerMethodValidationException with a message: {}", e.getMessage());
     List<String> errors =
         e.getBeanResults().stream()
-            .map(ParameterErrors::getFieldError)
+            .map(ParameterErrors::getFieldErrors)
+            .flatMap(List::stream)
             .filter(Objects::nonNull)
             .map(error -> error.getField() + EMPTY_SPACE + error.getDefaultMessage())
             .toList();
