@@ -131,8 +131,8 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
   public void testRestartDirectlyWithBlocking() throws Exception {
     RunResponse restartStepInfo = setupRestartStepInfoForRestartDirectly();
     RunRequest runRequest = setupRestartRunRequest();
-    MaestroStepInstanceActionDao spyDao = getSpyActionDao(15000);
-    Thread.ofPlatform().start(() -> spyDao.restartDirectly(restartStepInfo, runRequest, true));
+    MaestroStepInstanceActionDao spyDao = getSpyActionDao(18000);
+    Thread.ofVirtual().start(() -> spyDao.restartDirectly(restartStepInfo, runRequest, true));
 
     verify(queueSystem, timeout(3000).times(1)).enqueue(any(), any(InstanceActionJobEvent.class));
     verify(queueSystem, timeout(3000).times(3)).notify(any());
@@ -560,7 +560,7 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
   public void testBypassSignalDependenciesWithBlocking() throws SQLException {
     MaestroStepInstanceActionDao spyDao = prepareActionDaoForBypassDependencies(10000);
 
-    Thread.ofPlatform().start(() -> spyDao.bypassStepDependencies(instance, "job1", user, true));
+    Thread.ofVirtual().start(() -> spyDao.bypassStepDependencies(instance, "job1", user, true));
     verify(queueSystem, timeout(3000).times(1)).enqueue(any(), any(InstanceActionJobEvent.class));
     verify(queueSystem, times(3)).notify(any());
     // assert that the action was saved
