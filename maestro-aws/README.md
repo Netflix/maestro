@@ -8,5 +8,5 @@ If testing locally, please use the localstack to start the sns and sqs services 
 
 ```bash
 cd maestro-aws
-docker-compose up
+docker compose up
 ```
