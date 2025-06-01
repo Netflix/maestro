@@ -31,6 +31,14 @@ public class TimeTriggerConstraintTest extends BaseConstraintTest {
       this.triggers = new ArrayList<>();
       triggers.add(cron);
     }
+
+    DummyWorkflow(String cronExpr, String timezone) {
+      CronTimeTrigger cron = new CronTimeTrigger();
+      cron.setCron(cronExpr);
+      cron.setTimezone(timezone);
+      this.triggers = new ArrayList<>();
+      triggers.add(cron);
+    }
   }
 
   @Test
@@ -38,15 +46,28 @@ public class TimeTriggerConstraintTest extends BaseConstraintTest {
     Assert.assertTrue(validator.validate(new DummyWorkflow("0 * * * *")).isEmpty());
     Assert.assertTrue(validator.validate(new DummyWorkflow("*/5 * * * *")).isEmpty());
     Assert.assertTrue(validator.validate(new DummyWorkflow("*/3 * * * *")).isEmpty());
+    Assert.assertTrue(validator.validate(new DummyWorkflow("0 * * * *", null)).isEmpty());
+    Assert.assertTrue(validator.validate(new DummyWorkflow("*/5 * * * *", "")).isEmpty());
+    Assert.assertTrue(validator.validate(new DummyWorkflow("*/3 * * * *", "US/Pacific")).isEmpty());
   }
 
   @Test
-  public void testInValid() {
+  public void testInValidCron() {
     Set<ConstraintViolation<DummyWorkflow>> violations =
         validator.validate(new DummyWorkflow("*/1 * * * *"));
     Assert.assertEquals(1, violations.size());
     Assert.assertEquals(
         "[time-trigger] the interval between time triggers is less than the minimal value [120000] millis",
+        violations.iterator().next().getMessage());
+  }
+
+  @Test
+  public void testInValidTimezone() {
+    Set<ConstraintViolation<DummyWorkflow>> violations =
+        validator.validate(new DummyWorkflow("*/1 * * * *", "foo"));
+    Assert.assertEquals(1, violations.size());
+    Assert.assertEquals(
+        "[time-trigger] is not valid - rejected value is [CronTimeTrigger(cron=*/1 * * * *, timezone=foo)] - error: [Unknown time-zone ID: foo]",
         violations.iterator().next().getMessage());
   }
 }

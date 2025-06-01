@@ -49,4 +49,10 @@ public class TimeZoneConstraintTest extends BaseConstraintTest {
     Set<ConstraintViolation<TestTimeZone>> violations = validator.validate(new TestTimeZone(null));
     assertEquals(0, violations.size());
   }
+
+  @Test
+  public void isEmpty() {
+    Set<ConstraintViolation<TestTimeZone>> violations = validator.validate(new TestTimeZone(""));
+    assertEquals(0, violations.size());
+  }
 }

@@ -33,7 +33,9 @@ public class CronConstraintTest extends BaseConstraintTest {
   public void testValid() {
     Set<ConstraintViolation<TestCron>> violations = validator.validate(new TestCron("0 0 * * *"));
     assertEquals(0, violations.size());
-    violations = validator.validate(new TestCron("0-55/5 * * * *"));
+    violations = validator.validate(new TestCron("0-55/5 * * * *")); // unix cron
+    assertEquals(0, violations.size());
+    violations = validator.validate(new TestCron("0 0 12 1/1 * ? *")); // quartz cron
     assertEquals(0, violations.size());
   }
 
@@ -46,7 +48,7 @@ public class CronConstraintTest extends BaseConstraintTest {
     assertThat(violation.getMessage())
         .contains(
             "[cron expression] is not valid "
-                + "- rejected value is [* * blah blah] - error: [Illegal characters for this position");
+                + "- rejected value is [* * blah blah] - error: [Cron expression contains 4 parts but we expect one of [6, 7]");
   }
 
   @Test

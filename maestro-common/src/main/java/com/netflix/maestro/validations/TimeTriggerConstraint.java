@@ -55,27 +55,37 @@ public @interface TimeTriggerConstraint {
 
     @Override
     public boolean isValid(TimeTrigger trigger, ConstraintValidatorContext context) {
-      Optional<Date> d1 = TriggerHelper.nextExecutionDate(trigger, new Date(), "");
-      if (d1.isEmpty()) {
-        return true;
-      }
-      Optional<Date> d2 = TriggerHelper.nextExecutionDate(trigger, d1.get(), "");
-      if (d2.isEmpty()) {
-        return true;
-      }
+      try {
+        Optional<Date> d1 = TriggerHelper.nextExecutionDate(trigger, new Date(), "");
+        if (d1.isEmpty()) {
+          return true;
+        }
+        Optional<Date> d2 = TriggerHelper.nextExecutionDate(trigger, d1.get(), "");
+        if (d2.isEmpty()) {
+          return true;
+        }
 
-      long period = d2.get().getTime() - d1.get().getTime();
+        long period = d2.get().getTime() - d1.get().getTime();
 
-      if (period < Constants.TIME_TRIGGER_MINIMUM_INTERVAL) {
+        if (period < Constants.TIME_TRIGGER_MINIMUM_INTERVAL) {
+          context
+              .buildConstraintViolationWithTemplate(
+                  String.format(
+                      "[time-trigger] the interval between time triggers is less than the minimal value [%s] millis",
+                      Constants.TIME_TRIGGER_MINIMUM_INTERVAL))
+              .addConstraintViolation();
+          return false;
+        }
+        return true;
+      } catch (Exception e) {
         context
             .buildConstraintViolationWithTemplate(
                 String.format(
-                    "[time-trigger] the interval between time triggers is less than the minimal value [%s] millis",
-                    Constants.TIME_TRIGGER_MINIMUM_INTERVAL))
+                    "[time-trigger] is not valid - rejected value is [%s] - error: [%s]",
+                    trigger, e.getMessage()))
             .addConstraintViolation();
         return false;
       }
-      return true;
     }
   }
 }
