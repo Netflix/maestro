@@ -12,26 +12,23 @@
  */
 package com.netflix.maestro.utils;
 
-import com.cronutils.mapper.CronMapper;
 import com.cronutils.model.Cron;
 import com.cronutils.model.CronType;
 import com.cronutils.model.definition.CronDefinitionBuilder;
+import com.cronutils.model.time.ExecutionTime;
 import com.cronutils.parser.CronParser;
 import com.netflix.maestro.models.Defaults;
 import com.netflix.maestro.models.trigger.CronTimeTrigger;
 import com.netflix.maestro.models.trigger.PredefinedTimeTrigger;
 import com.netflix.maestro.models.trigger.TimeTrigger;
 import com.netflix.maestro.models.trigger.TimeTriggerWithJitter;
-import java.text.ParseException;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.Optional;
 import java.util.Random;
-import java.util.TimeZone;
 import java.util.UUID;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.joda.time.DateTimeZone;
-import org.quartz.CronExpression;
 
 /** Cron Helper utility class. */
 @Slf4j
@@ -39,15 +36,16 @@ public final class TriggerHelper {
   /** Private constructor for utility class. */
   private TriggerHelper() {}
 
+  private record ParsedCron(ExecutionTime executionTime, ZoneId zoneId) {}
+
   /**
-   * Build cron from expression.
+   * Build cron from expression for validation.
    *
    * @param cron cron string
-   * @return cron expression object
-   * @throws ParseException parse error
+   * @throws IllegalArgumentException parse error
    */
-  public static CronExpression buildCron(String cron) throws ParseException {
-    return buildCron(cron, Defaults.DEFAULT_TIMEZONE);
+  public static void validateCron(String cron) {
+    buildCron(cron, Defaults.DEFAULT_TIMEZONE);
   }
 
   /**
@@ -55,34 +53,36 @@ public final class TriggerHelper {
    *
    * @param cron cron string
    * @param timezone timezone
-   * @return cron expression object
-   * @throws ParseException parse error
+   * @return parsed cron expression object with execution time
+   * @throws IllegalArgumentException parse error
    */
-  public static CronExpression buildCron(String cron, String timezone) throws ParseException {
-    return buildCron(cron, DateTimeZone.forID(timezone).toTimeZone());
+  private static ParsedCron buildCron(String cron, String timezone) {
+    return buildCron(
+        cron,
+        ObjectHelper.isNullOrEmpty(timezone) ? Defaults.DEFAULT_TIMEZONE : ZoneId.of(timezone));
   }
 
   /**
-   * Build cron from cron expression and timezone.
+   * Build cron from cron expression and timezone id.
    *
    * @param cron cron string
-   * @param timezone timezone
-   * @return the cron expression object
-   * @throws ParseException parse error
+   * @param zoneId time zone id
+   * @return parsed cron expression object with execution time
+   * @throws IllegalArgumentException parse error
    */
-  public static CronExpression buildCron(String cron, TimeZone timezone) throws ParseException {
-    String cronStr = cron;
+  private static ParsedCron buildCron(String cron, ZoneId zoneId) {
     CronParser unixParser =
         new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.UNIX));
+    Cron parsedCron;
     try {
-      Cron parsedCron = unixParser.parse(cron);
-      cronStr = CronMapper.fromUnixToQuartz().map(parsedCron).asString();
+      parsedCron = unixParser.parse(cron);
     } catch (IllegalArgumentException e) {
-      LOG.trace("Unix cron parsing not successful for " + cron, e);
+      LOG.trace("Unix cron parsing not successful for {}, trying Quartz format", cron, e);
+      CronParser quartzParser =
+          new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ));
+      parsedCron = quartzParser.parse(cron);
     }
-    CronExpression cronExpression = new CronExpression(cronStr);
-    cronExpression.setTimeZone(timezone);
-    return cronExpression;
+    return new ParsedCron(ExecutionTime.forCron(parsedCron), zoneId);
   }
 
   /**
@@ -94,20 +94,26 @@ public final class TriggerHelper {
    *     workflow, and ensuring uniqueness is the caller's responsibility.
    * @return next execution date if present
    */
-  @SneakyThrows
   public static Optional<Date> nextExecutionDate(
       TimeTrigger trigger, Date startDate, String uniqueId) {
     CronTimeTrigger cronTimeTrigger = getCronTimeTrigger(trigger);
     if (cronTimeTrigger != null) {
-      CronExpression cronExpression =
+      ParsedCron parsedCron =
           TriggerHelper.buildCron(cronTimeTrigger.getCron(), cronTimeTrigger.getTimezone());
-      Date nextTime = cronExpression.getNextValidTimeAfter(startDate);
-      if (nextTime != null) {
-        nextTime.setTime(
-            nextTime.getTime()
-                + getDelayInSeconds(cronTimeTrigger, uniqueId) * TimeTrigger.MS_IN_SECONDS);
-      }
-      return Optional.ofNullable(nextTime);
+
+      ZonedDateTime startDateTime =
+          ZonedDateTime.ofInstant(startDate.toInstant(), parsedCron.zoneId());
+
+      Optional<ZonedDateTime> nextExecution =
+          parsedCron.executionTime().nextExecution(startDateTime);
+      return nextExecution.map(
+          next -> {
+            Date nextTime = Date.from(next.toInstant());
+            nextTime.setTime(
+                nextTime.getTime()
+                    + getDelayInSeconds(cronTimeTrigger, uniqueId) * TimeTrigger.MS_IN_SECONDS);
+            return nextTime;
+          });
     }
 
     throw new UnsupportedOperationException(
@@ -118,8 +124,7 @@ public final class TriggerHelper {
     CronTimeTrigger cronTimeTrigger = null;
     if (trigger instanceof CronTimeTrigger) {
       cronTimeTrigger = (CronTimeTrigger) trigger;
-    } else if (trigger instanceof PredefinedTimeTrigger) {
-      PredefinedTimeTrigger timeTrigger = (PredefinedTimeTrigger) trigger;
+    } else if (trigger instanceof PredefinedTimeTrigger timeTrigger) {
       cronTimeTrigger = new CronTimeTrigger();
       cronTimeTrigger.setCron(timeTrigger.getExpression().key());
       cronTimeTrigger.setTimezone(timeTrigger.getTimezone());

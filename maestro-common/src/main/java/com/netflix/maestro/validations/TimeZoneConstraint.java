@@ -21,7 +21,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.joda.time.DateTimeZone;
+import java.time.ZoneId;
 
 /** Maestro timezone expression validation. */
 @Documented
@@ -50,8 +50,8 @@ public @interface TimeZoneConstraint {
       }
 
       try {
-        DateTimeZone.forID(timezone);
-      } catch (IllegalArgumentException e) {
+        ZoneId.of(timezone);
+      } catch (Exception e) {
         context
             .buildConstraintViolationWithTemplate("[timezone expression] is not valid: " + e)
             .addConstraintViolation();

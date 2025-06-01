@@ -20,8 +20,7 @@ import com.netflix.maestro.models.definition.TagList;
 import com.netflix.maestro.models.instance.RunPolicy;
 import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.parameter.ParamMode;
-import java.util.TimeZone;
-import org.joda.time.DateTimeZone;
+import java.time.ZoneId;
 
 /** Class to hold the user facing default values for unset fields. */
 public final class Defaults {
@@ -122,7 +121,7 @@ public final class Defaults {
       StepInstance.Status.NOT_CREATED;
 
   /** Default Time Zone. */
-  public static final TimeZone DEFAULT_TIMEZONE = DateTimeZone.UTC.toTimeZone();
+  public static final ZoneId DEFAULT_TIMEZONE = ZoneId.of("UTC");
 
   /** Default Param Mode. */
   public static final ParamMode DEFAULT_PARAM_MODE = ParamMode.MUTABLE;
