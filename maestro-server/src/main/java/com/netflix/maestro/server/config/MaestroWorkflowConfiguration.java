@@ -51,8 +51,6 @@ import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.server.properties.MaestroEngineProperties;
 import com.netflix.maestro.signal.dao.MaestroSignalBrokerDao;
 import com.netflix.maestro.signal.handler.MaestroSignalHandler;
-import jakarta.validation.Validation;
-import jakarta.validation.ValidatorFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.bval.jsr.ApacheValidationProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -96,18 +94,11 @@ public class MaestroWorkflowConfiguration {
   }
 
   @Bean
-  public ValidatorFactory validator() {
-    LOG.info("Creating validator within Spring boot...");
-    return Validation.byProvider(ApacheValidationProvider.class)
-        .configure()
-        .buildValidatorFactory();
-  }
-
-  @Bean
-  public org.springframework.validation.Validator validatorFactory() {
-    // Need this been for dependency injection to work in ConstraintValidator classes
-    LOG.info("Creating validatorFactory within Spring boot...");
-    return new LocalValidatorFactoryBean();
+  public LocalValidatorFactoryBean localValidatorFactoryBean() {
+    LOG.info("Creating localValidatorFactoryBean within Spring boot...");
+    LocalValidatorFactoryBean bean = new LocalValidatorFactoryBean();
+    bean.setProviderClass(ApacheValidationProvider.class);
+    return bean;
   }
 
   @Bean
