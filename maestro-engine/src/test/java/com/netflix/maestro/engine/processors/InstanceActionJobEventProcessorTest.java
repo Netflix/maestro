@@ -23,6 +23,7 @@ import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
 import com.netflix.maestro.exceptions.MaestroRetryableError;
 import com.netflix.maestro.flow.runtime.FlowOperation;
 import com.netflix.maestro.models.Actions;
+import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.definition.StepType;
@@ -53,7 +54,7 @@ public class InstanceActionJobEventProcessorTest extends MaestroEngineBaseTest {
   private final String workflowId = "sample-test-workflow-id";
   private final long workflowInstanceId = 2;
   private final long workflowRunId = 3;
-  private final String stepAttemptId = "2";
+  private final String stepAttemptId = Constants.LATEST_INSTANCE_RUN;
   private final long groupInfo = 12L;
   private final String stepId = "sample-test-step-id";
   private InstanceActionJobEventProcessor processor;
@@ -97,7 +98,7 @@ public class InstanceActionJobEventProcessorTest extends MaestroEngineBaseTest {
     when(stepInstance.getArtifacts()).thenReturn(artifactMap);
     when(stepInstance.getStepId()).thenReturn(stepId);
     when(stepInstance.getGroupInfo()).thenReturn(groupInfo);
-    when(stepInstance.getStepAttemptId()).thenReturn(Long.valueOf(stepAttemptId));
+    when(stepInstance.getStepAttemptId()).thenReturn(2L);
     when(foreachStepInstance.getGroupInfo()).thenReturn(groupInfo);
   }
 

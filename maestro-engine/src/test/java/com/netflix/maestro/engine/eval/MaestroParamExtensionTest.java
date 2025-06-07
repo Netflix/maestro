@@ -161,7 +161,7 @@ public class MaestroParamExtensionTest extends MaestroEngineBaseTest {
     when(allStepOutputData.get("foo"))
         .thenReturn(Collections.singletonMap("maestro_step_runtime_summary", summary));
     StepInstance stepInSubworkflow = loadObject(TEST_STEP_INSTANCE, StepInstance.class);
-    when(stepInstanceDao.getStepInstance(any(), anyLong(), anyLong(), any(), any()))
+    when(stepInstanceDao.getStepInstanceView(any(), anyLong(), any()))
         .thenReturn(stepInSubworkflow);
     long res = (Long) paramExtension.getFromSubworkflow("foo", "job1", "sleep_seconds");
     assertEquals(15, res);
