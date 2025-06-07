@@ -438,12 +438,8 @@ public class MaestroParamExtension extends AbstractParamExtension {
             .asSubworkflow();
 
     StepInstance stepInstance =
-        stepInstanceDao.getStepInstance(
-            artifact.getSubworkflowId(),
-            artifact.getSubworkflowInstanceId(),
-            artifact.getSubworkflowRunId(),
-            stepId,
-            Constants.LATEST_INSTANCE_RUN);
+        stepInstanceDao.getStepInstanceView(
+            artifact.getSubworkflowId(), artifact.getSubworkflowInstanceId(), stepId);
 
     if (stepInstance.getParams() == null || !stepInstance.getParams().containsKey(paramName)) {
       throw new MaestroInvalidExpressionException("Cannot find the param name: [%s]", paramName);

@@ -18,6 +18,7 @@ import com.netflix.maestro.exceptions.MaestroRetryableError;
 import com.netflix.maestro.exceptions.MaestroRuntimeException;
 import com.netflix.maestro.flow.runtime.FlowOperation;
 import com.netflix.maestro.models.Actions;
+import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.queue.jobevents.InstanceActionJobEvent;
@@ -116,7 +117,7 @@ public class InstanceActionJobEventProcessor
             jobEvent.getWorkflowInstanceId(),
             jobEvent.getWorkflowRunId(),
             jobEvent.getStepId(),
-            jobEvent.getStepAttemptId());
+            Constants.LATEST_INSTANCE_RUN);
     if (stepInstance == null) {
       LOG.warn(
           "Action is requested on an invalid step instance. The requested action is: {}",
