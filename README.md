@@ -51,6 +51,9 @@ You can read more details about it in our latest [blog post](https://netflixtech
 - `curl --header "user: tester" -X POST 'http://127.0.0.1:8080/api/v3/workflows' -H "Content-Type: application/json" -d @maestro-server/src/test/resources/samples/sample-kubernetes-wf.json`
 - `curl --header "user: tester" -X POST 'http://127.0.0.1:8080/api/v3/workflows/sample-kubernetes-wf/versions/latest/actions/start' -H "Content-Type: application/json" -d '{"initiator": {"type": "manual"}}'`
 
+## Get in touch
+Join our community [Slack workspace](https://join.slack.com/t/maestro-oss/shared_invite/zt-35xx3kcgm-_1uJHKi8FOnnAYzrZRddPw) for discussions!
+
 # License
 Copyright 2024 Netflix, Inc.
 
