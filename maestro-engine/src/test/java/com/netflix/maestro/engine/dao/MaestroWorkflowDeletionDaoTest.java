@@ -46,12 +46,12 @@ public class MaestroWorkflowDeletionDaoTest extends MaestroDaoBaseTest {
 
   @Before
   public void setUp() {
-    deletionDao = new MaestroWorkflowDeletionDao(dataSource, MAPPER, config, metricRepo);
+    deletionDao = new MaestroWorkflowDeletionDao(DATA_SOURCE, MAPPER, CONFIG, metricRepo);
     workflowDao =
         new MaestroWorkflowDao(
-            dataSource,
+            DATA_SOURCE,
             MAPPER,
-            config,
+            CONFIG,
             queueSystem,
             mock(TriggerSubscriptionClient.class),
             metricRepo);
@@ -59,7 +59,7 @@ public class MaestroWorkflowDeletionDaoTest extends MaestroDaoBaseTest {
 
   @After
   public void tearDown() {
-    MaestroTestHelper.removeWorkflow(dataSource, TEST_WORKFLOW_ID1);
+    MaestroTestHelper.removeWorkflow(DATA_SOURCE, TEST_WORKFLOW_ID1);
     reset(queueSystem);
   }
 

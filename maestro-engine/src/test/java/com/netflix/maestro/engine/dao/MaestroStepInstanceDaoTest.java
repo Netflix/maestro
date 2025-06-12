@@ -76,7 +76,7 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
   @Before
   public void setUp() throws Exception {
     queueSystem = Mockito.mock(MaestroQueueSystem.class);
-    stepDao = new MaestroStepInstanceDao(dataSource, MAPPER, config, queueSystem, metricRepo);
+    stepDao = new MaestroStepInstanceDao(DATA_SOURCE, MAPPER, CONFIG, queueSystem, metricRepo);
     si = loadObject(TEST_STEP_INSTANCE, StepInstance.class);
     stepDao.insertOrUpsertStepInstance(si, false, null);
     verify(queueSystem, times(1)).notify(any());
@@ -85,7 +85,7 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
 
   @After
   public void tearDown() {
-    MaestroTestHelper.removeWorkflowInstance(dataSource, TEST_WORKFLOW_ID, 1);
+    MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID, 1);
     AssertHelper.assertThrows(
         "cannot get non-existing workflow instance",
         MaestroNotFoundException.class,

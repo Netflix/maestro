@@ -106,25 +106,26 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
     queueSystem = mock(MaestroQueueSystem.class);
     triggerClient = mock(TriggerSubscriptionClient.class);
     workflowDao =
-        new MaestroWorkflowDao(dataSource, MAPPER, config, queueSystem, triggerClient, metricRepo);
+        new MaestroWorkflowDao(DATA_SOURCE, MAPPER, CONFIG, queueSystem, triggerClient, metricRepo);
     instanceDao =
-        new MaestroWorkflowInstanceDao(dataSource, MAPPER, config, queueSystem, metricRepo);
-    runStrategyDao = new MaestroRunStrategyDao(dataSource, MAPPER, config, queueSystem, metricRepo);
+        new MaestroWorkflowInstanceDao(DATA_SOURCE, MAPPER, CONFIG, queueSystem, metricRepo);
+    runStrategyDao =
+        new MaestroRunStrategyDao(DATA_SOURCE, MAPPER, CONFIG, queueSystem, metricRepo);
   }
 
   @After
   public void tearDown() {
-    MaestroTestHelper.removeWorkflow(dataSource, TEST_WORKFLOW_ID1);
-    MaestroTestHelper.removeWorkflow(dataSource, TEST_WORKFLOW_ID2);
-    MaestroTestHelper.removeWorkflow(dataSource, TEST_WORKFLOW_ID3);
-    MaestroTestHelper.removeWorkflow(dataSource, TEST_WORKFLOW_ID4);
-    MaestroTestHelper.removeWorkflow(dataSource, TEST_WORKFLOW_ID5);
-    MaestroTestHelper.removeWorkflow(dataSource, TEST_WORKFLOW_ID6);
-    MaestroTestHelper.removeWorkflow(dataSource, TEST_WORKFLOW_ID7);
-    MaestroTestHelper.removeWorkflow(dataSource, TEST_WORKFLOW_ID8);
-    MaestroTestHelper.removeWorkflowInstance(dataSource, TEST_WORKFLOW_ID1, 1);
-    MaestroTestHelper.removeWorkflowInstance(dataSource, TEST_WORKFLOW_ID1, 2);
-    MaestroTestHelper.removeWorkflowInstance(dataSource, TEST_INLINE_WORKFLOW_ID1, 1);
+    MaestroTestHelper.removeWorkflow(DATA_SOURCE, TEST_WORKFLOW_ID1);
+    MaestroTestHelper.removeWorkflow(DATA_SOURCE, TEST_WORKFLOW_ID2);
+    MaestroTestHelper.removeWorkflow(DATA_SOURCE, TEST_WORKFLOW_ID3);
+    MaestroTestHelper.removeWorkflow(DATA_SOURCE, TEST_WORKFLOW_ID4);
+    MaestroTestHelper.removeWorkflow(DATA_SOURCE, TEST_WORKFLOW_ID5);
+    MaestroTestHelper.removeWorkflow(DATA_SOURCE, TEST_WORKFLOW_ID6);
+    MaestroTestHelper.removeWorkflow(DATA_SOURCE, TEST_WORKFLOW_ID7);
+    MaestroTestHelper.removeWorkflow(DATA_SOURCE, TEST_WORKFLOW_ID8);
+    MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID1, 1);
+    MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID1, 2);
+    MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_INLINE_WORKFLOW_ID1, 1);
   }
 
   @Test
@@ -147,7 +148,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
             "fixtures/instances/sample-workflow-instance-created.json", WorkflowInstance.class);
     instance.setWorkflowId(TEST_WORKFLOW_ID1);
     runStrategyDao.startWithRunStrategy(instance, RunStrategy.create("SEQUENTIAL"));
-    MaestroTestHelper.deleteWorkflow(dataSource, TEST_WORKFLOW_ID1);
+    MaestroTestHelper.deleteWorkflow(DATA_SOURCE, TEST_WORKFLOW_ID1);
     WorkflowDefinition wfdAnother = loadWorkflow(TEST_WORKFLOW_ID1);
     workflowDao.addWorkflowDefinition(
         wfdAnother, wfdAnother.getPropertiesSnapshot().extractProperties());
@@ -1117,7 +1118,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
     }
 
     MaestroRunStrategyDao runStrategyDao =
-        new MaestroRunStrategyDao(dataSource, MAPPER, config, queueSystem, metricRepo);
+        new MaestroRunStrategyDao(DATA_SOURCE, MAPPER, CONFIG, queueSystem, metricRepo);
     WorkflowInstance instance =
         loadObject(
             "fixtures/instances/sample-workflow-instance-created.json", WorkflowInstance.class);
@@ -1147,7 +1148,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
             });
 
     MaestroWorkflowInstanceDao instanceDao =
-        new MaestroWorkflowInstanceDao(dataSource, MAPPER, config, queueSystem, metricRepo);
+        new MaestroWorkflowInstanceDao(DATA_SOURCE, MAPPER, CONFIG, queueSystem, metricRepo);
     instanceDao.tryTerminateQueuedInstance(instance, WorkflowInstance.Status.FAILED, "test-reason");
     properties.setRunStrategy(RunStrategy.create("strict_sequential"));
     AssertHelper.assertThrows(

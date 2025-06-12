@@ -14,8 +14,8 @@ import org.mockito.Mockito;
  * @author jun-he
  */
 abstract class MaestroBaseSignalDaoTest extends MaestroBaseTest {
-  static DatabaseConfiguration CONFIG = MaestroDatabaseHelper.getConfig();
-  static DataSource DATA_SOURCE = MaestroDatabaseHelper.getDataSource();
+  static final DatabaseConfiguration CONFIG = MaestroDatabaseHelper.getConfig();
+  static final DataSource DATA_SOURCE = MaestroDatabaseHelper.getDataSource();
   static MaestroMetrics METRICS;
 
   @BeforeClass

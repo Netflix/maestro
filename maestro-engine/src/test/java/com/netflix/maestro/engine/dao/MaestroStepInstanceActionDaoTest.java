@@ -88,10 +88,10 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
     properties.setActionTimeout(30000);
     properties.setCheckInterval(1000);
     stepInstanceDao =
-        new MaestroStepInstanceDao(dataSource, MAPPER, config, queueSystem, metricRepo);
+        new MaestroStepInstanceDao(DATA_SOURCE, MAPPER, CONFIG, queueSystem, metricRepo);
     actionDao =
         new MaestroStepInstanceActionDao(
-            dataSource, MAPPER, config, properties, stepInstanceDao, queueSystem, metricRepo);
+            DATA_SOURCE, MAPPER, CONFIG, properties, stepInstanceDao, queueSystem, metricRepo);
     instance =
         loadObject(
             "fixtures/instances/sample-workflow-instance-created.json", WorkflowInstance.class);
@@ -109,7 +109,7 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
   @After
   public void tearDown() {
     // clean up step instances
-    MaestroTestHelper.removeWorkflowInstance(dataSource, "sample-dag-test-3", 1);
+    MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, "sample-dag-test-3", 1);
   }
 
   @Test
@@ -189,7 +189,7 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
     props.setCheckInterval(100);
     return spy(
         new MaestroStepInstanceActionDao(
-            dataSource, MAPPER, config, props, stepInstanceDao, queueSystem, metricRepo));
+            DATA_SOURCE, MAPPER, CONFIG, props, stepInstanceDao, queueSystem, metricRepo));
   }
 
   @Test
@@ -325,10 +325,10 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
 
   @Test
   public void testTryGetActionWithError() throws Exception {
-    DataSource dataSource1 = spy(dataSource);
+    DataSource dataSource1 = spy(DATA_SOURCE);
     MaestroStepInstanceActionDao actionDao1 =
         new MaestroStepInstanceActionDao(
-            dataSource1, MAPPER, config, properties, stepInstanceDao, queueSystem, metricRepo);
+            dataSource1, MAPPER, CONFIG, properties, stepInstanceDao, queueSystem, metricRepo);
     doThrow(new RuntimeException("test-exception")).when(dataSource1).getConnection();
 
     Optional<StepAction> stepAction = actionDao1.tryGetAction(summary, "job1");
