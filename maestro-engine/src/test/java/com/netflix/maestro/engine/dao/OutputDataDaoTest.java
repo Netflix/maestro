@@ -47,7 +47,7 @@ public class OutputDataDaoTest extends MaestroDaoBaseTest {
 
   @Before
   public void setUp() throws IOException {
-    dao = new OutputDataDao(dataSource, MAPPER, config, metricRepo);
+    dao = new OutputDataDao(DATA_SOURCE, MAPPER, CONFIG, metricRepo);
     WorkflowDefinition definition =
         loadObject("fixtures/parameters/sample-wf-notebook.json", WorkflowDefinition.class);
     params = toParameters(definition.getWorkflow().getParams());
@@ -60,7 +60,7 @@ public class OutputDataDaoTest extends MaestroDaoBaseTest {
   @Test
   public void testParamsSizeOverLimit() throws Exception {
     ObjectMapper mockMapper = mock(ObjectMapper.class);
-    OutputDataDao testDao = new OutputDataDao(dataSource, mockMapper, config, metricRepo);
+    OutputDataDao testDao = new OutputDataDao(DATA_SOURCE, mockMapper, CONFIG, metricRepo);
     when(mockMapper.writeValueAsString(any()))
         .thenReturn(new String(new char[Constants.JSONIFIED_PARAMS_STRING_SIZE_LIMIT + 1]));
     AssertHelper.assertThrows(
