@@ -82,14 +82,15 @@ public class MaestroWorkflowInstanceDaoTest extends MaestroDaoBaseTest {
   @Before
   public void setUp() throws Exception {
     instanceDao =
-        new MaestroWorkflowInstanceDao(dataSource, MAPPER, config, queueSystem, metricRepo);
-    runStrategyDao = new MaestroRunStrategyDao(dataSource, MAPPER, config, queueSystem, metricRepo);
+        new MaestroWorkflowInstanceDao(DATA_SOURCE, MAPPER, CONFIG, queueSystem, metricRepo);
+    runStrategyDao =
+        new MaestroRunStrategyDao(DATA_SOURCE, MAPPER, CONFIG, queueSystem, metricRepo);
 
     MaestroWorkflowDao workflowDao =
         new MaestroWorkflowDao(
-            dataSource,
+            DATA_SOURCE,
             MAPPER,
-            config,
+            CONFIG,
             queueSystem,
             mock(TriggerSubscriptionClient.class),
             metricRepo);
@@ -126,8 +127,8 @@ public class MaestroWorkflowInstanceDaoTest extends MaestroDaoBaseTest {
 
   @After
   public void tearDown() {
-    MaestroTestHelper.removeWorkflow(dataSource, TEST_WORKFLOW_ID);
-    MaestroTestHelper.removeWorkflowInstance(dataSource, TEST_WORKFLOW_ID, 1);
+    MaestroTestHelper.removeWorkflow(DATA_SOURCE, TEST_WORKFLOW_ID);
+    MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID, 1);
     AssertHelper.assertThrows(
         "cannot get non-existing workflow instance",
         MaestroNotFoundException.class,
@@ -208,9 +209,9 @@ public class MaestroWorkflowInstanceDaoTest extends MaestroDaoBaseTest {
     assertEquals(0, cnt);
     verify(queueSystem, times(2)).enqueue(any(), any(WorkflowInstanceUpdateJobEvent.class));
     verify(queueSystem, times(4)).notify(any());
-    MaestroTestHelper.removeWorkflowInstance(dataSource, TEST_WORKFLOW_ID, 100);
-    MaestroTestHelper.removeWorkflowInstance(dataSource, TEST_WORKFLOW_ID, 101);
-    MaestroTestHelper.removeWorkflowInstance(dataSource, TEST_WORKFLOW_ID, 102);
+    MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID, 100);
+    MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID, 101);
+    MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID, 102);
   }
 
   @Test
@@ -279,9 +280,9 @@ public class MaestroWorkflowInstanceDaoTest extends MaestroDaoBaseTest {
     assertEquals(3, cnt);
     verify(queueSystem, times(6)).enqueueOrThrow(any(TerminateThenRunJobEvent.class));
 
-    MaestroTestHelper.removeWorkflowInstance(dataSource, TEST_WORKFLOW_ID, 100);
-    MaestroTestHelper.removeWorkflowInstance(dataSource, TEST_WORKFLOW_ID, 101);
-    MaestroTestHelper.removeWorkflowInstance(dataSource, TEST_WORKFLOW_ID, 102);
+    MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID, 100);
+    MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID, 101);
+    MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID, 102);
   }
 
   @Test
@@ -354,10 +355,10 @@ public class MaestroWorkflowInstanceDaoTest extends MaestroDaoBaseTest {
     assertEquals(WorkflowInstance.Status.CREATED, actual.getStatus());
     verify(queueSystem, times(1)).notify(any());
 
-    MaestroTestHelper.removeWorkflowInstance(dataSource, TEST_WORKFLOW_ID, 100);
-    MaestroTestHelper.removeWorkflowInstance(dataSource, TEST_WORKFLOW_ID, 101);
-    MaestroTestHelper.removeWorkflowInstance(dataSource, TEST_WORKFLOW_ID, 102);
-    MaestroTestHelper.removeWorkflowInstance(dataSource, TEST_WORKFLOW_ID, 103);
+    MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID, 100);
+    MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID, 101);
+    MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID, 102);
+    MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID, 103);
   }
 
   @Test
@@ -731,7 +732,7 @@ public class MaestroWorkflowInstanceDaoTest extends MaestroDaoBaseTest {
     verify(queueSystem, times(3)).enqueue(any(), any());
     verify(queueSystem, times(4)).notify(any());
 
-    MaestroTestHelper.removeWorkflowInstance(dataSource, TEST_WORKFLOW_ID, 2);
+    MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID, 2);
   }
 
   @Test
@@ -893,7 +894,7 @@ public class MaestroWorkflowInstanceDaoTest extends MaestroDaoBaseTest {
     assertFalse(ret.isPresent());
 
     assertEquals(2L, instanceDao.getLargestForeachRunIdFromRuns(TEST_WORKFLOW_ID));
-    MaestroTestHelper.removeWorkflowInstance(dataSource, TEST_WORKFLOW_ID, 101);
+    MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID, 101);
   }
 
   @Test
@@ -905,7 +906,7 @@ public class MaestroWorkflowInstanceDaoTest extends MaestroDaoBaseTest {
   private void cleanupForGetWorkflowInstancesLatestRun() {
     // delete inserted extra instances
     for (int i = 1; i < 10; i++) {
-      MaestroTestHelper.removeWorkflowInstance(dataSource, TEST_WORKFLOW_ID, i + 1);
+      MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID, i + 1);
     }
   }
 
@@ -1035,8 +1036,8 @@ public class MaestroWorkflowInstanceDaoTest extends MaestroDaoBaseTest {
     assertEquals(2, result.size());
     assertEquals(20, result.getFirst().getTotalLeafCount());
     assertEquals(5, result.get(1).getTotalLeafCount());
-    MaestroTestHelper.removeWorkflowInstance(dataSource, TEST_WORKFLOW_ID, 101);
-    MaestroTestHelper.removeWorkflowInstance(dataSource, TEST_WORKFLOW_ID, 102);
+    MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID, 101);
+    MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID, 102);
   }
 
   @Test
@@ -1056,7 +1057,7 @@ public class MaestroWorkflowInstanceDaoTest extends MaestroDaoBaseTest {
     } finally {
       // delete inserted rows
       for (int i = 1; i <= 25; i++) {
-        MaestroTestHelper.removeWorkflowInstance(dataSource, TEST_WORKFLOW_ID, 100 + i);
+        MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID, 100 + i);
       }
     }
   }

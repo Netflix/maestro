@@ -22,8 +22,8 @@ import com.netflix.maestro.utils.IdHelper;
 import javax.sql.DataSource;
 
 public abstract class MaestroDaoBaseTest extends MaestroEngineBaseTest {
-  protected DatabaseConfiguration config = MaestroDatabaseHelper.getConfig();
-  protected DataSource dataSource = MaestroDatabaseHelper.getDataSource();
+  protected static final DatabaseConfiguration CONFIG = MaestroDatabaseHelper.getConfig();
+  protected static final DataSource DATA_SOURCE = MaestroDatabaseHelper.getDataSource();
 
   protected WorkflowDefinition loadWorkflow(String workflowId) throws Exception {
     WorkflowDefinition wfd =
