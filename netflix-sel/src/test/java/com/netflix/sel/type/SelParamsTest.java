@@ -46,6 +46,20 @@ public class SelParamsTest {
     assertEquals("NULL: NULL", res.type() + ": " + res);
   }
 
+  @Test
+  public void testCallContainsKey() {
+    SelType res = params.call("containsKey", new SelType[] {SelString.of("key1")});
+    assertEquals("BOOLEAN: true", res.type() + ": " + res);
+    res = params.call("containsKey", new SelType[] {SelString.of("key2")});
+    assertEquals("BOOLEAN: true", res.type() + ": " + res);
+    res = params.call("containsKey", new SelType[] {SelString.of("key3")});
+    assertEquals("BOOLEAN: true", res.type() + ": " + res);
+    res = params.call("containsKey", new SelType[] {SelString.of("foo")});
+    assertEquals("BOOLEAN: false", res.type() + ": " + res);
+    res = params.call("containsKey", new SelType[] {SelString.of("null")});
+    assertEquals("BOOLEAN: false", res.type() + ": " + res);
+  }
+
   @Test(expected = UnsupportedOperationException.class)
   public void testInvalidCallGet() {
     params.call("get", new SelType[] {});
