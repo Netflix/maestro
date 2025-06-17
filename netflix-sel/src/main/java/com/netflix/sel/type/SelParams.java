@@ -47,6 +47,8 @@ public final class SelParams implements SelType {
   public SelType call(String methodName, SelType[] args) {
     if (args.length == 1 && "get".equals(methodName)) {
       return field((SelString) args[0]);
+    } else if (args.length == 1 && "containsKey".equals(methodName)) {
+      return SelBoolean.of(val.containsKey(((SelString) args[0]).getInternalVal()));
     } else if (extension != null) {
       return extension.call(methodName, args);
     }

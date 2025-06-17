@@ -156,6 +156,79 @@ return Util.dateIntsBetween(20200226, 20200303, 1);    // returns LONG_ARRAY: [2
 
 * `long[] intsBetween(String/int/long. String/int/long, String/int/long)`
 
+
+## Parameter related classes (params)
+* `Object get(String)`
+```sel
+return params.get('param1');    // returns parameter param1's value.
+```
+
+* `Object [String]`
+```sel
+return params['param1'];    // returns parameter param1's value.
+```
+
+* `boolean containsKey(String)`
+```sel
+return params.containsKey('param1');    // returns true if parameter param1 exists, otherwise false.
+```
+
+* `Object getFromStep(String, String)`
+```sel
+return params.getFromStep('step1', 'param1');    // returns parameter param1's value from step1.
+```
+
+* `Object getFromStep(String, "MAESTRO_STEP_STATUS")`
+```sel
+return params.getFromStep('step1', 'MAESTRO_STEP_STATUS');    // returns the status of upstream step1.
+
+return params.getFromStep('step1', 'MAESTRO_STEP_END_TIME');    // returns the end time of upstream step1.
+```
+
+* `Object getFromSignal(String, String)`
+```sel
+return params.getFromSignal('signal1', 'param1');    // returns parameter param1's value from signal1. Use it to get param from the signal triggers.
+```
+
+* `Object getFromSignalOrDefault(String, String, String)`
+```sel
+return params.getFromSignalOrDefault('signal1', 'param1', 'value1');    // returns parameter param1's value from signal1, if there is any exception, then return the default value (currently only support string type)
+```
+
+* `Object getFromSignalDependency(String, String)`
+```sel
+return params.getFromSignalDependency('signal1', 'param1');    // returns parameter param1's value from signal1. Use it to get param from the input table/signal.
+```
+
+* `Object getFromForeach(String, String, String)`
+```sel
+return params.getFromForeach('foreach-job1', 'foreach-step1', 'param1');    // returns an array of parameter param1's values from all steps with id=`foreach-step1` in foreach step with id=`foreach-job1`. The array index matches the iteration index.
+```
+
+* `Object getFromSubworkflow(String, String, String)`
+```sel
+/*
+ 'subworkflow-job1': the step id of subworkflow step (in parent workflow), which launches the subworkflow instance.
+ 'sub-step1': the step id of step in subworkflow.
+ 'param1': the param from sub-step1 in subworkflow.
+ returns parameter param1's value from the subworkflow instance's sub-step1 step's latest attempt.
+*/
+return params.getFromSubworkflow('subworkflow-job1', 'sub-step1', 'param1');
+```
+
+* `long nextUniqueId()`
+```sel
+return params.nextUniqueId();    // generate a random unique id.
+```
+
+* `String getFromInstance(String)`
+Get system defined parameters from workflow instance. Cannot be used to reference user defined workflow-level parameters.
+```sel
+return params.getFromInstance('INITIATOR_TIMEZONE');    // get a certain field (e.g. 'INITIATOR_TIMEZONE', 'INITIATOR_TYPE', 'RUN_POLICY', 'owner') from workflow instance data.
+
+return params.getFromInstance('INITIATOR_RUNNER_NAME'); // For manual run, it returns the runner username. Otherwise, it throws an error.
+```
+
 ## Other classes & methods
 * `long System.currentTimeMillis()`
 
