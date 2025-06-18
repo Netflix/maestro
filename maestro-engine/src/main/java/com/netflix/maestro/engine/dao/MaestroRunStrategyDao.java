@@ -87,25 +87,25 @@ public class MaestroRunStrategyDao extends AbstractDatabaseDao {
 
   // modify_ts is set to CURRENT_TIMESTAMP by default
   private static final String INSERT_WORKFLOW_INSTANCE_QUERY =
-      "INSERT INTO maestro_workflow_instance (instance,status) VALUES (?,?)";
+      "INSERT INTO maestro_workflow_instance (instance,status) VALUES (?::json,?)";
 
   // start_ts and end_ts can be CURRENT_TIMESTAMP if needed
   private static final String INSERT_STOPPED_WORKFLOW_INSTANCE_QUERY =
-      "INSERT INTO maestro_workflow_instance (instance,status,start_ts,end_ts,timeline) VALUES (?,?,?,?,ARRAY[?])";
+      "INSERT INTO maestro_workflow_instance (instance,status,start_ts,end_ts,timeline) VALUES (?::json,?,?,?,ARRAY[?])";
 
   private static final String INSERT_TERMINATED_WORKFLOW_INSTANCE_QUERY =
-      "INSERT INTO maestro_workflow_instance (instance,status,end_ts,timeline) VALUES (?,?,?,?)";
+      "INSERT INTO maestro_workflow_instance (instance,status,end_ts,timeline) VALUES (?::json,?,?,?)";
 
   // if an instance is restarted, it inherits the original instance id.
   private static final String RUN_STRATEGY_QUERY_TEMPLATE =
-      "SELECT instance_id,run_id,uuid FROM maestro_workflow_instance@workflow_status_index "
+      "SELECT instance_id,run_id,uuid FROM maestro_workflow_instance "
           + "WHERE workflow_id=? AND %s ORDER BY instance_id ASC, run_id ASC LIMIT %s";
 
   private static final String GET_QUEUED_WORKFLOW_INSTANCES_QUERY =
       String.format(
           RUN_STRATEGY_QUERY_TEMPLATE,
           "status='CREATED' AND execution_id IS NULL",
-          "(SELECT IF(COUNT(*) >= ?, 0, LEAST(?, ? - COUNT(*))) FROM maestro_workflow_instance@workflow_status_index "
+          "(SELECT CASE WHEN COUNT(*) >= ? THEN 0 ELSE LEAST(?, ? - COUNT(*)) END FROM maestro_workflow_instance "
               + "WHERE workflow_id=? AND status IN ('IN_PROGRESS','CREATED') AND execution_id IS NOT NULL)");
 
   private static final String CHECK_LAST_RUN_FAILED_INSTANCES_QUERY =
@@ -129,17 +129,18 @@ public class MaestroRunStrategyDao extends AbstractDatabaseDao {
   private static final String STOP_QUEUED_INSTANCES_QUERY =
       "UPDATE maestro_workflow_instance SET (status,start_ts,end_ts,modify_ts,timeline) "
           + "= ('STOPPED',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,array_append(timeline,?)) "
-          + "WHERE workflow_id=? AND status='CREATED' AND execution_id IS NULL "
-          + "LIMIT 2 RETURNING instance";
+          + "WHERE (workflow_id, instance_id, run_id) IN ("
+          + "SELECT workflow_id, instance_id, run_id FROM maestro_workflow_instance "
+          + "WHERE workflow_id=? AND status='CREATED' AND execution_id IS NULL LIMIT 2) RETURNING instance";
 
   private static final String CHECK_EXISTING_UUID_QUERY =
-      "SELECT uuid AS id FROM maestro_workflow_instance@workflow_unique_index WHERE workflow_id=? AND uuid=?";
+      "SELECT uuid AS id FROM maestro_workflow_instance WHERE workflow_id=? AND uuid=?";
 
   private static final String CHECK_EXISTING_UUIDS_QUERY =
-      "SELECT uuid AS id FROM maestro_workflow_instance@workflow_unique_index WHERE workflow_id=? AND uuid = ANY (?)";
+      "SELECT uuid AS id FROM maestro_workflow_instance WHERE workflow_id=? AND uuid = ANY (?)";
 
   private static final String UPDATE_WORKFLOW_INSTANCE_FAILED_STATUS =
-      "UPDATE maestro_workflow_instance@primary SET (status) = ('FAILED_2') "
+      "UPDATE maestro_workflow_instance SET status='FAILED_2' "
           + "WHERE workflow_id=? AND instance_id=? AND run_id<? AND status='FAILED'";
 
   private static final String RUN_STRATEGY_TAG = "run_strategy";

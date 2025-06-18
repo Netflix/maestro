@@ -73,9 +73,13 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
   private static final String INSERT_ACTION_QUERY =
-      "INSERT INTO maestro_step_instance_action (payload) VALUES (?) ON CONFLICT DO NOTHING";
+      "INSERT INTO maestro_step_instance_action (payload) VALUES (?::json) ON CONFLICT DO NOTHING";
+  private static final String UPSERT_SUFFIX =
+      "ON CONFLICT (workflow_id, workflow_instance_id, workflow_run_id, step_id) "
+          + "DO UPDATE SET payload=EXCLUDED.payload,create_ts=CURRENT_TIMESTAMP";
   private static final String UPSERT_ACTION_QUERY =
-      "UPSERT INTO maestro_step_instance_action (payload,create_ts) VALUES (?,CURRENT_TIMESTAMP)";
+      "INSERT INTO maestro_step_instance_action (payload,create_ts) VALUES (?::json,CURRENT_TIMESTAMP) "
+          + UPSERT_SUFFIX;
   private static final String INSTANCE_CONDITION =
       "workflow_id=? AND workflow_instance_id=? AND workflow_run_id=?";
   private static final String CONDITION_POSTFIX = "(" + INSTANCE_CONDITION + " AND step_id=?)";
@@ -85,8 +89,8 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
   private static final String GET_ACTION_QUERY =
       "SELECT payload, create_ts FROM maestro_step_instance_action WHERE " + CONDITION_POSTFIX;
   private static final String UPSERT_ACTIONS_QUERY_TEMPLATE =
-      "UPSERT INTO maestro_step_instance_action (payload,create_ts) VALUES %s";
-  private static final String VALUE_PLACE_HOLDER = "(?,CURRENT_TIMESTAMP)";
+      "INSERT INTO maestro_step_instance_action (payload,create_ts) VALUES %s" + UPSERT_SUFFIX;
+  private static final String VALUE_PLACE_HOLDER = "(?::json,CURRENT_TIMESTAMP)";
   private static final String DELETE_ACTIONS_QUERY = DELETE_ACTION_PREFIX + INSTANCE_CONDITION;
 
   private final MaestroStepInstanceDao stepInstanceDao;

@@ -29,12 +29,12 @@ public class MaestroFlowDao extends AbstractDatabaseDao {
       "DELETE FROM maestro_flow WHERE group_id=? AND flow_id=?";
   private static final String CLAIM_AND_RETURN_FLOWS_QUERY =
       "UPDATE maestro_flow SET generation=? WHERE group_id=? AND flow_id IN ("
-          + "SELECT flow_id FROM maestro_flow WHERE group_id=? AND flow_id>? AND generation<? "
+          + "SELECT flow_id FROM maestro_flow WHERE group_id=? AND flow_id>? COLLATE \"C\" AND generation<? "
           + "ORDER BY flow_id ASC LIMIT ?) RETURNING flow_id,start_time,reference";
   private static final String HEARTBEAT_QUERY =
       "UPDATE maestro_flow_group SET heartbeat_ts=now() WHERE group_id=? AND generation=? RETURNING heartbeat_ts";
   private static final String RELEASE_GROUP_QUERY =
-      "UPDATE maestro_flow_group SET heartbeat_ts='1970-01-01' AT TIME ZONE 'UTC' WHERE group_id=? AND generation=?";
+      "UPDATE maestro_flow_group SET heartbeat_ts=TIMESTAMP WITH TIME ZONE '1970-01-01 00:00:00+00' WHERE group_id=? AND generation=?";
   private static final String CLAIM_FLOW_GROUP_QUERY =
       "UPDATE maestro_flow_group SET (heartbeat_ts,generation,address)=(now(),generation+1,?) "
           + "WHERE group_id=(SELECT group_id FROM maestro_flow_group "

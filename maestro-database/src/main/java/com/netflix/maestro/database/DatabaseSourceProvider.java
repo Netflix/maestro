@@ -88,6 +88,7 @@ public class DatabaseSourceProvider {
 
     Flyway flyway =
         Flyway.configure()
+            .locations("classpath:db/migration/" + configuration.getDbType())
             .dataSource(dataSource)
             .placeholderReplacement(false)
             .baselineOnMigrate(configuration.isFlywayBaseLineMigrationEnabled())

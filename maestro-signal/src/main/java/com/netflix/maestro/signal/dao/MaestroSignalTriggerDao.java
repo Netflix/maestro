@@ -28,7 +28,7 @@ public class MaestroSignalTriggerDao extends AbstractDatabaseDao {
           + "SELECT name,max(seq_id) as sid FROM maestro_signal_instance WHERE name=ANY(?) GROUP BY name"
           + ") si ON f.n=si.name) ON CONFLICT DO NOTHING";
   private static final String GET_SIGNAL_TRIGGER_QUERY =
-      "SELECT workflow_id,trigger_uuid FROM maestro_signal_trigger WHERE signals @> ARRAY[?]";
+      "SELECT workflow_id,trigger_uuid FROM maestro_signal_trigger WHERE signals @> ARRAY[?::TEXT]";
   private static final String GET_SIGNAL_TRIGGER_FOR_UPDATE_QUERY =
       "SELECT definition,signals,checkpoints FROM maestro_signal_trigger WHERE workflow_id=? AND trigger_uuid=? FOR UPDATE";
   private static final String DELETE_SIGNAL_TRIGGER_QUERY =
@@ -152,7 +152,7 @@ public class MaestroSignalTriggerDao extends AbstractDatabaseDao {
       throws SQLException {
     try (PreparedStatement stmt = conn.prepareStatement(UPDATE_SIGNAL_TRIGGER_CHECKPOINTS_QUERY)) {
       int idx = 0;
-      stmt.setArray(++idx, conn.createArrayOf(ARRAY_TYPE_NAME, checkpoints));
+      stmt.setArray(++idx, conn.createArrayOf("INT8", checkpoints));
       stmt.setString(++idx, workflowId);
       stmt.setString(++idx, triggerUuid);
       return stmt.executeUpdate() == SUCCESS_WRITE_SIZE;

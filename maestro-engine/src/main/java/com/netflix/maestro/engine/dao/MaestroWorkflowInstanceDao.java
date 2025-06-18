@@ -74,26 +74,33 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
   private static final String SINGLE_PLACE_HOLDER = "?,";
-  private static final String DOUBLE_PLACE_HOLDER = "?,?,";
-  private static final String QUAD_PLACE_HOLDER = "?,?,?,?,";
-  private static final String VALUE_PLACE_HOLDER = "(?,?)";
+  private static final String DOUBLE_PLACE_HOLDER = "?::json,?,";
+  private static final String QUAD_PLACE_HOLDER = "?,?,?::json,?,";
+  private static final String VALUE_PLACE_HOLDER = "(?::json,?)";
 
   private static final String CREATE_WORKFLOW_INSTANCE_QUERY_TEMPLATE =
       "INSERT INTO maestro_workflow_instance (instance,status) VALUES %s "
           + "ON CONFLICT (workflow_id,instance_id,run_id) DO NOTHING RETURNING instance_id";
 
+  private static final String TERMINATE_QUEUED_WORKFLOW_PREFIX =
+      "UPDATE maestro_workflow_instance SET (status,end_ts,modify_ts,timeline) "
+          + "= (?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,array_append(timeline,?)) WHERE workflow_id=? ";
+
   private static final String TERMINATE_QUEUED_INSTANCE_QUERY =
-      "UPDATE maestro_workflow_instance@primary SET (status,end_ts,modify_ts,timeline) "
-          + "= (?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,array_append(timeline,?)) "
-          + "WHERE workflow_id=? AND instance_id=? AND run_id=? AND status='CREATED' AND execution_id IS NULL";
+      TERMINATE_QUEUED_WORKFLOW_PREFIX
+          + "AND instance_id=? AND run_id=? AND status='CREATED' AND execution_id IS NULL";
+
+  private static final String INSTANCE_IN_SUBQUERY =
+      "(instance_id, run_id) IN (SELECT instance_id, run_id FROM maestro_workflow_instance WHERE workflow_id=? ";
 
   private static final String TERMINATE_QUEUED_INSTANCES_QUERY =
-      "UPDATE maestro_workflow_instance SET (status,end_ts,modify_ts,timeline) "
-          + "= (?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,array_append(timeline,?)) WHERE workflow_id=? "
-          + "AND status='CREATED' AND execution_id IS NULL LIMIT ? RETURNING instance";
+      TERMINATE_QUEUED_WORKFLOW_PREFIX
+          + "AND status='CREATED' AND execution_id IS NULL AND "
+          + INSTANCE_IN_SUBQUERY
+          + "AND status='CREATED' AND execution_id IS NULL LIMIT ?) RETURNING instance";
 
   private static final String GET_RUNNING_INSTANCES_QUERY_PREFIX =
-      "SELECT instance_id,run_id,uuid FROM maestro_workflow_instance@workflow_status_index ";
+      "SELECT instance_id,run_id,uuid FROM maestro_workflow_instance ";
 
   private static final String GET_RUNNING_CREATED_INSTANCES_QUERY =
       GET_RUNNING_INSTANCES_QUERY_PREFIX
@@ -105,7 +112,7 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
           + "WHERE workflow_id=? AND status='IN_PROGRESS' AND instance_id>? ORDER BY instance_id ASC LIMIT ?";
 
   private static final String UPDATE_WORKFLOW_INSTANCE_QUERY_TEMPLATE =
-      "UPDATE maestro_workflow_instance@primary SET (%s modify_ts) = (%s CURRENT_TIMESTAMP) "
+      "UPDATE maestro_workflow_instance SET (%s modify_ts) = (%s CURRENT_TIMESTAMP) "
           + "WHERE workflow_id=? AND instance_id=? AND run_id=? ";
 
   private static final String UPDATE_WORKFLOW_INSTANCE_START_QUERY =
@@ -131,7 +138,7 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
           + " AND status='CREATED' AND execution_id IS NULL";
 
   private static final String GET_WORKFLOW_INSTANCE_FIELDS_TEMPLATE =
-      "SELECT %s FROM maestro_workflow_instance@primary WHERE workflow_id=? AND instance_id=? %s";
+      "SELECT %s FROM maestro_workflow_instance WHERE workflow_id=? AND instance_id=? %s";
 
   private static final String ALL_FIELDS =
       "instance,status,execution_id,start_ts,end_ts,modify_ts,runtime_overview,timeline ";
@@ -152,21 +159,23 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
       String.format(GET_WORKFLOW_INSTANCE_FIELDS_TEMPLATE, STATUS_COLUMN, LATEST_RUN_CONDITION);
 
   private static final String UPDATE_INSTANCE_FAILED_STATUS =
-      "UPDATE maestro_workflow_instance@workflow_status_index SET (status) = ('FAILED_2') "
+      "UPDATE maestro_workflow_instance SET status='FAILED_2' "
           + "WHERE workflow_id=? AND status='FAILED' AND instance_id>=? AND instance_id<=?";
 
   private static final String UNBLOCK_INSTANCE_FAILED_STATUS =
-      "UPDATE maestro_workflow_instance@primary SET (status,modify_ts,timeline) "
+      "UPDATE maestro_workflow_instance SET (status,modify_ts,timeline) "
           + "=('FAILED_1',CURRENT_TIMESTAMP,array_append(timeline,?)) "
           + "WHERE workflow_id=? AND instance_id=? AND run_id=? AND status='FAILED'";
 
   private static final String UNBLOCK_INSTANCES_FAILED_STATUS =
-      "UPDATE maestro_workflow_instance@workflow_status_index SET "
+      "UPDATE maestro_workflow_instance SET "
           + "(status,modify_ts,timeline)=('FAILED_1',CURRENT_TIMESTAMP,array_append(timeline,?)) "
-          + "WHERE workflow_id=? AND status='FAILED' order by instance_id ASC LIMIT ?";
+          + "WHERE workflow_id=? AND status='FAILED' AND "
+          + INSTANCE_IN_SUBQUERY
+          + "AND status='FAILED' order by instance_id ASC LIMIT ?)";
 
-  private static final String FROM_FOREACH_WORKFLOW_INSTANCE_TABLE =
-      "FROM maestro_workflow_instance@foreach_index ";
+  private static final String FROM_WORKFLOW_INSTANCE_TABLE = "FROM maestro_workflow_instance ";
+  private static final String FROM_FOREACH_WORKFLOW_INSTANCE_TABLE = FROM_WORKFLOW_INSTANCE_TABLE;
 
   private static final String ORDER_BY_INSTANCE_ID_RUN_ID_DESC =
       "ORDER BY instance_id DESC, run_id DESC";
@@ -189,9 +198,6 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
           + "WHERE workflow_id=? AND run_id>? AND instance_id>=? AND initiator_type='FOREACH' "
           + ORDER_BY_INSTANCE_ID_RUN_ID_DESC;
 
-  private static final String FROM_WORKFLOW_INSTANCE_TABLE =
-      "FROM maestro_workflow_instance@primary ";
-
   private static final String MIN_INSTANCE_ID = "min_instance_id";
   private static final String MAX_INSTANCE_ID = "max_instance_id";
   private static final String SELECT_MIN_MAX_INSTANCE_ID =
@@ -202,7 +208,7 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
           + " ";
 
   private static final String GET_LARGEST_FOREACH_RUN_ID_QUERY =
-      "SELECT run_id as id FROM maestro_workflow_instance@foreach_index "
+      "SELECT run_id as id FROM maestro_workflow_instance "
           + "WHERE workflow_id=? AND initiator_type='FOREACH' ORDER BY run_id DESC LIMIT 1";
 
   private static final String GET_MIN_MAX_WORKFLOW_INSTANCE_IDS_QUERY =
@@ -370,6 +376,7 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
                         int idx = 0;
                         stmt.setString(++idx, status.name());
                         stmt.setString(++idx, timelineEventStr);
+                        stmt.setString(++idx, workflowId);
                         stmt.setString(++idx, workflowId);
                         stmt.setInt(++idx, limit);
                         try (ResultSet result = stmt.executeQuery()) {
@@ -585,6 +592,7 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
                             conn.prepareStatement(UNBLOCK_INSTANCES_FAILED_STATUS)) {
                           int idx = 0;
                           stmt.setString(++idx, eventStr);
+                          stmt.setString(++idx, workflowId);
                           stmt.setString(++idx, workflowId);
                           stmt.setInt(++idx, batchLimit);
                           int res = stmt.executeUpdate();
