@@ -66,6 +66,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -91,23 +92,28 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
   private static final String ACTIVE_VERSION_COLUMN = "active_version_id";
   private static final String LATEST_VERSION_COLUMN = "latest_version_id";
   private static final String LATEST_INSTANCE_COLUMN = "latest_instance_id";
+  private static final String ACTIVATE_TS_COLUMN = "activate_ts";
+  private static final String ACTIVATED_BY_COLUMN = "activated_by";
   private static final String MODIFY_TS_COLUMN = "modify_ts";
   private static final String INTERNAL_ID_COLUMN = "internal_id";
+  private static final String JOIN_DELIMITER = ",";
+  private static final String QUESTION_MARK = "?";
   private static final long INITIAL_ID = 1L;
   private static final long EMPTY_SIZE_CASE = 1L;
   private static final int MORE_THAN_ONE_CONDITION = 2;
 
   private static final String CREATE_WORKFLOW_VERSION_QUERY =
-      "INSERT INTO maestro_workflow_version (metadata,definition,trigger_uuids) VALUES (?,?,?) ";
+      "INSERT INTO maestro_workflow_version (metadata,definition,trigger_uuids) VALUES (?::jsonb,?::jsonb,?::jsonb) ";
   private static final String CREATE_WORKFLOW_PROPS_QUERY =
       "INSERT INTO maestro_workflow_properties "
-          + "(workflow_id,create_time,author,properties_changes,previous_snapshot) VALUES (?,?,?,?,?)";
+          + "(workflow_id,create_time,author,properties_changes,previous_snapshot) VALUES (?,?,?::jsonb,?::jsonb,?::jsonb)";
 
   private static final String UPSERT_WORKFLOW_QUERY_TEMPLATE =
-      "UPSERT INTO maestro_workflow (%s,modify_ts) VALUES (%s,CURRENT_TIMESTAMP) RETURNING modify_ts, internal_id";
+      "INSERT INTO maestro_workflow (%s,modify_ts) VALUES (%s,CURRENT_TIMESTAMP) ON CONFLICT (workflow_id) "
+          + "DO UPDATE SET %s,modify_ts=CURRENT_TIMESTAMP RETURNING modify_ts, internal_id";
 
   private static final String INSERT_TIMELINE_QUERY =
-      "INSERT INTO maestro_workflow_timeline (workflow_id,change_event) VALUES (?,?) ON CONFLICT DO NOTHING";
+      "INSERT INTO maestro_workflow_timeline (workflow_id,change_event,hash_id) VALUES (?,?::json,?) ON CONFLICT DO NOTHING";
 
   private static final String GET_CURRENT_WORKFLOW_INFO_FOR_UPDATE =
       "SELECT active_version_id,latest_version_id,properties_snapshot "
@@ -130,24 +136,24 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
   private static final String DELETE_MAESTRO_WORKFLOW_QUERY =
       "WITH deleted_wf AS ("
           + "DELETE FROM maestro_workflow WHERE workflow_id=? AND NOT EXISTS "
-          + "(SELECT workflow_id FROM maestro_workflow_instance@workflow_status_index "
-          + "WHERE workflow_id=? AND status=ANY('CREATED','IN_PROGRESS') LIMIT 1) RETURNING *)"
+          + "(SELECT workflow_id FROM maestro_workflow_instance "
+          + "WHERE workflow_id=? AND status=ANY('{CREATED,IN_PROGRESS}') LIMIT 1) RETURNING *)"
           + "INSERT INTO maestro_workflow_deleted (workflow, timeline) "
           + "SELECT row_to_json(deleted_wf), ARRAY[?] FROM deleted_wf RETURNING internal_id";
 
   private static final String DEACTIVATE_WORKFLOW_QUERY =
       "UPDATE maestro_workflow SET (active_version_id,activate_ts,modify_ts,activated_by)=(0,"
-          + "CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?) WHERE workflow_id=? RETURNING "
+          + "CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?::json) WHERE workflow_id=? RETURNING "
           + "(SELECT active_version_id FROM maestro_workflow WHERE workflow_id=?)";
 
   private static final String ACTIVATE_WORKFLOW_VERSION_QUERY =
       "UPDATE maestro_workflow SET (active_version_id,activate_ts,modify_ts,activated_by)=(?,"
-          + "CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?) WHERE workflow_id=?";
+          + "CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?::json) WHERE workflow_id=?";
 
   private static final String GET_WORKFLOW_OVERVIEW_QUERY =
       "SELECT active_version_id,latest_version_id,latest_instance_id,properties_snapshot,"
           + "(SELECT JSONB_OBJECT_AGG(status, cnt) FROM (SELECT status, count(*) as cnt "
-          + "FROM maestro_workflow_instance@workflow_status_index WHERE workflow_id=? "
+          + "FROM maestro_workflow_instance WHERE workflow_id=? "
           + "AND status IN ('CREATED','IN_PROGRESS','PAUSED','FAILED') GROUP BY status)) as status "
           + "FROM maestro_workflow WHERE workflow_id=?";
 
@@ -155,13 +161,13 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
       new TypeReference<>() {};
 
   private static final String GET_INSTANCE_COUNT_BY_STATUS_QUERY_PREFIX =
-      "SELECT status, count(*) as cnt FROM maestro_workflow_instance@workflow_status_index WHERE workflow_id=? ";
+      "SELECT status, count(*) as cnt FROM maestro_workflow_instance WHERE workflow_id=? ";
   private static final String GET_NONTERMINAL_INSTANCE_COUNT_QUERY =
       GET_INSTANCE_COUNT_BY_STATUS_QUERY_PREFIX
-          + "AND status=ANY('CREATED','IN_PROGRESS') GROUP BY status";
+          + "AND status=ANY('{CREATED,IN_PROGRESS}') GROUP BY status";
   private static final String GET_NONTERMINAL_FAILED_INSTANCE_COUNT_QUERY =
       GET_INSTANCE_COUNT_BY_STATUS_QUERY_PREFIX
-          + "AND status=ANY('CREATED','IN_PROGRESS','FAILED') GROUP BY status";
+          + "AND status=ANY('{CREATED,IN_PROGRESS,FAILED}') GROUP BY status";
 
   private static final String GET_WORKFLOW_PARAM_FOR_PREFIX_QUERY =
       "SELECT mwv.workflow_id as id, definition->'params'->>? as payload FROM maestro_workflow_version mwv "
@@ -342,7 +348,8 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
                               update);
 
                       List<StatementPreparer> preparers = new ArrayList<>();
-                      StringBuilder fields = prepareProperties(preparers, workflowId, snapshot);
+                      LinkedHashMap<String, String> fields =
+                          prepareProperties(preparers, workflowId, snapshot);
 
                       long[] updateRes = executeTemplateUpdate(conn, fields, preparers);
 
@@ -676,10 +683,10 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
       builder
           .activateTime(
               Checks.notNull(
-                      rs.getTimestamp("activate_ts"),
+                      rs.getTimestamp(ACTIVATE_TS_COLUMN),
                       "activate_ts cannot be null if there is an active version")
                   .getTime())
-          .activatedBy(fromJson(rs.getString("activated_by"), User.class));
+          .activatedBy(fromJson(rs.getString(ACTIVATED_BY_COLUMN), User.class));
     }
 
     return builder
@@ -930,20 +937,20 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
         workflowId);
 
     List<StatementPreparer> preparers = new ArrayList<>();
-    StringBuilder fields = prepareProperties(preparers, workflowId, snapshot);
+    LinkedHashMap<String, String> fields = prepareProperties(preparers, workflowId, snapshot);
 
     // if it is an active version, update the active_version_id
     if (workflowDef.getIsActive()) {
-      prepareLongField(fields, ",active_version_id", preparers, nextVersionId);
-      prepareTimestampField(fields, ",activate_ts", preparers, workflowDef.getActivateTime());
-      prepareJsonbField(fields, ",activated_by", preparers, workflowDef.getActivatedBy());
+      prepareLongField(fields, ACTIVE_VERSION_COLUMN, preparers, nextVersionId);
+      prepareTimestampField(fields, ACTIVATE_TS_COLUMN, preparers, workflowDef.getActivateTime());
+      prepareJsonbField(fields, ACTIVATED_BY_COLUMN, preparers, workflowDef.getActivatedBy());
     }
-    prepareLongField(fields, ",latest_version_id", preparers, nextVersionId);
+    prepareLongField(fields, LATEST_VERSION_COLUMN, preparers, nextVersionId);
 
     // this is a new workflow creation.
     if (nextVersionId == Constants.INACTIVE_VERSION_ID + 1) {
       final long instanceId = getLatestWorkflowInstanceId(conn, workflowId);
-      prepareLongField(fields, ",latest_instance_id", preparers, instanceId);
+      prepareLongField(fields, LATEST_INSTANCE_COLUMN, preparers, instanceId);
     }
 
     return executeTemplateUpdate(conn, fields, preparers);
@@ -961,13 +968,12 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
    * @throws SQLException sql exception
    */
   private long[] executeTemplateUpdate(
-      Connection conn, StringBuilder fields, List<StatementPreparer> preparers)
+      Connection conn, LinkedHashMap<String, String> fields, List<StatementPreparer> preparers)
       throws SQLException {
     if (preparers.size() <= EMPTY_SIZE_CASE) {
       return null;
     }
-    try (PreparedStatement stmt =
-        conn.prepareStatement(getUpsertWorkflowQuery(fields, preparers))) {
+    try (PreparedStatement stmt = conn.prepareStatement(getUpsertWorkflowQuery(fields))) {
       for (StatementPreparer preparer : preparers) {
         preparer.prepare(stmt);
       }
@@ -982,11 +988,14 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
     }
   }
 
-  private String getUpsertWorkflowQuery(StringBuilder fields, List<StatementPreparer> preparers) {
+  private String getUpsertWorkflowQuery(LinkedHashMap<String, String> fields) {
     return String.format(
         UPSERT_WORKFLOW_QUERY_TEMPLATE,
-        fields,
-        String.join(",", Collections.nCopies(preparers.size(), "?")));
+        String.join(JOIN_DELIMITER, fields.keySet()),
+        String.join(JOIN_DELIMITER, fields.values()),
+        fields.keySet().stream()
+            .map(f -> f + "=EXCLUDED." + f)
+            .collect(Collectors.joining(JOIN_DELIMITER)));
   }
 
   private MaestroJobEvent logToTimeline(
@@ -997,22 +1006,27 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
       throws SQLException {
     MaestroJobEvent jobEvent =
         WorkflowVersionUpdateJobEvent.create(workflowDef, snapshot, activeVersionId);
+    updateTimeline(conn, workflowDef.getWorkflow().getId(), jobEvent);
+    return jobEvent;
+  }
+
+  private void updateTimeline(Connection conn, String workflowId, MaestroJobEvent jobEvent)
+      throws SQLException {
+    String json = toJson(jobEvent);
+    long hashId = json.hashCode();
+    int idx = 0;
     try (PreparedStatement stmt = conn.prepareStatement(INSERT_TIMELINE_QUERY)) {
-      stmt.setString(1, workflowDef.getWorkflow().getId());
-      stmt.setString(2, toJson(jobEvent));
+      stmt.setString(++idx, workflowId);
+      stmt.setString(++idx, json);
+      stmt.setLong(++idx, hashId);
       stmt.executeUpdate();
     }
-    return jobEvent;
   }
 
   private MaestroJobEvent logToTimeline(
       Connection conn, String workflowId, PropertiesSnapshot snapshot) throws SQLException {
     MaestroJobEvent jobEvent = WorkflowVersionUpdateJobEvent.create(workflowId, snapshot);
-    try (PreparedStatement stmt = conn.prepareStatement(INSERT_TIMELINE_QUERY)) {
-      stmt.setString(1, workflowId);
-      stmt.setString(2, toJson(jobEvent));
-      stmt.executeUpdate();
-    }
+    updateTimeline(conn, workflowId, jobEvent);
     return jobEvent;
   }
 
@@ -1026,60 +1040,72 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
       throws SQLException {
     MaestroJobEvent jobEvent =
         WorkflowVersionUpdateJobEvent.create(workflowId, curActiveId, prevActiveId, author, log);
-    try (PreparedStatement stmt = conn.prepareStatement(INSERT_TIMELINE_QUERY)) {
-      stmt.setString(1, workflowId);
-      stmt.setString(2, toJson(jobEvent));
-      stmt.executeUpdate();
-    }
+    updateTimeline(conn, workflowId, jobEvent);
     return jobEvent;
   }
 
-  private StringBuilder prepareProperties(
+  private LinkedHashMap<String, String> prepareProperties(
       List<StatementPreparer> preparers, String workflowId, PropertiesSnapshot snapshot) {
-    StringBuilder fields = new StringBuilder();
+    LinkedHashMap<String, String> fields = new LinkedHashMap<>();
     prepareStringField(fields, WORKFLOW_ID_COLUMN, preparers, workflowId);
     if (snapshot != null) {
-      prepareJsonbField(fields, ",properties_snapshot", preparers, snapshot);
+      prepareJsonbField(fields, PROPERTIES_COLUMN, preparers, snapshot);
     }
     return fields;
   }
 
   private int getIndex(
-      StringBuilder fields, String fieldName, List<StatementPreparer> preparers, Object data) {
+      LinkedHashMap<String, String> fields,
+      String fieldName,
+      String fieldValue,
+      List<StatementPreparer> preparers,
+      Object data) {
     if (data == null) {
       return 0;
     }
-    fields.append(fieldName);
+    fields.put(fieldName, fieldValue);
     return preparers.size() + 1;
   }
 
   private void prepareJsonbField(
-      StringBuilder fields, String fieldName, List<StatementPreparer> preparers, Object data) {
-    final int idx = getIndex(fields, fieldName, preparers, data);
+      LinkedHashMap<String, String> fields,
+      String fieldName,
+      List<StatementPreparer> preparers,
+      Object data) {
+    final int idx = getIndex(fields, fieldName, "?::json", preparers, data);
     if (idx > 0) {
       preparers.add(stmt -> stmt.setString(idx, toJson(data)));
     }
   }
 
   private void prepareStringField(
-      StringBuilder fields, String fieldName, List<StatementPreparer> preparers, String data) {
-    final int idx = getIndex(fields, fieldName, preparers, data);
+      LinkedHashMap<String, String> fields,
+      String fieldName,
+      List<StatementPreparer> preparers,
+      String data) {
+    final int idx = getIndex(fields, fieldName, QUESTION_MARK, preparers, data);
     if (idx > 0) {
       preparers.add(stmt -> stmt.setString(idx, data));
     }
   }
 
   private void prepareLongField(
-      StringBuilder fields, String fieldName, List<StatementPreparer> preparers, Long data) {
-    final int idx = getIndex(fields, fieldName, preparers, data);
+      LinkedHashMap<String, String> fields,
+      String fieldName,
+      List<StatementPreparer> preparers,
+      Long data) {
+    final int idx = getIndex(fields, fieldName, QUESTION_MARK, preparers, data);
     if (idx > 0) {
       preparers.add(stmt -> stmt.setLong(idx, data));
     }
   }
 
   private void prepareTimestampField(
-      StringBuilder fields, String fieldName, List<StatementPreparer> preparers, Long data) {
-    final int idx = getIndex(fields, fieldName, preparers, data);
+      LinkedHashMap<String, String> fields,
+      String fieldName,
+      List<StatementPreparer> preparers,
+      Long data) {
+    final int idx = getIndex(fields, fieldName, QUESTION_MARK, preparers, data);
     if (idx > 0) {
       preparers.add(stmt -> stmt.setTimestamp(idx, new Timestamp(data)));
     }
