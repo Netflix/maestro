@@ -52,13 +52,14 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 
 public class OutputDataManagerTest extends MaestroEngineBaseTest {
+  private static final String TASK_ID = "t1234";
+  private static final TypeReference<Map<String, Parameter>> PARAM_MAP = new TypeReference<>() {};
+
   private @Mock OutputDataDao outputDataDao;
   private OutputDataManager outputDataManager;
   private StepRuntimeSummary runtimeSummary;
   private Map<String, Artifact> artifacts;
   private OutputData outputData;
-  private final String titusTaskId = "t1234";
-  private final TypeReference<Map<String, Parameter>> paramMap = new TypeReference<>() {};
 
   @Before
   public void before() throws JsonProcessingException {
@@ -68,7 +69,7 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
     runtimeSummary = runtimeSummaryBuilder().build();
 
     TitusArtifact artifact = new TitusArtifact();
-    artifact.setTitusTaskId(titusTaskId);
+    artifact.setTitusTaskId(TASK_ID);
     artifacts = Collections.singletonMap(Artifact.Type.TITUS.key(), artifact);
 
     Map<String, Parameter> params =
@@ -78,22 +79,22 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
     outputData =
         new OutputData(
             StepType.TITUS,
-            titusTaskId,
+            TASK_ID,
             "wfid",
             System.currentTimeMillis(),
             System.currentTimeMillis(),
             params,
             new HashMap<>());
-    outputData.setExternalJobId(titusTaskId);
+    outputData.setExternalJobId(TASK_ID);
     outputData.setExternalJobType(StepType.TITUS);
   }
 
   private Map<String, Parameter> loadParams(String param) throws JsonProcessingException {
-    return MAPPER.readValue(param, paramMap);
+    return MAPPER.readValue(param, PARAM_MAP);
   }
 
   private void setupOutputDataDao() {
-    when(outputDataDao.getOutputDataForExternalJob(titusTaskId, StepType.TITUS))
+    when(outputDataDao.getOutputDataForExternalJob(TASK_ID, StepType.TITUS))
         .thenReturn(Optional.of(outputData));
   }
 
@@ -240,13 +241,13 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
   @Test
   public void testValidOutputParamTypes() throws IOException {
     Map<String, Parameter> runtimeParams =
-        loadObject("fixtures/outputdata/sample-output-data-params-defaults.json", paramMap);
+        loadObject("fixtures/outputdata/sample-output-data-params-defaults.json", PARAM_MAP);
     Map<String, Parameter> outputParams =
-        loadObject("fixtures/outputdata/sample-output-data-params-updated.json", paramMap);
+        loadObject("fixtures/outputdata/sample-output-data-params-updated.json", PARAM_MAP);
     outputData =
         new OutputData(
             StepType.TITUS,
-            titusTaskId,
+            TASK_ID,
             "wfid",
             System.currentTimeMillis(),
             System.currentTimeMillis(),
@@ -289,13 +290,13 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
     OutputData outputData =
         new OutputData(
             StepType.TITUS,
-            titusTaskId,
+            TASK_ID,
             "wfid",
             System.currentTimeMillis(),
             System.currentTimeMillis(),
             Collections.emptyMap(),
             Map.of(Artifact.Type.DYNAMIC_OUTPUT.key(), signalsArtifact));
-    when(outputDataDao.getOutputDataForExternalJob(titusTaskId, StepType.TITUS))
+    when(outputDataDao.getOutputDataForExternalJob(TASK_ID, StepType.TITUS))
         .thenReturn(Optional.of(outputData));
 
     Map<String, Artifact> existingArtifacts = new HashMap<>(artifacts);
@@ -317,13 +318,13 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
     OutputData outputData =
         new OutputData(
             StepType.TITUS,
-            titusTaskId,
+            TASK_ID,
             "wfid",
             System.currentTimeMillis(),
             System.currentTimeMillis(),
             null,
             null);
-    when(outputDataDao.getOutputDataForExternalJob(titusTaskId, StepType.TITUS))
+    when(outputDataDao.getOutputDataForExternalJob(TASK_ID, StepType.TITUS))
         .thenReturn(Optional.of(outputData));
 
     Map<String, Artifact> existingArtifacts = new HashMap<>(artifacts);

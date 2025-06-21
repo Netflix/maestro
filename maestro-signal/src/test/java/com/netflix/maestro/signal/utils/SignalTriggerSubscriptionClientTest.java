@@ -39,6 +39,7 @@ public class SignalTriggerSubscriptionClientTest extends MaestroBaseTest {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   public void testUpsertTriggerSubscription() throws Exception {
     SignalTrigger def =
         loadObject("fixtures/signal_triggers/signal_trigger_simple.json", SignalTrigger.class);

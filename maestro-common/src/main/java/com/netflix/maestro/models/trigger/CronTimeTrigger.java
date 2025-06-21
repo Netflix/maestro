@@ -20,8 +20,10 @@ import com.netflix.maestro.validations.CronConstraint;
 import com.netflix.maestro.validations.TimeZoneConstraint;
 import jakarta.validation.Valid;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /** Cron based time trigger. */
+@EqualsAndHashCode(callSuper = true)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(alphabetic = true)

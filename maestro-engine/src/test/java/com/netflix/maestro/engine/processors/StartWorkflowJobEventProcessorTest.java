@@ -39,6 +39,7 @@ import org.junit.Test;
 import org.mockito.Mock;
 
 public class StartWorkflowJobEventProcessorTest extends MaestroEngineBaseTest {
+  private static final String WORKFLOW_ID = "sample-minimal-wf";
 
   @Mock private MaestroWorkflowDao workflowDao;
   @Mock private MaestroRunStrategyDao runStrategyDao;
@@ -46,7 +47,6 @@ public class StartWorkflowJobEventProcessorTest extends MaestroEngineBaseTest {
   @Mock private WorkflowRunner workflowRunner;
   @Mock private WorkflowInstance instance;
 
-  private final String workflowId = "sample-minimal-wf";
   private StartWorkflowJobEventProcessor processor;
   private StartWorkflowJobEvent jobEvent;
 
@@ -55,33 +55,33 @@ public class StartWorkflowJobEventProcessorTest extends MaestroEngineBaseTest {
     processor =
         new StartWorkflowJobEventProcessor(
             workflowDao, runStrategyDao, instanceDao, workflowRunner);
-    jobEvent = StartWorkflowJobEvent.create(workflowId);
-    when(runStrategyDao.dequeueWithRunStrategy(workflowId, Defaults.DEFAULT_RUN_STRATEGY))
+    jobEvent = StartWorkflowJobEvent.create(WORKFLOW_ID);
+    when(runStrategyDao.dequeueWithRunStrategy(WORKFLOW_ID, Defaults.DEFAULT_RUN_STRATEGY))
         .thenReturn(List.of(new InstanceRunUuid(1, 2, "uuid1")));
   }
 
   @Test
   public void testStartWorkflowInstance() {
-    when(workflowDao.getRunStrategy(workflowId)).thenReturn(Defaults.DEFAULT_RUN_STRATEGY);
-    when(instanceDao.getWorkflowInstanceRun(workflowId, 1, 2)).thenReturn(instance);
+    when(workflowDao.getRunStrategy(WORKFLOW_ID)).thenReturn(Defaults.DEFAULT_RUN_STRATEGY);
+    when(instanceDao.getWorkflowInstanceRun(WORKFLOW_ID, 1, 2)).thenReturn(instance);
     Assert.assertTrue(processor.process(jobEvent).isEmpty());
-    verify(workflowDao, times(1)).getRunStrategy(workflowId);
+    verify(workflowDao, times(1)).getRunStrategy(WORKFLOW_ID);
     verify(runStrategyDao, times(1))
-        .dequeueWithRunStrategy(workflowId, Defaults.DEFAULT_RUN_STRATEGY);
-    verify(instanceDao, times(1)).getWorkflowInstanceRun(workflowId, 1, 2);
+        .dequeueWithRunStrategy(WORKFLOW_ID, Defaults.DEFAULT_RUN_STRATEGY);
+    verify(instanceDao, times(1)).getWorkflowInstanceRun(WORKFLOW_ID, 1, 2);
     verify(workflowRunner, times(1)).run(instance, "uuid1");
   }
 
   @Test
   public void testStartWorkflowInstanceOverDequeueLimit() {
-    when(workflowDao.getRunStrategy(workflowId)).thenReturn(Defaults.DEFAULT_RUN_STRATEGY);
+    when(workflowDao.getRunStrategy(WORKFLOW_ID)).thenReturn(Defaults.DEFAULT_RUN_STRATEGY);
     List<InstanceRunUuid> uuids = new ArrayList<>();
     for (int i = 0; i < Constants.DEQUEUE_SIZE_LIMIT; i++) {
       uuids.add(new InstanceRunUuid(1, 2, "uuid" + i));
     }
-    when(runStrategyDao.dequeueWithRunStrategy(workflowId, Defaults.DEFAULT_RUN_STRATEGY))
+    when(runStrategyDao.dequeueWithRunStrategy(WORKFLOW_ID, Defaults.DEFAULT_RUN_STRATEGY))
         .thenReturn(uuids);
-    when(instanceDao.getWorkflowInstanceRun(workflowId, 1, 2)).thenReturn(instance);
+    when(instanceDao.getWorkflowInstanceRun(WORKFLOW_ID, 1, 2)).thenReturn(instance);
 
     AssertHelper.assertThrows(
         "Will dequeue again if over dequeue limit",
@@ -89,16 +89,16 @@ public class StartWorkflowJobEventProcessorTest extends MaestroEngineBaseTest {
         "Hit DEQUEUE_SIZE_LIMIT for workflow",
         () -> processor.process(jobEvent));
 
-    verify(workflowDao, times(1)).getRunStrategy(workflowId);
+    verify(workflowDao, times(1)).getRunStrategy(WORKFLOW_ID);
     verify(runStrategyDao, times(1))
-        .dequeueWithRunStrategy(workflowId, Defaults.DEFAULT_RUN_STRATEGY);
-    verify(instanceDao, times(uuids.size())).getWorkflowInstanceRun(workflowId, 1, 2);
+        .dequeueWithRunStrategy(WORKFLOW_ID, Defaults.DEFAULT_RUN_STRATEGY);
+    verify(instanceDao, times(uuids.size())).getWorkflowInstanceRun(WORKFLOW_ID, 1, 2);
     verify(workflowRunner, times(uuids.size())).run(eq(instance), anyString());
   }
 
   @Test
   public void testRetryableError() {
-    when(workflowDao.getRunStrategy(workflowId)).thenThrow(new MaestroRetryableError("test"));
+    when(workflowDao.getRunStrategy(WORKFLOW_ID)).thenThrow(new MaestroRetryableError("test"));
     AssertHelper.assertThrows(
         "Will retry except MaestroRetryableError",
         MaestroRetryableError.class,
@@ -108,13 +108,13 @@ public class StartWorkflowJobEventProcessorTest extends MaestroEngineBaseTest {
 
   @Test
   public void testNonRetryableError() {
-    when(workflowDao.getRunStrategy(workflowId)).thenThrow(new MaestroNotFoundException("test"));
+    when(workflowDao.getRunStrategy(WORKFLOW_ID)).thenThrow(new MaestroNotFoundException("test"));
     processor.process(jobEvent); // no error
   }
 
   @Test
   public void testUnexpectedError() {
-    when(workflowDao.getRunStrategy(workflowId)).thenThrow(new IllegalArgumentException("test"));
+    when(workflowDao.getRunStrategy(WORKFLOW_ID)).thenThrow(new IllegalArgumentException("test"));
     AssertHelper.assertThrows(
         "Will retry unexpected error",
         MaestroRetryableError.class,
