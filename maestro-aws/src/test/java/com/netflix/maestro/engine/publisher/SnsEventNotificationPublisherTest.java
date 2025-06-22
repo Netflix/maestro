@@ -35,6 +35,7 @@ public class SnsEventNotificationPublisherTest extends MaestroBaseTest {
     client = new SnsEventNotificationPublisher(amazonSns, "sns-topic-test", MAPPER);
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   public void testSend() {
     MaestroEvent event = WorkflowDefinitionChangeEvent.builder().workflowId("test-wf").build();

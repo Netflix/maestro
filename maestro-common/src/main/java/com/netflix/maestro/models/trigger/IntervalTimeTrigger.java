@@ -20,8 +20,10 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.annotations.SuppressFBWarnings;
 import java.util.Date;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /** Interval based Time Trigger. */
+@EqualsAndHashCode(callSuper = true)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(alphabetic = true)

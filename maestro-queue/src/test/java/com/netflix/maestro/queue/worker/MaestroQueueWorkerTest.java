@@ -102,6 +102,7 @@ public class MaestroQueueWorkerTest extends MaestroBaseTest {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   public void testRunWithProcessException() throws InterruptedException {
     when(messageQueue.take()).thenReturn(message).thenThrow(new InterruptedException("test"));
     when(dispatcher.processJobEvent(any())).thenThrow(new RuntimeException("test"));
@@ -121,6 +122,7 @@ public class MaestroQueueWorkerTest extends MaestroBaseTest {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   public void testRunWithProcessInternalError() throws InterruptedException {
     when(messageQueue.take()).thenReturn(message).thenThrow(new InterruptedException("test"));
     when(dispatcher.processJobEvent(any())).thenThrow(new MaestroInternalError("test"));
@@ -164,6 +166,7 @@ public class MaestroQueueWorkerTest extends MaestroBaseTest {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   public void testRunWithInternalMessage() throws InterruptedException {
     when(messageQueue.take())
         .thenReturn(new MessageDto(0, "msgId", null, 123456L))
