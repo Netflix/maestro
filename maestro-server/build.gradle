@@ -43,6 +43,10 @@ dependencies {
     implementation('io.fabric8:kubernetes-client:7.+'){
         exclude group: 'org.slf4j'
     }
+
+    testImplementation junitDep
+    testImplementation mockitoCoreDep
+    testImplementation(testFixtures(project(':maestro-common')))
 }
 
 bootRun {
