@@ -31,7 +31,9 @@ public class OutputDataDao extends AbstractDatabaseDao {
       "SELECT payload, create_ts, modify_ts from output_data "
           + "WHERE external_job_id = ? AND external_job_type = ? LIMIT 1";
   private static final String UPSERT_OUTPUT_DATA_QUERY =
-      "UPSERT INTO output_data " + "(payload, modify_ts)" + " VALUES " + "(?, CURRENT_TIMESTAMP)";
+      "INSERT INTO output_data (payload, modify_ts) VALUES (?::json, CURRENT_TIMESTAMP) "
+          + "ON CONFLICT (external_job_type,external_job_id) DO UPDATE SET "
+          + "payload=EXCLUDED.payload,modify_ts=CURRENT_TIMESTAMP";
 
   /** Constructor for OutputDataDAO. */
   public OutputDataDao(

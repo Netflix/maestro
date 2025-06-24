@@ -22,7 +22,12 @@ public interface MaestroDatabaseHelper {
   class MaestroDBTestConfiguration implements DatabaseConfiguration {
     @Override
     public String getJdbcUrl() {
-      return "jdbc:tc:cockroach:v22.2.19:///maestro";
+      return "jdbc:tc:postgresql:17:///maestro";
+    }
+
+    @Override
+    public String getDbType() {
+      return "postgres";
     }
 
     @Override

@@ -118,8 +118,12 @@ public class MaestroStepBreakpointDao extends AbstractDatabaseDao {
       CONDITION_PAUSED_STEP_ATTEMPT + CONDITION_BY_ALL_STEP_IDENTIFIERS;
 
   private static final String ADD_STEP_BREAKPOINT =
-      "UPSERT INTO maestro_step_breakpoint (workflow_id,version,instance_id,run_id,step_id,step_attempt_id"
-          + ",created_by,create_ts,system_generated) VALUES (?,?,?,?,?,?,?,CURRENT_TIMESTAMP,false) RETURNING *";
+      "INSERT INTO maestro_step_breakpoint (workflow_id,version,instance_id,run_id,step_id,step_attempt_id,"
+          + "created_by,create_ts,system_generated) VALUES (?,?,?,?,?,?,?::json,CURRENT_TIMESTAMP,false) "
+          + "ON CONFLICT (workflow_id, step_id, system_generated, version, instance_id, run_id, step_attempt_id) "
+          + "DO UPDATE SET workflow_id=EXCLUDED.workflow_id,version=EXCLUDED.version,instance_id=EXCLUDED.instance_id,"
+          + "run_id=EXCLUDED.run_id,step_id=EXCLUDED.step_id,step_attempt_id=EXCLUDED.step_attempt_id,"
+          + "created_by=EXCLUDED.created_by,create_ts=CURRENT_TIMESTAMP,system_generated=false RETURNING *";
 
   private static final String SELECT_QUERY_PREFIX = "SELECT * FROM maestro_step_breakpoint WHERE";
 
@@ -139,11 +143,20 @@ public class MaestroStepBreakpointDao extends AbstractDatabaseDao {
   private static final String DELETE_STEP_BREAKPOINT_QUERY =
       DELETE_QUERY_PREFIX + CONDITION_BY_STEP_BREAKPOINT_IDENTIFIERS;
 
+  private static final String DELETE_LIMIT_BY =
+      " (workflow_id, step_id, system_generated, version, instance_id, run_id, step_attempt_id) IN ("
+          + "SELECT workflow_id, step_id, system_generated, version, instance_id, run_id, step_attempt_id "
+          + "FROM maestro_step_breakpoint WHERE ";
+
   private static final String DELETE_PAUSED_STEP_ATTEMPT_BASE_QUERY =
-      DELETE_QUERY_PREFIX + CONDITION_PAUSED_STEP_ATTEMPT + CONDITION_BY_DEFINITION_IDS;
+      DELETE_QUERY_PREFIX
+          + DELETE_LIMIT_BY
+          + CONDITION_PAUSED_STEP_ATTEMPT
+          + CONDITION_BY_DEFINITION_IDS;
 
   private static final String DELETE_PAUSED_INLINE_WORKFLOW_STEP_ATTEMPT_BASE_QUERY =
       DELETE_QUERY_PREFIX
+          + DELETE_LIMIT_BY
           + CONDITION_PAUSED_STEP_ATTEMPT
           + CONDITION_BY_INTERNAL_WORKFLOW_ID_RANGES_STEP_ID;
 
@@ -817,6 +830,7 @@ public class MaestroStepBreakpointDao extends AbstractDatabaseDao {
     }
     if (entryLimit != null) {
       query.append(ENTRY_LIMIT);
+      query.append(")");
     }
 
     PreparedStatement stmt = conn.prepareStatement(query.toString());

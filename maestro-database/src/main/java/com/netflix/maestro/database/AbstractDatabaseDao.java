@@ -15,7 +15,6 @@ package com.netflix.maestro.database;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.database.utils.ConnectionFunction;
 import com.netflix.maestro.database.utils.ResultProcessor;
 import com.netflix.maestro.database.utils.StatementFunction;
@@ -42,7 +41,6 @@ import lombok.extern.slf4j.Slf4j;
  *
  * @author jun-he
  */
-@SuppressFBWarnings({"EI_EXPOSE_REP", "EI_EXPOSE_REP2"})
 @Slf4j
 public abstract class AbstractDatabaseDao {
   private static final String RETRY_SQL_STATE = "40001";

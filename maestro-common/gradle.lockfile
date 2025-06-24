@@ -2,11 +2,11 @@
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
 com.cronutils:cron-utils:9.2.1=compileClasspath
-com.fasterxml.jackson.core:jackson-annotations:2.19.0=compileClasspath
-com.fasterxml.jackson.core:jackson-core:2.19.0=compileClasspath
-com.fasterxml.jackson.core:jackson-databind:2.19.0=compileClasspath
-com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.19.0=compileClasspath
-com.fasterxml.jackson:jackson-bom:2.19.0=compileClasspath
+com.fasterxml.jackson.core:jackson-annotations:2.19.1=compileClasspath
+com.fasterxml.jackson.core:jackson-core:2.19.1=compileClasspath
+com.fasterxml.jackson.core:jackson-databind:2.19.1=compileClasspath
+com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.19.1=compileClasspath
+com.fasterxml.jackson:jackson-bom:2.19.1=compileClasspath
 jakarta.inject:jakarta.inject-api:2.0.1=compileClasspath
 jakarta.validation:jakarta.validation-api:3.1.1=compileClasspath
 org.projectlombok:lombok:1.18.38=annotationProcessor,compileClasspath

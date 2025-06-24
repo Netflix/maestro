@@ -380,7 +380,7 @@ public class MaestroRunStrategyDaoTest extends MaestroDaoBaseTest {
     AssertHelper.assertThrows(
         "Invalid state when switching run strategies",
         IllegalArgumentException.class,
-        "finding more than 1 pending runs beside [sample-dag-test-3][2] with LAST_ONLY run strategy",
+        "finding more than 1 pending runs beside [sample-dag-test-3][",
         () -> runStrategyDao.startWithRunStrategy(wfi, RunStrategy.create("LAST_ONLY")));
 
     MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID, 2);

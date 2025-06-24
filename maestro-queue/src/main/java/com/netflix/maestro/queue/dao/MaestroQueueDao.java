@@ -45,17 +45,17 @@ public class MaestroQueueDao extends AbstractDatabaseDao {
   private static final String REMOVE_MSG_QUERY =
       "DELETE FROM maestro_queue" + POINT_QUERY_WHERE_CLAUSE;
   private static final String EXTEND_MSG_OWNERSHIP_QUERY =
-      "UPDATE maestro_queue SET (owned_until)=(?)" + POINT_QUERY_WHERE_CLAUSE;
+      "UPDATE maestro_queue SET owned_until=?" + POINT_QUERY_WHERE_CLAUSE;
   private static final String REPLACE_MSG_QUERY =
       "UPDATE maestro_queue SET (queue_id,owned_until,msg_id,payload,create_time)=(?,?,?,?,?)"
           + POINT_QUERY_WHERE_CLAUSE;
   private static final String DEQUEUE_UNOWNED_MSGS_QUERY =
-      "UPDATE maestro_queue SET (owned_until)=((CLOCK_TIMESTAMP()::FLOAT*1000)::INT + ?) "
+      "UPDATE maestro_queue SET owned_until=(EXTRACT(EPOCH FROM CLOCK_TIMESTAMP())*1000)::INT8 + ? "
           + "WHERE queue_id=? AND (owned_until,msg_id) IN (SELECT owned_until,msg_id FROM maestro_queue "
-          + "WHERE queue_id=? AND owned_until<(NOW()::INT*1000) ORDER BY owned_until ASC "
+          + "WHERE queue_id=? AND owned_until<(EXTRACT(EPOCH FROM NOW())::INT8*1000) ORDER BY owned_until ASC "
           + "LIMIT ? FOR UPDATE SKIP LOCKED) RETURNING owned_until,msg_id,payload,create_time";
   private static final String RELEASE_MSGS_QUERY_TEMPLATE =
-      "UPDATE maestro_queue SET (owned_until)=(?) WHERE queue_id=? AND (owned_until,msg_id) IN (%s)";
+      "UPDATE maestro_queue SET owned_until=? WHERE queue_id=? AND (owned_until,msg_id) IN (%s)";
   private static final String VALUE_PLACE_HOLDER = "(?,?)";
 
   public MaestroQueueDao(
