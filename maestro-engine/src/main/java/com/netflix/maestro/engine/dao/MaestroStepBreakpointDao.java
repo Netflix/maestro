@@ -82,7 +82,7 @@ public class MaestroStepBreakpointDao extends AbstractDatabaseDao {
   private static final String CREATE_TS = "create_ts";
   private static final String CONDITION_BY_DEFINITION_IDS = " AND workflow_id=? AND STEP_ID=?";
   private static final String CONDITION_BY_INTERNAL_WORKFLOW_ID_RANGES_STEP_ID =
-      " AND workflow_id >= ? COLLATE \"C\" AND workflow_id < ? COLLATE \"C\" AND step_id = ?";
+      " AND workflow_id >= ? AND workflow_id < ? AND step_id = ?";
   private static final String ENTRY_LIMIT = " LIMIT ?";
   private static final String CONDITION_BY_SPECIFIC_OR_MATCH_ALL_VERSIONS =
       " AND (version=? OR version=0)";

@@ -90,7 +90,7 @@ public class MaestroWorkflowDeletionDao extends AbstractDatabaseDao {
     DELETING_INLINE_INSTANCES(
         "DELETE FROM maestro_workflow_instance WHERE (workflow_id, instance_id, run_id) IN ("
             + "SELECT workflow_id, instance_id, run_id FROM maestro_workflow_instance WHERE "
-            + "workflow_id >= ? COLLATE \"C\" AND workflow_id < ? COLLATE \"C\" LIMIT ?)") {
+            + "workflow_id >= ? AND workflow_id < ? LIMIT ?)") {
       @Override
       void prepareQuery(PreparedStatement stmt, String workflowId, long internalId)
           throws SQLException {
@@ -107,7 +107,7 @@ public class MaestroWorkflowDeletionDao extends AbstractDatabaseDao {
         "DELETE FROM maestro_step_instance WHERE "
             + "(workflow_id, workflow_instance_id, step_id, workflow_run_id, step_attempt_id) IN ("
             + "SELECT workflow_id, workflow_instance_id, step_id, workflow_run_id, step_attempt_id FROM "
-            + "maestro_step_instance WHERE workflow_id>= ? COLLATE \"C\" AND workflow_id< ? COLLATE \"C\" LIMIT ?)") {
+            + "maestro_step_instance WHERE workflow_id>= ? AND workflow_id< ? LIMIT ?)") {
       @Override
       void prepareQuery(PreparedStatement stmt, String workflowId, long internalId)
           throws SQLException {
@@ -116,7 +116,7 @@ public class MaestroWorkflowDeletionDao extends AbstractDatabaseDao {
     },
     DELETING_JOB_CONCURRENCY_TAG_PERMITS(
         "DELETE FROM maestro_tag_permit WHERE tag IN ("
-            + "SELECT tag FROM maestro_tag_permit WHERE tag >= ? COLLATE \"C\" AND tag < ? COLLATE \"C\" LIMIT ?)") {
+            + "SELECT tag FROM maestro_tag_permit WHERE tag >= ? AND tag < ? LIMIT ?)") {
       @Override
       void prepareQuery(PreparedStatement stmt, String workflowId, long internalId)
           throws SQLException {
