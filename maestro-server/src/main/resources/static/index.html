@@ -115,8 +115,22 @@
 </div>
 
 <script>
-    // Get workflowId from URL: /workflows/{workflowId}/instances
-    const workflowId = window.location.pathname.split('/')[2] || 'sample-python-client-workflow';
+    // Check if we're at the root path and redirect to /#/workflows/{workflowId}/instances if needed
+    if (!window.location.hash) {
+        // We're at the root path, redirect to /#/workflows/sample-python-client-workflow/instances
+        window.location.href = '/#/workflows/sample-dag-test-1/instances';
+    }
+
+    // Get workflowId from URL hash: /#/workflows/{workflowId}/instances
+    const hashParts = window.location.hash.substring(1).split('/').filter(part => part.length > 0);
+
+    // Check if the URL has the correct format but workflowId is blank
+    const hasWorkflowsPath = hashParts.length >= 1 && hashParts[0] === 'workflows';
+    const isWorkflowIdBlank = hasWorkflowsPath && (hashParts.length === 1 || hashParts[1] === '');
+
+    // Set workflowId based on URL hash
+    const workflowId = hashParts[1];
+
     const errors = new Set();
 
     function showError(message, errorId = Date.now()) {
@@ -124,10 +138,10 @@
         const errorDiv = document.createElement('div');
         errorDiv.className = 'error-message';
         errorDiv.id = `error-${errorId}`;
-        
+
         const messageSpan = document.createElement('span');
         messageSpan.textContent = message;
-        
+
         const dismissButton = document.createElement('button');
         dismissButton.className = 'error-dismiss';
         dismissButton.innerHTML = '×';
@@ -135,10 +149,10 @@
             errorDiv.remove();
             errors.delete(errorId);
         };
-        
+
         errorDiv.appendChild(messageSpan);
         errorDiv.appendChild(dismissButton);
-        
+
         if (!errors.has(errorId)) {
             errors.add(errorId);
             errorsContainer.appendChild(errorDiv);
@@ -186,11 +200,11 @@
             showError('Error starting workflow: ' + error.message);
         });
     }
-    
+
     function formatDate(timestamp) {
         return timestamp ? new Date(timestamp).toLocaleString() : '-';
     }
-    
+
     function fetchInstances() {
         fetch(`/api/v3/workflows/${workflowId}/instances?first=100`, {
             method: 'GET',
@@ -218,12 +232,23 @@
             showError('Error fetching data: ' + error.message);
         });
     }
-    
-    // Initial fetch
-    fetchInstances();
-    
-    // Refresh every X seconds
-    setInterval(fetchInstances, 2000);
+
+    // Check if workflowId is blank and show error if it is
+    if (isWorkflowIdBlank) {
+        // Show error message
+        showError('Workflow ID is blank. Please provide a valid workflow ID in the URL.');
+
+        // Disable the start button
+        document.querySelector('button').disabled = true;
+        document.querySelector('button').style.backgroundColor = '#cccccc';
+        document.querySelector('button').style.cursor = 'not-allowed';
+    } else {
+        // Initial fetch
+        fetchInstances();
+
+        // Refresh every X seconds
+        setInterval(fetchInstances, 2000);
+    }
 </script>
 </body>
 </html>
