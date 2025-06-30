@@ -96,9 +96,9 @@
 </head>
 <body>
 <div class="container">
-    <h1>Workflow Instances</h1>
+    <h1 id="pageTitle">Workflow Instances</h1>
     <div id="errorsContainer" class="errors-container"></div>
-    <button onclick="start()">Start New Instance</button>
+    <button id="startButton" onclick="start()">Start New Instance</button>
     <table id="workflowTable">
         <thead>
             <tr>
@@ -130,6 +130,11 @@
 
     // Set workflowId based on URL hash
     const workflowId = hashParts[1];
+
+    // Update page title with workflow ID
+    if (workflowId) {
+        document.getElementById('pageTitle').textContent = workflowId;
+    }
 
     const errors = new Set();
 
@@ -233,22 +238,58 @@
         });
     }
 
-    // Check if workflowId is blank and show error if it is
-    if (isWorkflowIdBlank) {
-        // Show error message
-        showError('Workflow ID is blank. Please provide a valid workflow ID in the URL.');
+    function checkWorkflowExists() {
+        fetch(`/api/v3/workflows/${workflowId}/versions/latest`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(error => {
+                    if (error.status === 'NOT_FOUND') {
+                        // Workflow doesn't exist
+                        showError(`Workflow [${workflowId}] has not been created yet or has been deleted.`);
 
-        // Disable the start button
-        document.querySelector('button').disabled = true;
-        document.querySelector('button').style.backgroundColor = '#cccccc';
-        document.querySelector('button').style.cursor = 'not-allowed';
-    } else {
-        // Initial fetch
-        fetchInstances();
+                        // Hide the start button and table
+                        document.getElementById('startButton').style.display = 'none';
+                        document.getElementById('workflowTable').style.display = 'none';
+                    } else {
+                        throw new Error(error.message || `${response.status}: ${JSON.stringify(error)}`);
+                    }
+                });
+            } else {
+                // Workflow exists, fetch instances
+                fetchInstances();
 
-        // Refresh every X seconds
-        setInterval(fetchInstances, 2000);
+                // Refresh every X seconds
+                setInterval(fetchInstances, 2000);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showError('Error checking workflow: ' + error.message);
+        });
     }
+
+    // Wait for the DOM to be fully loaded before manipulating elements
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if workflowId is blank and show error if it is
+        if (isWorkflowIdBlank) {
+            // Show error message
+            showError('Workflow ID is blank. Please provide a valid workflow ID in the URL.');
+
+            // Disable the start button
+            document.getElementById('startButton').disabled = true;
+            document.getElementById('startButton').style.backgroundColor = '#cccccc';
+            document.getElementById('startButton').style.cursor = 'not-allowed';
+        } else {
+            // Check if workflow exists before fetching instances
+            checkWorkflowExists();
+        }
+    });
 </script>
 </body>
 </html>
