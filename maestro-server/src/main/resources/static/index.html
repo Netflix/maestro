@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Maestro</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+    <meta http-equiv="Pragma" content="no-cache"/>
+    <meta http-equiv="Expires" content="0"/>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        th, td {
+            border: 1px solid #eee;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        .status-succeeded {
+            color: #2e7d32;
+            font-weight: 500;
+        }
+        .status-created {
+            color: #1976d2;
+            font-weight: 500;
+        }
+        .status-failed {
+            color: #d32f2f;
+            font-weight: 500;
+        }
+        button {
+            padding: 12px 24px;
+            margin: 10px 0;
+            cursor: pointer;
+            background-color: #1976d2;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #1565c0;
+        }
+        .errors-container {
+            margin-bottom: 20px;
+        }
+        .error-message {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #ef9a9a;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .error-dismiss {
+            background: none;
+            border: none;
+            color: #c62828;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 18px;
+            margin: 0;
+        }
+        .error-dismiss:hover {
+            background-color: rgba(198, 40, 40, 0.1);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Workflow Instances</h1>
+    <div id="errorsContainer" class="errors-container"></div>
+    <button onclick="start()">Start New Instance</button>
+    <table id="workflowTable">
+        <thead>
+            <tr>
+                <th>Instance ID</th>
+                <th>Status</th>
+                <th>Create Time</th>
+                <th>Start Time</th>
+                <th>End Time</th>
+                <th>UUID</th>
+            </tr>
+        </thead>
+        <tbody id="result"></tbody>
+    </table>
+</div>
+
+<script>
+    // Get workflowId from URL: /workflows/{workflowId}/instances
+    const workflowId = window.location.pathname.split('/')[2] || 'sample-python-client-workflow';
+    const errors = new Set();
+
+    function showError(message, errorId = Date.now()) {
+        const errorsContainer = document.getElementById('errorsContainer');
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message';
+        errorDiv.id = `error-${errorId}`;
+        
+        const messageSpan = document.createElement('span');
+        messageSpan.textContent = message;
+        
+        const dismissButton = document.createElement('button');
+        dismissButton.className = 'error-dismiss';
+        dismissButton.innerHTML = '×';
+        dismissButton.onclick = () => {
+            errorDiv.remove();
+            errors.delete(errorId);
+        };
+        
+        errorDiv.appendChild(messageSpan);
+        errorDiv.appendChild(dismissButton);
+        
+        if (!errors.has(errorId)) {
+            errors.add(errorId);
+            errorsContainer.appendChild(errorDiv);
+        }
+    }
+
+    function handleResponse(response) {
+        if (!response.ok) {
+            return response.text().then(text => {
+                let error;
+                try {
+                    error = JSON.parse(text);
+                } catch (e) {
+                    error = undefined;
+                }
+                if (error) {
+                    throw new Error(error.message || `${response.status}: ${text}`);
+                } else {
+                    throw new Error(`${response.status}: ${text}`);
+                }
+            });
+        }
+        return response.json();
+    }
+
+    function start() {
+        fetch(`/api/v3/workflows/${workflowId}/versions/latest/actions/start`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'user': 'tester'
+            },
+            body: JSON.stringify({
+                initiator: {
+                    type: 'manual'
+                }
+            })
+        })
+        .then(handleResponse)
+        .then(data => {
+            fetchInstances();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showError('Error starting workflow: ' + error.message);
+        });
+    }
+    
+    function formatDate(timestamp) {
+        return timestamp ? new Date(timestamp).toLocaleString() : '-';
+    }
+    
+    function fetchInstances() {
+        fetch(`/api/v3/workflows/${workflowId}/instances?first=100`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        })
+        .then(handleResponse)
+        .then(data => {
+            const tbody = document.getElementById('result');
+            tbody.innerHTML = data.elements.map(instance => `
+                <tr>
+                    <td>${instance.workflow_instance_id}</td>
+                    <td class="status-${instance.status.toLowerCase()}">${instance.status}</td>
+                    <td>${formatDate(instance.create_time)}</td>
+                    <td>${formatDate(instance.start_time)}</td>
+                    <td>${formatDate(instance.end_time)}</td>
+                    <td>${instance.workflow_uuid}</td>
+                </tr>
+            `).join('');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showError('Error fetching data: ' + error.message);
+        });
+    }
+    
+    // Initial fetch
+    fetchInstances();
+    
+    // Refresh every X seconds
+    setInterval(fetchInstances, 2000);
+</script>
+</body>
+</html>
