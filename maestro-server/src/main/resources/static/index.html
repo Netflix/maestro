@@ -10,22 +10,11 @@
 </head>
 <body>
 <div class="container">
-    <h1 id="pageTitle">Workflow Instances</h1>
+    <div class="header">
+        <h1 id="pageTitle">Workflow Instances</h1>
+        <button id="startButton">Start New Instance</button>
+    </div>
     <div id="errorsContainer" class="errors-container"></div>
-    <button id="startButton">Start New Instance</button>
-    <table id="workflowTable">
-        <thead>
-            <tr>
-                <th>Instance ID</th>
-                <th>Status</th>
-                <th>Create Time</th>
-                <th>Start Time</th>
-                <th>End Time</th>
-                <th>UUID</th>
-            </tr>
-        </thead>
-        <tbody id="result"></tbody>
-    </table>
 
     <!-- Instance details container (hidden by default) -->
     <div id="instanceDetailsContainer" class="instance-details">
@@ -55,6 +44,20 @@
             <div id="stepInfo" class="step-info"></div>
         </div>
     </div>
+
+    <table id="workflowTable">
+        <thead>
+            <tr>
+                <th>Instance ID</th>
+                <th>Status</th>
+                <th>Create Time</th>
+                <th>Start Time</th>
+                <th>End Time</th>
+                <th>UUID</th>
+            </tr>
+        </thead>
+        <tbody id="result"></tbody>
+    </table>
 </div>
 
 <script type="module" src="js/main.js"></script>

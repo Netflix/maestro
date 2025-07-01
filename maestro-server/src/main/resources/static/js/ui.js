@@ -44,8 +44,14 @@ function showError(message, errorId = Date.now()) {
  */
 function updateWorkflowInstancesTable(data, onInstanceClick) {
     const tbody = document.getElementById('result');
-    tbody.innerHTML = data.elements.map(instance => `
-        <tr class="instance-row" data-instance-id="${instance.workflow_instance_id}">
+
+    // Sort instances by instance_id in descending order
+    const sortedElements = [...data.elements].sort((a, b) => {
+        return b.workflow_instance_id - a.workflow_instance_id;
+    });
+
+    tbody.innerHTML = sortedElements.map(instance => `
+        <tr class="instance-row" data-instance-id="${instance.workflow_instance_id}" data-status="${instance.status}">
             <td>${instance.workflow_instance_id}</td>
             <td class="status-${instance.status.toLowerCase()}">${instance.status}</td>
             <td>${formatDate(instance.create_time)}</td>
@@ -58,8 +64,11 @@ function updateWorkflowInstancesTable(data, onInstanceClick) {
     // Add click handlers to instance rows
     document.querySelectorAll('.instance-row').forEach(row => {
         row.addEventListener('click', function() {
-            const instanceId = this.getAttribute('data-instance-id');
-            onInstanceClick(instanceId);
+            const status = this.getAttribute('data-status');
+            if (status && status.toLowerCase() !== "created") {
+                const instanceId = this.getAttribute('data-instance-id');
+                onInstanceClick(instanceId);
+            }
         });
     });
 }
@@ -92,7 +101,7 @@ function populateRunSelector(instance, onRunChange) {
     runSelector.addEventListener('change', function() {
         onRunChange(this.value);
     });
-    
+
     return instance.workflow_run_id;
 }
 
@@ -289,7 +298,7 @@ function populateAttemptSelector(step, onAttemptChange) {
     attemptSelector.addEventListener('change', function() {
         onAttemptChange(step.step_id, this.value);
     });
-    
+
     return step.step_attempt_id;
 }
 
@@ -330,10 +339,10 @@ function displayStepInfo(step) {
 function showStepDetails(step, onAttemptChange) {
     document.getElementById('stepIdDisplay').textContent = step.id;
     document.getElementById('stepDetailsContainer').style.display = 'block';
-    
+
     const attemptId = populateAttemptSelector(step, onAttemptChange);
     displayStepInfo(step);
-    
+
     return attemptId;
 }
 
