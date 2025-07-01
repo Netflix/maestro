@@ -264,6 +264,12 @@ public final class Constants {
   public static final String STEP_END_TIME_PARAM = "MAESTRO_STEP_END_TIME";
 
   /**
+   * Step instance error retry param name key used in SEL to retrieve the step error retry attempt
+   * number.
+   */
+  public static final String STEP_ERROR_RETRIES_PARAM = "MAESTRO_STEP_ERROR_RETRIES";
+
+  /**
    * Match all instances. Special value to denote a breakpoint which is set to match all wf
    * instances.
    */
