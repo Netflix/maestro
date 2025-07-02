@@ -38,7 +38,7 @@ maestro:
   alerting:
     type: noop
   redis:
-    enabled: false
+    enabled: true
   sel:
     thread-num: 3
     timeout-millis: 120000
@@ -122,6 +122,8 @@ aws:
     signal-instance-queue-url: http://localhost:4566/000000000000/maestro-signal-instance.fifo
     signal-trigger-match-queue-url: http://localhost:4566/000000000000/maestro-signal-trigger-match.fifo
     signal-trigger-execution-queue-url: http://localhost:4566/000000000000/maestro-signal-trigger-execution.fifo
+  redis:
+    redis-server-address: "redis://127.0.0.1:6379"
 
 logging:
   level:
