@@ -13,6 +13,8 @@
 package com.netflix.maestro.engine.autoconfigure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.maestro.engine.concurrency.InstanceStepConcurrencyHandler;
+import com.netflix.maestro.engine.concurrency.RedisInstanceStepConcurrencyHandler;
 import com.netflix.maestro.engine.listeners.SqsSignalInstanceListener;
 import com.netflix.maestro.engine.listeners.SqsSignalTriggerExecutionListener;
 import com.netflix.maestro.engine.listeners.SqsSignalTriggerMatchListener;
@@ -20,6 +22,7 @@ import com.netflix.maestro.engine.listeners.SqsTimeTriggerExecutionListener;
 import com.netflix.maestro.engine.producer.SqsSignalQueueProducer;
 import com.netflix.maestro.engine.producer.SqsTimeTriggerProducer;
 import com.netflix.maestro.engine.properties.AwsProperties;
+import com.netflix.maestro.engine.properties.RedisProperties;
 import com.netflix.maestro.engine.properties.SqsProperties;
 import com.netflix.maestro.engine.publisher.MaestroNotificationPublisher;
 import com.netflix.maestro.engine.publisher.SnsEventNotificationPublisher;
@@ -36,6 +39,10 @@ import io.awspring.cloud.sqs.listener.acknowledgement.handler.AcknowledgementMod
 import io.awspring.cloud.sqs.operations.SqsTemplate;
 import java.time.Duration;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.Redisson;
+import org.redisson.api.RedissonClient;
+import org.redisson.client.codec.StringCodec;
+import org.redisson.config.Config;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -154,5 +161,49 @@ public class AwsConfiguration {
     threadPoolTaskExecutor.setQueueCapacity(props.getListenerQueueCapacity());
     threadPoolTaskExecutor.afterPropertiesSet();
     return threadPoolTaskExecutor;
+  }
+
+  @Bean
+  @ConditionalOnProperty(value = "maestro.redis.enabled", havingValue = "true")
+  public InstanceStepConcurrencyHandler redisInstanceStepConcurrencyHandler(
+      RedissonClient redisson, MaestroMetrics metricRepo) {
+    LOG.info("Creating maestro redisInstanceStepConcurrencyHandler within Spring boot...");
+    return new RedisInstanceStepConcurrencyHandler(
+        redisson.getScript(StringCodec.INSTANCE), metricRepo);
+  }
+
+  @Bean(destroyMethod = "shutdown")
+  @ConditionalOnProperty(value = "maestro.redis.enabled", havingValue = "true")
+  public RedissonClient redisson(AwsProperties props) {
+    RedisProperties redisProps = props.getRedis();
+    RedisProperties.RedisServerType redisServerType = redisProps.getRedisServerType();
+
+    Config redisConfig = new Config();
+    String redisServerAddress = redisProps.getRedisServerAddress();
+    int connectionTimeout = redisProps.getRedisConnectionTimeout();
+    int scanInterval = redisProps.getRedisScanInterval();
+
+    switch (redisServerType) {
+      case CLUSTER:
+        redisConfig
+            .useClusterServers()
+            .setScanInterval(scanInterval) // cluster state scan interval in milliseconds
+            .addNodeAddress(redisServerAddress.split(","))
+            .setTimeout(connectionTimeout);
+        break;
+      case SENTINEL:
+        redisConfig
+            .useSentinelServers()
+            .setScanInterval(scanInterval)
+            .addSentinelAddress(redisServerAddress)
+            .setTimeout(connectionTimeout);
+        break;
+      case SINGLE:
+      default:
+        redisConfig.useSingleServer().setAddress(redisServerAddress).setTimeout(connectionTimeout);
+        break;
+    }
+
+    return Redisson.create(redisConfig);
   }
 }
