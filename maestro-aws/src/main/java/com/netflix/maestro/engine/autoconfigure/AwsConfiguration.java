@@ -40,6 +40,7 @@ import io.awspring.cloud.sqs.operations.SqsTemplate;
 import java.time.Duration;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.Redisson;
+import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -165,7 +166,7 @@ public class AwsConfiguration {
   @Bean
   @ConditionalOnProperty(value = "maestro.redis.enabled", havingValue = "true")
   public InstanceStepConcurrencyHandler redisInstanceStepConcurrencyHandler(
-      Redisson redisson, MaestroMetrics metricRepo) {
+      RedissonClient redisson, MaestroMetrics metricRepo) {
     LOG.info("Creating maestro redisInstanceStepConcurrencyHandler within Spring boot...");
     return new RedisInstanceStepConcurrencyHandler(
         redisson.getScript(StringCodec.INSTANCE), metricRepo);
@@ -173,7 +174,7 @@ public class AwsConfiguration {
 
   @Bean(destroyMethod = "shutdown")
   @ConditionalOnProperty(value = "maestro.redis.enabled", havingValue = "true")
-  public Redisson redisson(AwsProperties props) {
+  public RedissonClient redisson(AwsProperties props) {
     RedisProperties redisProps = props.getRedis();
     RedisProperties.RedisServerType redisServerType = redisProps.getRedisServerType();
 
@@ -203,6 +204,6 @@ public class AwsConfiguration {
         break;
     }
 
-    return (Redisson) Redisson.create(redisConfig);
+    return Redisson.create(redisConfig);
   }
 }
