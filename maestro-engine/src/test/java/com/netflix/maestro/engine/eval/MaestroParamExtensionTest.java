@@ -385,6 +385,7 @@ public class MaestroParamExtensionTest extends MaestroEngineBaseTest {
             .stepInstanceUuid(stepInstanceUuid)
             .type(StepType.NOTEBOOK)
             .subType(null)
+            .stepRetry(StepInstance.StepRetry.from(null))
             .build();
     when(instanceWrapper.isWorkflowParam()).thenReturn(false);
     when(instanceWrapper.getStepInstanceAttributes())
@@ -395,6 +396,7 @@ public class MaestroParamExtensionTest extends MaestroEngineBaseTest {
     assertEquals(stepAttemptId, paramExtension.getFromStep(Constants.STEP_ATTEMPT_ID_PARAM));
     assertEquals(
         StepType.NOTEBOOK.toString(), paramExtension.getFromStep(Constants.STEP_TYPE_INFO_PARAM));
+    assertEquals(0L, paramExtension.getFromStep(Constants.STEP_ERROR_RETRIES_PARAM));
   }
 
   @Test

@@ -45,6 +45,7 @@ public class MapParameterTest extends MaestroBaseTest {
     assertEquals(ser1, ser2);
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   public void testRoundTripSerdeForEvaluatedResult() throws Exception {
     // given

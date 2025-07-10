@@ -42,6 +42,7 @@ public class MaestroWorkflowLauncherTest {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   public void testEmptyStartWorkflowBatchRuns() {
     String workflowId = "workflowId";
     String version = "version";
@@ -56,6 +57,7 @@ public class MaestroWorkflowLauncherTest {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   public void testStartWorkflowBatchRuns() {
     String workflowId = "workflowId";
     String version = "version";

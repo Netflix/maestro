@@ -5,6 +5,7 @@ dependencies {
     implementation('io.awspring.cloud:spring-cloud-aws-starter-sqs:3.+') {
         exclude group: 'ch.qos.logback'
     }
+    implementation('org.redisson:redisson:3.+')
 
     implementation project(':maestro-common')
     implementation project(':maestro-engine')

@@ -59,12 +59,6 @@ public class InstanceActionJobEventProcessorTest extends MaestroEngineBaseTest {
   private final String stepId = "sample-test-step-id";
   private InstanceActionJobEventProcessor processor;
 
-  private final String foreachWorkflowId = "sample-test-foreach-workflow-id";
-  private final String foreachWorkflowInstanceId = "1";
-  private final String foreachWorkflowRunId = "4";
-  private final String foreachStepAttemptId = "1";
-  private final String foreachStepId = "sample-test-foreach-step-id";
-
   @Before
   public void before() {
     processor = new InstanceActionJobEventProcessor(flowOperation, instanceDao, stepInstanceDao);
@@ -78,6 +72,11 @@ public class InstanceActionJobEventProcessorTest extends MaestroEngineBaseTest {
     when(stepInstanceDao.getStepInstance(
             workflowId, workflowInstanceId, workflowRunId, stepId, stepAttemptId))
         .thenReturn(stepInstance);
+    String foreachWorkflowId = "sample-test-foreach-workflow-id";
+    String foreachWorkflowInstanceId = "1";
+    String foreachWorkflowRunId = "4";
+    String foreachStepAttemptId = "1";
+    String foreachStepId = "sample-test-foreach-step-id";
     when(stepInstanceDao.getStepInstance(
             foreachWorkflowId,
             Long.parseLong(foreachWorkflowInstanceId),

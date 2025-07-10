@@ -13,3 +13,9 @@ services:
       - "${LOCALSTACK_VOLUME_DIR:-./tmp}:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
       - "./localstack:/etc/localstack/init/ready.d"
+  redis:
+    image: redis:latest # Uses the latest redis image
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./tmp/redis:/data

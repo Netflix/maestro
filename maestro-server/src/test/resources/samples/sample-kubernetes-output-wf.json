@@ -5,7 +5,7 @@
   },
   "workflow": {
     "id": "sample-kubernetes-output-wf",
-    "name": "Test kubernetes workflow without output data",
+    "name": "Test kubernetes workflow with output data",
     "description": "This workflow runs a kubernetes job, which produces output data.",
     "steps": [
       {"step": {"id": "start", "type": "NoOp", "transition": {"successors": {"job1":  "true"}}}},

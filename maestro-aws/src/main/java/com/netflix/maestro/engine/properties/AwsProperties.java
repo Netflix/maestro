@@ -23,4 +23,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class AwsProperties {
   private String snsTopic;
   private SqsProperties sqs;
+  private RedisProperties redis;
 }

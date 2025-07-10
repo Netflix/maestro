@@ -41,7 +41,8 @@ public class MaestroFlowDao extends AbstractDatabaseDao {
           + "WHERE heartbeat_ts<(now()-INTERVAL '1 millisecond' * ?) FOR UPDATE SKIP LOCKED LIMIT 1) "
           + "RETURNING group_id,generation,heartbeat_ts";
   private static final String ADD_FLOW_GROUP_QUERY =
-      "INSERT INTO maestro_flow_group (group_id,generation,address) VALUES (?,?,?) ON CONFLICT DO NOTHING RETURNING heartbeat_ts";
+      "INSERT INTO maestro_flow_group (group_id,generation,address) VALUES (?,?,?) "
+          + "ON CONFLICT DO NOTHING RETURNING heartbeat_ts";
   private static final String GET_FLOW_WITH_SAME_KEYS_QUERY =
       "SELECT 1 FROM maestro_flow WHERE group_id=? AND flow_id=? LIMIT 1";
   private static final String REMOVE_GROUP_QUERY =
