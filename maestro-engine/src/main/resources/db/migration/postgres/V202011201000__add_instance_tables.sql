@@ -13,10 +13,10 @@ CREATE TABLE IF NOT EXISTS maestro_workflow_instance (  -- table of workflow run
   root_depth        INT8 GENERATED ALWAYS AS ((instance->'initiator'->>'depth')::INT8) STORED CHECK (root_depth >= 0),
   initiator_type    TEXT GENERATED ALWAYS AS (instance->'initiator'->>'type') STORED NOT NULL,
   create_ts         TIMESTAMPTZ GENERATED ALWAYS AS (TO_TIMESTAMP(DIV((instance->>'create_time')::INT8,1000))) STORED NOT NULL,
-  instance          JSONB NOT NULL, -- it does not contain info in cf2 family
+  instance          JSON NOT NULL,  -- use JSON to preserve the original definition, e.g. param map order
   -- above columns are readonly after creation
   status            TEXT NOT NULL COLLATE "C",
-  execution_id      TEXT,         -- null means it hasn't been run by the underlying engine
+  execution_id      TEXT,           -- null means it hasn't been run by the underlying engine
   start_ts          TIMESTAMPTZ,
   end_ts            TIMESTAMPTZ,
   modify_ts         TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -43,11 +43,11 @@ CREATE TABLE IF NOT EXISTS maestro_step_instance (
   workflow_uuid             TEXT GENERATED ALWAYS AS (instance->>'workflow_uuid') STORED NOT NULL,
   step_uuid                 TEXT GENERATED ALWAYS AS (instance->>'step_uuid') STORED NOT NULL,
   correlation_id            TEXT GENERATED ALWAYS AS (instance->>'correlation_id') STORED NOT NULL,
-  instance                  JSONB NOT NULL, -- it does not contain info in cf2 family
+  instance                  JSON NOT NULL,  -- use JSON to preserve the original definition, e.g. param map order
   -- above columns are readonly after creation
   runtime_state             JSONB NOT NULL,
-  dependencies              JSONB,  -- input signal dependencies for a step
-  outputs                   JSONB,  -- output signal for a step
+  dependencies              JSON,   -- input signal dependencies for a step, using JSON to preserve the map order
+  outputs                   JSON,   -- output signal for a step, using JSON to preserve the map order
   artifacts                 JSONB,
   timeline                  TEXT[],
   -- above columns are mutable fields when step running

@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS maestro_step_breakpoint (
   PRIMARY KEY (workflow_id, step_id, system_generated, version DESC, instance_id DESC, run_id DESC, step_attempt_id DESC)
 );
 
-CREATE TABLE IF NOT EXISTS output_data (
+CREATE TABLE IF NOT EXISTS maestro_output_data (
   external_job_id   STRING AS (payload->>'external_job_id') STORED NOT NULL,
   external_job_type STRING AS (payload->>'external_job_type') STORED NOT NULL,
   workflow_id       STRING AS (payload->>'workflow_id') STORED NOT NULL,

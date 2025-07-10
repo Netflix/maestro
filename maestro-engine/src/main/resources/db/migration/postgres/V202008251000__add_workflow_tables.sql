@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS maestro_workflow_version (   -- table of workflow ver
   workflow_id   TEXT GENERATED ALWAYS AS (definition->>'id') STORED NOT NULL COLLATE "C",
   version_id    INT8 GENERATED ALWAYS AS ((metadata->>'workflow_version_id')::INT8) STORED NOT NULL CHECK (version_id > 0),
   metadata      JSONB NOT NULL,
-  definition    JSONB NOT NULL,
+  definition    JSON NOT NULL,  -- use JSON to preserve the original definition, e.g. param map order
   trigger_uuids JSONB,
   create_ts     TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL, -- processing delay is the time diff between it and metadata create_time
   PRIMARY KEY (workflow_id, version_id)

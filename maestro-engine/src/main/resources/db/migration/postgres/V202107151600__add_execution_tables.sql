@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS maestro_step_instance_action (   -- table to record s
   workflow_instance_id      INT8 GENERATED ALWAYS AS ((payload->>'workflow_instance_id')::INT8) STORED CHECK (workflow_instance_id > 0),
   workflow_run_id           INT8 GENERATED ALWAYS AS ((payload->>'workflow_run_id')::INT8) STORED CHECK (workflow_run_id > 0),
   step_id                   TEXT GENERATED ALWAYS AS (payload->>'step_id') STORED NOT NULL COLLATE "C",
-  payload                   JSONB NOT NULL,
+  payload                   JSON NOT NULL,  -- use JSON to preserve the original param map order
   create_ts                 TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
   PRIMARY KEY (workflow_id, workflow_instance_id, workflow_run_id, step_id)
 );
@@ -26,11 +26,11 @@ CREATE TABLE IF NOT EXISTS maestro_step_breakpoint (
   PRIMARY KEY (workflow_id, step_id, system_generated, version, instance_id, run_id, step_attempt_id)
 );
 
-CREATE TABLE IF NOT EXISTS output_data (
+CREATE TABLE IF NOT EXISTS maestro_output_data (
   external_job_type TEXT GENERATED ALWAYS AS (payload->>'external_job_type') STORED NOT NULL COLLATE "C",
   external_job_id   TEXT GENERATED ALWAYS AS (payload->>'external_job_id') STORED NOT NULL COLLATE "C",
   workflow_id       TEXT GENERATED ALWAYS AS (payload->>'workflow_id') STORED NOT NULL,
-  payload           JSONB NOT NULL,
+  payload           JSON NOT NULL,  -- use JSON to preserve the original param map order
   create_ts         TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   modify_ts         TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (external_job_type,external_job_id)

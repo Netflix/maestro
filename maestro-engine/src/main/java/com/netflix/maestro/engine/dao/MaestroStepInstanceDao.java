@@ -156,8 +156,7 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
           + " AND step_id=? ORDER BY workflow_run_id DESC, step_attempt_id DESC LIMIT 1";
 
   private static final String GET_STEP_ATTEMPT_STATE_QUERY =
-      "SELECT workflow_id, workflow_instance_id, workflow_run_id, instance->>'workflow_version_id' AS "
-          + "workflow_version_id, step_id, step_attempt_id, runtime_state"
+      "SELECT workflow_id, workflow_instance_id, workflow_run_id, step_id, step_attempt_id, runtime_state"
           + GET_STEP_FIELD_QUERY_FROM
           + " AND step_id=? ORDER BY workflow_run_id DESC, step_attempt_id DESC LIMIT "
           + Constants.STEP_ATTEMPT_STATE_LIMIT;
@@ -357,7 +356,6 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
     state.setStepAttemptId(getStepAttemptId(rs));
     state.setWorkflowId(getWorkflowId(rs));
     state.setWorkflowRunId(getWorkflowRunId(rs));
-    state.setWorkflowVersionId(getWorkflowVersionId(rs));
     return state;
   }
 
@@ -380,12 +378,6 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
     return Checks.notNull(
         rs.getLong(StepInstanceField.WORKFLOW_RUN_ID.field),
         "step workflow_run_id column cannot be null");
-  }
-
-  private long getWorkflowVersionId(ResultSet rs) throws SQLException {
-    return Checks.notNull(
-        rs.getLong(StepInstanceField.WORKFLOW_VERSION_ID.field),
-        "step workflow_version_id column cannot be null");
   }
 
   private long getStepAttemptId(ResultSet rs) throws SQLException {
@@ -466,7 +458,6 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
     TIMELINE("timeline"),
     WORKFLOW_RUN_ID("workflow_run_id"),
     WORKFLOW_ID("workflow_id"),
-    WORKFLOW_VERSION_ID("workflow_version_id"),
     STEP_ATTEMPT_ID("step_attempt_id"),
     WORKFLOW_INSTANCE_ID("workflow_instance_id"),
     STEP_ID("step_id");

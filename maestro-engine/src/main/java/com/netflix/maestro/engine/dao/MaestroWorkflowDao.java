@@ -70,6 +70,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.SequencedMap;
 import java.util.stream.Collectors;
 import javax.sql.DataSource;
 import lombok.Getter;
@@ -348,7 +349,7 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
                               update);
 
                       List<StatementPreparer> preparers = new ArrayList<>();
-                      LinkedHashMap<String, String> fields =
+                      SequencedMap<String, String> fields =
                           prepareProperties(preparers, workflowId, snapshot);
 
                       long[] updateRes = executeTemplateUpdate(conn, fields, preparers);
@@ -937,7 +938,7 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
         workflowId);
 
     List<StatementPreparer> preparers = new ArrayList<>();
-    LinkedHashMap<String, String> fields = prepareProperties(preparers, workflowId, snapshot);
+    SequencedMap<String, String> fields = prepareProperties(preparers, workflowId, snapshot);
 
     // if it is an active version, update the active_version_id
     if (workflowDef.getIsActive()) {
@@ -968,7 +969,7 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
    * @throws SQLException sql exception
    */
   private long[] executeTemplateUpdate(
-      Connection conn, LinkedHashMap<String, String> fields, List<StatementPreparer> preparers)
+      Connection conn, SequencedMap<String, String> fields, List<StatementPreparer> preparers)
       throws SQLException {
     if (preparers.size() <= EMPTY_SIZE_CASE) {
       return null;
@@ -988,7 +989,7 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
     }
   }
 
-  private String getUpsertWorkflowQuery(LinkedHashMap<String, String> fields) {
+  private String getUpsertWorkflowQuery(SequencedMap<String, String> fields) {
     return String.format(
         UPSERT_WORKFLOW_QUERY_TEMPLATE,
         String.join(JOIN_DELIMITER, fields.keySet()),
@@ -1044,7 +1045,7 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
     return jobEvent;
   }
 
-  private LinkedHashMap<String, String> prepareProperties(
+  private SequencedMap<String, String> prepareProperties(
       List<StatementPreparer> preparers, String workflowId, PropertiesSnapshot snapshot) {
     LinkedHashMap<String, String> fields = new LinkedHashMap<>();
     prepareStringField(fields, WORKFLOW_ID_COLUMN, preparers, workflowId);
@@ -1055,7 +1056,7 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
   }
 
   private int getIndex(
-      LinkedHashMap<String, String> fields,
+      SequencedMap<String, String> fields,
       String fieldName,
       String fieldValue,
       List<StatementPreparer> preparers,
@@ -1068,7 +1069,7 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
   }
 
   private void prepareJsonbField(
-      LinkedHashMap<String, String> fields,
+      SequencedMap<String, String> fields,
       String fieldName,
       List<StatementPreparer> preparers,
       Object data) {
@@ -1079,7 +1080,7 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
   }
 
   private void prepareStringField(
-      LinkedHashMap<String, String> fields,
+      SequencedMap<String, String> fields,
       String fieldName,
       List<StatementPreparer> preparers,
       String data) {
@@ -1090,7 +1091,7 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
   }
 
   private void prepareLongField(
-      LinkedHashMap<String, String> fields,
+      SequencedMap<String, String> fields,
       String fieldName,
       List<StatementPreparer> preparers,
       Long data) {
@@ -1101,7 +1102,7 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
   }
 
   private void prepareTimestampField(
-      LinkedHashMap<String, String> fields,
+      SequencedMap<String, String> fields,
       String fieldName,
       List<StatementPreparer> preparers,
       Long data) {
