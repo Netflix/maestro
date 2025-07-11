@@ -17,7 +17,7 @@ import javax.sql.DataSource;
 /** Maestro database helper utils. */
 public interface MaestroDatabaseHelper {
   /** The size of the connection pool for tests. */
-  int TEST_CONNECTION_POLL_SIZE = 2;
+  int TEST_CONNECTION_POOL_SIZE = 2;
 
   class MaestroDBTestConfiguration implements DatabaseConfiguration {
     @Override
@@ -32,7 +32,7 @@ public interface MaestroDatabaseHelper {
 
     @Override
     public int getConnectionPoolMaxSize() {
-      return TEST_CONNECTION_POLL_SIZE;
+      return TEST_CONNECTION_POOL_SIZE;
     }
 
     @Override

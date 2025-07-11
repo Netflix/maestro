@@ -104,7 +104,7 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
   private static final int MORE_THAN_ONE_CONDITION = 2;
 
   private static final String CREATE_WORKFLOW_VERSION_QUERY =
-      "INSERT INTO maestro_workflow_version (metadata,definition,trigger_uuids) VALUES (?::jsonb,?::jsonb,?::jsonb) ";
+      "INSERT INTO maestro_workflow_version (metadata,definition,trigger_uuids) VALUES (?::jsonb,?::json,?::jsonb) ";
   private static final String CREATE_WORKFLOW_PROPS_QUERY =
       "INSERT INTO maestro_workflow_properties "
           + "(workflow_id,create_time,author,properties_changes,previous_snapshot) VALUES (?,?,?::jsonb,?::jsonb,?::jsonb)";

@@ -69,7 +69,7 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
 
   private static final String ADD_STEP_INSTANCE_POSTFIX =
       "INTO maestro_step_instance (instance,runtime_state,dependencies,outputs,artifacts,timeline) "
-          + "VALUES (?::jsonb,?::jsonb,?::jsonb,?::jsonb,?::jsonb,?)";
+          + "VALUES (?::json,?::jsonb,?::json,?::json,?::jsonb,?)";
 
   private static final String CREATE_STEP_INSTANCE_QUERY = "INSERT " + ADD_STEP_INSTANCE_POSTFIX;
 
@@ -88,7 +88,7 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
 
   private static final String UPDATE_STEP_INSTANCE_QUERY =
       "UPDATE maestro_step_instance SET (runtime_state,dependencies,outputs,artifacts,timeline) "
-          + "= (?::jsonb,?::json,?::json,?::json,?) "
+          + "= (?::jsonb,?::json,?::json,?::jsonb,?) "
           + WHERE_CONDITION_BY_IDS;
 
   private static final String SELECT_STEP_FIELDS = "SELECT %s FROM maestro_step_instance ";
