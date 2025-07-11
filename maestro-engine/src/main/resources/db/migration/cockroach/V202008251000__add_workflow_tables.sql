@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS maestro_workflow (   -- table to lock and store mutab
 CREATE TABLE IF NOT EXISTS maestro_workflow_timeline (  -- table to store the workflow changes
   workflow_id   STRING NOT NULL,
   change_event  JSONB NOT NULL,
-  hash_id       INT8 AS (fnv32a(change_event::STRING)) STORED,
+  hash_id       INT8 NOT NULL,
   create_ts     TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
   PRIMARY KEY (workflow_id, create_ts, hash_id)
 );

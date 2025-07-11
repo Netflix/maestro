@@ -398,7 +398,6 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
       assertEquals("sample-dag-test-3", stepAttemptState.getWorkflowId());
       assertEquals("job1", stepAttemptState.getStepId());
       assertEquals(1, stepAttemptState.getWorkflowInstanceId());
-      assertEquals(1, stepAttemptState.getWorkflowVersionId());
     }
 
     assertEquals(2, run2Att2.getWorkflowRunId());

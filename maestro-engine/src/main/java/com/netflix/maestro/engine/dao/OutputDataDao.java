@@ -28,10 +28,12 @@ import javax.sql.DataSource;
 /** DAO for saving and retrieving output data. */
 public class OutputDataDao extends AbstractDatabaseDao {
   private static final String GET_OUTPUT_DATA_JOB_QUERY =
-      "SELECT payload, create_ts, modify_ts from output_data "
+      "SELECT payload, create_ts, modify_ts from maestro_output_data "
           + "WHERE external_job_id = ? AND external_job_type = ? LIMIT 1";
   private static final String UPSERT_OUTPUT_DATA_QUERY =
-      "UPSERT INTO output_data " + "(payload, modify_ts)" + " VALUES " + "(?, CURRENT_TIMESTAMP)";
+      "INSERT INTO maestro_output_data (payload, modify_ts) VALUES (?::json, CURRENT_TIMESTAMP) "
+          + "ON CONFLICT (external_job_type,external_job_id) DO UPDATE SET "
+          + "payload=EXCLUDED.payload,modify_ts=CURRENT_TIMESTAMP";
 
   /** Constructor for OutputDataDAO. */
   public OutputDataDao(

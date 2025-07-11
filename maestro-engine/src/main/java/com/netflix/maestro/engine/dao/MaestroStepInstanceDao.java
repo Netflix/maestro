@@ -68,11 +68,17 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
       new TypeReference<>() {};
 
   private static final String ADD_STEP_INSTANCE_POSTFIX =
-      "INTO maestro_step_instance (instance,runtime_state,dependencies,outputs,artifacts,timeline) VALUES (?,?,?,?,?,?)";
+      "INTO maestro_step_instance (instance,runtime_state,dependencies,outputs,artifacts,timeline) "
+          + "VALUES (?::json,?::jsonb,?::json,?::json,?::jsonb,?)";
 
   private static final String CREATE_STEP_INSTANCE_QUERY = "INSERT " + ADD_STEP_INSTANCE_POSTFIX;
 
-  private static final String UPSERT_STEP_INSTANCE_QUERY = "UPSERT " + ADD_STEP_INSTANCE_POSTFIX;
+  private static final String UPSERT_STEP_INSTANCE_QUERY =
+      CREATE_STEP_INSTANCE_QUERY
+          + " ON CONFLICT (workflow_id, workflow_instance_id, step_id, workflow_run_id, step_attempt_id)"
+          + "DO UPDATE SET instance=EXCLUDED.instance,runtime_state=EXCLUDED.runtime_state,"
+          + "dependencies=EXCLUDED.dependencies,outputs=EXCLUDED.outputs,"
+          + "artifacts=EXCLUDED.artifacts,timeline=EXCLUDED.timeline";
 
   private static final String WHERE_CONDITION_BY_WORKFLOW_IDS =
       "WHERE workflow_id=? AND workflow_instance_id=? AND workflow_run_id=?";
@@ -81,7 +87,8 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
       WHERE_CONDITION_BY_WORKFLOW_IDS + " AND step_id=? AND step_attempt_id=?";
 
   private static final String UPDATE_STEP_INSTANCE_QUERY =
-      "UPDATE maestro_step_instance SET (runtime_state,dependencies,outputs,artifacts,timeline) = (?,?,?,?,?) "
+      "UPDATE maestro_step_instance SET (runtime_state,dependencies,outputs,artifacts,timeline) "
+          + "= (?::jsonb,?::json,?::json,?::jsonb,?) "
           + WHERE_CONDITION_BY_IDS;
 
   private static final String SELECT_STEP_FIELDS = "SELECT %s FROM maestro_step_instance ";
@@ -149,8 +156,7 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
           + " AND step_id=? ORDER BY workflow_run_id DESC, step_attempt_id DESC LIMIT 1";
 
   private static final String GET_STEP_ATTEMPT_STATE_QUERY =
-      "SELECT workflow_id, workflow_instance_id, workflow_run_id, instance->>'workflow_version_id' AS "
-          + "workflow_version_id, step_id, step_attempt_id, runtime_state"
+      "SELECT workflow_id, workflow_instance_id, workflow_run_id, step_id, step_attempt_id, runtime_state"
           + GET_STEP_FIELD_QUERY_FROM
           + " AND step_id=? ORDER BY workflow_run_id DESC, step_attempt_id DESC LIMIT "
           + Constants.STEP_ATTEMPT_STATE_LIMIT;
@@ -164,7 +170,9 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
       "SELECT instance->'params'->?->>'type' as payload FROM maestro_step_instance "
           + "WHERE workflow_id=? and step_id=? limit 1";
 
-  private static final String GET_UNIQUE_ROWID = "SELECT unique_rowid() as id";
+  // generates a positive random unique number, which is different from `unique_rowid()`
+  private static final String GET_UNIQUE_ROWID =
+      "SELECT ('x' || translate(gen_random_uuid()::TEXT, '-', ''))::bit(63)::INT8 as id";
 
   private static final String BATCH_UNION_STATEMENT = "UNION ALL ";
 
@@ -348,7 +356,6 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
     state.setStepAttemptId(getStepAttemptId(rs));
     state.setWorkflowId(getWorkflowId(rs));
     state.setWorkflowRunId(getWorkflowRunId(rs));
-    state.setWorkflowVersionId(getWorkflowVersionId(rs));
     return state;
   }
 
@@ -371,12 +378,6 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
     return Checks.notNull(
         rs.getLong(StepInstanceField.WORKFLOW_RUN_ID.field),
         "step workflow_run_id column cannot be null");
-  }
-
-  private long getWorkflowVersionId(ResultSet rs) throws SQLException {
-    return Checks.notNull(
-        rs.getLong(StepInstanceField.WORKFLOW_VERSION_ID.field),
-        "step workflow_version_id column cannot be null");
   }
 
   private long getStepAttemptId(ResultSet rs) throws SQLException {
@@ -457,7 +458,6 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
     TIMELINE("timeline"),
     WORKFLOW_RUN_ID("workflow_run_id"),
     WORKFLOW_ID("workflow_id"),
-    WORKFLOW_VERSION_ID("workflow_version_id"),
     STEP_ATTEMPT_ID("step_attempt_id"),
     WORKFLOW_INSTANCE_ID("workflow_instance_id"),
     STEP_ID("step_id");

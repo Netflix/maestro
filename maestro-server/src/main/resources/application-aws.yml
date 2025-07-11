@@ -64,7 +64,8 @@ engine:
     workflow-database-login-timeout-seconds: 5
     workflow-database-socket-timeout-seconds: 50
     jdbc-username: root
-    jdbc-url: "jdbc:tc:cockroach:v22.2.19:///maestro_local"
+    jdbc-url: "jdbc:tc:postgresql:17:///maestro_local"
+    db-type: postgres
     flyway-enabled: true
     workflow-database-client-name: maestro-local
     workflow-database-connection-pool-size-max: 8

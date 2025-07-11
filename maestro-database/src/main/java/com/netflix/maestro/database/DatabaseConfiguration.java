@@ -21,6 +21,9 @@ public interface DatabaseConfiguration {
   String JDBC_URL_PROPERTY_NAME = "jdbc.url";
   String JDBC_URL_DEFAULT_VALUE = "jdbc:postgresql://localhost:5432/maestro";
 
+  String DB_TYPE_PROPERTY_NAME = "db.type";
+  String DB_TYPE_DEFAULT_VALUE = "postgres";
+
   String JDBC_USER_NAME_PROPERTY_NAME = "jdbc.username";
   String JDBC_USER_NAME_DEFAULT_VALUE = "maestro";
 
@@ -85,6 +88,10 @@ public interface DatabaseConfiguration {
 
   default String getJdbcUrl() {
     return getProperty(JDBC_URL_PROPERTY_NAME, JDBC_URL_DEFAULT_VALUE);
+  }
+
+  default String getDbType() {
+    return getProperty(DB_TYPE_PROPERTY_NAME, DB_TYPE_DEFAULT_VALUE);
   }
 
   default String getJdbcUserName() {

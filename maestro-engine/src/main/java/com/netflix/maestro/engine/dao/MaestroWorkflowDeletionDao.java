@@ -60,16 +60,37 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class MaestroWorkflowDeletionDao extends AbstractDatabaseDao {
   private enum Stage {
-    DELETING_VERSIONS("DELETE FROM maestro_workflow_version WHERE workflow_id=? LIMIT ?"),
-    DELETING_TIMELINE("DELETE FROM maestro_workflow_timeline WHERE workflow_id=? LIMIT ?"),
-    DELETING_PROPERTIES("DELETE FROM maestro_workflow_properties WHERE workflow_id=? LIMIT ?"),
-    DELETING_BREAKPOINTS("DELETE FROM maestro_step_breakpoint WHERE workflow_id=? LIMIT ?"),
-    DELETING_ACTIONS("DELETE FROM maestro_step_instance_action WHERE workflow_id=? LIMIT ?"),
+    DELETING_VERSIONS(
+        "DELETE FROM maestro_workflow_version WHERE workflow_id=? AND version_id IN ("
+            + "SELECT version_id FROM maestro_workflow_version WHERE workflow_id=? LIMIT ?)"),
+    DELETING_TIMELINE(
+        "DELETE FROM maestro_workflow_timeline WHERE workflow_id=? AND (create_ts, hash_id) IN ("
+            + "SELECT create_ts, hash_id FROM maestro_workflow_timeline WHERE workflow_id=? LIMIT ?)"),
+    DELETING_PROPERTIES(
+        "DELETE FROM maestro_workflow_properties WHERE workflow_id=? AND create_time IN ("
+            + "SELECT create_time FROM maestro_workflow_properties WHERE workflow_id=? LIMIT ?)"),
+    DELETING_BREAKPOINTS(
+        "DELETE FROM maestro_step_breakpoint WHERE workflow_id=? "
+            + "AND (step_id, system_generated, version, instance_id, run_id, step_attempt_id) IN ("
+            + "SELECT step_id, system_generated, version, instance_id, run_id, step_attempt_id "
+            + "FROM maestro_step_breakpoint WHERE workflow_id=? LIMIT ?)"),
+    DELETING_ACTIONS(
+        "DELETE FROM maestro_step_instance_action WHERE workflow_id=? "
+            + "AND (workflow_instance_id, workflow_run_id, step_id) IN ("
+            + "SELECT workflow_instance_id, workflow_run_id, step_id "
+            + "FROM maestro_step_instance_action WHERE workflow_id=? LIMIT ?)"),
     DELETING_WORKFLOW_INSTANCES(
-        "DELETE FROM maestro_workflow_instance WHERE workflow_id=? LIMIT ?"),
-    DELETING_STEP_INSTANCES("DELETE FROM maestro_step_instance WHERE workflow_id=? LIMIT ?"),
+        "DELETE FROM maestro_workflow_instance WHERE workflow_id=? AND (instance_id, run_id) IN ("
+            + "SELECT instance_id, run_id FROM maestro_workflow_instance WHERE workflow_id=? LIMIT ?)"),
+    DELETING_STEP_INSTANCES(
+        "DELETE FROM maestro_step_instance WHERE workflow_id=? "
+            + "AND (workflow_instance_id, step_id, workflow_run_id, step_attempt_id) IN ("
+            + "SELECT workflow_instance_id, step_id, workflow_run_id, step_attempt_id "
+            + "FROM maestro_step_instance WHERE workflow_id=? LIMIT ?)"),
     DELETING_INLINE_INSTANCES(
-        "DELETE FROM maestro_workflow_instance WHERE workflow_id >= ? AND workflow_id < ? LIMIT ?") {
+        "DELETE FROM maestro_workflow_instance WHERE (workflow_id, instance_id, run_id) IN ("
+            + "SELECT workflow_id, instance_id, run_id FROM maestro_workflow_instance WHERE "
+            + "workflow_id >= ? AND workflow_id < ? LIMIT ?)") {
       @Override
       void prepareQuery(PreparedStatement stmt, String workflowId, long internalId)
           throws SQLException {
@@ -83,7 +104,10 @@ public class MaestroWorkflowDeletionDao extends AbstractDatabaseDao {
       }
     },
     DELETING_INLINE_STEP_INSTANCES(
-        "DELETE FROM maestro_step_instance WHERE workflow_id >= ? AND workflow_id < ? LIMIT ?") {
+        "DELETE FROM maestro_step_instance WHERE "
+            + "(workflow_id, workflow_instance_id, step_id, workflow_run_id, step_attempt_id) IN ("
+            + "SELECT workflow_id, workflow_instance_id, step_id, workflow_run_id, step_attempt_id FROM "
+            + "maestro_step_instance WHERE workflow_id>= ? AND workflow_id< ? LIMIT ?)") {
       @Override
       void prepareQuery(PreparedStatement stmt, String workflowId, long internalId)
           throws SQLException {
@@ -91,7 +115,8 @@ public class MaestroWorkflowDeletionDao extends AbstractDatabaseDao {
       }
     },
     DELETING_JOB_CONCURRENCY_TAG_PERMITS(
-        "DELETE FROM maestro_tag_permit WHERE tag >= ? AND tag < ? LIMIT ?") {
+        "DELETE FROM maestro_tag_permit WHERE tag IN ("
+            + "SELECT tag FROM maestro_tag_permit WHERE tag >= ? AND tag < ? LIMIT ?)") {
       @Override
       void prepareQuery(PreparedStatement stmt, String workflowId, long internalId)
           throws SQLException {
@@ -108,8 +133,10 @@ public class MaestroWorkflowDeletionDao extends AbstractDatabaseDao {
 
     void prepareQuery(PreparedStatement stmt, String workflowId, long internalId)
         throws SQLException {
-      stmt.setString(1, workflowId);
-      stmt.setInt(2, Constants.BATCH_DELETION_LIMIT);
+      int idx = 0;
+      stmt.setString(++idx, workflowId);
+      stmt.setString(++idx, workflowId);
+      stmt.setInt(++idx, Constants.BATCH_DELETION_LIMIT);
     }
 
     Stage(String query) {

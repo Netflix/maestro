@@ -2,7 +2,6 @@
   "workflow_id": "sample-dag-test-3",
   "workflow_instance_id": 1,
   "workflow_run_id": 1,
-  "workflow_version_id": 7,
   "step_id": "job1",
   "step_attempt_id": 1,
   "runtime_state": {

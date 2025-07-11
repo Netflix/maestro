@@ -51,9 +51,6 @@ public class StepAttemptState {
   private long workflowRunId;
 
   @Min(1)
-  private long workflowVersionId;
-
-  @Min(1)
   private long stepAttemptId;
 
   @Valid @NotNull private StepRuntimeState runtimeState;
