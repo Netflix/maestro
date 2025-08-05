@@ -72,7 +72,6 @@ import com.netflix.maestro.utils.DurationParser;
 import com.netflix.maestro.utils.MapHelper;
 import com.netflix.maestro.utils.ObjectHelper;
 import com.netflix.maestro.utils.RetryPolicyParser;
-import java.sql.SQLException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -97,9 +96,6 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class MaestroTask implements FlowTask {
-  private static final Set<String> RETRYABLE_SQL_ERROR_STATES = Collections.singleton("08006");
-  private static final Set<String> RETRYABLE_SQL_ERROR_MSGS =
-      Collections.singleton("Connection is closed");
   private static final User MAESTRO_TASK_USER = User.create(Constants.MAESTRO_TASK_NAME);
 
   private final StepRuntimeManager stepRuntimeManager;
@@ -703,12 +699,9 @@ public class MaestroTask implements FlowTask {
         return true;
       }
     } catch (MaestroRetryableError mre) { // will retry in the next polling cycle
+      LOG.warn("Caught a retryable error for flow [{}] and will retry", flow.getFlowId(), mre);
       return false;
     } catch (Exception e) {
-      if (isRetryableError(e)) {
-        LOG.warn("Caught a SQLException for flow [{}] and will retry", flow.getFlowId(), e);
-        return false;
-      }
       handleUnexpectedException(flow, task, e);
       return true; // swallow exception and fail the workflow
     }
@@ -744,18 +737,6 @@ public class MaestroTask implements FlowTask {
     } else {
       runtimeSummary.markTerminated(StepInstance.Status.TIMEOUT_FAILED, tracingManager);
     }
-  }
-
-  // Figure out if an exception is retryable
-  private boolean isRetryableError(Exception e) {
-    if (e.getCause() instanceof SQLException) {
-      SQLException sqlException = (SQLException) e.getCause();
-      return (sqlException.getSQLState() != null
-              && RETRYABLE_SQL_ERROR_STATES.contains(sqlException.getSQLState()))
-          || (sqlException.getSQLState() == null
-              && RETRYABLE_SQL_ERROR_MSGS.contains(sqlException.getMessage()));
-    }
-    return false;
   }
 
   /** Executes the step instance. It returns true, if the task is in dummy run mode. */
