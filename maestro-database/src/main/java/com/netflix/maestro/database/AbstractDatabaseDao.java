@@ -296,8 +296,8 @@ public abstract class AbstractDatabaseDao {
       }
 
       boolean isRetryable =
-          RETRYABLE_SQL_ERROR_STATES.contains(e.getSQLState())
-              || isErrorMsgRetryable(e.getMessage());
+          (e.getSQLState() != null && RETRYABLE_SQL_ERROR_STATES.contains(e.getSQLState()))
+              || (e.getSQLState() == null && isErrorMsgRetryable(e.getMessage()));
       if (isRetryable) {
         throw new MaestroRetryableError(e, "retryable db error: %s", e.getMessage());
       } else {
