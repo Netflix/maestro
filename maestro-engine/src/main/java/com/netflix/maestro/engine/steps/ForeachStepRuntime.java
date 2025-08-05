@@ -107,6 +107,9 @@ public class ForeachStepRuntime implements StepRuntime {
           State.DONE,
           Collections.singletonMap(artifact.getType().key(), artifact),
           Collections.emptyList());
+    } catch (MaestroRetryableError mre) {
+      // retryable error, will retry by the parent logics
+      throw mre;
     } catch (Exception e) {
       LOG.error(
           "Failed to start foreach workflow step runtime for {}{}",
@@ -441,6 +444,12 @@ public class ForeachStepRuntime implements StepRuntime {
           timelineEvent == null
               ? Collections.emptyList()
               : Collections.singletonList(timelineEvent));
+    } catch (MaestroRetryableError mre) {
+      LOG.info("Failed to execute foreach step runtime, will retry", mre);
+      return new Result(
+          State.CONTINUE,
+          Collections.emptyMap(),
+          Collections.singletonList(TimelineDetailsEvent.from(mre.getDetails())));
     } catch (Exception e) {
       LOG.error(
           "Failed to execute foreach workflow step runtime {}{}",

@@ -21,6 +21,7 @@ import com.netflix.maestro.database.utils.StatementFunction;
 import com.netflix.maestro.database.utils.StatementPreparer;
 import com.netflix.maestro.exceptions.MaestroDatabaseError;
 import com.netflix.maestro.exceptions.MaestroInternalError;
+import com.netflix.maestro.exceptions.MaestroRetryableError;
 import com.netflix.maestro.exceptions.MaestroUnprocessableEntityException;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import java.sql.Connection;
@@ -30,6 +31,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -46,6 +48,10 @@ public abstract class AbstractDatabaseDao {
   private static final String RETRY_SQL_STATE = "40001";
   private static final String QUERY_ERROR_METRIC_NAME = "maestro_db_query_error";
   private static final String ERROR_TYPE_TAG_NAME = "errorType";
+  // additional SQL states and messages treated as retryable errors
+  private static final Set<String> RETRYABLE_SQL_ERROR_STATES = Set.of("08006", RETRY_SQL_STATE);
+  private static final Set<String> RETRYABLE_SQL_ERROR_MSGS =
+      Set.of("Connection is closed", "Connection is not available");
 
   protected static final String PAYLOAD_COLUMN = "payload";
   protected static final String ID_COLUMN = "id";
@@ -288,12 +294,27 @@ public abstract class AbstractDatabaseDao {
             ERROR_TYPE_TAG_NAME,
             "retryable_transaction_error_" + e.getSQLState());
       }
-      throw new MaestroDatabaseError(e, e.getMessage());
+
+      boolean isRetryable =
+          RETRYABLE_SQL_ERROR_STATES.contains(e.getSQLState())
+              || isErrorMsgRetryable(e.getMessage());
+      if (isRetryable) {
+        throw new MaestroRetryableError(e, "retryable db error: %s", e.getMessage());
+      } else {
+        throw new MaestroDatabaseError(e, e.getMessage());
+      }
     } catch (InterruptedException e) {
       LOG.warn("InterruptedException exception occurred: message = [{}]", e.getMessage());
       Thread.currentThread().interrupt();
       throw new MaestroInternalError(e, e.getMessage());
     }
+  }
+
+  private boolean isErrorMsgRetryable(String error) {
+    if (error == null) {
+      return false;
+    }
+    return RETRYABLE_SQL_ERROR_MSGS.stream().anyMatch(error::contains);
   }
 
   /**

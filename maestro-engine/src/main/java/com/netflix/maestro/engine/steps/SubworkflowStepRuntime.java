@@ -44,7 +44,6 @@ import com.netflix.maestro.models.timeline.TimelineLogEvent;
 import com.netflix.maestro.queue.MaestroQueueSystem;
 import com.netflix.maestro.queue.models.MessageDto;
 import com.netflix.maestro.utils.ObjectHelper;
-import java.sql.SQLException;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -63,8 +62,6 @@ public class SubworkflowStepRuntime implements StepRuntime {
   private static final String SUBWORKFLOW_ID_PARAM_NAME = SUBWORKFLOW_NAME + "_id";
   private static final String SUBWORKFLOW_VERSION_PARAM_NAME = SUBWORKFLOW_NAME + "_version";
   private static final String SUBWORKFLOW_TAG_NAME = Constants.MAESTRO_PREFIX + SUBWORKFLOW_NAME;
-  private static final String RETRYABLE_DB_ERROR_CODE = "40001";
-  private static final String RETRYABLE_DB_ERROR_MSG = "Connection is closed";
 
   private final WorkflowActionHandler actionHandler;
   private final WorkflowInstanceActionHandler instanceActionHandler;
@@ -79,12 +76,33 @@ public class SubworkflowStepRuntime implements StepRuntime {
   @Override
   public Result execute(
       WorkflowSummary workflowSummary, Step step, StepRuntimeSummary runtimeSummary) {
-    if (runtimeSummary.getArtifacts() == null
-        || runtimeSummary.getArtifacts().isEmpty()
-        || !runtimeSummary.getArtifacts().containsKey(Artifact.Type.SUBWORKFLOW.key())) {
-      return runSubworkflowInstance(workflowSummary, step, runtimeSummary);
-    } else {
-      return trackSubworkflowInstance(step, runtimeSummary);
+    boolean isStarting =
+        runtimeSummary.getArtifacts() == null
+            || runtimeSummary.getArtifacts().isEmpty()
+            || !runtimeSummary.getArtifacts().containsKey(Artifact.Type.SUBWORKFLOW.key());
+    String action = (isStarting ? "start" : "execute");
+    try {
+      if (isStarting) {
+        return runSubworkflowInstance(workflowSummary, step, runtimeSummary);
+      } else {
+        return trackSubworkflowInstance(step, runtimeSummary);
+      }
+    } catch (MaestroRetryableError retryableError) {
+      LOG.info("Failed to {} subworkflow, will retry", action, retryableError);
+      return new Result(
+          State.CONTINUE,
+          Collections.emptyMap(),
+          Collections.singletonList(TimelineDetailsEvent.from(retryableError.getDetails())));
+    } catch (Exception e) {
+      return new Result(
+          State.FATAL_ERROR,
+          Collections.emptyMap(),
+          Collections.singletonList(
+              TimelineDetailsEvent.from(
+                  Details.create(
+                      e,
+                      false,
+                      "Failed to " + action + " subworkflow step runtime with an error"))));
     }
   }
 
@@ -159,36 +177,13 @@ public class SubworkflowStepRuntime implements StepRuntime {
           Collections.singletonList(
               TimelineLogEvent.info(
                   "Started a subworkflow with uuid: " + runResponse.getWorkflowUuid())));
-    } catch (MaestroRetryableError retryableError) {
-      LOG.warn("Failed to start subworkflow with error:", retryableError);
-      instanceStepConcurrencyHandler.removeInstance(
-          runRequest.getCorrelationId(),
-          runRequest.getInitiator().getDepth(),
-          runRequest.getRequestId().toString());
-      return new Result(
-          State.CONTINUE,
-          Collections.emptyMap(),
-          Collections.singletonList(TimelineDetailsEvent.from(retryableError.getDetails())));
     } catch (Exception e) {
-      LOG.warn("Failed to start subworkflow step runtime", e);
+      LOG.warn("Failed to start subworkflow step runtime with error", e);
       instanceStepConcurrencyHandler.removeInstance(
           runRequest.getCorrelationId(),
           runRequest.getInitiator().getDepth(),
           runRequest.getRequestId().toString());
-      boolean retryable = false;
-      if (e.getCause() instanceof SQLException) {
-        if (RETRYABLE_DB_ERROR_CODE.equals(((SQLException) e.getCause()).getSQLState())
-            || RETRYABLE_DB_ERROR_MSG.equals(e.getMessage())) {
-          retryable = true;
-        }
-      }
-      return new Result(
-          retryable ? State.CONTINUE : State.FATAL_ERROR,
-          Collections.emptyMap(),
-          Collections.singletonList(
-              TimelineDetailsEvent.from(
-                  Details.create(
-                      e, retryable, "Failed to start subworkflow step runtime with an error"))));
+      throw e;
     }
   }
 
@@ -271,14 +266,8 @@ public class SubworkflowStepRuntime implements StepRuntime {
         return new Result(State.DONE, Collections.emptyMap(), Collections.emptyList());
       }
     } catch (Exception e) {
-      LOG.error("Failed to execute subworkflow step runtime", e);
-      return new Result(
-          State.FATAL_ERROR,
-          Collections.emptyMap(),
-          Collections.singletonList(
-              TimelineDetailsEvent.from(
-                  Details.create(
-                      e, false, "Failed to execute subworkflow step runtime with an error"))));
+      LOG.warn("Failed to execute subworkflow step runtime with error", e);
+      throw e;
     }
   }
 
