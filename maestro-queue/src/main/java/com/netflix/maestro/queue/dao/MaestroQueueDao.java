@@ -22,6 +22,7 @@ import com.netflix.maestro.queue.models.MessageDto;
 import com.netflix.maestro.utils.ObjectHelper;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -49,11 +50,16 @@ public class MaestroQueueDao extends AbstractDatabaseDao {
   private static final String REPLACE_MSG_QUERY =
       "UPDATE maestro_queue SET (queue_id,owned_until,msg_id,payload,create_time)=(?,?,?,?,?)"
           + POINT_QUERY_WHERE_CLAUSE;
+  private static final String ADD_LOCK_QUERY =
+      "INSERT INTO maestro_queue (queue_id,owned_until,msg_id,payload,create_time) "
+          + "VALUES (0,0,?,'lock',EXTRACT(EPOCH FROM NOW())::INT8*1000) ON CONFLICT DO NOTHING";
+  private static final String LOCK_SCAN_QUERY =
+      "SELECT msg_id FROM maestro_queue WHERE queue_id=0 AND owned_until=0 AND msg_id=? FOR UPDATE SKIP LOCKED";
   private static final String DEQUEUE_UNOWNED_MSGS_QUERY =
       "UPDATE maestro_queue SET owned_until=(EXTRACT(EPOCH FROM CLOCK_TIMESTAMP())*1000)::INT8 + ? "
           + "WHERE queue_id=? AND (owned_until,msg_id) IN (SELECT owned_until,msg_id FROM maestro_queue "
           + "WHERE queue_id=? AND owned_until<(EXTRACT(EPOCH FROM NOW())::INT8*1000) ORDER BY owned_until ASC "
-          + "LIMIT ? FOR UPDATE SKIP LOCKED) RETURNING owned_until,msg_id,payload,create_time";
+          + "LIMIT ?) RETURNING owned_until,msg_id,payload,create_time";
   private static final String RELEASE_MSGS_QUERY_TEMPLATE =
       "UPDATE maestro_queue SET owned_until=? WHERE queue_id=? AND (owned_until,msg_id) IN (%s)";
   private static final String VALUE_PLACE_HOLDER = "(?,?)";
@@ -234,7 +240,8 @@ public class MaestroQueueDao extends AbstractDatabaseDao {
   private record Message(long ownedUntil, String id, String payload, long createTime) {}
 
   /**
-   * Retry the message after the current ownership is timed out.
+   * Retry the un-owned message after the current ownership is timed out. It will put a lock in the
+   * queue table to ensure that only one worker can dequeue the un-owned for a given queue_id.
    *
    * @return the list of owned messages to process
    */
@@ -242,27 +249,38 @@ public class MaestroQueueDao extends AbstractDatabaseDao {
     List<Message> msgs =
         withMetricLogError(
             () ->
-                withRetryableQuery(
-                    DEQUEUE_UNOWNED_MSGS_QUERY,
-                    stmt -> {
-                      int idx = 0;
-                      stmt.setLong(++idx, expirationTimeout);
-                      stmt.setInt(++idx, queueId);
-                      stmt.setInt(++idx, queueId);
-                      stmt.setInt(++idx, limit);
-                    },
-                    result -> {
-                      List<Message> messages = new ArrayList<>();
-                      while (result.next()) {
-                        int idx = 0;
-                        messages.add(
-                            new Message(
-                                result.getLong(++idx),
-                                result.getString(++idx),
-                                result.getString(++idx),
-                                result.getLong(++idx)));
+                withRetryableTransaction(
+                    conn -> {
+                      try (PreparedStatement stmt1 = conn.prepareStatement(LOCK_SCAN_QUERY)) {
+                        stmt1.setString(1, String.valueOf(queueId));
+                        try (ResultSet result = stmt1.executeQuery()) {
+                          if (result.next()) {
+                            try (PreparedStatement stmt2 =
+                                conn.prepareStatement(DEQUEUE_UNOWNED_MSGS_QUERY)) {
+                              int idx = 0;
+                              stmt2.setLong(++idx, expirationTimeout);
+                              stmt2.setInt(++idx, queueId);
+                              stmt2.setInt(++idx, queueId);
+                              stmt2.setInt(++idx, limit);
+                              try (ResultSet res = stmt2.executeQuery()) {
+                                List<Message> messages = new ArrayList<>();
+                                while (res.next()) {
+                                  idx = 0;
+                                  messages.add(
+                                      new Message(
+                                          res.getLong(++idx),
+                                          res.getString(++idx),
+                                          res.getString(++idx),
+                                          res.getLong(++idx)));
+                                }
+                                return messages;
+                              }
+                            }
+                          } else {
+                            return Collections.emptyList();
+                          }
+                        }
                       }
-                      return messages;
                     }),
             "dequeueUnownedMessages",
             "Failed to dequeueUnownedMessages for queue_id [{}] with limit [{}]",
@@ -277,6 +295,15 @@ public class MaestroQueueDao extends AbstractDatabaseDao {
                     fromJson(msg.payload, MaestroJobEvent.class),
                     msg.createTime))
         .toList();
+  }
+
+  public int addLock(int queueId) {
+    return withMetricLogError(
+        () ->
+            withRetryableUpdate(ADD_LOCK_QUERY, stmt -> stmt.setString(1, String.valueOf(queueId))),
+        "addLock",
+        "Failed to add lock to the maestro_queue for queue_id [{}]",
+        queueId);
   }
 
   /**
