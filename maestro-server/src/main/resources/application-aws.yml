@@ -16,7 +16,7 @@ server:
   port: 8080
 
 maestro:
-  queue:
+  queue: # check MaestroJobEvent class for queue id
     properties:
       1:
         worker-num: 8
@@ -32,7 +32,8 @@ maestro:
         scan-interval: 5000
       5:
         worker-num: 3
-        scan-interval: 10000
+        scan-interval: 30000
+        ownership-timeout: 125000 # larger than the deletion processor timeout
   notifier:
     type: sns
   alerting:

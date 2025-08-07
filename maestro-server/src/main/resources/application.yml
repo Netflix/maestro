@@ -11,7 +11,7 @@ server:
   port: 8080
 
 maestro:
-  queue:
+  queue: # check MaestroJobEvent class for queue id
     properties:
       1:
         worker-num: 8
