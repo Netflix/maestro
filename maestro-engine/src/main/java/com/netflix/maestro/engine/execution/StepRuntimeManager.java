@@ -61,6 +61,7 @@ public final class StepRuntimeManager {
     StepAction latestAction = summary.getPendingAction();
     StepRuntimeSummary cloned = objectMapper.convertValue(summary, StepRuntimeSummary.class);
     cloned.setPendingAction(latestAction);
+    summary.setPendingAction(null); // clear the pending action after passing it to step runtime
     return cloned;
   }
 
