@@ -28,7 +28,7 @@ maestro:
       5:
         worker-num: 3
         scan-interval: 30000
-        ownership-timeout: 125000
+        ownership-timeout: 125000 # larger than the deletion processor timeout
   notifier:
     type: noop
   alerting:
