@@ -15,10 +15,12 @@ package com.netflix.maestro.engine.execution;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 
 import com.netflix.maestro.engine.MaestroEngineBaseTest;
+import com.netflix.maestro.engine.db.StepAction;
 import com.netflix.maestro.engine.params.DefaultParamManager;
 import com.netflix.maestro.engine.params.ParamsManager;
 import com.netflix.maestro.engine.steps.StepRuntime;
@@ -138,6 +140,8 @@ public class StepRuntimeManagerTest extends MaestroEngineBaseTest {
             .type(StepType.NOOP)
             .stepRetry(StepInstance.StepRetry.from(Defaults.DEFAULT_RETRY_POLICY))
             .build();
+    summary.setPendingAction(StepAction.builder().build());
+    assertNotNull(summary.getPendingAction());
     boolean ret = runtimeManager.start(workflowSummary, null, summary);
     assertTrue(ret);
     assertEquals(StepInstance.Status.RUNNING, summary.getRuntimeState().getStatus());
@@ -149,6 +153,7 @@ public class StepRuntimeManagerTest extends MaestroEngineBaseTest {
     assertEquals(StepInstance.Status.RUNNING, summary.getPendingRecords().get(0).getNewStatus());
     assertEquals(artifact, summary.getArtifacts().get("test-artifact"));
     assertTrue(summary.getTimeline().isEmpty());
+    assertNull(summary.getPendingAction());
   }
 
   @Test
@@ -193,6 +198,8 @@ public class StepRuntimeManagerTest extends MaestroEngineBaseTest {
             .type(StepType.NOOP)
             .stepRetry(StepInstance.StepRetry.from(Defaults.DEFAULT_RETRY_POLICY))
             .build();
+    summary.setPendingAction(StepAction.builder().build());
+    assertNotNull(summary.getPendingAction());
     boolean ret = runtimeManager.execute(workflowSummary, null, summary);
     assertTrue(ret);
     assertEquals(StepInstance.Status.FINISHING, summary.getRuntimeState().getStatus());
@@ -204,6 +211,7 @@ public class StepRuntimeManagerTest extends MaestroEngineBaseTest {
     assertEquals(StepInstance.Status.FINISHING, summary.getPendingRecords().get(0).getNewStatus());
     assertEquals(artifact, summary.getArtifacts().get("test-artifact"));
     assertTrue(summary.getTimeline().isEmpty());
+    assertNull(summary.getPendingAction());
   }
 
   @Test
@@ -248,6 +256,8 @@ public class StepRuntimeManagerTest extends MaestroEngineBaseTest {
             .type(StepType.NOOP)
             .stepRetry(StepInstance.StepRetry.from(Defaults.DEFAULT_RETRY_POLICY))
             .build();
+    summary.setPendingAction(StepAction.builder().build());
+    assertNotNull(summary.getPendingAction());
     runtimeManager.terminate(workflowSummary, summary, StepInstance.Status.STOPPED);
     assertEquals(StepInstance.Status.STOPPED, summary.getRuntimeState().getStatus());
     assertNotNull(summary.getRuntimeState().getEndTime());
@@ -259,6 +269,7 @@ public class StepRuntimeManagerTest extends MaestroEngineBaseTest {
     assertEquals(artifact, summary.getArtifacts().get("test-artifact"));
     assertEquals(1, summary.getTimeline().getTimelineEvents().size());
     assertEquals("test termination", summary.getTimeline().getTimelineEvents().get(0).getMessage());
+    assertNull(summary.getPendingAction());
   }
 
   @Test
