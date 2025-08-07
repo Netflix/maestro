@@ -149,10 +149,12 @@ public class StepRuntimeManagerTest extends MaestroEngineBaseTest {
     assertNotNull(summary.getRuntimeState().getModifyTime());
     assertEquals(1, summary.getPendingRecords().size());
     assertEquals(
-        StepInstance.Status.NOT_CREATED, summary.getPendingRecords().get(0).getOldStatus());
-    assertEquals(StepInstance.Status.RUNNING, summary.getPendingRecords().get(0).getNewStatus());
+        StepInstance.Status.NOT_CREATED, summary.getPendingRecords().getFirst().getOldStatus());
+    assertEquals(
+        StepInstance.Status.RUNNING, summary.getPendingRecords().getFirst().getNewStatus());
     assertEquals(artifact, summary.getArtifacts().get("test-artifact"));
     assertTrue(summary.getTimeline().isEmpty());
+    // The pending action should have been cleared after passing it to step runtime
     assertNull(summary.getPendingAction());
   }
 
@@ -172,9 +174,9 @@ public class StepRuntimeManagerTest extends MaestroEngineBaseTest {
     assertNotNull(summary.getRuntimeState().getModifyTime());
     assertEquals(1, summary.getPendingRecords().size());
     assertEquals(
-        StepInstance.Status.NOT_CREATED, summary.getPendingRecords().get(0).getOldStatus());
+        StepInstance.Status.NOT_CREATED, summary.getPendingRecords().getFirst().getOldStatus());
     assertEquals(
-        StepInstance.Status.USER_FAILED, summary.getPendingRecords().get(0).getNewStatus());
+        StepInstance.Status.USER_FAILED, summary.getPendingRecords().getFirst().getNewStatus());
     assertTrue(summary.getArtifacts().isEmpty());
 
     stepRetry.incrementByStatus(StepInstance.Status.USER_FAILED);
@@ -207,10 +209,12 @@ public class StepRuntimeManagerTest extends MaestroEngineBaseTest {
     assertNotNull(summary.getRuntimeState().getModifyTime());
     assertEquals(1, summary.getPendingRecords().size());
     assertEquals(
-        StepInstance.Status.NOT_CREATED, summary.getPendingRecords().get(0).getOldStatus());
-    assertEquals(StepInstance.Status.FINISHING, summary.getPendingRecords().get(0).getNewStatus());
+        StepInstance.Status.NOT_CREATED, summary.getPendingRecords().getFirst().getOldStatus());
+    assertEquals(
+        StepInstance.Status.FINISHING, summary.getPendingRecords().getFirst().getNewStatus());
     assertEquals(artifact, summary.getArtifacts().get("test-artifact"));
     assertTrue(summary.getTimeline().isEmpty());
+    // The pending action should have been cleared after passing it to step runtime
     assertNull(summary.getPendingAction());
   }
 
@@ -230,9 +234,9 @@ public class StepRuntimeManagerTest extends MaestroEngineBaseTest {
     assertNotNull(summary.getRuntimeState().getModifyTime());
     assertEquals(1, summary.getPendingRecords().size());
     assertEquals(
-        StepInstance.Status.NOT_CREATED, summary.getPendingRecords().get(0).getOldStatus());
+        StepInstance.Status.NOT_CREATED, summary.getPendingRecords().getFirst().getOldStatus());
     assertEquals(
-        StepInstance.Status.PLATFORM_FAILED, summary.getPendingRecords().get(0).getNewStatus());
+        StepInstance.Status.PLATFORM_FAILED, summary.getPendingRecords().getFirst().getNewStatus());
     assertTrue(summary.getArtifacts().isEmpty());
 
     stepRetry.incrementByStatus(StepInstance.Status.PLATFORM_FAILED);
@@ -264,11 +268,14 @@ public class StepRuntimeManagerTest extends MaestroEngineBaseTest {
     assertNotNull(summary.getRuntimeState().getModifyTime());
     assertEquals(1, summary.getPendingRecords().size());
     assertEquals(
-        StepInstance.Status.NOT_CREATED, summary.getPendingRecords().get(0).getOldStatus());
-    assertEquals(StepInstance.Status.STOPPED, summary.getPendingRecords().get(0).getNewStatus());
+        StepInstance.Status.NOT_CREATED, summary.getPendingRecords().getFirst().getOldStatus());
+    assertEquals(
+        StepInstance.Status.STOPPED, summary.getPendingRecords().getFirst().getNewStatus());
     assertEquals(artifact, summary.getArtifacts().get("test-artifact"));
     assertEquals(1, summary.getTimeline().getTimelineEvents().size());
-    assertEquals("test termination", summary.getTimeline().getTimelineEvents().get(0).getMessage());
+    assertEquals(
+        "test termination", summary.getTimeline().getTimelineEvents().getFirst().getMessage());
+    // The pending action should have been cleared after passing it to step runtime
     assertNull(summary.getPendingAction());
   }
 
