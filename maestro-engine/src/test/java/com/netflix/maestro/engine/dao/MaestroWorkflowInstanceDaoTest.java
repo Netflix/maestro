@@ -752,8 +752,9 @@ public class MaestroWorkflowInstanceDaoTest extends MaestroDaoBaseTest {
     verify(queueSystem, times(2)).enqueue(any(), any());
     verify(queueSystem, times(2)).notify(any());
 
-    // we have 2 failed instances and batch size = 10, this is to test all failed instances are
-    // unblocked in first loop and DB returned count < batch size.
+    // Tests the scenario where two instances have failed, and we attempt to unblock them with a
+    // batch size of 10. Since all failed instances are unblocked in the first iteration, the
+    // database returns a count smaller than the batch size.
     int ret = instanceDao.tryUnblockFailedWorkflowInstances(TEST_WORKFLOW_ID, 10, null);
     assertEquals(2, ret);
     status = instanceDao.getWorkflowInstanceRawStatus(TEST_WORKFLOW_ID, 1L, 1L);
