@@ -596,7 +596,7 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
                           stmt.setString(++idx, workflowId);
                           stmt.setInt(++idx, batchLimit);
                           int res = stmt.executeUpdate();
-                          if (res < batchLimit && totalUnblocked[0] > 0) {
+                          if (res < batchLimit && totalUnblocked[0] + res > 0) {
                             message[0] = queueSystem.enqueue(conn, jobEvent);
                           }
                           return res;

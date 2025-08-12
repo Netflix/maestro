@@ -736,6 +736,37 @@ public class MaestroWorkflowInstanceDaoTest extends MaestroDaoBaseTest {
   }
 
   @Test
+  public void testTryUnblockFailedWorkflowInstancesLessThanBatch() throws Exception {
+    wfi.setWorkflowUuid("test-uuid");
+    wfi.setWorkflowInstanceId(0L);
+    int res = runStrategyDao.startWithRunStrategy(wfi, Defaults.DEFAULT_RUN_STRATEGY);
+    assertEquals(1, res);
+    int cnt =
+        instanceDao.terminateQueuedInstances(
+            TEST_WORKFLOW_ID, 2, WorkflowInstance.Status.FAILED, "test-reason");
+    assertEquals(2L, cnt);
+    String status = instanceDao.getWorkflowInstanceRawStatus(TEST_WORKFLOW_ID, 1L, 1L);
+    assertEquals("FAILED", status);
+    status = instanceDao.getWorkflowInstanceRawStatus(TEST_WORKFLOW_ID, 2L, 1L);
+    assertEquals("FAILED", status);
+    verify(queueSystem, times(2)).enqueue(any(), any());
+    verify(queueSystem, times(2)).notify(any());
+
+    // Tests the scenario where two instances have failed, and we attempt to unblock them with a
+    // batch size of 10. Since all failed instances are unblocked in the first iteration, the
+    // database returns a count smaller than the batch size.
+    int ret = instanceDao.tryUnblockFailedWorkflowInstances(TEST_WORKFLOW_ID, 10, null);
+    assertEquals(2, ret);
+    status = instanceDao.getWorkflowInstanceRawStatus(TEST_WORKFLOW_ID, 1L, 1L);
+    assertEquals("FAILED_1", status);
+    status = instanceDao.getWorkflowInstanceRawStatus(TEST_WORKFLOW_ID, 2L, 1L);
+    assertEquals("FAILED_1", status);
+    verify(queueSystem, times(3)).enqueue(any(), any());
+    verify(queueSystem, times(3)).notify(any());
+    MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID, 2);
+  }
+
+  @Test
   public void testGetNonExistingWorkflowInstanceRun() {
     AssertHelper.assertThrows(
         "throw errors if getting non-existing workflow instance",
