@@ -696,6 +696,11 @@ public final class ParamsMergeHelper {
             "ParameterDefinition type mismatch, [%s] is not a [STRING_MAP] but [%s]",
             key, paramDef.getType().toString());
       }
+      Checks.checkTrue(
+          paramDef.isLiteral(),
+          "param [%s] definition exp=[%s] is not a literal",
+          key,
+          paramDef.getExpression());
       return paramDef.asStringMapParamDef().getValue();
     } else {
       return new LinkedHashMap<>();
