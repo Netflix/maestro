@@ -84,14 +84,13 @@ public class ParamsMergeHelperTest extends MaestroEngineBaseTest {
 
   private Map<String, ParamDefinition> parseParamDefMap(String json)
       throws JsonProcessingException {
-    TypeReference<Map<String, ParamDefinition>> paramDefMap =
-        new TypeReference<Map<String, ParamDefinition>>() {};
-    return MAPPER.readValue(json.replaceAll("\'", "\""), paramDefMap);
+    TypeReference<Map<String, ParamDefinition>> paramDefMap = new TypeReference<>() {};
+    return MAPPER.readValue(json.replaceAll("'", "\""), paramDefMap);
   }
 
   private Map<String, Parameter> parseParamMap(String json) throws JsonProcessingException {
-    TypeReference<Map<String, Parameter>> paramMap = new TypeReference<Map<String, Parameter>>() {};
-    return MAPPER.readValue(json.replaceAll("\'", "\""), paramMap);
+    TypeReference<Map<String, Parameter>> paramMap = new TypeReference<>() {};
+    return MAPPER.readValue(json.replaceAll("'", "\""), paramMap);
   }
 
   @Test
@@ -209,6 +208,15 @@ public class ParamsMergeHelperTest extends MaestroEngineBaseTest {
     assertEquals(
         "data = new HashMap(); data.put(\"foo\", \"bat\"); return data;",
         allParams.get("tomerge").asStringMapParamDef().getExpression());
+
+    // paramsToMerge is a literal and mergeParams should throw an error
+    Map<String, ParamDefinition> valParamsToMerge =
+        parseParamDefMap("{'tomerge': {'type': 'STRING_MAP','value': {}}}");
+    AssertHelper.assertThrows(
+        "Should not allow merging string map param to a SEL defined param",
+        IllegalArgumentException.class,
+        "param [tomerge] definition exp=[data = new HashMap(); data.put(\"foo\", \"bat\"); return data;] is not a literal",
+        () -> ParamsMergeHelper.mergeParams(allParams, valParamsToMerge, definitionContext));
   }
 
   @Test
@@ -389,8 +397,7 @@ public class ParamsMergeHelperTest extends MaestroEngineBaseTest {
       Map<String, ParamDefinition> allParams =
           parseParamDefMap(
               String.format(
-                  "{'tomerge': {'type': 'STRING','value': 'hello', 'mode': '%s'}}",
-                  mode.toString()));
+                  "{'tomerge': {'type': 'STRING','value': 'hello', 'mode': '%s'}}", mode));
       Map<String, ParamDefinition> paramsToMerge =
           parseParamDefMap("{'tomerge': {'type': 'STRING', 'value': 'goodbye'}}");
       ParamsMergeHelper.mergeParams(allParams, paramsToMerge, systemMergeContext);
@@ -404,8 +411,7 @@ public class ParamsMergeHelperTest extends MaestroEngineBaseTest {
       Map<String, ParamDefinition> allParams =
           parseParamDefMap(
               String.format(
-                  "{'tomerge': {'type': 'STRING','value': 'hello', 'mode': '%s'}}",
-                  mode.toString()));
+                  "{'tomerge': {'type': 'STRING','value': 'hello', 'mode': '%s'}}", mode));
       Map<String, ParamDefinition> paramsToMerge =
           parseParamDefMap(
               "{'tomerge': {'type': 'STRING', 'value': 'goodbye', 'source': 'SYSTEM_INJECTED'}}");
@@ -419,8 +425,7 @@ public class ParamsMergeHelperTest extends MaestroEngineBaseTest {
       Map<String, ParamDefinition> allParams =
           parseParamDefMap(
               String.format(
-                  "{'tomerge': {'type': 'STRING','value': 'hello', 'mode': '%s'}}",
-                  mode.toString()));
+                  "{'tomerge': {'type': 'STRING','value': 'hello', 'mode': '%s'}}", mode));
       Map<String, ParamDefinition> paramsToMergeNoSource =
           parseParamDefMap("{'tomerge': {'type': 'STRING', 'value': 'goodbye'}}");
       AssertHelper.assertThrows(
