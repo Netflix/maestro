@@ -71,7 +71,7 @@ public class Metadata {
     if (extraInfo != null) {
       Checks.checkTrue(
           RESERVED_FIELDS.stream().noneMatch(extraInfo::containsKey),
-          "extra info %s cannot contain any reserved keys [%s]",
+          "extra info %s cannot contain any reserved keys %s",
           extraInfo.keySet(),
           RESERVED_FIELDS);
     }
