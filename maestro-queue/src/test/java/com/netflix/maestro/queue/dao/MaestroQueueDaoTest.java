@@ -86,6 +86,8 @@ public class MaestroQueueDaoTest extends MaestroBaseTest {
   @Test
   public void testReplace() {
     NotificationJobEvent jobEvent2 = new NotificationJobEvent();
+    dao.addLock(jobEvent.getType().getQueueId());
+    dao.addLock(jobEvent2.getType().getQueueId());
     MessageDto enqueued = dao.enqueue(jobEvent, 123456789L);
     MessageDto replaced = dao.replace(enqueued, jobEvent2, 223456789L);
     List<MessageDto> owned =
@@ -101,8 +103,16 @@ public class MaestroQueueDaoTest extends MaestroBaseTest {
 
   @Test
   public void testDequeueUnownedMessage() {
+    // without lock, should return empty
+    int queueId = jobEvent.getType().getQueueId();
+    dao.remove(new MessageDto(0, String.valueOf(queueId), null, 0));
+    List<MessageDto> owned = dao.dequeueUnownedMessages(queueId, 12345L, 1);
+    assertTrue(owned.isEmpty());
+
+    // with lock, should return the enqueued message
+    dao.addLock(queueId);
     MessageDto enqueued = dao.enqueue(jobEvent, 12345L);
-    List<MessageDto> owned = dao.dequeueUnownedMessages(jobEvent.getType().getQueueId(), 12345L, 1);
+    owned = dao.dequeueUnownedMessages(queueId, 12345L, 1);
     assertEquals(1, owned.size());
     assertEquals(enqueued.msgId(), owned.getFirst().msgId());
     assertTrue(owned.getFirst().ownedUntil() > System.currentTimeMillis());
@@ -112,7 +122,17 @@ public class MaestroQueueDaoTest extends MaestroBaseTest {
   }
 
   @Test
+  public void testAddLock() {
+    int queueId = jobEvent.getType().getQueueId();
+    dao.remove(new MessageDto(0, String.valueOf(queueId), null, 0));
+    assertEquals(1, dao.addLock(queueId));
+    assertEquals(0, dao.addLock(queueId));
+    dao.remove(new MessageDto(0, String.valueOf(queueId), null, 0));
+  }
+
+  @Test
   public void testRelease() {
+    dao.addLock(jobEvent.getType().getQueueId());
     StartWorkflowJobEvent jobEvent2 = new StartWorkflowJobEvent();
     var msgs = List.of(dao.enqueue(jobEvent, 123456789L), dao.enqueue(jobEvent2, 123456789L));
     Optional<Details> errors = dao.release(jobEvent.getType().getQueueId(), 12345L, msgs);
