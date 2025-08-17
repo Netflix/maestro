@@ -14,21 +14,35 @@ package com.netflix.maestro.server.controllers;
 
 import com.netflix.maestro.engine.dao.MaestroWorkflowDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowDeletionDao;
+import com.netflix.maestro.engine.db.PropertiesUpdate;
+import com.netflix.maestro.engine.db.PropertiesUpdate.Type;
 import com.netflix.maestro.engine.utils.WorkflowEnrichmentHelper;
 import com.netflix.maestro.engine.validations.DryRunValidator;
+import com.netflix.maestro.exceptions.MaestroBadRequestException;
 import com.netflix.maestro.exceptions.MaestroResourceConflictException;
+import com.netflix.maestro.exceptions.MaestroValidationException;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.api.WorkflowCreateRequest;
 import com.netflix.maestro.models.api.WorkflowCreateResponse;
+import com.netflix.maestro.models.api.WorkflowOverviewResponse;
+import com.netflix.maestro.models.api.WorkflowPropertiesUpdateRequest;
 import com.netflix.maestro.models.definition.Metadata;
+import com.netflix.maestro.models.definition.Properties;
+import com.netflix.maestro.models.definition.PropertiesSnapshot;
+import com.netflix.maestro.models.definition.Tag;
+import com.netflix.maestro.models.definition.TagList;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.definition.WorkflowDefinition;
 import com.netflix.maestro.models.timeline.TimelineEvent;
+import com.netflix.maestro.models.timeline.WorkflowTimeline;
 import com.netflix.maestro.validations.JsonSizeConstraint;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -50,6 +64,9 @@ import org.springframework.web.bind.annotation.RestController;
     produces = MediaType.APPLICATION_JSON_VALUE,
     consumes = MediaType.APPLICATION_JSON_VALUE)
 public class WorkflowController {
+  private static final Set<Type> VALID_UPDATE_PROPERTY_TAGS_TYPES =
+      Set.of(Type.ADD_WORKFLOW_TAG, Type.DELETE_WORKFLOW_TAG);
+
   private final MaestroWorkflowDao workflowDao;
   private final MaestroWorkflowDeletionDao workflowDeletionDao;
   private final User.UserBuilder callerBuilder;
@@ -82,6 +99,10 @@ public class WorkflowController {
     dryRunValidator.validate(request.getWorkflow(), caller);
     WorkflowDefinition workflowDefinition = buildPartialWorkflowDefinition(request, caller);
 
+    updateOwnerIfNeeded(request.getProperties());
+    validateProperties(
+        request.getWorkflow().getId(), request.getProperties(), Type.ADD_WORKFLOW_DEFINITION);
+
     if (workflowDeletionDao.isDeletionInProgress(request.getWorkflow().getId())) {
       throw new MaestroResourceConflictException(
           "Cannot push a version for workflow [%s] while the system is still deleting the old data "
@@ -92,6 +113,19 @@ public class WorkflowController {
     WorkflowDefinition workflowDef =
         workflowDao.addWorkflowDefinition(workflowDefinition, request.getProperties());
     return WorkflowCreateResponse.builder().workflowDefinition(workflowDef).build();
+  }
+
+  // put owner auth info into properties
+  private void updateOwnerIfNeeded(Properties properties) {
+    if (properties != null && properties.getOwner() != null) {
+      User owner =
+          User.builder()
+              .name(properties.getOwner().getName())
+              // inject the customized caller info here
+              .extraInfo(properties.getOwner().getExtraInfo())
+              .build();
+      properties.setOwner(owner);
+    }
   }
 
   /**
@@ -122,6 +156,84 @@ public class WorkflowController {
     return workflowDef;
   }
 
+  @PostMapping(value = "/{workflowId}/properties", consumes = MediaType.APPLICATION_JSON_VALUE)
+  @Operation(summary = "Create or update a workflow properties")
+  public PropertiesSnapshot updateProperties(
+      @Valid @NotNull @PathVariable("workflowId") String workflowId,
+      @Valid @NotNull @RequestBody WorkflowPropertiesUpdateRequest request) {
+    Properties changes = request.getProperties();
+    updateOwnerIfNeeded(changes);
+    return updateProperties(workflowId, changes, new PropertiesUpdate(request));
+  }
+
+  private void validateProperties(
+      String workflowId, Properties changes, PropertiesUpdate.Type updateType) {
+    if (changes != null
+        && changes.getTags() != null
+        && !changes.getTags().getTags().isEmpty()
+        && !VALID_UPDATE_PROPERTY_TAGS_TYPES.contains(updateType)) {
+      throw new MaestroValidationException(
+          "Cannot set workflow property tags (also known as dynamic tags) for workflow [%s]. Please use addWorkflowTag endpoint for that.",
+          workflowId);
+    }
+  }
+
+  @PostMapping(value = "/{workflowId}/properties/tag", consumes = MediaType.APPLICATION_JSON_VALUE)
+  @Operation(summary = "Add a tag to workflow properties")
+  public PropertiesSnapshot addWorkflowTag(
+      @Valid @NotNull @PathVariable("workflowId") String workflowId,
+      @Valid @NotNull @RequestBody Tag tagToBeAdded) {
+    updateTagAttributes(tagToBeAdded);
+    Properties props = new Properties();
+    props.setTags(new TagList(Collections.singletonList(tagToBeAdded)));
+    return updateProperties(
+        workflowId, props, new PropertiesUpdate(PropertiesUpdate.Type.ADD_WORKFLOW_TAG));
+  }
+
+  @DeleteMapping(
+      value = "/{workflowId}/properties/tag/{workflowTagName}",
+      consumes = MediaType.ALL_VALUE)
+  @Operation(summary = "Delete a tag from workflow properties")
+  public PropertiesSnapshot deleteWorkflowTag(
+      @Valid @NotNull @PathVariable("workflowId") String workflowId,
+      @Valid @NotNull @PathVariable("workflowTagName") String workflowTagName) {
+    Tag tagToBeRemoved = Tag.create(workflowTagName);
+    Properties props = new Properties();
+    props.setTags(new TagList(Collections.singletonList(tagToBeRemoved)));
+    return updateProperties(
+        workflowId, props, new PropertiesUpdate(PropertiesUpdate.Type.DELETE_WORKFLOW_TAG));
+  }
+
+  private PropertiesSnapshot updateProperties(
+      String workflowId, Properties changes, PropertiesUpdate update) {
+    try {
+      return workflowDao.updateWorkflowProperties(
+          workflowId, callerBuilder.build(), changes, update);
+    } catch (RuntimeException e) { // special handling here
+      if (e.getMessage() != null
+          && e.getMessage()
+              .startsWith("BACKEND_ERROR - ERROR: failed to satisfy CHECK constraint")) {
+        throw new MaestroBadRequestException(
+            e.getCause(),
+            "ERROR: please check if there exists this workflow: " + workflowId,
+            e.getMessage());
+      } else {
+        throw e;
+      }
+    }
+  }
+
+  private void updateTagAttributes(Tag tagToBeAdded) {
+    User caller = callerBuilder.build();
+    Long createdAt = System.currentTimeMillis();
+    Map<String, Object> attributes = tagToBeAdded.getAttributes();
+    attributes.put("creator", caller);
+    attributes.put("created_at_milli", createdAt);
+    // additional attributes for platform tags go here.
+    tagToBeAdded.setAttributes(attributes);
+    tagToBeAdded.setNamespace(Tag.Namespace.PLATFORM);
+  }
+
   @DeleteMapping(value = "/{workflowId}", consumes = MediaType.ALL_VALUE)
   @Operation(
       summary =
@@ -147,5 +259,35 @@ public class WorkflowController {
       workflowEnrichmentHelper.enrichWorkflowDefinition(workflowDefinition);
     }
     return workflowDefinition;
+  }
+
+  @Operation(
+      summary =
+          "Get the workflow properties snapshot for a snapshot id (i.e. latest or an exact snapshot id)")
+  @GetMapping(
+      value = "/{workflowId}/properties-snapshot/{snapshotId}",
+      consumes = MediaType.ALL_VALUE)
+  public PropertiesSnapshot getWorkflowPropertiesSnapshot(
+      @Valid @NotNull @PathVariable("workflowId") String workflowId,
+      @Valid @NotNull @PathVariable("snapshotId") String snapshotId) {
+    return workflowDao.getWorkflowPropertiesSnapshot(workflowId, snapshotId);
+  }
+
+  @Operation(
+      summary =
+          "Get workflow overview including version info and instance status stats for a specific workflow")
+  @GetMapping(value = "/{workflowId}/overview", consumes = MediaType.ALL_VALUE)
+  public WorkflowOverviewResponse getWorkflowOverview(
+      @Valid @NotNull @PathVariable("workflowId") String workflowId) {
+    return workflowDao.getWorkflowOverview(workflowId);
+  }
+
+  @Operation(
+      summary =
+          "Get most recent (max 300) workflow timeline info (workflow level change history) for a specific workflow. ")
+  @GetMapping(value = "/{workflowId}/timeline", consumes = MediaType.ALL_VALUE)
+  public WorkflowTimeline getWorkflowTimeline(
+      @Valid @NotNull @PathVariable("workflowId") String workflowId) {
+    return workflowDao.getWorkflowTimeline(workflowId);
   }
 }
