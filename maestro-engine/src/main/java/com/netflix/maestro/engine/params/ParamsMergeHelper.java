@@ -681,6 +681,11 @@ public final class ParamsMergeHelper {
             "ParameterDefinition type mismatch, [%s] is not a [MAP] but [%s]",
             key, paramDef.getType().toString());
       }
+      Checks.checkTrue(
+          paramDef.isLiteral(),
+          "MAP param [%s] definition exp=[%s] is not a literal",
+          key,
+          paramDef.getExpression());
       return paramDef.asMapParamDef().getValue();
     } else {
       return new LinkedHashMap<>();
@@ -698,7 +703,7 @@ public final class ParamsMergeHelper {
       }
       Checks.checkTrue(
           paramDef.isLiteral(),
-          "param [%s] definition exp=[%s] is not a literal",
+          "STRING_MAP param [%s] definition exp=[%s] is not a literal",
           key,
           paramDef.getExpression());
       return paramDef.asStringMapParamDef().getValue();
