@@ -224,7 +224,7 @@ public class ParamsMergeHelperTest extends MaestroEngineBaseTest {
     Map<String, ParamDefinition> valParamsToMerge =
         parseParamDefMap("{'tomerge': {'type': 'STRING_MAP','value': {}}}");
     AssertHelper.assertThrows(
-        "Should not allow merging string literal string map param to a SEL defined param",
+        "Should not allow merging literal string_map param to a SEL defined param",
         IllegalArgumentException.class,
         "param [tomerge] definition exp=[data = new HashMap(); data.put(\"foo\", \"bat\"); return data;] is not a literal",
         () -> ParamsMergeHelper.mergeParams(allParams, valParamsToMerge, definitionContext));
