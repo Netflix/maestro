@@ -193,6 +193,16 @@ public class ParamsMergeHelperTest extends MaestroEngineBaseTest {
     assertEquals(
         "data = new HashMap(); data.put(\"foo\", 1.23); return data;",
         allParams.get("tomerge").asMapParamDef().getExpression());
+
+    // tomerge param in allParams is a SEL but is a literal in valParamsToMerge. Then mergeParams
+    // should throw an error
+    Map<String, ParamDefinition> valParamsToMerge =
+        parseParamDefMap("{'tomerge': {'type': 'MAP','value': {}}}");
+    AssertHelper.assertThrows(
+        "Should not allow merging literal map param to a SEL defined param",
+        IllegalArgumentException.class,
+        "MAP param [tomerge] definition exp=[data = new HashMap(); data.put(\"foo\", 1.23); return data;] is not a literal",
+        () -> ParamsMergeHelper.mergeParams(allParams, valParamsToMerge, definitionContext));
   }
 
   @Test
@@ -209,11 +219,12 @@ public class ParamsMergeHelperTest extends MaestroEngineBaseTest {
         "data = new HashMap(); data.put(\"foo\", \"bat\"); return data;",
         allParams.get("tomerge").asStringMapParamDef().getExpression());
 
-    // paramsToMerge is a literal and mergeParams should throw an error
+    // tomerge param in allParams is a SEL but is a literal in valParamsToMerge. Then mergeParams
+    // should throw an error
     Map<String, ParamDefinition> valParamsToMerge =
         parseParamDefMap("{'tomerge': {'type': 'STRING_MAP','value': {}}}");
     AssertHelper.assertThrows(
-        "Should not allow merging string map param to a SEL defined param",
+        "Should not allow merging literal string_map param to a SEL defined param",
         IllegalArgumentException.class,
         "param [tomerge] definition exp=[data = new HashMap(); data.put(\"foo\", \"bat\"); return data;] is not a literal",
         () -> ParamsMergeHelper.mergeParams(allParams, valParamsToMerge, definitionContext));
