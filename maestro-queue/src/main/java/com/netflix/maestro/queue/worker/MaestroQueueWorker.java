@@ -87,9 +87,9 @@ public final class MaestroQueueWorker implements Runnable {
           processMessage(message);
         }
       } catch (MaestroNotFoundException | MaestroInternalError m) {
-        // ignore the internal errored message
+        // ignore not found exception or internal error
         LOG.warn(
-            "[{}] got an non-retryable error for message [{}] and ignore it", name, message, m);
+            "[{}] got a non-retryable error for message [{}] and ignoring it", name, message, m);
         metrics.counter(
             MetricConstants.QUEUE_WORKER_PROCESS_ERROR,
             getClass(),
