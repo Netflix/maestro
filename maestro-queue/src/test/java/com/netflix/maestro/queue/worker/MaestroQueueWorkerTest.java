@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
 
 import com.netflix.maestro.MaestroBaseTest;
 import com.netflix.maestro.exceptions.MaestroInternalError;
+import com.netflix.maestro.exceptions.MaestroNotFoundException;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.queue.dao.MaestroQueueDao;
 import com.netflix.maestro.queue.jobevents.MaestroJobEvent;
@@ -113,7 +114,7 @@ public class MaestroQueueWorkerTest extends MaestroBaseTest {
     verify(queueDao, times(1)).release(anyInt(), anyLong(), any());
     verify(metrics, times(1))
         .counter(
-            MetricConstants.QUEUE_WORKER_INTERNAL_ERROR,
+            MetricConstants.QUEUE_WORKER_PROCESS_ERROR,
             MaestroQueueWorker.class,
             MetricConstants.RETRYABLE_TAG,
             "true",
@@ -133,7 +134,27 @@ public class MaestroQueueWorkerTest extends MaestroBaseTest {
     verify(queueDao, times(1)).release(anyInt(), anyLong(), any());
     verify(metrics, times(1))
         .counter(
-            MetricConstants.QUEUE_WORKER_INTERNAL_ERROR,
+            MetricConstants.QUEUE_WORKER_PROCESS_ERROR,
+            MaestroQueueWorker.class,
+            MetricConstants.RETRYABLE_TAG,
+            "false",
+            MetricConstants.TYPE_TAG,
+            "START_WORKFLOW");
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testRunWithProcessNotFoundException() throws InterruptedException {
+    when(messageQueue.take()).thenReturn(message).thenThrow(new InterruptedException("test"));
+    when(dispatcher.processJobEvent(any())).thenThrow(new MaestroNotFoundException("test"));
+    queueWorker.run();
+    verify(dispatcher, times(1)).processJobEvent(any());
+    verify(scheduler, times(0)).schedule(any(Callable.class), anyLong(), eq(TimeUnit.MILLISECONDS));
+    verify(messageQueue, times(1)).drainTo(any(), anyInt());
+    verify(queueDao, times(1)).release(anyInt(), anyLong(), any());
+    verify(metrics, times(1))
+        .counter(
+            MetricConstants.QUEUE_WORKER_PROCESS_ERROR,
             MaestroQueueWorker.class,
             MetricConstants.RETRYABLE_TAG,
             "false",
@@ -196,7 +217,7 @@ public class MaestroQueueWorkerTest extends MaestroBaseTest {
     verify(queueDao, times(1)).release(anyInt(), anyLong(), any());
     verify(metrics, times(1))
         .counter(
-            MetricConstants.QUEUE_WORKER_INTERNAL_ERROR,
+            MetricConstants.QUEUE_WORKER_PROCESS_ERROR,
             MaestroQueueWorker.class,
             MetricConstants.RETRYABLE_TAG,
             "true",
