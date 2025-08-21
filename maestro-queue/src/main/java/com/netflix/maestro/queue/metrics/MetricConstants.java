@@ -27,8 +27,8 @@ public final class MetricConstants extends com.netflix.maestro.metrics.MetricCon
   /** Metric to record the queueing delay time for a worker queue. */
   public static final String WORKER_QUEUE_QUEUEING_DELAY = "maestro.worker.queue.queueing.delay";
 
-  /** Metric to count for the queue worker internal error. */
-  public static final String QUEUE_WORKER_INTERNAL_ERROR = "maestro.queue.worker.internal.error";
+  /** Metric to count for the queue worker process error. */
+  public static final String QUEUE_WORKER_PROCESS_ERROR = "maestro.queue.worker.process.error";
 
   /** Metric to count for the queue system enqueue transaction. */
   public static final String QUEUE_SYSTEM_ENQUEUE_TRANSACTION =

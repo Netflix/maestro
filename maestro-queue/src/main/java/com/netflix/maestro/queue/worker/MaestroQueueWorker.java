@@ -13,6 +13,7 @@
 package com.netflix.maestro.queue.worker;
 
 import com.netflix.maestro.exceptions.MaestroInternalError;
+import com.netflix.maestro.exceptions.MaestroNotFoundException;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.queue.dao.MaestroQueueDao;
 import com.netflix.maestro.queue.jobevents.MaestroJobEvent;
@@ -85,11 +86,12 @@ public final class MaestroQueueWorker implements Runnable {
         if (running) { // double check to avoid extra run but no guarantee
           processMessage(message);
         }
-      } catch (MaestroInternalError m) {
+      } catch (MaestroNotFoundException | MaestroInternalError m) {
         // ignore the internal errored message
-        LOG.warn("[{}] got an internal error for message [{}] and ignore it", name, message, m);
+        LOG.warn(
+            "[{}] got an non-retryable error for message [{}] and ignore it", name, message, m);
         metrics.counter(
-            MetricConstants.QUEUE_WORKER_INTERNAL_ERROR,
+            MetricConstants.QUEUE_WORKER_PROCESS_ERROR,
             getClass(),
             MetricConstants.RETRYABLE_TAG,
             "false",
@@ -100,7 +102,7 @@ public final class MaestroQueueWorker implements Runnable {
             "[{}] got an exception for message [{}] and will retry the message", name, message, e);
         requeue(message, retryInterval); // requeue and retry the message after some interval
         metrics.counter(
-            MetricConstants.QUEUE_WORKER_INTERNAL_ERROR,
+            MetricConstants.QUEUE_WORKER_PROCESS_ERROR,
             getClass(),
             MetricConstants.RETRYABLE_TAG,
             "true",
