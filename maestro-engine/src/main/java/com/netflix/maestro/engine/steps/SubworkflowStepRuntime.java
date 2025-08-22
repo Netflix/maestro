@@ -87,13 +87,25 @@ public class SubworkflowStepRuntime implements StepRuntime {
       } else {
         return trackSubworkflowInstance(step, runtimeSummary);
       }
-    } catch (MaestroRetryableError retryableError) {
-      LOG.info("Failed to {} subworkflow, will retry", action, retryableError);
+    } catch (MaestroRetryableError mre) {
+      LOG.info(
+          "Failed to {} subworkflow {}{}, will retry",
+          action,
+          workflowSummary.getIdentity(),
+          runtimeSummary.getIdentity(),
+          mre);
       return new Result(
           State.CONTINUE,
           Collections.emptyMap(),
-          Collections.singletonList(TimelineDetailsEvent.from(retryableError.getDetails())));
+          Collections.singletonList(TimelineDetailsEvent.from(mre.getDetails())));
     } catch (Exception e) {
+      LOG.warn(
+          "Failed to {} subworkflow step runtime {}{}, with error",
+          action,
+          workflowSummary.getIdentity(),
+          runtimeSummary.getIdentity(),
+          e);
+      // todo improve this error handling to gracefully clean up all resources
       return new Result(
           State.FATAL_ERROR,
           Collections.emptyMap(),
@@ -144,7 +156,8 @@ public class SubworkflowStepRuntime implements StepRuntime {
           runRequest.updateForDownstreamIfNeeded(step.getId(), instance);
           runResponse = instanceActionHandler.restartDirectly(instance, runRequest);
           LOG.info(
-              "In step runtime {}, restarting a subworkflow instance from the parent run {} with response {}",
+              "In step runtime {}{}, restarting a subworkflow instance {} from the parent run with response {}",
+              workflowSummary.getIdentity(),
               runtimeSummary.getIdentity(),
               subworkflowArtifact.getIdentity(),
               runResponse);
@@ -160,7 +173,8 @@ public class SubworkflowStepRuntime implements StepRuntime {
         runRequest.clearRestartFor(RunPolicy.START_FRESH_NEW_RUN);
         runResponse = actionHandler.start(subworkflowId, subworkflowVersion, runRequest);
         LOG.info(
-            "In step runtime {}, starting a subworkflow instance {}",
+            "In step runtime {}{}, starting a subworkflow instance {}",
+            workflowSummary.getIdentity(),
             runtimeSummary.getIdentity(),
             runResponse);
       }
@@ -178,7 +192,6 @@ public class SubworkflowStepRuntime implements StepRuntime {
               TimelineLogEvent.info(
                   "Started a subworkflow with uuid: " + runResponse.getWorkflowUuid())));
     } catch (Exception e) {
-      LOG.warn("Failed to start subworkflow step runtime with error", e);
       instanceStepConcurrencyHandler.removeInstance(
           runRequest.getCorrelationId(),
           runRequest.getInitiator().getDepth(),
@@ -215,59 +228,54 @@ public class SubworkflowStepRuntime implements StepRuntime {
   }
 
   private Result trackSubworkflowInstance(Step step, StepRuntimeSummary runtimeSummary) {
-    try {
-      if (ObjectHelper.valueOrDefault(
-          ((SubworkflowStep) step).getSync(), Defaults.DEFAULT_SUBWORKFLOW_SYNC_FLAG)) {
-        SubworkflowArtifact artifact =
-            runtimeSummary.getArtifacts().get(Artifact.Type.SUBWORKFLOW.key()).asSubworkflow();
-        WorkflowInstance instance = getWorkflowInstance(artifact);
-        State state;
-        switch (instance.getStatus()) {
-          case CREATED:
-          case IN_PROGRESS:
-          case PAUSED:
-            state = State.CONTINUE;
-            break;
-          case SUCCEEDED:
-            state = State.DONE;
-            break;
-          case FAILED:
-            state = State.FATAL_ERROR; // no retry for subworkflow
-            break;
-          case STOPPED:
-            state = State.STOPPED;
-            break;
-          case TIMED_OUT:
-            state = State.TIMED_OUT;
-            break;
-          default:
-            throw new MaestroInternalError(
-                "Invalid status: %s for subworkflow step %s",
-                instance.getStatus(), runtimeSummary.getIdentity());
-        }
-
-        artifact.setSubworkflowOverview(instance.getRuntimeOverview());
-
-        TimelineEvent timelineEvent = null;
-        if (instance.getStatus().isTerminal()) {
-          timelineEvent =
-              TimelineLogEvent.info(
-                  "Step is in %s status because its subworkflow instance is in %s status",
-                  state, instance.getStatus());
-        }
-
-        return new Result(
-            state,
-            Collections.singletonMap(artifact.getType().key(), artifact),
-            timelineEvent == null
-                ? Collections.emptyList()
-                : Collections.singletonList(timelineEvent));
-      } else {
-        return new Result(State.DONE, Collections.emptyMap(), Collections.emptyList());
+    if (ObjectHelper.valueOrDefault(
+        ((SubworkflowStep) step).getSync(), Defaults.DEFAULT_SUBWORKFLOW_SYNC_FLAG)) {
+      SubworkflowArtifact artifact =
+          runtimeSummary.getArtifacts().get(Artifact.Type.SUBWORKFLOW.key()).asSubworkflow();
+      WorkflowInstance instance = getWorkflowInstance(artifact);
+      State state;
+      switch (instance.getStatus()) {
+        case CREATED:
+        case IN_PROGRESS:
+        case PAUSED:
+          state = State.CONTINUE;
+          break;
+        case SUCCEEDED:
+          state = State.DONE;
+          break;
+        case FAILED:
+          state = State.FATAL_ERROR; // no retry for subworkflow
+          break;
+        case STOPPED:
+          state = State.STOPPED;
+          break;
+        case TIMED_OUT:
+          state = State.TIMED_OUT;
+          break;
+        default:
+          throw new MaestroInternalError(
+              "Invalid status: %s for subworkflow step %s%s",
+              instance.getStatus(), instance.getIdentity(), runtimeSummary.getIdentity());
       }
-    } catch (Exception e) {
-      LOG.warn("Failed to execute subworkflow step runtime with error", e);
-      throw e;
+
+      artifact.setSubworkflowOverview(instance.getRuntimeOverview());
+
+      TimelineEvent timelineEvent = null;
+      if (instance.getStatus().isTerminal()) {
+        timelineEvent =
+            TimelineLogEvent.info(
+                "Step is in %s status because its subworkflow instance is in %s status",
+                state, instance.getStatus());
+      }
+
+      return new Result(
+          state,
+          Collections.singletonMap(artifact.getType().key(), artifact),
+          timelineEvent == null
+              ? Collections.emptyList()
+              : Collections.singletonList(timelineEvent));
+    } else {
+      return new Result(State.DONE, Collections.emptyMap(), Collections.emptyList());
     }
   }
 
