@@ -159,6 +159,12 @@ public class SubworkflowStepRuntime implements StepRuntime {
         // always reset runRequest to be START_FRESH_NEW_RUN as this is the first run
         runRequest.clearRestartFor(RunPolicy.START_FRESH_NEW_RUN);
         runResponse = actionHandler.start(subworkflowId, subworkflowVersion, runRequest);
+        if (runResponse.getStatus() == RunResponse.Status.DUPLICATED) { // deduplication
+          WorkflowInstance subworkflowInstance =
+              instanceDao.getWorkflowInstanceRunByUuid(
+                  subworkflowId, runResponse.getWorkflowUuid());
+          runResponse = RunResponse.from(subworkflowInstance, 1);
+        }
         LOG.info(
             "In step runtime {}, starting a subworkflow instance {}",
             runtimeSummary.getIdentity(),

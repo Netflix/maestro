@@ -149,6 +149,10 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
   private static final String GET_WORKFLOW_INSTANCE_QUERY =
       String.format(GET_WORKFLOW_INSTANCE_FIELDS_TEMPLATE, ALL_FIELDS, RUN_ID_CONDITION);
 
+  private static final String GET_WORKFLOW_INSTANCE_BY_UUID_QUERY =
+      String.format(
+          "SELECT %s FROM maestro_workflow_instance WHERE workflow_id=? AND uuid=?", ALL_FIELDS);
+
   private static final String GET_LATEST_WORKFLOW_INSTANCE_RUN_QUERY =
       String.format(GET_WORKFLOW_INSTANCE_FIELDS_TEMPLATE, ALL_FIELDS, LATEST_RUN_CONDITION);
 
@@ -794,6 +798,40 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
       throw new MaestroNotFoundException(
           "workflow instance [%s][%s][%s] not found (either not created or deleted)",
           workflowId, instanceId, runId);
+    }
+    return ret;
+  }
+
+  /**
+   * Get the instance of a specific workflow instance run by the workflow id and workflow uuid,
+   * including the summary of its step instances.
+   *
+   * @param workflowId workflow id
+   * @param uuid workflow uuid
+   */
+  public WorkflowInstance getWorkflowInstanceRunByUuid(String workflowId, String uuid) {
+    WorkflowInstance ret =
+        withMetricLogError(
+            () ->
+                withRetryableQuery(
+                    GET_WORKFLOW_INSTANCE_BY_UUID_QUERY,
+                    stmt -> {
+                      stmt.setString(1, workflowId);
+                      stmt.setString(2, uuid);
+                    },
+                    result -> {
+                      if (result.next()) {
+                        return workflowInstanceFromResult(result);
+                      }
+                      return null;
+                    }),
+            "getWorkflowInstanceRunByUuid",
+            "Failed to get the workflow instance for [{}][{}]",
+            workflowId,
+            uuid);
+    if (ret == null) {
+      throw new MaestroNotFoundException(
+          "workflow instance [%s][%s] not found (either not created or deleted)", workflowId, uuid);
     }
     return ret;
   }

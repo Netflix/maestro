@@ -567,6 +567,14 @@ public class MaestroWorkflowInstanceDaoTest extends MaestroDaoBaseTest {
   }
 
   @Test
+  public void testGetWorkflowInstanceRunByUuid() {
+    WorkflowInstance instanceRun =
+        instanceDao.getWorkflowInstanceRunByUuid(wfi.getWorkflowId(), wfi.getWorkflowUuid());
+    instanceRun.setModifyTime(null);
+    assertEquals(wfi, instanceRun);
+  }
+
+  @Test
   public void testGetLatestWorkflowInstanceRun() {
     instanceDao.tryTerminateQueuedInstance(wfi, WorkflowInstance.Status.FAILED, "kill the test");
     wfi.setWorkflowUuid("test-uuid");
