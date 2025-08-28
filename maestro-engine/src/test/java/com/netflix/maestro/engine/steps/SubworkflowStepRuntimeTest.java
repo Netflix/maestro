@@ -30,6 +30,7 @@ import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
 import com.netflix.maestro.engine.handlers.WorkflowActionHandler;
 import com.netflix.maestro.engine.handlers.WorkflowInstanceActionHandler;
+import com.netflix.maestro.engine.utils.StepHelper;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.artifact.SubworkflowArtifact;
 import com.netflix.maestro.models.definition.StepType;
@@ -50,9 +51,6 @@ import org.junit.Test;
 import org.mockito.Mock;
 
 public class SubworkflowStepRuntimeTest extends MaestroBaseTest {
-
-  private SubworkflowStepRuntime subworkflowStepRuntime;
-
   @Mock private WorkflowActionHandler workflowActionHandler;
   @Mock private WorkflowInstanceActionHandler instanceActionHandler;
   @Mock private InstanceStepConcurrencyHandler concurrencyHandler;
@@ -60,6 +58,9 @@ public class SubworkflowStepRuntimeTest extends MaestroBaseTest {
   @Mock private MaestroStepInstanceDao stepInstanceDao;
   @Mock private MaestroQueueSystem queueSystem;
   @Mock private SubworkflowStep step;
+
+  private SubworkflowStepRuntime subworkflowStepRuntime;
+  private WorkflowSummary workflowSummary;
 
   @Before
   public void setUp() {
@@ -72,18 +73,17 @@ public class SubworkflowStepRuntimeTest extends MaestroBaseTest {
             stepInstanceDao,
             queueSystem,
             Collections.emptySet());
-  }
-
-  @Test
-  public void testSubworkflowLaunchDuplicateInstance() {
-    WorkflowSummary workflowSummary = new WorkflowSummary();
+    workflowSummary = new WorkflowSummary();
     workflowSummary.setWorkflowId("test-workflow");
     workflowSummary.setWorkflowInstanceId(1L);
     workflowSummary.setWorkflowRunId(1L);
     workflowSummary.setRunPolicy(null);
     workflowSummary.setParams(Collections.emptyMap());
     workflowSummary.setRunPolicy(RunPolicy.START_FRESH_NEW_RUN);
+  }
 
+  @Test
+  public void testSubworkflowLaunchDuplicateInstance() {
     StepRuntimeSummary runtimeSummary =
         StepRuntimeSummary.builder()
             .stepId("test-step")
@@ -142,5 +142,27 @@ public class SubworkflowStepRuntimeTest extends MaestroBaseTest {
     assertEquals(1, result.getTimeline().size());
     TimelineLogEvent logEvent = (TimelineLogEvent) result.getTimeline().getFirst();
     assertEquals("Started a subworkflow with uuid: " + subworkflowUuid, logEvent.getMessage());
+  }
+
+  @Test
+  public void testSubworkflowSyncFlagUsedInRunRequest() {
+    Map.of("sync", true, "async", false)
+        .forEach(
+            (k, v) -> {
+              SubworkflowStep step = new SubworkflowStep();
+              step.setId(k + "-test-step");
+              step.setSync(v);
+              StepRuntimeSummary runtimeSummary =
+                  StepRuntimeSummary.builder()
+                      .stepId("test-step")
+                      .stepAttemptId(1L)
+                      .type(StepType.SUBWORKFLOW)
+                      .stepRetry(StepInstance.StepRetry.from(null))
+                      .build();
+              RunRequest runRequest =
+                  StepHelper.createInternalWorkflowRunRequest(
+                      workflowSummary, runtimeSummary, null, null, "test-dedup", step.getSync());
+              assertEquals(!v, runRequest.getInitiator().getParent().isAsync());
+            });
   }
 }

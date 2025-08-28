@@ -114,7 +114,8 @@ public class SubworkflowStepRuntime implements StepRuntime {
             runtimeSummary,
             Collections.singletonList(Tag.create(SUBWORKFLOW_TAG_NAME)),
             createSubworkflowRunParam(workflowSummary, step, runtimeSummary),
-            workflowSummary.getIdentity() + runtimeSummary.getIdentity());
+            workflowSummary.getIdentity() + runtimeSummary.getIdentity(),
+            ((SubworkflowStep) step).getSync());
 
     if (!instanceStepConcurrencyHandler.addInstance(runRequest)) {
       return new Result(

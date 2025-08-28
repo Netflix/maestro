@@ -13,6 +13,9 @@
 package com.netflix.maestro.models.initiator;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import com.netflix.maestro.MaestroBaseTest;
 import lombok.Data;
@@ -86,5 +89,21 @@ public class InitiatorTest extends MaestroBaseTest {
     assertEquals(
         "test-parent",
         ((TemplateInitiator) initiators.getTemplate()).getNonInlineParent().getWorkflowId());
+  }
+
+  @Test
+  public void testInitiatorAncestorSyncFlag() throws Exception {
+    Initiators initiators =
+        loadObject("fixtures/initiator/sample-initiators.json", Initiators.class);
+    assertTrue(initiators.getSubworkflow().getParent().isAsync());
+    assertFalse(initiators.getSubworkflow().getParent().getSync());
+    assertFalse(((UpstreamInitiator) initiators.getSubworkflow()).getRoot().isAsync());
+    assertNull(((UpstreamInitiator) initiators.getSubworkflow()).getRoot().getSync());
+    assertFalse(initiators.getForeach().getParent().isAsync());
+    assertNull(initiators.getForeach().getParent().getSync());
+    assertFalse(initiators.getTemplate().getParent().isAsync());
+    assertTrue(initiators.getTemplate().getParent().getSync());
+    assertFalse(((UpstreamInitiator) initiators.getTemplate()).getRoot().isAsync());
+    assertNull(((UpstreamInitiator) initiators.getTemplate()).getRoot().getSync());
   }
 }

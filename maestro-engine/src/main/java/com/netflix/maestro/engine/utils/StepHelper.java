@@ -179,7 +179,8 @@ public final class StepHelper {
       StepRuntimeSummary runtimeSummary,
       List<Tag> tags,
       Map<String, ParamDefinition> runParams,
-      String dedupKey) {
+      String dedupKey,
+      Boolean syncMode) {
 
     UpstreamInitiator initiator =
         UpstreamInitiator.withType(Initiator.Type.valueOf(runtimeSummary.getType().name()));
@@ -189,6 +190,7 @@ public final class StepHelper {
     parent.setRunId(workflowSummary.getWorkflowRunId());
     parent.setStepId(runtimeSummary.getStepId());
     parent.setStepAttemptId(runtimeSummary.getStepAttemptId());
+    parent.setSync(syncMode);
 
     List<UpstreamInitiator.Info> ancestors = new ArrayList<>();
     if (workflowSummary.getInitiator() instanceof UpstreamInitiator) {

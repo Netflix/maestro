@@ -503,12 +503,23 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
     Initiator initiator = summary.getInitiator();
     List<UpstreamInitiator.Info> path = new ArrayList<>();
     StringBuilder sqlBuilder = new StringBuilder(GET_ACTION_QUERY);
-    if (initiator instanceof UpstreamInitiator) {
-      path.addAll(((UpstreamInitiator) initiator).getAncestors());
-      sqlBuilder
-          .append(" OR (")
-          .append(String.join(") OR (", Collections.nCopies(path.size(), CONDITION_POSTFIX)))
-          .append(')');
+    if (initiator instanceof UpstreamInitiator upstreamInitiator) {
+      List<UpstreamInitiator.Info> ancestorPath = new ArrayList<>();
+      for (var ancestor : upstreamInitiator.getAncestors().reversed()) {
+        // if a (sub)workflow is async, ignore actions from upstream ancestors at this point
+        if (ancestor.isAsync()) {
+          break;
+        } else {
+          ancestorPath.add(ancestor);
+        }
+      }
+      path.addAll(ancestorPath.reversed());
+      if (!path.isEmpty()) {
+        sqlBuilder
+            .append(" OR (")
+            .append(String.join(") OR (", Collections.nCopies(path.size(), CONDITION_POSTFIX)))
+            .append(')');
+      }
     }
     String sql = sqlBuilder.toString();
 
