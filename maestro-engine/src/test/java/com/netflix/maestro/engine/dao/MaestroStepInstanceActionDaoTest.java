@@ -428,6 +428,140 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
   }
 
   @Test
+  public void testGetActionFromUpstreamWithSyncFalse() {
+    WorkflowSummary summary = setupWorkflowSummaryAndAction(false, false);
+
+    // Since parent.sync=false, action lookup should NOT continue to ancestors
+    // No action should be found from ancestors, and no local action exists
+    Optional<StepAction> stepAction = actionDao.tryGetAction(summary, "job1");
+    Assert.assertFalse(stepAction.isPresent());
+
+    actionDao.terminate(summary, "job1", user, RESTART, "test-reason");
+    // Since parent.sync=false, action lookup should NOT continue to ancestors. It picks up its own
+    // action.
+    stepAction = actionDao.tryGetAction(summary, "job1");
+    Assert.assertTrue(stepAction.isPresent());
+    stepAction.ifPresent(
+        action -> {
+          Assert.assertEquals("sample-dag-test-3", action.getWorkflowId());
+          Assert.assertEquals(1, action.getWorkflowInstanceId());
+          Assert.assertEquals(1, action.getWorkflowRunId());
+          Assert.assertEquals("job1", action.getStepId());
+          Assert.assertEquals(RESTART, action.getAction());
+          Assert.assertEquals(user, action.getUser());
+        });
+    Assert.assertEquals(1, actionDao.cleanUp("sample-dag-test-3", 1, 1));
+    Assert.assertEquals(1, actionDao.cleanUp("sample-root-wf", 3, 2));
+    Assert.assertEquals(1, actionDao.cleanUp("sample-subworkflow-wf", 1, 2));
+  }
+
+  @Test
+  public void testGetActionFromUpstreamWithSyncTrue() {
+    WorkflowSummary summary = setupWorkflowSummaryAndAction(true, false);
+
+    // Since parent.sync=true, action lookup should continue to ancestors
+    // Should get root action (first usingUpstream action in sorted order)
+    Optional<StepAction> stepAction = actionDao.tryGetAction(summary, "job1");
+    Assert.assertTrue(stepAction.isPresent());
+    stepAction.ifPresent(
+        action -> {
+          Assert.assertEquals("sample-root-wf", action.getWorkflowId());
+          Assert.assertEquals(3, action.getWorkflowInstanceId());
+          Assert.assertEquals(2, action.getWorkflowRunId());
+          Assert.assertEquals("root-step1", action.getStepId());
+          Assert.assertEquals(STOP, action.getAction());
+          Assert.assertEquals(user, action.getUser());
+        });
+
+    Assert.assertEquals(1, actionDao.cleanUp("sample-root-wf", 3, 2));
+    Assert.assertEquals(1, actionDao.cleanUp("sample-subworkflow-wf", 1, 2));
+  }
+
+  @Test
+  public void testGetActionFromUpstreamWithMixedSyncFlags() {
+    WorkflowSummary summary = setupWorkflowSummaryAndAction(true, true);
+
+    // Since parent.sync=true and grandparent.sync=false, action lookup should NOT include
+    // grandparent or any ancestors
+    // No action should be found from ancestors, and no local action exists
+    Optional<StepAction> stepAction = actionDao.tryGetAction(summary, "job1");
+    Assert.assertTrue(stepAction.isPresent());
+    stepAction.ifPresent(
+        action -> {
+          Assert.assertEquals("sample-subworkflow-wf", action.getWorkflowId());
+          Assert.assertEquals(1, action.getWorkflowInstanceId());
+          Assert.assertEquals(2, action.getWorkflowRunId());
+          Assert.assertEquals("sub-step1", action.getStepId());
+          Assert.assertEquals(KILL, action.getAction());
+          Assert.assertEquals(user, action.getUser());
+        });
+
+    Assert.assertEquals(1, actionDao.cleanUp("sample-root-wf", 3, 2));
+    Assert.assertEquals(1, actionDao.cleanUp("sample-grandparent-wf", 4, 3));
+    Assert.assertEquals(1, actionDao.cleanUp("sample-subworkflow-wf", 1, 2));
+  }
+
+  private WorkflowSummary setupWorkflowSummaryAndAction(boolean sync, boolean withGrandparent) {
+    WorkflowSummary summary = new WorkflowSummary();
+    summary.setWorkflowId("sample-dag-test-3");
+    summary.setWorkflowInstanceId(1);
+    summary.setWorkflowRunId(1);
+
+    SubworkflowInitiator initiator = new SubworkflowInitiator();
+
+    UpstreamInitiator.Info parent = new UpstreamInitiator.Info();
+    parent.setWorkflowId("sample-subworkflow-wf");
+    parent.setInstanceId(1);
+    parent.setRunId(2);
+    parent.setStepId("sub-step1");
+    parent.setSync(sync);
+
+    UpstreamInitiator.Info root = new UpstreamInitiator.Info();
+    root.setWorkflowId("sample-root-wf");
+    root.setInstanceId(3);
+    root.setRunId(2);
+    root.setStepId("root-step1");
+    root.setSync(true); // Set sync to true
+
+    if (withGrandparent) {
+      UpstreamInitiator.Info grandParent = new UpstreamInitiator.Info();
+      grandParent.setWorkflowId("sample-grandparent-wf");
+      grandParent.setInstanceId(4);
+      grandParent.setRunId(3);
+      grandParent.setStepId("grandparent-step1");
+      grandParent.setSync(false); // Set sync to false - this should stop the search
+      initiator.setAncestors(Arrays.asList(root, grandParent, parent));
+    } else {
+      initiator.setAncestors(Arrays.asList(root, parent));
+    }
+    summary.setInitiator(initiator);
+
+    WorkflowSummary rootSummary = new WorkflowSummary();
+    rootSummary.setWorkflowId("sample-root-wf");
+    rootSummary.setWorkflowInstanceId(3);
+    rootSummary.setWorkflowRunId(2);
+
+    WorkflowSummary parentSummary = new WorkflowSummary();
+    parentSummary.setWorkflowId("sample-subworkflow-wf");
+    parentSummary.setWorkflowInstanceId(1);
+    parentSummary.setWorkflowRunId(2);
+
+    if (withGrandparent) {
+      WorkflowSummary grandParentSummary = new WorkflowSummary();
+      grandParentSummary.setWorkflowId("sample-grandparent-wf");
+      grandParentSummary.setWorkflowInstanceId(4);
+      grandParentSummary.setWorkflowRunId(3);
+      // Create actions in grandparent
+      actionDao.terminate(grandParentSummary, "grandparent-step1", user, RESTART, "test-reason");
+    }
+
+    // Create actions in both root and parent
+    actionDao.terminate(rootSummary, "root-step1", user, STOP, "test-reason");
+    actionDao.terminate(parentSummary, "sub-step1", user, KILL, "test-reason");
+    return summary;
+  }
+
+  @Test
   public void testInvalidRestart() {
     RunResponse restartStepInfo1 =
         RunResponse.builder().instance(instance).stepId("not-existing").build();

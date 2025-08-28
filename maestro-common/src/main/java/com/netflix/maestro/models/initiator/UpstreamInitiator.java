@@ -18,6 +18,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.exceptions.MaestroUnprocessableEntityException;
 import com.netflix.maestro.models.parameter.ParamSource;
@@ -91,7 +92,7 @@ public abstract class UpstreamInitiator implements Initiator {
   @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
   @JsonInclude(JsonInclude.Include.NON_NULL)
   @JsonPropertyOrder(
-      value = {"workflow_id", "instance_id", "run_id", "step_id", "step_attempt_id"},
+      value = {"workflow_id", "instance_id", "run_id", "step_id", "step_attempt_id", "sync"},
       alphabetic = true)
   @Data
   public static class Info {
@@ -100,6 +101,8 @@ public abstract class UpstreamInitiator implements Initiator {
     private long runId;
     private String stepId;
     private long stepAttemptId;
+    // this is used to indicate if the downstream should be run in sync mode, default is true
+    @Nullable private Boolean sync;
 
     @Override
     public String toString() {
@@ -110,6 +113,11 @@ public abstract class UpstreamInitiator implements Initiator {
     @JsonIgnore
     public boolean isInline() {
       return IdHelper.isInlineWorkflowId(workflowId);
+    }
+
+    @JsonIgnore
+    public boolean isAsync() {
+      return sync != null && !sync;
     }
   }
 

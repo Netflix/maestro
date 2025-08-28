@@ -657,7 +657,8 @@ public class ForeachStepRuntime implements StepRuntime {
                     Collections.singletonList(Tag.create(FOREACH_TAG_NAME)),
                     createForeachRunParams(
                         restartIterationId - 1, workflowSummary, foreachStep, runtimeSummary),
-                    generateDedupKey(restartArtifact, restartIterationId - 1))
+                    generateDedupKey(restartArtifact, restartIterationId - 1),
+                    null)
                 .toBuilder()
                 .restartConfig(foreachAction.getRestartConfig())
                 .build();
@@ -753,7 +754,8 @@ public class ForeachStepRuntime implements StepRuntime {
                 runtimeSummary,
                 Collections.singletonList(Tag.create(FOREACH_TAG_NAME)),
                 createForeachRunParams(idx, workflowSummary, step, runtimeSummary),
-                generateDedupKey(artifact, idx));
+                generateDedupKey(artifact, idx),
+                null);
 
         if (instanceStepConcurrencyHandler.addInstance(runRequest)) {
           runRequests.add(runRequest);

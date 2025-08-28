@@ -98,7 +98,8 @@ public class StepHelperTest extends MaestroEngineBaseTest {
         IllegalArgumentException.class,
         "is not less than the depth limit: 10",
         () ->
-            StepHelper.createInternalWorkflowRunRequest(summary, runtimeSummary, null, null, null));
+            StepHelper.createInternalWorkflowRunRequest(
+                summary, runtimeSummary, null, null, null, null));
   }
 
   @Test
@@ -130,13 +131,42 @@ public class StepHelperTest extends MaestroEngineBaseTest {
             .build();
 
     RunRequest request =
-        StepHelper.createInternalWorkflowRunRequest(summary, runtimeSummary, null, null, null);
+        StepHelper.createInternalWorkflowRunRequest(
+            summary, runtimeSummary, null, null, null, true);
     Assert.assertEquals(restartConfig, request.getRestartConfig());
+    Assert.assertFalse(request.getInitiator().getParent().isAsync());
 
     request.getRestartConfig().getRestartPath().clear();
     Assert.assertEquals(2, restartConfig.getRestartPath().size());
     request.clearRestartFor(RunPolicy.RESTART_FROM_SPECIFIC);
     Assert.assertEquals(2, restartConfig.getRestartPath().size());
     Assert.assertEquals(RunPolicy.RESTART_FROM_BEGINNING, restartConfig.getRestartPolicy());
+  }
+
+  @Test
+  public void testCreateInternalWorkflowRunRequestWithNullSyncMode() {
+    WorkflowSummary summary = new WorkflowSummary();
+    summary.setWorkflowId("test-workflow");
+    summary.setWorkflowInstanceId(123);
+    summary.setWorkflowRunId(2);
+    summary.setRunPolicy(RunPolicy.START_FRESH_NEW_RUN);
+    ForeachInitiator initiator = new ForeachInitiator();
+    UpstreamInitiator.Info info = new UpstreamInitiator.Info();
+    info.setWorkflowId("foo");
+    initiator.setAncestors(Collections.singletonList(info));
+    summary.setInitiator(initiator);
+
+    StepRuntimeSummary runtimeSummary =
+        StepRuntimeSummary.builder()
+            .type(StepType.SUBWORKFLOW)
+            .stepId("bar")
+            .stepAttemptId(3)
+            .build();
+
+    RunRequest request =
+        StepHelper.createInternalWorkflowRunRequest(
+            summary, runtimeSummary, null, null, null, null);
+    Assert.assertFalse(
+        "isAsync should be false when sync is null", request.getInitiator().getParent().isAsync());
   }
 }

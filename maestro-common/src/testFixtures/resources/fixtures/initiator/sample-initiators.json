@@ -19,7 +19,8 @@
         "instance_id": 1,
         "run_id": 1,
         "step_id": "test-step",
-        "step_attempt_id": 1
+        "step_attempt_id": 1,
+        "sync": false
       }
     ],
     "depth": 2,
@@ -64,7 +65,8 @@
         "instance_id": 1,
         "run_id": 1,
         "step_id": "test-step",
-        "step_attempt_id": 1
+        "step_attempt_id": 1,
+        "sync": true
       }],
     "type": "TEMPLATE"
   },
