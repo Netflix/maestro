@@ -50,11 +50,12 @@ public class MaestroQueueDao extends AbstractDatabaseDao {
   private static final String REPLACE_MSG_QUERY =
       "UPDATE maestro_queue SET (queue_id,owned_until,msg_id,payload,create_time)=(?,?,?,?,?)"
           + POINT_QUERY_WHERE_CLAUSE;
-  private static final String ADD_LOCK_QUERY =
-      "INSERT INTO maestro_queue (queue_id,owned_until,msg_id,payload,create_time) "
-          + "VALUES (0,0,?,'lock',EXTRACT(EPOCH FROM NOW())::INT8*1000) ON CONFLICT DO NOTHING";
-  private static final String LOCK_SCAN_QUERY =
-      "SELECT msg_id FROM maestro_queue WHERE queue_id=0 AND owned_until=0 AND msg_id=? FOR UPDATE SKIP LOCKED";
+
+  private static final String ADD_LOCK_IF_ABSENT_QUERY =
+      "INSERT INTO maestro_queue_lock (queue_id) VALUES (?) ON CONFLICT DO NOTHING";
+  private static final String LOCK_FOR_SCAN_QUERY =
+      "SELECT queue_id FROM maestro_queue_lock WHERE queue_id=? FOR UPDATE SKIP LOCKED";
+
   private static final String DEQUEUE_UNOWNED_MSGS_QUERY =
       "UPDATE maestro_queue SET owned_until=(EXTRACT(EPOCH FROM CLOCK_TIMESTAMP())*1000)::INT8 + ? "
           + "WHERE queue_id=? AND (owned_until,msg_id) IN (SELECT owned_until,msg_id FROM maestro_queue "
@@ -241,7 +242,7 @@ public class MaestroQueueDao extends AbstractDatabaseDao {
 
   /**
    * Retry the un-owned message after the current ownership is timed out. It will put a lock in the
-   * queue table to ensure that only one worker can dequeue the un-owned for a given queue_id.
+   * queue_lock table to ensure that only one worker can dequeue the un-owned for a given queue_id.
    *
    * @return the list of owned messages to process
    */
@@ -251,18 +252,19 @@ public class MaestroQueueDao extends AbstractDatabaseDao {
             () ->
                 withRetryableTransaction(
                     conn -> {
-                      try (PreparedStatement stmt1 = conn.prepareStatement(LOCK_SCAN_QUERY)) {
-                        stmt1.setString(1, String.valueOf(queueId));
-                        try (ResultSet result = stmt1.executeQuery()) {
-                          if (result.next()) {
-                            try (PreparedStatement stmt2 =
+                      try (PreparedStatement lockStmt =
+                          conn.prepareStatement(LOCK_FOR_SCAN_QUERY)) {
+                        lockStmt.setInt(1, queueId);
+                        try (ResultSet result = lockStmt.executeQuery()) {
+                          if (result.next()) { // if the lock for the queue_id is obtained
+                            try (PreparedStatement dequeueStmt =
                                 conn.prepareStatement(DEQUEUE_UNOWNED_MSGS_QUERY)) {
                               int idx = 0;
-                              stmt2.setLong(++idx, expirationTimeout);
-                              stmt2.setInt(++idx, queueId);
-                              stmt2.setInt(++idx, queueId);
-                              stmt2.setInt(++idx, limit);
-                              try (ResultSet res = stmt2.executeQuery()) {
+                              dequeueStmt.setLong(++idx, expirationTimeout);
+                              dequeueStmt.setInt(++idx, queueId);
+                              dequeueStmt.setInt(++idx, queueId);
+                              dequeueStmt.setInt(++idx, limit);
+                              try (ResultSet res = dequeueStmt.executeQuery()) {
                                 List<Message> messages = new ArrayList<>();
                                 while (res.next()) {
                                   idx = 0;
@@ -297,12 +299,17 @@ public class MaestroQueueDao extends AbstractDatabaseDao {
         .toList();
   }
 
-  public int addLock(int queueId) {
+  /**
+   * Add a lock for the given queue id if not exists. It is idempotent.
+   *
+   * @param queueId queue id
+   * @return the number of rows affected (0 or 1)
+   */
+  public int addLockIfAbsent(int queueId) {
     return withMetricLogError(
-        () ->
-            withRetryableUpdate(ADD_LOCK_QUERY, stmt -> stmt.setString(1, String.valueOf(queueId))),
-        "addLock",
-        "Failed to add lock to the maestro_queue for queue_id [{}]",
+        () -> withRetryableUpdate(ADD_LOCK_IF_ABSENT_QUERY, stmt -> stmt.setInt(1, queueId)),
+        "addLockIfAbsent",
+        "Failed to add lock to the maestro_queue_lock for queue_id [{}]",
         queueId);
   }
 

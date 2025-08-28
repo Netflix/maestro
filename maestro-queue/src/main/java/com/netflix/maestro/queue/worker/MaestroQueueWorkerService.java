@@ -63,7 +63,7 @@ public final class MaestroQueueWorkerService {
         visited.add(queueId);
         // boostrap the queue with a message to trigger the worker
         messageQueue.offer(MessageDto.SCAN_CMD_MSG);
-        queueDao.addLock(queueId);
+        queueDao.addLockIfAbsent(queueId);
         var workerProperties = properties.getQueueWorkerProperties(queueId);
         int workerNum = workerProperties.getWorkerNum();
         for (int i = 0; i < workerNum; ++i) {
