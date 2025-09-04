@@ -65,7 +65,7 @@ public class MaestroFinalFlowStatusCallbackTest extends MaestroEngineBaseTest {
             maestroTask, instanceDao, stepInstanceDao, MAPPER, metricRepo);
     when(flow.getFlowId()).thenReturn("test-workflow-id");
     Task task = new Task();
-    TaskDef taskDef = new TaskDef("foo", Constants.MAESTRO_TASK_NAME, null, null);
+    TaskDef taskDef = new TaskDef("foo", Constants.MAESTRO_TASK_NAME, null);
     task.setTaskDef(taskDef);
     task.setStatus(Task.Status.COMPLETED);
     Map<String, Object> summary = new HashMap<>();
@@ -326,7 +326,7 @@ public class MaestroFinalFlowStatusCallbackTest extends MaestroEngineBaseTest {
   @Test
   public void testFlowFinalizedCancelInternallyFailedTasks() {
     Task task = new Task();
-    TaskDef taskDef = new TaskDef("bar", Constants.MAESTRO_TASK_NAME, null, null);
+    TaskDef taskDef = new TaskDef("bar", Constants.MAESTRO_TASK_NAME, null);
     task.setTaskDef(taskDef);
     Map<String, Object> summary = new HashMap<>();
     summary.put("runtime_state", Collections.singletonMap("status", "RUNNING"));
@@ -373,7 +373,7 @@ public class MaestroFinalFlowStatusCallbackTest extends MaestroEngineBaseTest {
   @Test
   public void testFlowFinalizedNotCreatedTasks() {
     Task task = new Task();
-    TaskDef taskDef = new TaskDef("bar", Constants.MAESTRO_TASK_NAME, null, null);
+    TaskDef taskDef = new TaskDef("bar", Constants.MAESTRO_TASK_NAME, null);
     task.setTaskDef(taskDef);
 
     Map<String, Object> summary = new HashMap<>();
@@ -409,7 +409,7 @@ public class MaestroFinalFlowStatusCallbackTest extends MaestroEngineBaseTest {
   @Test
   public void testInvalidStatusOnFlowFinalized() {
     Task task = new Task();
-    TaskDef taskDef = new TaskDef("foo", Constants.MAESTRO_TASK_NAME, null, null);
+    TaskDef taskDef = new TaskDef("foo", Constants.MAESTRO_TASK_NAME, null);
     task.setTaskDef(taskDef);
     Map<String, Object> summary = new HashMap<>();
     summary.put("runtime_state", Collections.singletonMap("status", "SUCCEEDED"));
@@ -544,7 +544,7 @@ public class MaestroFinalFlowStatusCallbackTest extends MaestroEngineBaseTest {
   @Test
   public void testNonRetryableErrorOnFlowFinalized() {
     Task task1 = new Task();
-    TaskDef taskDef1 = new TaskDef("bar", Constants.MAESTRO_TASK_NAME, null, null);
+    TaskDef taskDef1 = new TaskDef("bar", Constants.MAESTRO_TASK_NAME, null);
     task1.setTaskDef(taskDef1);
     Map<String, Object> summary = new HashMap<>();
     summary.put("runtime_state", Collections.singletonMap("status", "SUCCEEDED"));
@@ -553,7 +553,7 @@ public class MaestroFinalFlowStatusCallbackTest extends MaestroEngineBaseTest {
     task1.setStatus(Task.Status.FAILED);
 
     Task task2 = new Task();
-    TaskDef taskDef2 = new TaskDef("foo", Constants.MAESTRO_TASK_NAME, null, null);
+    TaskDef taskDef2 = new TaskDef("foo", Constants.MAESTRO_TASK_NAME, null);
     task2.setTaskDef(taskDef2);
     task2.setOutputData(new HashMap<>());
     task2.setStatus(Task.Status.COMPLETED);

@@ -192,7 +192,7 @@ final class FlowActor extends BaseActor {
         if (!updatedTask.isActive()) {
           schedule(
               new Action.TaskWakeUp(updatedTask.referenceTaskName()),
-              delayForNext(TimeUnit.SECONDS.toMillis(updatedTask.getStartDelayInSeconds())));
+              delayForNext(updatedTask.getStartDelayInMillis()));
         }
       } else {
         scheduleRetryableTask(updatedTask);
@@ -209,7 +209,7 @@ final class FlowActor extends BaseActor {
 
   private void scheduleRetryableTask(Task task) {
     if (task.getStatus().isRestartable()) {
-      long delay = TimeUnit.SECONDS.toMillis(task.getStartDelayInSeconds());
+      long delay = task.getStartDelayInMillis();
       if (task.getEndTime() == null) {
         LOG.error(
             "Critical warning for an unexpected case: Flow task [{}][{}] has status [{}] but endTime is unset.",

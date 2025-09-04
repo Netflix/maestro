@@ -46,7 +46,7 @@ public class StepTranslator implements Translator<Step, TaskDef> {
   }
 
   private TaskDef createMaestroGateTask(JoinStep step) {
-    return new TaskDef(step.getId(), step.getType().name(), null, step.getJoinOn());
+    return new TaskDef(step.getId(), step.getType().name(), step.getJoinOn());
   }
 
   private TaskDef createMaestroTask(AbstractStep step) {
@@ -56,6 +56,6 @@ public class StepTranslator implements Translator<Step, TaskDef> {
     if (step.getFailureMode() == null) { // if unset, using the default
       step.setFailureMode(Defaults.DEFAULT_FAILURE_MODE);
     }
-    return new TaskDef(step.getId(), Constants.MAESTRO_TASK_NAME, null, null);
+    return new TaskDef(step.getId(), Constants.MAESTRO_TASK_NAME, null);
   }
 }

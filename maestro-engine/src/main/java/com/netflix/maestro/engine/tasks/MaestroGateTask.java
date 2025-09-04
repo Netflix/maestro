@@ -57,7 +57,7 @@ public class MaestroGateTask implements FlowTask {
       task.setStatus(done.get());
       return true;
     }
-    task.setStartDelayInSeconds(Translator.DEFAULT_FLOW_TASK_RECONCILIATION_INTERVAL);
+    task.setStartDelayInMillis(Translator.DEFAULT_FLOW_TASK_RECONCILIATION_INTERVAL_IN_MILLIS);
     return false;
   }
 

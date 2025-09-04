@@ -80,12 +80,7 @@ public class MaestroEndTaskTest extends MaestroEngineBaseTest {
         new MaestroEndTask(instanceDao, actionDao, MAPPER, rollupAggregationHelper, metricRepo);
 
     testTask = new Task();
-    TaskDef taskDef =
-        new TaskDef(
-            "job1",
-            Constants.MAESTRO_TASK_NAME,
-            Collections.singletonMap("maestroTask", Collections.singletonList("job1")),
-            null);
+    TaskDef taskDef = new TaskDef("job1", Constants.MAESTRO_TASK_NAME, null);
     testTask.setTaskDef(taskDef);
     testTask.setStatus(Task.Status.IN_PROGRESS);
     testTask.setTaskId("test-task-id");
@@ -152,7 +147,7 @@ public class MaestroEndTaskTest extends MaestroEngineBaseTest {
     newFlow.setInput(flow.getInput());
     newFlow.setPrepareTask(testTask);
 
-    TaskDef taskDef = new TaskDef("maestro_start", Constants.DEFAULT_START_TASK_NAME, null, null);
+    TaskDef taskDef = new TaskDef("maestro_start", Constants.DEFAULT_START_TASK_NAME, null);
     testTask.setTaskDef(taskDef);
     testTask.setStartTime(123456L);
     testTask.setOutputData(

@@ -4,7 +4,6 @@ import com.netflix.maestro.exceptions.MaestroUnprocessableEntityException;
 import com.netflix.maestro.flow.engine.ExecutionContext;
 import com.netflix.maestro.flow.models.Flow;
 import com.netflix.maestro.flow.models.Task;
-import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 
@@ -132,7 +131,7 @@ final class TaskActor extends BaseActor {
 
     if (isRunning() && task.isActive()) { // if inactive, rely on flow to periodically wakeup
       // maestro step directly set startDelay to control the delay interval
-      schedule(Action.TASK_PING, TimeUnit.SECONDS.toMillis(task.getStartDelayInSeconds()));
+      schedule(Action.TASK_PING, task.getStartDelayInMillis());
     }
   }
 

@@ -29,7 +29,6 @@ import com.netflix.maestro.flow.models.Flow;
 import com.netflix.maestro.flow.models.Task;
 import com.netflix.maestro.flow.models.TaskDef;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import org.junit.Before;
@@ -93,8 +92,8 @@ public class FlowActorTest extends ActorBaseTest {
 
   @Test
   public void testRunForActionFlowResumeWithRunningTasks() {
-    Task task1 = flow.newTask(new TaskDef("task1", "noop", null, null), false);
-    Task task2 = flow.newTask(new TaskDef("task2", "noop", null, null), false);
+    Task task1 = flow.newTask(new TaskDef("task1", "noop", null), false);
+    Task task2 = flow.newTask(new TaskDef("task2", "noop", null), false);
     task2.setStatus(Task.Status.FAILED);
     flow.addFinishedTask(task2);
 
@@ -138,10 +137,10 @@ public class FlowActorTest extends ActorBaseTest {
     flow.getFlowDef()
         .setTasks(
             List.of(
-                List.of(new TaskDef("task1", "noop", null, null)),
-                List.of(new TaskDef("task2", "noop", null, null))));
-    flow.setPrepareTask(flow.newTask(new TaskDef("prepare", "noop", null, null), true));
-    flow.setMonitorTask(flow.newTask(new TaskDef("monitor", "noop", null, null), true));
+                List.of(new TaskDef("task1", "noop", null)),
+                List.of(new TaskDef("task2", "noop", null))));
+    flow.setPrepareTask(flow.newTask(new TaskDef("prepare", "noop", null), true));
+    flow.setMonitorTask(flow.newTask(new TaskDef("monitor", "noop", null), true));
 
     flowActor.runForAction(new Action.FlowReconcile(123));
     assertEquals(2, flow.getRunningTasks().size());
@@ -171,10 +170,10 @@ public class FlowActorTest extends ActorBaseTest {
     flow.getFlowDef()
         .setTasks(
             List.of(
-                List.of(new TaskDef("task1", "noop", null, null)),
-                List.of(new TaskDef("task2", "noop", null, null))));
-    flow.setPrepareTask(flow.newTask(new TaskDef("prepare", "noop", null, null), true));
-    flow.setMonitorTask(flow.newTask(new TaskDef("monitor", "noop", null, null), true));
+                List.of(new TaskDef("task1", "noop", null)),
+                List.of(new TaskDef("task2", "noop", null))));
+    flow.setPrepareTask(flow.newTask(new TaskDef("prepare", "noop", null), true));
+    flow.setMonitorTask(flow.newTask(new TaskDef("monitor", "noop", null), true));
 
     flowActor.runForAction(new Action.FlowReconcile(123));
     var child1 = flowActor.getChild("task1");
@@ -198,7 +197,7 @@ public class FlowActorTest extends ActorBaseTest {
 
   @Test
   public void testFlowRefreshRunningFlow() {
-    flow.setMonitorTask(flow.newTask(new TaskDef("monitor", "noop", null, null), true));
+    flow.setMonitorTask(flow.newTask(new TaskDef("monitor", "noop", null), true));
     flowActor.runForAction(Action.FLOW_REFRESH);
     verify(context, times(1)).refresh(flow);
     verify(context, times(0)).finalCall(flow);
@@ -206,8 +205,8 @@ public class FlowActorTest extends ActorBaseTest {
 
   @Test
   public void testFlowRefreshTerminatedFlow() {
-    flow.setPrepareTask(flow.newTask(new TaskDef("prepare", "noop", null, null), true));
-    flow.setMonitorTask(flow.newTask(new TaskDef("monitor", "noop", null, null), true));
+    flow.setPrepareTask(flow.newTask(new TaskDef("prepare", "noop", null), true));
+    flow.setMonitorTask(flow.newTask(new TaskDef("monitor", "noop", null), true));
     flow.getMonitorTask().setStatus(Task.Status.COMPLETED);
 
     flowActor.runForAction(Action.FLOW_REFRESH);
@@ -219,7 +218,7 @@ public class FlowActorTest extends ActorBaseTest {
 
   @Test
   public void testFlowTaskRetry() {
-    Task task1 = flow.newTask(new TaskDef("task1", "noop", null, null), false);
+    Task task1 = flow.newTask(new TaskDef("task1", "noop", null), false);
     task1.setStatus(Task.Status.FAILED);
     flow.addFinishedTask(task1);
 
@@ -234,12 +233,12 @@ public class FlowActorTest extends ActorBaseTest {
 
   @Test
   public void testTaskUpdateForRunningTask() {
-    Task task1 = flow.newTask(new TaskDef("task1", "noop", null, null), false);
+    Task task1 = flow.newTask(new TaskDef("task1", "noop", null), false);
     task1.setStatus(Task.Status.FAILED);
     flow.addFinishedTask(task1);
     flowActor.runForAction(new Action.FlowTaskRetry("task1"));
 
-    Task task2 = flow.newTask(new TaskDef("task1", "noop", Map.of(), null), false);
+    Task task2 = flow.newTask(new TaskDef("task1", "noop", null), false);
     task2.setStatus(Task.Status.IN_PROGRESS);
 
     flowActor.runForAction(new Action.TaskUpdate(task2));
@@ -250,16 +249,16 @@ public class FlowActorTest extends ActorBaseTest {
 
   @Test
   public void testTaskUpdateForRunningInactiveTask() {
-    Task task1 = flow.newTask(new TaskDef("task1", "noop", null, null), false);
+    Task task1 = flow.newTask(new TaskDef("task1", "noop", null), false);
     task1.setStatus(Task.Status.FAILED);
     flow.addFinishedTask(task1);
-    flow.setMonitorTask(flow.newTask(new TaskDef("monitor", "noop", null, null), true));
+    flow.setMonitorTask(flow.newTask(new TaskDef("monitor", "noop", null), true));
 
     flowActor.runForAction(new Action.FlowTaskRetry("task1"));
-    Task task2 = flow.newTask(new TaskDef("task1", "noop", Map.of(), null), false);
+    Task task2 = flow.newTask(new TaskDef("task1", "noop", null), false);
     task2.setStatus(Task.Status.IN_PROGRESS);
     task2.setActive(false);
-    task2.setStartDelayInSeconds(3000);
+    task2.setStartDelayInMillis(3000000);
 
     flowActor.runForAction(new Action.TaskUpdate(task2));
     assertEquals(
@@ -273,20 +272,20 @@ public class FlowActorTest extends ActorBaseTest {
     flow.getFlowDef()
         .setTasks(
             List.of(
-                List.of(new TaskDef("task1", "noop", null, null)),
-                List.of(new TaskDef("task2", "noop", null, null))));
-    flow.setPrepareTask(flow.newTask(new TaskDef("prepare", "noop", null, null), true));
-    flow.setMonitorTask(flow.newTask(new TaskDef("monitor", "noop", null, null), true));
+                List.of(new TaskDef("task1", "noop", null)),
+                List.of(new TaskDef("task2", "noop", null))));
+    flow.setPrepareTask(flow.newTask(new TaskDef("prepare", "noop", null), true));
+    flow.setMonitorTask(flow.newTask(new TaskDef("monitor", "noop", null), true));
 
-    Task task1 = flow.newTask(new TaskDef("task1", "noop", null, null), false);
+    Task task1 = flow.newTask(new TaskDef("task1", "noop", null), false);
     task1.setStatus(Task.Status.FAILED);
     flow.addFinishedTask(task1);
     flowActor.runForAction(new Action.FlowTaskRetry("task1"));
     verify(context, times(1)).cloneTask(any());
 
-    Task task2 = flow.newTask(new TaskDef("task1", "noop", Map.of(), null), false);
+    Task task2 = flow.newTask(new TaskDef("task1", "noop", null), false);
     task2.setStatus(Task.Status.FAILED);
-    task2.setStartDelayInSeconds(3000);
+    task2.setStartDelayInMillis(3000000);
     flowActor.runForAction(new Action.TaskUpdate(task2));
     assertEquals(
         Set.of(new Action.FlowTaskRetry("task1")), flowActor.getScheduledActions().keySet());
@@ -304,7 +303,7 @@ public class FlowActorTest extends ActorBaseTest {
 
   @Test
   public void testTaskWakeUpWithRunningTask() {
-    Task task1 = flow.newTask(new TaskDef("task1", "noop", null, null), false);
+    Task task1 = flow.newTask(new TaskDef("task1", "noop", null), false);
     task1.setStatus(Task.Status.FAILED);
     flow.addFinishedTask(task1);
     flowActor.runForAction(new Action.FlowTaskRetry("task1"));
@@ -323,9 +322,9 @@ public class FlowActorTest extends ActorBaseTest {
     when(context.schedule(any(), anyLong())).thenReturn(future);
     when(future.cancel(false)).thenReturn(true);
 
-    Task task1 = flow.newTask(new TaskDef("task1", "noop", null, null), false);
+    Task task1 = flow.newTask(new TaskDef("task1", "noop", null), false);
     task1.setStatus(Task.Status.FAILED);
-    task1.setStartDelayInSeconds(3000);
+    task1.setStartDelayInMillis(3000000);
     flow.addFinishedTask(task1);
     flowActor.runForAction(Action.FLOW_RESUME);
     assertFalse(flowActor.containsChild("task1"));
@@ -344,11 +343,11 @@ public class FlowActorTest extends ActorBaseTest {
     when(context.schedule(any(), anyLong())).thenReturn(future);
     when(future.cancel(false)).thenReturn(true);
 
-    Task task1 = flow.newTask(new TaskDef("task1", "noop", null, null), false);
+    Task task1 = flow.newTask(new TaskDef("task1", "noop", null), false);
     task1.setStatus(Task.Status.FAILED);
-    task1.setStartDelayInSeconds(3000);
+    task1.setStartDelayInMillis(3000000);
     flow.addFinishedTask(task1);
-    Task task2 = flow.newTask(new TaskDef("task2", "noop", null, null), false);
+    Task task2 = flow.newTask(new TaskDef("task2", "noop", null), false);
     task2.setStatus(Task.Status.IN_PROGRESS);
     flow.updateRunningTask(task2);
     flowActor.runForAction(Action.FLOW_RESUME);
@@ -378,9 +377,9 @@ public class FlowActorTest extends ActorBaseTest {
     when(context.schedule(any(), anyLong())).thenReturn(future);
     when(future.cancel(false)).thenReturn(true);
 
-    Task task1 = flow.newTask(new TaskDef("task1", "noop", null, null), false);
+    Task task1 = flow.newTask(new TaskDef("task1", "noop", null), false);
     task1.setStatus(Task.Status.FAILED);
-    task1.setStartDelayInSeconds(3000);
+    task1.setStartDelayInMillis(3000000);
     flow.addFinishedTask(task1);
     flowActor.runForAction(Action.FLOW_RESUME);
     assertFalse(flowActor.containsChild("task1"));

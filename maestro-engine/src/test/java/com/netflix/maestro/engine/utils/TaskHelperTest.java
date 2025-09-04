@@ -117,7 +117,7 @@ public class TaskHelperTest extends MaestroEngineBaseTest {
     WorkflowSummary workflowSummary =
         loadObject("fixtures/parameters/sample-wf-summary-params.json", WorkflowSummary.class);
     Task t = new Task();
-    TaskDef taskDef = new TaskDef("job1", Constants.MAESTRO_TASK_NAME, null, null);
+    TaskDef taskDef = new TaskDef("job1", Constants.MAESTRO_TASK_NAME, null);
     t.setTaskDef(taskDef);
     t.setSeq(1);
     Map<String, Object> summary = new HashMap<>();
@@ -161,7 +161,7 @@ public class TaskHelperTest extends MaestroEngineBaseTest {
   @Test
   public void testCheckProgress() throws Exception {
     Task t1 = new Task();
-    TaskDef taskDef1 = new TaskDef("job1", Constants.MAESTRO_TASK_NAME, null, null);
+    TaskDef taskDef1 = new TaskDef("job1", Constants.MAESTRO_TASK_NAME, null);
     t1.setTaskDef(taskDef1);
     t1.setSeq(1);
     t1.setStatus(Task.Status.COMPLETED);
@@ -176,7 +176,7 @@ public class TaskHelperTest extends MaestroEngineBaseTest {
                 "step_id",
                 "job1")));
     Task t2 = new Task();
-    TaskDef taskDef2 = new TaskDef("job3", Constants.MAESTRO_TASK_NAME, null, null);
+    TaskDef taskDef2 = new TaskDef("job3", Constants.MAESTRO_TASK_NAME, null);
     t2.setTaskDef(taskDef2);
     t2.setSeq(2);
     t2.setStatus(Task.Status.COMPLETED);
@@ -205,7 +205,7 @@ public class TaskHelperTest extends MaestroEngineBaseTest {
     Assert.assertFalse(actual.isPresent());
 
     Task t3 = new Task();
-    TaskDef taskDef3 = new TaskDef("job.2", Constants.MAESTRO_TASK_NAME, null, null);
+    TaskDef taskDef3 = new TaskDef("job.2", Constants.MAESTRO_TASK_NAME, null);
     t3.setTaskDef(taskDef3);
     t3.setSeq(2);
     t3.setStatus(Task.Status.FAILED);
@@ -232,7 +232,7 @@ public class TaskHelperTest extends MaestroEngineBaseTest {
   @Test
   public void testCheckProgressWithRetry() throws Exception {
     Task t1 = new Task();
-    TaskDef taskDef1 = new TaskDef("job1", Constants.MAESTRO_TASK_NAME, null, null);
+    TaskDef taskDef1 = new TaskDef("job1", Constants.MAESTRO_TASK_NAME, null);
     t1.setTaskDef(taskDef1);
     t1.setSeq(1);
     t1.setStatus(Task.Status.COMPLETED);
@@ -247,7 +247,7 @@ public class TaskHelperTest extends MaestroEngineBaseTest {
                 "step_id",
                 "job1")));
     Task t2 = new Task();
-    TaskDef taskDef2 = new TaskDef("job3", Constants.MAESTRO_TASK_NAME, null, null);
+    TaskDef taskDef2 = new TaskDef("job3", Constants.MAESTRO_TASK_NAME, null);
     t2.setTaskDef(taskDef2);
     t2.setSeq(2);
     t2.setStatus(Task.Status.IN_PROGRESS);
@@ -264,7 +264,7 @@ public class TaskHelperTest extends MaestroEngineBaseTest {
     Map<String, Task> realTaskMap = twoItemMap("job1", t1, "job3", t2);
 
     Task t3 = new Task();
-    TaskDef taskDef3 = new TaskDef("job.2", Constants.MAESTRO_TASK_NAME, null, null);
+    TaskDef taskDef3 = new TaskDef("job.2", Constants.MAESTRO_TASK_NAME, null);
     t3.setTaskDef(taskDef3);
     t3.setSeq(2);
     t3.setStatus(Task.Status.FAILED);
@@ -299,7 +299,7 @@ public class TaskHelperTest extends MaestroEngineBaseTest {
   @Test
   public void testCheckProgressForRestart() throws Exception {
     Task t1 = new Task();
-    TaskDef taskDef1 = new TaskDef("job3", Constants.MAESTRO_TASK_NAME, null, null);
+    TaskDef taskDef1 = new TaskDef("job3", Constants.MAESTRO_TASK_NAME, null);
     t1.setTaskDef(taskDef1);
     t1.setSeq(1);
     t1.setStatus(Task.Status.COMPLETED);
@@ -322,7 +322,7 @@ public class TaskHelperTest extends MaestroEngineBaseTest {
         TaskHelper.checkProgress(realTaskMap, workflowSummary, overview, true);
     Assert.assertEquals(Task.Status.FAILED_WITH_TERMINAL_ERROR, actual.get());
 
-    TaskDef taskDef2 = new TaskDef("job.2", Constants.MAESTRO_TASK_NAME, null, null);
+    TaskDef taskDef2 = new TaskDef("job.2", Constants.MAESTRO_TASK_NAME, null);
     t1.setTaskDef(taskDef2);
     overview =
         TaskHelper.computeOverview(
@@ -335,7 +335,7 @@ public class TaskHelperTest extends MaestroEngineBaseTest {
   @Test
   public void testCheckProgressInvalid() throws Exception {
     Task t1 = new Task();
-    TaskDef taskDef1 = new TaskDef("job4", Constants.MAESTRO_TASK_NAME, null, null);
+    TaskDef taskDef1 = new TaskDef("job4", Constants.MAESTRO_TASK_NAME, null);
     t1.setTaskDef(taskDef1);
     t1.setSeq(1);
     t1.setStatus(Task.Status.COMPLETED);
@@ -372,7 +372,7 @@ public class TaskHelperTest extends MaestroEngineBaseTest {
   @Test
   public void testCheckProgressWhileNotFinal() throws Exception {
     Task t1 = new Task();
-    TaskDef taskDef1 = new TaskDef("job1", Constants.MAESTRO_TASK_NAME, null, null);
+    TaskDef taskDef1 = new TaskDef("job1", Constants.MAESTRO_TASK_NAME, null);
     t1.setTaskDef(taskDef1);
     t1.setSeq(1);
     t1.setStatus(Task.Status.COMPLETED);
@@ -387,7 +387,7 @@ public class TaskHelperTest extends MaestroEngineBaseTest {
                 "step_id",
                 "job1")));
     Task t2 = new Task();
-    TaskDef taskDef2 = new TaskDef("job3", Constants.MAESTRO_TASK_NAME, null, null);
+    TaskDef taskDef2 = new TaskDef("job3", Constants.MAESTRO_TASK_NAME, null);
     t2.setTaskDef(taskDef2);
     t2.setSeq(2);
     t2.setStatus(Task.Status.FAILED);
@@ -404,7 +404,7 @@ public class TaskHelperTest extends MaestroEngineBaseTest {
     Map<String, Task> realTaskMap = twoItemMap("job1", t1, "job3", t2);
 
     Task t3 = new Task();
-    TaskDef taskDef3 = new TaskDef("job.2", Constants.MAESTRO_TASK_NAME, null, null);
+    TaskDef taskDef3 = new TaskDef("job.2", Constants.MAESTRO_TASK_NAME, null);
     t3.setTaskDef(taskDef3);
     t3.setSeq(2);
     t3.setStatus(Task.Status.FAILED);

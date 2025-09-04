@@ -56,6 +56,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -136,6 +137,13 @@ public final class StepRuntimeSummary {
   @JsonIgnore @Nullable private boolean ignoreFailureMode;
   // to pass the latest pending action to step runtime used by foreach restart
   @JsonIgnore @Setter @Nullable private StepAction pendingAction;
+
+  // to hold the next polling interval in millis, not persisted to db.
+  @Getter(AccessLevel.NONE)
+  @Setter(AccessLevel.PACKAGE)
+  @JsonIgnore
+  @Nullable
+  private Long nextPollingDelayInMillis;
 
   @Builder
   StepRuntimeSummary(
@@ -411,5 +419,14 @@ public final class StepRuntimeSummary {
                     && action.getWorkflowInstanceId() == summary.getWorkflowInstanceId()
                     && action.getWorkflowRunId() == summary.getWorkflowRunId()
                     && action.getStepId().equals(getStepId())));
+  }
+
+  /** Return nextPollingDelayInMillis value and reset its value. */
+  @SuppressWarnings({"PMD.NullAssignment"})
+  @JsonIgnore
+  public Long getAndResetNextPollingDelayInMillis() {
+    Long ret = nextPollingDelayInMillis;
+    nextPollingDelayInMillis = null;
+    return ret;
   }
 }

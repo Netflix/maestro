@@ -131,11 +131,11 @@ public class SubworkflowStepRuntimeTest extends MaestroBaseTest {
         subworkflowStepRuntime.execute(workflowSummary, step, runtimeSummary);
 
     verify(instanceDao, times(1)).getWorkflowInstanceRunByUuid("sub-workflow", "existing-uuid-123");
-    assertEquals(StepRuntime.State.CONTINUE, result.getState());
-    assertNotNull(result.getArtifacts());
+    assertEquals(StepRuntime.State.CONTINUE, result.state());
+    assertNotNull(result.artifacts());
 
     SubworkflowArtifact artifact =
-        (SubworkflowArtifact) result.getArtifacts().get(Artifact.Type.SUBWORKFLOW.key());
+        (SubworkflowArtifact) result.artifacts().get(Artifact.Type.SUBWORKFLOW.key());
     assertNotNull(artifact);
     assertEquals("sub-workflow", artifact.getSubworkflowId());
     assertEquals(1L, artifact.getSubworkflowVersionId());
@@ -143,8 +143,8 @@ public class SubworkflowStepRuntimeTest extends MaestroBaseTest {
     assertEquals(1L, artifact.getSubworkflowRunId());
     assertEquals(subworkflowUuid, artifact.getSubworkflowUuid());
 
-    assertEquals(1, result.getTimeline().size());
-    TimelineLogEvent logEvent = (TimelineLogEvent) result.getTimeline().getFirst();
+    assertEquals(1, result.timeline().size());
+    TimelineLogEvent logEvent = (TimelineLogEvent) result.timeline().getFirst();
     assertEquals("Started a subworkflow with uuid: " + subworkflowUuid, logEvent.getMessage());
   }
 

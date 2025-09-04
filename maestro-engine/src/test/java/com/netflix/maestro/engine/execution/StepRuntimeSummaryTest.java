@@ -66,6 +66,15 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class StepRuntimeSummaryTest extends MaestroEngineBaseTest {
+  private final StepRuntimeSummary summary =
+      StepRuntimeSummary.builder()
+          .stepId("test")
+          .stepAttemptId(1)
+          .stepInstanceUuid("uuid")
+          .stepName("testStep")
+          .stepInstanceId(1)
+          .signalDependencies(new SignalDependencies())
+          .build();
 
   @BeforeClass
   public static void init() {

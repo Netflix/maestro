@@ -80,6 +80,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -159,7 +160,8 @@ public class MaestroTask implements FlowTask {
       StepRuntimeSummary runtimeSummary =
           createStepRuntimeSummary(task, stepDefinition, workflowSummary, dependencies);
       task.getOutputData().put(Constants.STEP_RUNTIME_SUMMARY_FIELD, runtimeSummary);
-      task.setStartDelayInSeconds(Translator.DEFAULT_FLOW_TASK_DELAY); // reset it to default
+      task.setStartDelayInMillis(
+          Translator.DEFAULT_FLOW_TASK_DELAY_IN_MILLIS); // reset it to default
       LOG.info(
           "Created a step instance {} for flow instance [{}] with status [{}]",
           runtimeSummary.getIdentity(),
@@ -709,19 +711,24 @@ public class MaestroTask implements FlowTask {
 
   private void configTaskStartDelay(
       Task task, StepRuntimeSummary runtimeSummary, boolean firstCall) {
-    Long callbackInSecs = null;
-    if (firstCall || runtimeSummary.getPendingRecords().isEmpty()) { // no state change
-      callbackInSecs = stepRuntimeCallbackDelayPolicy.getCallBackDelayInSecs(runtimeSummary);
+    Long delayInMillis = null;
+    if (!firstCall) {
+      delayInMillis = runtimeSummary.getAndResetNextPollingDelayInMillis();
     }
-    if (callbackInSecs != null) {
+    if (delayInMillis == null
+        && (firstCall || runtimeSummary.getPendingRecords().isEmpty())) { // no state change
+      var delay = stepRuntimeCallbackDelayPolicy.getCallBackDelayInSecs(runtimeSummary);
+      delayInMillis = delay == null ? null : TimeUnit.SECONDS.toMillis(delay);
+    }
+    if (delayInMillis != null) {
       LOG.trace(
           "Set an initial customized callback [{}] in seconds for step [{}] with an initial status [{}]",
-          callbackInSecs,
+          delayInMillis,
           runtimeSummary.getIdentity(),
           runtimeSummary.getRuntimeState().getStatus());
-      task.setStartDelayInSeconds(callbackInSecs);
+      task.setStartDelayInMillis(delayInMillis);
     } else {
-      task.setStartDelayInSeconds(Translator.DEFAULT_FLOW_TASK_DELAY);
+      task.setStartDelayInMillis(Translator.DEFAULT_FLOW_TASK_DELAY_IN_MILLIS);
     }
   }
 

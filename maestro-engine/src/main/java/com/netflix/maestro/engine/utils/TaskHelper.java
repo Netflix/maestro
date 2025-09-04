@@ -36,6 +36,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -335,15 +336,16 @@ public final class TaskHelper {
       case PLATFORM_FAILED:
       case TIMEOUT_FAILED:
         task.setStatus(Task.Status.FAILED);
-        task.setStartDelayInSeconds(
-            runtimeSummary
-                .getStepRetry()
-                .getNextRetryDelay(runtimeSummary.getRuntimeState().getStatus()));
+        task.setStartDelayInMillis(
+            TimeUnit.SECONDS.toMillis(
+                runtimeSummary
+                    .getStepRetry()
+                    .getNextRetryDelay(runtimeSummary.getRuntimeState().getStatus())));
         break;
       case FATALLY_FAILED:
       case INTERNALLY_FAILED:
         task.setStatus(Task.Status.FAILED);
-        task.setStartDelayInSeconds(Translator.DEFAULT_FLOW_TASK_DELAY);
+        task.setStartDelayInMillis(Translator.DEFAULT_FLOW_TASK_DELAY_IN_MILLIS);
         break;
       case STOPPED:
         task.setStatus(Task.Status.CANCELED);

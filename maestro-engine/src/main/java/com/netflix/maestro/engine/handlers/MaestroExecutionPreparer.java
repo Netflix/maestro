@@ -99,8 +99,7 @@ public class MaestroExecutionPreparer implements ExecutionPreparer {
                 .collect(
                     Collectors.toMap(
                         StepInstance::getStepId,
-                        si ->
-                            new TaskDef(si.getStepId(), Constants.MAESTRO_TASK_NAME, null, null)));
+                        si -> new TaskDef(si.getStepId(), Constants.MAESTRO_TASK_NAME, null)));
 
         stepViews.values().stream()
             .map(si -> deriveTaskFromStepInstance(si, taskDefMap))
@@ -272,7 +271,7 @@ public class MaestroExecutionPreparer implements ExecutionPreparer {
     task.setSeq(stepInstance.getStepInstanceId());
     task.setOutputData(new HashMap<>());
     task.getOutputData().put(Constants.STEP_RUNTIME_SUMMARY_FIELD, runtimeSummary);
-    task.setStartDelayInSeconds(Translator.DEFAULT_FLOW_TASK_DELAY); // reset it to default
+    task.setStartDelayInMillis(Translator.DEFAULT_FLOW_TASK_DELAY_IN_MILLIS); // reset it to default
     task.setRetryCount(stepInstance.getStepAttemptId() - 1);
     task.setStartTime(stepInstance.getRuntimeState().getStartTime());
     task.setEndTime(stepInstance.getRuntimeState().getEndTime());

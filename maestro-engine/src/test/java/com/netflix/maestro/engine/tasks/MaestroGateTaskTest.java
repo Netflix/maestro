@@ -52,15 +52,14 @@ public class MaestroGateTaskTest extends MaestroEngineBaseTest {
     gateTask = new MaestroGateTask(stepInstanceDao, MAPPER);
 
     joinTask = new Task();
-    TaskDef taskDef =
-        new TaskDef("#job2", StepType.JOIN.name(), null, Collections.singletonList("job1"));
+    TaskDef taskDef = new TaskDef("#job2", StepType.JOIN.name(), Collections.singletonList("job1"));
     joinTask.setTaskDef(taskDef);
     joinTask.setTaskId("test-join-id");
 
     Task task1 = new Task();
     task1.setStatus(Task.Status.FAILED);
     task1.setTaskId("test-join-id");
-    TaskDef taskDef1 = new TaskDef("job1", Constants.MAESTRO_TASK_NAME, null, null);
+    TaskDef taskDef1 = new TaskDef("job1", Constants.MAESTRO_TASK_NAME, null);
     task1.setTaskDef(taskDef1);
     var state = new StepRuntimeState();
     state.setStatus(StepInstance.Status.COMPLETED_WITH_ERROR);

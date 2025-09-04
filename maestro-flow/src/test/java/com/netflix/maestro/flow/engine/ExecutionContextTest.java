@@ -89,7 +89,7 @@ public class ExecutionContextTest extends FlowBaseTest {
 
   @Test
   public void testPrepareDone() {
-    Task prepare = flow.newTask(new TaskDef("prepare", "noop", null, null), true);
+    Task prepare = flow.newTask(new TaskDef("prepare", "noop", null), true);
     flow.setPrepareTask(prepare);
     assertNull(flow.getPrepareTask().getStartTime());
     prepare.setStatus(Task.Status.COMPLETED);
@@ -102,7 +102,7 @@ public class ExecutionContextTest extends FlowBaseTest {
 
   @Test
   public void testPrepareRetry() {
-    Task prepare = flow.newTask(new TaskDef("prepare", "noop", null, null), true);
+    Task prepare = flow.newTask(new TaskDef("prepare", "noop", null), true);
     flow.setPrepareTask(prepare);
     assertNull(flow.getPrepareTask().getStartTime());
 
@@ -117,7 +117,7 @@ public class ExecutionContextTest extends FlowBaseTest {
 
   @Test
   public void testRefresh() {
-    Task monitor = flow.newTask(new TaskDef("monitor", "noop", null, null), true);
+    Task monitor = flow.newTask(new TaskDef("monitor", "noop", null), true);
     flow.setMonitorTask(monitor);
 
     context.refresh(flow);
@@ -149,35 +149,35 @@ public class ExecutionContextTest extends FlowBaseTest {
 
   @Test
   public void testStart() {
-    Task task = flow.newTask(new TaskDef("task", "noop", null, null), false);
+    Task task = flow.newTask(new TaskDef("task", "noop", null), false);
     context.start(flow, task);
     verify(flowTask, times(1)).start(flow, task);
   }
 
   @Test
   public void testExecute() {
-    Task task = flow.newTask(new TaskDef("task", "noop", null, null), false);
+    Task task = flow.newTask(new TaskDef("task", "noop", null), false);
     context.execute(flow, task);
     verify(flowTask, times(1)).execute(flow, task);
   }
 
   @Test
   public void testCancel() {
-    Task task = flow.newTask(new TaskDef("task", "noop", null, null), false);
+    Task task = flow.newTask(new TaskDef("task", "noop", null), false);
     context.cancel(flow, task);
     verify(flowTask, times(1)).cancel(flow, task);
   }
 
   @Test
   public void testCloneTask() {
-    Task task = flow.newTask(new TaskDef("task", "noop", null, null), false);
+    Task task = flow.newTask(new TaskDef("task", "noop", null), false);
     context.cloneTask(task);
     verify(executionPreparer, times(1)).cloneTask(task);
   }
 
   @Test
   public void testCloneTaskException() {
-    Task task = flow.newTask(new TaskDef("task", "noop", null, null), false);
+    Task task = flow.newTask(new TaskDef("task", "noop", null), false);
     Mockito.doThrow(new RuntimeException("test")).when(executionPreparer).cloneTask(task);
     AssertHelper.assertThrows(
         "should throw",
@@ -224,7 +224,7 @@ public class ExecutionContextTest extends FlowBaseTest {
 
   @Test
   public void testResumeFlowWithPrepare() {
-    Task prepare = flow.newTask(new TaskDef("prepare", "noop", null, null), true);
+    Task prepare = flow.newTask(new TaskDef("prepare", "noop", null), true);
     flow.setPrepareTask(prepare);
     prepare.setStatus(Task.Status.COMPLETED);
     when(executionPreparer.resume(flow)).thenReturn(true);
