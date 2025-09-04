@@ -16,10 +16,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.MaestroBaseTest;
 import com.netflix.maestro.engine.concurrency.InstanceStepConcurrencyHandler;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
@@ -31,6 +33,7 @@ import com.netflix.maestro.engine.execution.WorkflowSummary;
 import com.netflix.maestro.engine.handlers.WorkflowActionHandler;
 import com.netflix.maestro.engine.handlers.WorkflowInstanceActionHandler;
 import com.netflix.maestro.engine.utils.StepHelper;
+import com.netflix.maestro.exceptions.MaestroRetryableError;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.artifact.SubworkflowArtifact;
 import com.netflix.maestro.models.definition.StepType;
@@ -43,6 +46,7 @@ import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.parameter.StringParameter;
 import com.netflix.maestro.models.timeline.TimelineLogEvent;
 import com.netflix.maestro.queue.MaestroQueueSystem;
+import com.netflix.maestro.queue.jobevents.InstanceActionJobEvent;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -164,5 +168,53 @@ public class SubworkflowStepRuntimeTest extends MaestroBaseTest {
                       workflowSummary, runtimeSummary, null, null, "test-dedup", step.getSync());
               assertEquals(!v, runRequest.getInitiator().getParent().isAsync());
             });
+  }
+
+  @Test
+  public void testTerminateWithWakeUpUnderlyingActor() {
+    workflowSummary.setGroupInfo(5L);
+
+    SubworkflowArtifact subworkflowArtifact = new SubworkflowArtifact();
+    subworkflowArtifact.setSubworkflowId("sub-workflow");
+    subworkflowArtifact.setSubworkflowVersionId(2L);
+    subworkflowArtifact.setSubworkflowInstanceId(200L);
+    subworkflowArtifact.setSubworkflowRunId(3L);
+    subworkflowArtifact.setSubworkflowUuid("sub-uuid-123");
+
+    StepRuntimeSummary runtimeSummary =
+        StepRuntimeSummary.builder()
+            .stepId("subworkflow-step")
+            .type(StepType.SUBWORKFLOW)
+            .artifacts(Map.of(Artifact.Type.SUBWORKFLOW.key(), subworkflowArtifact))
+            .stepRetry(StepInstance.StepRetry.from(null))
+            .build();
+
+    when(instanceDao.getWorkflowInstanceStatus("sub-workflow", 200L, 3L))
+        .thenReturn(WorkflowInstance.Status.IN_PROGRESS);
+
+    AssertHelper.assertThrows(
+        "should throw retryable error since status is not terminal",
+        MaestroRetryableError.class,
+        "is not done and will retry it",
+        () -> subworkflowStepRuntime.terminate(workflowSummary, runtimeSummary));
+
+    // verify that wakeUpUnderlyingActor was called with correct info
+    verify(queueSystem)
+        .notify(
+            argThat(
+                msg -> {
+                  if (!msg.msgId().equals("[FLOW][sub-workflow]1")) {
+                    return false;
+                  }
+                  if (msg.event() instanceof InstanceActionJobEvent event) {
+                    return event.getWorkflowId().equals("sub-workflow")
+                        && event.getGroupInfo() == 5L
+                        && event.getInstanceRunIds() != null
+                        && event.getInstanceRunIds().size() == 1
+                        && event.getInstanceRunIds().get(200L) != null
+                        && event.getInstanceRunIds().get(200L) == 3L;
+                  }
+                  return false;
+                }));
   }
 }
