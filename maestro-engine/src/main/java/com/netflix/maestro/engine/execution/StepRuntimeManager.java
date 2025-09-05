@@ -105,34 +105,35 @@ public final class StepRuntimeManager {
     StepRuntime.Result result =
         getStepRuntime(runtimeSummary.getType())
             .start(workflowSummary, step, cloneSummary(runtimeSummary));
-    runtimeSummary.mergeRuntimeUpdate(result.getTimeline(), result.getArtifacts());
-    switch (result.getState()) {
+    runtimeSummary.mergeRuntimeUpdate(result.timeline(), result.artifacts());
+    runtimeSummary.setNextPollingDelayInMillis(result.nextPollingDelayInMillis());
+    switch (result.state()) {
       case CONTINUE:
       case DONE:
         runtimeSummary.markExecuting(tracingManager);
         return result.shouldPersist();
       case USER_ERROR:
         markTerminatedWithMetric(
-            runtimeSummary, result.getState(), getUserErrorStatus(runtimeSummary));
+            runtimeSummary, result.state(), getUserErrorStatus(runtimeSummary));
         return false;
       case PLATFORM_ERROR:
         markTerminatedWithMetric(
-            runtimeSummary, result.getState(), getPlatformErrorStatus(runtimeSummary));
+            runtimeSummary, result.state(), getPlatformErrorStatus(runtimeSummary));
         return false;
       case FATAL_ERROR:
         markTerminatedWithMetric(
-            runtimeSummary, result.getState(), StepInstance.Status.FATALLY_FAILED);
+            runtimeSummary, result.state(), StepInstance.Status.FATALLY_FAILED);
         return false;
       case STOPPED:
-        markTerminatedWithMetric(runtimeSummary, result.getState(), StepInstance.Status.STOPPED);
+        markTerminatedWithMetric(runtimeSummary, result.state(), StepInstance.Status.STOPPED);
         return false;
       case TIMED_OUT:
-        markTerminatedWithMetric(runtimeSummary, result.getState(), StepInstance.Status.TIMED_OUT);
+        markTerminatedWithMetric(runtimeSummary, result.state(), StepInstance.Status.TIMED_OUT);
         return false;
       default:
         throw new MaestroInternalError(
             "Entered an unexpected result state [%s] for step %s when starting",
-            result.getState(), runtimeSummary.getIdentity());
+            result.state(), runtimeSummary.getIdentity());
     }
   }
 
@@ -148,8 +149,9 @@ public final class StepRuntimeManager {
     StepRuntime.Result result =
         getStepRuntime(runtimeSummary.getType())
             .execute(workflowSummary, step, cloneSummary(runtimeSummary));
-    runtimeSummary.mergeRuntimeUpdate(result.getTimeline(), result.getArtifacts());
-    switch (result.getState()) {
+    runtimeSummary.mergeRuntimeUpdate(result.timeline(), result.artifacts());
+    runtimeSummary.setNextPollingDelayInMillis(result.nextPollingDelayInMillis());
+    switch (result.state()) {
       case CONTINUE:
         return true;
       case DONE:
@@ -157,26 +159,26 @@ public final class StepRuntimeManager {
         return result.shouldPersist();
       case USER_ERROR:
         markTerminatedWithMetric(
-            runtimeSummary, result.getState(), getUserErrorStatus(runtimeSummary));
+            runtimeSummary, result.state(), getUserErrorStatus(runtimeSummary));
         return false;
       case PLATFORM_ERROR:
         markTerminatedWithMetric(
-            runtimeSummary, result.getState(), getPlatformErrorStatus(runtimeSummary));
+            runtimeSummary, result.state(), getPlatformErrorStatus(runtimeSummary));
         return false;
       case FATAL_ERROR:
         markTerminatedWithMetric(
-            runtimeSummary, result.getState(), StepInstance.Status.FATALLY_FAILED);
+            runtimeSummary, result.state(), StepInstance.Status.FATALLY_FAILED);
         return false;
       case STOPPED:
-        markTerminatedWithMetric(runtimeSummary, result.getState(), StepInstance.Status.STOPPED);
+        markTerminatedWithMetric(runtimeSummary, result.state(), StepInstance.Status.STOPPED);
         return false;
       case TIMED_OUT:
-        markTerminatedWithMetric(runtimeSummary, result.getState(), StepInstance.Status.TIMED_OUT);
+        markTerminatedWithMetric(runtimeSummary, result.state(), StepInstance.Status.TIMED_OUT);
         return false;
       default:
         throw new MaestroInternalError(
             "Entered an unexpected result state [%s] for step %s when executing",
-            result.getState(), runtimeSummary.getIdentity());
+            result.state(), runtimeSummary.getIdentity());
     }
   }
 
@@ -212,10 +214,10 @@ public final class StepRuntimeManager {
           getStepRuntime(runtimeSummary.getType())
               .terminate(workflowSummary, cloneSummary(runtimeSummary));
       Checks.checkTrue(
-          result.getState() == StepRuntime.State.STOPPED,
+          result.state() == StepRuntime.State.STOPPED,
           "terminate call should return a STOPPED state in result: %s",
           result);
-      runtimeSummary.mergeRuntimeUpdate(result.getTimeline(), result.getArtifacts());
+      runtimeSummary.mergeRuntimeUpdate(result.timeline(), result.artifacts());
       runtimeSummary.markTerminated(status, tracingManager);
     } catch (RuntimeException e) {
       metrics.counter(

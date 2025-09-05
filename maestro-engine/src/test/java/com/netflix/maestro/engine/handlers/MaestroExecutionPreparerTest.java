@@ -81,8 +81,8 @@ public class MaestroExecutionPreparerTest extends MaestroEngineBaseTest {
             "[sample-dag-test-3][1][1]");
     flow.setInput(Map.of(Constants.WORKFLOW_SUMMARY_FIELD, workflowSummary));
     flow.setFlowDef(new FlowDef());
-    flow.getFlowDef().setTasks(List.of(List.of(new TaskDef("task1", "noop", null, null))));
-    task = flow.newTask(new TaskDef("task1", "noop", null, null), true);
+    flow.getFlowDef().setTasks(List.of(List.of(new TaskDef("task1", "noop", null))));
+    task = flow.newTask(new TaskDef("task1", "noop", null), true);
   }
 
   @Test

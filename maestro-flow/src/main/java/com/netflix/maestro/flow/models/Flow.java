@@ -140,7 +140,7 @@ public class Flow {
     task.setStatus(Task.Status.IN_PROGRESS);
     task.setReasonForIncompletion(null);
     task.setOutputData(new HashMap<>());
-    task.setStartDelayInSeconds(0);
+    task.setStartDelayInMillis(0);
     task.setRetryCount(0);
     // task startTime should be set when execution start, not creation time
     if (!inline) {

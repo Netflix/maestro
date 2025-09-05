@@ -38,7 +38,7 @@ public class TaskActorTest extends ActorBaseTest {
   @Before
   public void setUp() {
     flow = createFlow();
-    task = flow.newTask(new TaskDef("task1", "noop", null, null), false);
+    task = flow.newTask(new TaskDef("task1", "noop", null), false);
     flowActor = new FlowActor(flow, createGroupActor(), context);
     taskActor = new TaskActor(task, flow, flowActor, context);
   }
@@ -98,7 +98,7 @@ public class TaskActorTest extends ActorBaseTest {
   public void testRunForActionTaskPingForActiveRunningTaskWithChange() {
     task.setStartTime(System.currentTimeMillis());
     task.setTimeoutInMillis(3600000L);
-    task.setStartDelayInSeconds(3000);
+    task.setStartDelayInMillis(3000000);
     when(context.execute(flow, task)).thenReturn(true);
 
     taskActor.runForAction(Action.TASK_PING);
@@ -126,7 +126,7 @@ public class TaskActorTest extends ActorBaseTest {
   @Test
   public void testRunForActionTaskPingForTerminatedTask() {
     task.setStatus(Task.Status.FAILED);
-    task.setStartDelayInSeconds(3000);
+    task.setStartDelayInMillis(3000000);
     when(context.execute(flow, task)).thenReturn(false);
 
     taskActor.runForAction(Action.TASK_PING);
@@ -145,7 +145,7 @@ public class TaskActorTest extends ActorBaseTest {
 
   private void verifyExecute(Action action, boolean activeFlag) {
     task.setActive(activeFlag);
-    task.setStartDelayInSeconds(3000L);
+    task.setStartDelayInMillis(3000000L);
     when(context.execute(flow, task)).thenReturn(false);
 
     taskActor.runForAction(action);

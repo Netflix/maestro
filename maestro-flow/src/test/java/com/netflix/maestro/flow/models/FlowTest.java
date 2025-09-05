@@ -31,7 +31,7 @@ public class FlowTest extends FlowBaseTest {
   @Before
   public void setUp() {
     flow = createFlow();
-    task = flow.newTask(new TaskDef("task1", "noop", null, null), false);
+    task = flow.newTask(new TaskDef("task1", "noop", null), false);
   }
 
   @Test
@@ -53,7 +53,7 @@ public class FlowTest extends FlowBaseTest {
 
   @Test
   public void testUpdateRunningTask() {
-    var updatedTask = flow.newTask(new TaskDef("task1", "noop1", null, null), true);
+    var updatedTask = flow.newTask(new TaskDef("task1", "noop1", null), true);
     assertEquals(Set.of("task1"), flow.getRunningTasks().keySet());
     flow.updateRunningTask(updatedTask);
     assertEquals(Map.of("task1", updatedTask), flow.getRunningTasks());
@@ -92,7 +92,7 @@ public class FlowTest extends FlowBaseTest {
     assertEquals(1, flow.getRunningTasks().size());
     assertEquals(Set.of("task1"), flow.getRunningTasks().keySet());
 
-    var taskDef = new TaskDef("task2", "noop", null, null);
+    var taskDef = new TaskDef("task2", "noop", null);
     var task2 = flow.newTask(taskDef, false);
     assertEquals(taskDef, task2.getTaskDef());
     assertTrue(task2.isActive());
@@ -106,7 +106,7 @@ public class FlowTest extends FlowBaseTest {
     assertEquals(1, flow.getRunningTasks().size());
     assertEquals(Set.of("task1"), flow.getRunningTasks().keySet());
 
-    var taskDef = new TaskDef("task2", "noop", null, null);
+    var taskDef = new TaskDef("task2", "noop", null);
     var task2 = flow.newTask(taskDef, true);
     assertEquals(taskDef, task2.getTaskDef());
     assertTrue(task2.isActive());

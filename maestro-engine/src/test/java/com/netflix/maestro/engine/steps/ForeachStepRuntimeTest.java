@@ -321,7 +321,7 @@ public class ForeachStepRuntimeTest extends MaestroEngineBaseTest {
         .thenReturn(prevArtifact);
 
     StepRuntime.Result res = foreachStepRuntime.start(workflowSummary, null, runtimeSummary);
-    ForeachArtifact artifact = res.getArtifacts().get(Type.FOREACH.key()).asForeach();
+    ForeachArtifact artifact = res.artifacts().get(Type.FOREACH.key()).asForeach();
     assertEquals(RunPolicy.RESTART_FROM_SPECIFIC, artifact.getRunPolicy());
     assertNull(artifact.getPendingAction());
   }
@@ -372,7 +372,7 @@ public class ForeachStepRuntimeTest extends MaestroEngineBaseTest {
         .thenReturn(prevArtifact);
 
     StepRuntime.Result res = foreachStepRuntime.start(workflowSummary, null, runtimeSummary);
-    ForeachArtifact artifact = res.getArtifacts().get(Type.FOREACH.key()).asForeach();
+    ForeachArtifact artifact = res.artifacts().get(Type.FOREACH.key()).asForeach();
     assertEquals(RunPolicy.RESTART_FROM_SPECIFIC, artifact.getRunPolicy());
     assertEquals(restartConfig, artifact.getPendingAction().getRestartConfig());
     assertEquals(StepInstanceAction.RESTART, artifact.getPendingAction().getAction());

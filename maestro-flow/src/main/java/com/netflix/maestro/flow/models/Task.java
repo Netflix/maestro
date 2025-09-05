@@ -63,7 +63,7 @@ public class Task {
   private Status status;
   private String reasonForIncompletion;
   private Map<String, Object> outputData;
-  private long startDelayInSeconds; // task polling interval
+  private long startDelayInMillis; // task polling interval
   private long retryCount;
   private int pollCount;
   private boolean active = true; // flag to indicate if a running task is active or not
@@ -74,11 +74,6 @@ public class Task {
   @JsonIgnore
   public String referenceTaskName() {
     return taskDef.taskReferenceName();
-  }
-
-  @JsonIgnore
-  public Map<String, Object> getInputData() {
-    return taskDef.input();
   }
 
   @JsonIgnore

@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.engine.steps;
 
+import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
 import com.netflix.maestro.models.Constants;
@@ -27,8 +28,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 
 /**
  * Step runtime implementation. It is expected to be stateless and thread safe.
@@ -42,16 +41,35 @@ public interface StepRuntime {
   /** Maestro system user. */
   User SYSTEM_USER = User.create(Constants.MAESTRO_QUALIFIER);
 
-  /** Step runtime result. */
-  @Getter
-  @AllArgsConstructor
-  class Result {
-    @NotNull private final State state;
-    private final Map<String, Artifact> artifacts;
-    private final List<TimelineEvent> timeline;
+  /**
+   * Step runtime result.
+   *
+   * <p>Step runtime can use nextPollingDelayInMillis to control the polling interval for the next
+   * call. Note that this is just a hint. The workflow engine may choose to ignore it, e.g. using a
+   * different delay during retry backoff.
+   *
+   * @param state state of the step runtime.
+   * @param artifacts artifacts to persist
+   * @param timeline timeline to persist
+   * @param nextPollingDelayInMillis polling interval for the next execute() call.
+   */
+  record Result(
+      @NotNull State state,
+      Map<String, Artifact> artifacts,
+      List<TimelineEvent> timeline,
+      @Nullable Long nextPollingDelayInMillis) {
+
+    public Result(
+        @NotNull State state, Map<String, Artifact> artifacts, List<TimelineEvent> timeline) {
+      this(state, artifacts, timeline, null);
+    }
 
     public static Result of(State state) {
       return new Result(state, new LinkedHashMap<>(), new ArrayList<>());
+    }
+
+    public static Result of(State state, Long nextPollingDelayInMillis) {
+      return new Result(state, new LinkedHashMap<>(), new ArrayList<>(), nextPollingDelayInMillis);
     }
 
     public boolean shouldPersist() {

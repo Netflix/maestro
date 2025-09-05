@@ -19,11 +19,11 @@ package com.netflix.maestro.engine.transformation;
  * @param <R> Destination data model type.
  */
 public interface Translator<T, R> {
-  /** flow engine task default polling interval in seconds. */
-  int DEFAULT_FLOW_TASK_DELAY = 0;
+  /** flow engine task default polling interval in milliseconds. */
+  int DEFAULT_FLOW_TASK_DELAY_IN_MILLIS = 0;
 
-  /** flow engine task default reconciliation interval in seconds. */
-  int DEFAULT_FLOW_TASK_RECONCILIATION_INTERVAL = 60;
+  /** flow engine task default reconciliation interval in milliseconds. */
+  int DEFAULT_FLOW_TASK_RECONCILIATION_INTERVAL_IN_MILLIS = 60000;
 
   /**
    * Translate function.

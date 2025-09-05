@@ -39,13 +39,11 @@ public class WorkflowTranslator implements Translator<WorkflowInstance, FlowDef>
         new TaskDef(
             Constants.DEFAULT_START_TASK_NAME,
             Constants.DEFAULT_START_TASK_NAME,
-            null,
             null); // start task
     TaskDef monitor =
         new TaskDef(
             Constants.DEFAULT_END_TASK_NAME,
             Constants.DEFAULT_END_TASK_NAME,
-            null,
             wfGraph.getEndNodeIds());
 
     FlowDef flow = new FlowDef();
