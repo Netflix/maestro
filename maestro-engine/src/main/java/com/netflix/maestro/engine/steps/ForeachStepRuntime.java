@@ -979,7 +979,7 @@ public class ForeachStepRuntime implements StepRuntime {
       boolean done = artifact.getForeachOverview().getRunningStatsCount(false) == 0;
       if (!done) {
         tryTerminateQueuedInstancesIfNeeded(artifact);
-        wakeUpUnderlyingActors(workflowSummary, artifact, restartRunIdMap);
+        wakeUpUnderlyingActors(workflowSummary.getGroupInfo(), artifact, restartRunIdMap);
         throw new MaestroRetryableError(
             "Termination at foreach step %s%s is not done and will retry it.",
             workflowSummary.getIdentity(), runtimeSummary.getIdentity());
@@ -1021,7 +1021,7 @@ public class ForeachStepRuntime implements StepRuntime {
   }
 
   private void wakeUpUnderlyingActors(
-      WorkflowSummary summary, ForeachArtifact artifact, Map<Long, Long> restartRunIdMap) {
+      long groupInfo, ForeachArtifact artifact, Map<Long, Long> restartRunIdMap) {
     if (artifact.getForeachOverview().getDetails() != null) {
       var instanceRunIds =
           artifact.getForeachOverview().getDetails().flatten(e -> !e.isTerminal()).values().stream()
@@ -1035,7 +1035,7 @@ public class ForeachStepRuntime implements StepRuntime {
           });
       var msg =
           MessageDto.createMessageForWakeUp(
-              artifact.getForeachWorkflowId(), summary.getGroupInfo(), instanceRunIds);
+              artifact.getForeachWorkflowId(), groupInfo, instanceRunIds);
       queueSystem.notify(msg);
     }
   }

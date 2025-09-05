@@ -109,6 +109,7 @@ public class MaestroQueueWorkerTest extends MaestroBaseTest {
     when(dispatcher.processJobEvent(any())).thenThrow(new RuntimeException("test"));
     queueWorker.run();
     verify(dispatcher, times(1)).processJobEvent(any());
+    verify(queueDao, times(0)).remove(message);
     verify(scheduler, times(1)).schedule(any(Callable.class), anyLong(), eq(TimeUnit.MILLISECONDS));
     verify(messageQueue, times(1)).drainTo(any(), anyInt());
     verify(queueDao, times(1)).release(anyInt(), anyLong(), any());
@@ -129,6 +130,7 @@ public class MaestroQueueWorkerTest extends MaestroBaseTest {
     when(dispatcher.processJobEvent(any())).thenThrow(new MaestroInternalError("test"));
     queueWorker.run();
     verify(dispatcher, times(1)).processJobEvent(any());
+    verify(queueDao, times(1)).remove(message);
     verify(scheduler, times(0)).schedule(any(Callable.class), anyLong(), eq(TimeUnit.MILLISECONDS));
     verify(messageQueue, times(1)).drainTo(any(), anyInt());
     verify(queueDao, times(1)).release(anyInt(), anyLong(), any());
@@ -149,6 +151,7 @@ public class MaestroQueueWorkerTest extends MaestroBaseTest {
     when(dispatcher.processJobEvent(any())).thenThrow(new MaestroNotFoundException("test"));
     queueWorker.run();
     verify(dispatcher, times(1)).processJobEvent(any());
+    verify(queueDao, times(1)).remove(message);
     verify(scheduler, times(0)).schedule(any(Callable.class), anyLong(), eq(TimeUnit.MILLISECONDS));
     verify(messageQueue, times(1)).drainTo(any(), anyInt());
     verify(queueDao, times(1)).release(anyInt(), anyLong(), any());

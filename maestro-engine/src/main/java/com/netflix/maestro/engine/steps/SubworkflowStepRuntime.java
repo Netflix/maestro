@@ -321,7 +321,7 @@ public class SubworkflowStepRuntime implements StepRuntime {
 
         if (!status.isTerminal()) {
           tryTerminateQueuedInstanceIfNeeded(artifact, status);
-          wakeUpUnderlyingActor(workflowSummary, artifact);
+          wakeUpUnderlyingActor(workflowSummary.getGroupInfo(), artifact);
           throw new MaestroRetryableError(
               "Termination at subworkflow step %s%s is not done and will retry it.",
               workflowSummary.getIdentity(), runtimeSummary.getIdentity());
@@ -367,11 +367,11 @@ public class SubworkflowStepRuntime implements StepRuntime {
         artifact.getSubworkflowRunId());
   }
 
-  private void wakeUpUnderlyingActor(WorkflowSummary summary, SubworkflowArtifact artifact) {
+  private void wakeUpUnderlyingActor(long groupInfo, SubworkflowArtifact artifact) {
     var msg =
         MessageDto.createMessageForWakeUp(
             artifact.getSubworkflowId(),
-            summary.getGroupInfo(),
+            groupInfo,
             Map.of(artifact.getSubworkflowInstanceId(), artifact.getSubworkflowRunId()));
     queueSystem.notify(msg);
   }
