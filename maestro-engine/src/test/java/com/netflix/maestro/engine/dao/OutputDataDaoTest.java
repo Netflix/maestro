@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.engine.dto.OutputData;
+import com.netflix.maestro.engine.utils.TimeUtils;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.definition.StepType;
@@ -154,6 +155,7 @@ public class OutputDataDaoTest extends MaestroDaoBaseTest {
     OutputData created = outputDataOpt.get();
     verifyExpectedDTOs(created);
     assertEquals(1, created.getArtifacts().size());
+    TimeUtils.sleep(3); // Ensure modify time is different
 
     // Check Upsert
     dao.insertOrUpdateOutputData(created);

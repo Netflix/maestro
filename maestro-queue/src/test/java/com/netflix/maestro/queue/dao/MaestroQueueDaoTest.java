@@ -86,6 +86,8 @@ public class MaestroQueueDaoTest extends MaestroBaseTest {
   @Test
   public void testReplace() {
     NotificationJobEvent jobEvent2 = new NotificationJobEvent();
+    dao.addLockIfAbsent(jobEvent.getType().getQueueId());
+    dao.addLockIfAbsent(jobEvent2.getType().getQueueId());
     MessageDto enqueued = dao.enqueue(jobEvent, 123456789L);
     MessageDto replaced = dao.replace(enqueued, jobEvent2, 223456789L);
     List<MessageDto> owned =
@@ -101,8 +103,15 @@ public class MaestroQueueDaoTest extends MaestroBaseTest {
 
   @Test
   public void testDequeueUnownedMessage() {
+    // without lock, should return empty
+    int queueId = jobEvent.getType().getQueueId();
+    List<MessageDto> owned = dao.dequeueUnownedMessages(queueId, 12345L, 1);
+    assertTrue(owned.isEmpty());
+
+    // with lock, should return the enqueued message
+    dao.addLockIfAbsent(queueId);
     MessageDto enqueued = dao.enqueue(jobEvent, 12345L);
-    List<MessageDto> owned = dao.dequeueUnownedMessages(jobEvent.getType().getQueueId(), 12345L, 1);
+    owned = dao.dequeueUnownedMessages(queueId, 12345L, 1);
     assertEquals(1, owned.size());
     assertEquals(enqueued.msgId(), owned.getFirst().msgId());
     assertTrue(owned.getFirst().ownedUntil() > System.currentTimeMillis());
@@ -112,7 +121,15 @@ public class MaestroQueueDaoTest extends MaestroBaseTest {
   }
 
   @Test
+  public void testAddLock() {
+    int queueId = jobEvent.getType().getQueueId();
+    assertEquals(1, dao.addLockIfAbsent(queueId));
+    assertEquals(0, dao.addLockIfAbsent(queueId));
+  }
+
+  @Test
   public void testRelease() {
+    dao.addLockIfAbsent(jobEvent.getType().getQueueId());
     StartWorkflowJobEvent jobEvent2 = new StartWorkflowJobEvent();
     var msgs = List.of(dao.enqueue(jobEvent, 123456789L), dao.enqueue(jobEvent2, 123456789L));
     Optional<Details> errors = dao.release(jobEvent.getType().getQueueId(), 12345L, msgs);
