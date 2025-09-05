@@ -88,8 +88,7 @@ public final class MaestroQueueWorker implements Runnable {
         }
       } catch (MaestroNotFoundException | MaestroInternalError m) {
         // ignore not found exception or internal error
-        LOG.warn(
-            "[{}] got a non-retryable error for message [{}] and deleting it", name, message, m);
+        LOG.warn("[{}] got a non-retryable error for message [{}], removing it", name, message, m);
         queueDao.remove(message);
         metrics.counter(
             MetricConstants.QUEUE_WORKER_PROCESS_ERROR,
