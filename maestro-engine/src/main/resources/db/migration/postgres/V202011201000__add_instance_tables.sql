@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS maestro_step_instance (
   instance                  JSON NOT NULL,  -- use JSON to preserve the original definition, e.g. param map order
   -- above columns are readonly after creation
   runtime_state             JSONB NOT NULL,
-  dependencies              JSON,   -- input signal dependencies for a step, using JSON to preserve the map order
+  dependencies              JSONB,  -- input signal dependencies for a step
   outputs                   JSON,   -- output signal for a step, using JSON to preserve the map order
   artifacts                 JSONB,
   timeline                  TEXT[],
