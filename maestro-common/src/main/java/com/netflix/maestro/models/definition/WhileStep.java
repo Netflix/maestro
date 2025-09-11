@@ -24,10 +24,12 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 /**
- * Foreach Step definition with additional fields.
+ * While Step definition with additional fields.
  *
- * <p>Note that there is no step retry for foreach step. It might fail due to various reasons, e.g.
- * invalid SEL expression evaluation, etc. But retries won't help in those cases.
+ * <p>This step sequentially launches while loop iterations as long as the while condition (a SEL
+ * expression) evaluates to true. Note that there is no step retry for while step. It might fail due
+ * to various reasons, e.g. invalid SEL expression evaluation, etc. But retries won't help in those
+ * cases.
  */
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)

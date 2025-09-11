@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.Data;
 
-/** Foreach artifact to store foreach step loop stats overview at runtime. */
+/** While artifact to store while step loop stats overview at runtime. */
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(
