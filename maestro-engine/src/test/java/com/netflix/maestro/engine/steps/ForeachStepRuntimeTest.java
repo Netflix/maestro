@@ -34,6 +34,7 @@ import com.netflix.maestro.engine.properties.ForeachStepRuntimeProperties;
 import com.netflix.maestro.models.Actions.StepInstanceAction;
 import com.netflix.maestro.models.artifact.Artifact.Type;
 import com.netflix.maestro.models.artifact.ForeachArtifact;
+import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.initiator.ForeachInitiator;
 import com.netflix.maestro.models.initiator.UpstreamInitiator;
@@ -303,6 +304,7 @@ public class ForeachStepRuntimeTest extends MaestroEngineBaseTest {
     StepRuntimeSummary runtimeSummary =
         StepRuntimeSummary.builder()
             .stepId(STEP_ID)
+            .type(StepType.FOREACH)
             .stepAttemptId(STEP_ATTEMPT_ID)
             .artifacts(new HashMap<>())
             .params(params)
@@ -354,6 +356,7 @@ public class ForeachStepRuntimeTest extends MaestroEngineBaseTest {
     StepRuntimeSummary runtimeSummary =
         StepRuntimeSummary.builder()
             .stepId(STEP_ID)
+            .type(StepType.FOREACH)
             .stepAttemptId(STEP_ATTEMPT_ID)
             .artifacts(new HashMap<>())
             .params(params)

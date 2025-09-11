@@ -29,6 +29,7 @@ import com.netflix.maestro.models.Defaults;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.artifact.ForeachArtifact;
 import com.netflix.maestro.models.artifact.SubworkflowArtifact;
+import com.netflix.maestro.models.artifact.WhileArtifact;
 import com.netflix.maestro.models.definition.TagList;
 import com.netflix.maestro.models.instance.StepAttemptState;
 import com.netflix.maestro.models.instance.StepInstance;
@@ -1011,6 +1012,14 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
     Artifact artifact =
         getLatestArtifact(workflowId, workflowInstanceId, stepId, Artifact.Type.FOREACH.key());
     return artifact != null ? artifact.asForeach() : null;
+  }
+
+  /** Get the latest run's while step artifact from DB for a given instance. */
+  public WhileArtifact getLatestWhileArtifact(
+      String workflowId, long workflowInstanceId, String stepId) {
+    Artifact artifact =
+        getLatestArtifact(workflowId, workflowInstanceId, stepId, Artifact.Type.WHILE.key());
+    return artifact != null ? artifact.asWhile() : null;
   }
 
   /** Get the latest run's step artifact from DB for a given instance. */

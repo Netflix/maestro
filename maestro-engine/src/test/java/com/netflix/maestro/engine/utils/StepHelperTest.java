@@ -169,4 +169,28 @@ public class StepHelperTest extends MaestroEngineBaseTest {
     Assert.assertFalse(
         "isAsync should be false when sync is null", request.getInitiator().getParent().isAsync());
   }
+
+  @Test
+  public void testGenerateInlineWorkflowIdWithUpstreamInitiator() {
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+    workflowSummary.setWorkflowId("test-workflow");
+    workflowSummary.setWorkflowInstanceId(123L);
+    workflowSummary.setInternalId(456L);
+
+    ForeachInitiator foreachInitiator = new ForeachInitiator();
+    UpstreamInitiator.Info parentInfo = new UpstreamInitiator.Info();
+    parentInfo.setInstanceId(999L);
+    foreachInitiator.setAncestors(Collections.singletonList(parentInfo));
+    workflowSummary.setInitiator(foreachInitiator);
+
+    StepRuntimeSummary runtimeSummary =
+        StepRuntimeSummary.builder()
+            .stepId("test-step")
+            .type(StepType.WHILE)
+            .runtimeState(new StepRuntimeState())
+            .build();
+
+    String inlineWorkflowId = StepHelper.generateInlineWorkflowId(workflowSummary, runtimeSummary);
+    Assert.assertEquals("maestro_while_M7_2G7_8375dda31ebbddc3be29e95e72ea9bc9", inlineWorkflowId);
+  }
 }

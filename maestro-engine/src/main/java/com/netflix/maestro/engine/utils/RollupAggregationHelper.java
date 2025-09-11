@@ -18,6 +18,7 @@ import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.artifact.ForeachArtifact;
 import com.netflix.maestro.models.artifact.SubworkflowArtifact;
+import com.netflix.maestro.models.artifact.WhileArtifact;
 import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.definition.StepTransition;
 import com.netflix.maestro.models.definition.StepType;
@@ -50,17 +51,17 @@ public class RollupAggregationHelper {
    *
    * @param workflowId workflow id
    * @param workflowInstanceId workflow instance id
-   * @param stepIdRunIdForeachSubworkflowPrevious stepId to runId map for subworkflow and foreach
-   *     steps from the previous runs
+   * @param stepIdRunIdLoopSubworkflowPrevious stepId to runId map for subworkflow and foreach steps
+   *     from the previous runs
    * @return aggregated rollup for foreach and subworkflow steps from previous runs
    */
-  private WorkflowRollupOverview getAggregatedForeachAndSubworkflowStepRollup(
+  private WorkflowRollupOverview getAggregatedLoopAndSubworkflowStepRollup(
       String workflowId,
       long workflowInstanceId,
-      Map<String, Long> stepIdRunIdForeachSubworkflowPrevious) {
+      Map<String, Long> stepIdRunIdLoopSubworkflowPrevious) {
     List<WorkflowRollupOverview> rollups =
-        getForeachAndSubworkflowStepRollups(
-            workflowId, workflowInstanceId, stepIdRunIdForeachSubworkflowPrevious);
+        getLoopAndSubworkflowStepRollups(
+            workflowId, workflowInstanceId, stepIdRunIdLoopSubworkflowPrevious);
 
     return rollups.stream().reduce(new WorkflowRollupOverview(), WorkflowRollupOverview::aggregate);
   }
@@ -70,31 +71,31 @@ public class RollupAggregationHelper {
    *
    * @param workflowId workflow id
    * @param workflowInstanceId workflow instance id
-   * @param stepIdRunIdForeachSubworkflowPrevious stepId to runId map for subworkflow * and foreach
+   * @param stepIdRunIdLoopSubworkflowPrevious stepId to runId map for subworkflow * and foreach
    *     steps from the previous runs
    * @return list of rollups or empty list if no foreach and subworkflow steps from prev runs
    */
   @VisibleForTesting
-  List<WorkflowRollupOverview> getForeachAndSubworkflowStepRollups(
+  List<WorkflowRollupOverview> getLoopAndSubworkflowStepRollups(
       String workflowId,
       long workflowInstanceId,
-      Map<String, Long> stepIdRunIdForeachSubworkflowPrevious) {
-    List<WorkflowRollupOverview> rollupOverviewsForForeachAndSubworkflow = new ArrayList<>();
-    if (stepIdRunIdForeachSubworkflowPrevious == null
-        || stepIdRunIdForeachSubworkflowPrevious.isEmpty()) {
-      return rollupOverviewsForForeachAndSubworkflow;
+      Map<String, Long> stepIdRunIdLoopSubworkflowPrevious) {
+    List<WorkflowRollupOverview> rollupOverviewsForLoopAndSubworkflow = new ArrayList<>();
+    if (stepIdRunIdLoopSubworkflowPrevious == null
+        || stepIdRunIdLoopSubworkflowPrevious.isEmpty()) {
+      return rollupOverviewsForLoopAndSubworkflow;
     }
 
     List<Map<String, Artifact>> artifacts =
         stepInstanceDao.getBatchStepInstancesArtifactsFromList(
-            workflowId, workflowInstanceId, stepIdRunIdForeachSubworkflowPrevious);
+            workflowId, workflowInstanceId, stepIdRunIdLoopSubworkflowPrevious);
 
     for (Map<String, Artifact> artifact : artifacts) {
       if (artifact.containsKey(Artifact.Type.SUBWORKFLOW.key())) {
         SubworkflowArtifact subworkflowArtifact =
             artifact.get(Artifact.Type.SUBWORKFLOW.key()).asSubworkflow();
         if (subworkflowArtifact.getSubworkflowOverview() != null) {
-          rollupOverviewsForForeachAndSubworkflow.add(
+          rollupOverviewsForLoopAndSubworkflow.add(
               subworkflowArtifact.getSubworkflowOverview().getRollupOverview());
         }
       }
@@ -103,45 +104,55 @@ public class RollupAggregationHelper {
         ForeachArtifact foreachArtifact = artifact.get(Artifact.Type.FOREACH.key()).asForeach();
         if (foreachArtifact.getForeachOverview() != null
             && foreachArtifact.getForeachOverview().getCheckpoint() > 0) {
-          rollupOverviewsForForeachAndSubworkflow.add(
+          rollupOverviewsForLoopAndSubworkflow.add(
               foreachArtifact.getForeachOverview().getOverallRollup());
+        }
+      }
+
+      if (artifact.containsKey(Artifact.Type.WHILE.key())) {
+        WhileArtifact whileArtifact = artifact.get(Artifact.Type.WHILE.key()).asWhile();
+        if (whileArtifact != null
+            && whileArtifact.getLastIteration() >= whileArtifact.getFirstIteration()) {
+          rollupOverviewsForLoopAndSubworkflow.add(whileArtifact.getOverallRollup());
         }
       }
     }
 
-    return rollupOverviewsForForeachAndSubworkflow;
+    return rollupOverviewsForLoopAndSubworkflow;
   }
 
   /**
-   * Get stepId to runId map for foreach and subworkflow steps from previous runs.
+   * Get stepId to runId map for loop (foreach or while) and subworkflow steps from previous runs.
    *
    * @param instance current run's workflow instance
-   * @return stepId to runId map for foreach and subworkflow steps from previous runs
+   * @return stepId to runId map for loop (foreach or while) and subworkflow steps from previous
+   *     runs
    */
   @VisibleForTesting
-  static Map<String, Long> getStepIdToRunIdForForeachAndSubworkflowFromPreviousRuns(
+  static Map<String, Long> getStepIdToRunIdForLoopAndSubworkflowFromPreviousRuns(
       WorkflowInstance instance) {
-    Map<String, StepType> stepIdToStepTypeForForeachAndSubworkflows =
+    Map<String, StepType> stepIdToStepTypeForLoopAndSubworkflows =
         instance.getRuntimeWorkflow().getSteps().stream()
             .filter(
                 step ->
                     step.getType().equals(StepType.FOREACH)
+                        || step.getType().equals(StepType.WHILE)
                         || step.getType().equals(StepType.SUBWORKFLOW))
             .collect(Collectors.toMap(Step::getId, Step::getType));
 
-    if (stepIdToStepTypeForForeachAndSubworkflows.isEmpty()) {
-      // if no foreach and subworkflow steps in the workflow definition
+    if (stepIdToStepTypeForLoopAndSubworkflows.isEmpty()) {
+      // if no loop (foreach or while) and subworkflow steps in the workflow definition
       // result should be empty
       return Collections.emptyMap();
     }
 
-    // stepIdToRunId for subworkflow and foreach steps that
+    // stepIdToRunId for subworkflow and foreach and while loop steps that
     // are not part of current instance's runtimeDAG
     return instance.getAggregatedInfo().getStepAggregatedViews().entrySet().stream()
         .filter(
             step ->
                 !instance.getRuntimeDag().containsKey(step.getKey())
-                    && stepIdToStepTypeForForeachAndSubworkflows.containsKey(step.getKey()))
+                    && stepIdToStepTypeForLoopAndSubworkflows.containsKey(step.getKey()))
         .collect(Collectors.toMap(Map.Entry::getKey, s -> s.getValue().getWorkflowRunId()));
   }
 
@@ -243,22 +254,22 @@ public class RollupAggregationHelper {
       return null;
     }
 
-    Map<String, Long> stepIdRunIdForeachSubworkflowPrevious =
-        RollupAggregationHelper.getStepIdToRunIdForForeachAndSubworkflowFromPreviousRuns(instance);
+    Map<String, Long> stepIdRunIdLoopSubworkflowPrevious =
+        RollupAggregationHelper.getStepIdToRunIdForLoopAndSubworkflowFromPreviousRuns(instance);
 
     WorkflowRollupOverview aggregatedBaseRollup =
-        getAggregatedForeachAndSubworkflowStepRollup(
+        getAggregatedLoopAndSubworkflowStepRollup(
             instance.getWorkflowId(),
             instance.getWorkflowInstanceId(),
-            stepIdRunIdForeachSubworkflowPrevious);
+            stepIdRunIdLoopSubworkflowPrevious);
 
     WorkflowRollupOverview regularStepsPrevRunRollupAggregated =
         RollupAggregationHelper.getAggregatedRollupForStepsFromPreviousRuns(
             instance.getWorkflowId(),
             instance.getWorkflowInstanceId(),
             instance,
-            stepIdRunIdForeachSubworkflowPrevious != null
-                ? stepIdRunIdForeachSubworkflowPrevious.keySet()
+            stepIdRunIdLoopSubworkflowPrevious != null
+                ? stepIdRunIdLoopSubworkflowPrevious.keySet()
                 : null);
 
     if (aggregatedBaseRollup == null) {

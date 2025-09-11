@@ -33,6 +33,7 @@ import com.netflix.maestro.models.instance.WorkflowRuntimeOverview;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.signal.SignalDependencies;
 import com.netflix.maestro.utils.Checks;
+import com.netflix.maestro.utils.HashHelper;
 import com.netflix.maestro.utils.IdHelper;
 import com.netflix.maestro.utils.ObjectHelper;
 import java.util.ArrayList;
@@ -171,6 +172,26 @@ public final class StepHelper {
     }
     return convertField(
         objectMapper, (Map<String, Object>) value, TRANSITION_FIELD, StepInstanceTransition.class);
+  }
+
+  /** Use the md5 of workflow id, instance id, and step id as the generated inline workflow id. */
+  public static String generateInlineWorkflowId(
+      WorkflowSummary workflowSummary, StepRuntimeSummary runtimeSummary) {
+    long instanceId = workflowSummary.getWorkflowInstanceId();
+    if (workflowSummary.getInitiator().getType().isInline()) {
+      instanceId =
+          ((UpstreamInitiator) workflowSummary.getInitiator()).getNonInlineParent().getInstanceId();
+    }
+
+    return String.format(
+        "%s%s_%s",
+        IdHelper.getInlineWorkflowPrefixId(
+            workflowSummary.getInternalId(), runtimeSummary.getType()),
+        IdHelper.rangeKey(instanceId),
+        HashHelper.md5(
+            runtimeSummary.getStepId(),
+            String.valueOf(workflowSummary.getWorkflowInstanceId()),
+            workflowSummary.getWorkflowId()));
   }
 
   /** Create workflow run requests within subworkflow and foreach steps. */

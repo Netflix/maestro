@@ -64,13 +64,11 @@ public class SubworkflowStepRuntime implements StepRuntime {
   private static final String SUBWORKFLOW_TAG_NAME = Constants.MAESTRO_PREFIX + SUBWORKFLOW_NAME;
 
   private final WorkflowActionHandler actionHandler;
-  private final WorkflowInstanceActionHandler instanceActionHandler;
-
-  private final InstanceStepConcurrencyHandler instanceStepConcurrencyHandler;
-
   private final MaestroWorkflowInstanceDao instanceDao;
   private final MaestroStepInstanceDao stepInstanceDao;
+  private final WorkflowInstanceActionHandler instanceActionHandler;
   private final MaestroQueueSystem queueSystem;
+  private final InstanceStepConcurrencyHandler instanceStepConcurrencyHandler;
   private final Set<String> alwaysPassDownParamNames;
 
   @Override

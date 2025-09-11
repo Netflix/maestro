@@ -56,11 +56,11 @@ import org.mockito.Mock;
 
 public class SubworkflowStepRuntimeTest extends MaestroBaseTest {
   @Mock private WorkflowActionHandler workflowActionHandler;
-  @Mock private WorkflowInstanceActionHandler instanceActionHandler;
-  @Mock private InstanceStepConcurrencyHandler concurrencyHandler;
   @Mock private MaestroWorkflowInstanceDao instanceDao;
   @Mock private MaestroStepInstanceDao stepInstanceDao;
+  @Mock private WorkflowInstanceActionHandler instanceActionHandler;
   @Mock private MaestroQueueSystem queueSystem;
+  @Mock private InstanceStepConcurrencyHandler concurrencyHandler;
   @Mock private SubworkflowStep step;
 
   private SubworkflowStepRuntime subworkflowStepRuntime;
@@ -71,11 +71,11 @@ public class SubworkflowStepRuntimeTest extends MaestroBaseTest {
     subworkflowStepRuntime =
         new SubworkflowStepRuntime(
             workflowActionHandler,
-            instanceActionHandler,
-            concurrencyHandler,
             instanceDao,
             stepInstanceDao,
+            instanceActionHandler,
             queueSystem,
+            concurrencyHandler,
             Collections.emptySet());
     workflowSummary = new WorkflowSummary();
     workflowSummary.setWorkflowId("test-workflow");

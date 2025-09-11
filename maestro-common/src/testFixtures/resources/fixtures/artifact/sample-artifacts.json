@@ -80,6 +80,58 @@
       },
       "type": "FOREACH"
     },
+    "maestro_while": {
+      "loop_workflow_id": "inline-wf",
+      "loop_identity": "bar",
+      "loop_run_id": 1,
+      "run_policy": "START_FRESH_NEW_RUN",
+      "run_id": 1,
+      "first_iteration": 1,
+      "last_iteration": 5,
+      "last_status": "SUCCEEDED",
+      "last_overview": {
+        "total_step_count": 1,
+        "step_overview": {
+          "SUCCEEDED": {
+            "cnt": 1,
+            "steps": [
+              [
+                1,
+                1757544148571,
+                1757544148571
+              ]
+            ]
+          }
+        },
+        "rollup_overview": {
+          "total_leaf_count": 1,
+          "overview": {
+            "SUCCEEDED": {
+              "cnt": 1
+            }
+          }
+        }
+      },
+      "rollup": {
+        "total_leaf_count": 4,
+        "overview": {
+          "SUCCEEDED": {
+            "cnt": 4
+          }
+        }
+      },
+      "loop_param_values": {
+        "i": [
+          20200101,
+          20200102,
+          20200103,
+          20200104,
+          20200105,
+          20200106
+        ]
+      },
+      "type": "WHILE"
+    },
     "maestro_dynamic_output": {
       "signal_outputs": [{
           "value": {

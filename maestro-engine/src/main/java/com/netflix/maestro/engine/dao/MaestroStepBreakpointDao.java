@@ -18,12 +18,17 @@ import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.database.AbstractDatabaseDao;
 import com.netflix.maestro.database.DatabaseConfiguration;
 import com.netflix.maestro.engine.steps.ForeachStepRuntime;
+import com.netflix.maestro.engine.steps.WhileStepRuntime;
 import com.netflix.maestro.engine.tasks.MaestroTask;
 import com.netflix.maestro.exceptions.MaestroBadRequestException;
 import com.netflix.maestro.exceptions.MaestroNotFoundException;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.Constants;
+import com.netflix.maestro.models.definition.ForeachStep;
+import com.netflix.maestro.models.definition.Step;
+import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.User;
+import com.netflix.maestro.models.definition.WhileStep;
 import com.netflix.maestro.models.definition.Workflow;
 import com.netflix.maestro.models.definition.WorkflowDefinition;
 import com.netflix.maestro.models.stepruntime.PausedStepAttempt;
@@ -36,6 +41,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.sql.DataSource;
@@ -283,7 +289,6 @@ public class MaestroStepBreakpointDao extends AbstractDatabaseDao {
    * @param stepAttemptId stepAttemptId for the breakpoint. Special value to denote match all
    *     ${@link Constants#MATCH_ALL_STEP_ATTEMPTS}
    * @return List of all the breakpoints.
-   * @throws SQLException sql exception
    */
   public List<StepBreakpoint> getStepBreakPoints(
       String workflowId,
@@ -620,8 +625,8 @@ public class MaestroStepBreakpointDao extends AbstractDatabaseDao {
    * references to a non-inline-workflow, we simply use it. Otherwise, we use the prefix (maestro
    * prefix + internal id of the parent workflow). Example:
    * maestro_foreach_hashedInternalId_hashedInstanceId_hashedStepReference will be converted to
-   * maestro_foreach_hashedInternalId_. Please reference to {@link ForeachStepRuntime} for inline
-   * workflow id format.
+   * maestro_foreach_hashedInternalId_. Please reference to {@link ForeachStepRuntime} and @{@link
+   * WhileStepRuntime} for inline workflow id format.
    */
   private String getStepBreakPointWorkflowId(String workflowId) {
     String revisedWorkflowId = workflowId;
@@ -633,9 +638,7 @@ public class MaestroStepBreakpointDao extends AbstractDatabaseDao {
             "workflowId [%s] is started as an inline id but is formatted incorrectly.",
             workflowId);
       }
-      final String hashedInternalId = components[2];
-      revisedWorkflowId =
-          String.format("%s_%s_", Constants.FOREACH_INLINE_WORKFLOW_PREFIX, hashedInternalId);
+      revisedWorkflowId = String.format("%s_%s_%s_", components[0], components[1], components[2]);
     }
 
     return revisedWorkflowId;
@@ -888,20 +891,41 @@ public class MaestroStepBreakpointDao extends AbstractDatabaseDao {
    *
    * @return if the step id is referencing a valid nested step (a step that is inside foreach step).
    */
-  private boolean validateStep(Workflow workflow, String stepId) {
+  private Optional<StepType> getRootStepTypeForNestedStep(Workflow workflow, String stepId) {
     if (workflow.getSteps().stream().anyMatch(step -> step.getId().equals(stepId))) {
-      return false;
+      return Optional.empty();
     }
     // Verify if step is present or not
-    if (!workflow.getAllStepIds().contains(stepId)) {
+    StepType rootStepType = getRootStepTypeForNestedStep(workflow.getSteps(), stepId);
+    if (rootStepType == null) {
       throw new MaestroBadRequestException(
           Collections.emptyList(),
           "Breakpoint can't be set as stepId [%s] is not present for the workflowId [%s]",
           stepId,
           workflow.getId());
     }
+    return Optional.of(rootStepType);
+  }
 
-    return true;
+  private StepType getRootStepTypeForNestedStep(List<Step> stepList, String stepId) {
+    for (Step step : stepList) {
+      if (step.getId().equals(stepId)) {
+        return step.getType();
+      }
+      if (step.getType() == StepType.FOREACH) {
+        StepType ret = getRootStepTypeForNestedStep(((ForeachStep) step).getSteps(), stepId);
+        if (ret != null) {
+          return step.getType();
+        }
+      }
+      if (step.getType() == StepType.WHILE) {
+        StepType ret = getRootStepTypeForNestedStep(((WhileStep) step).getSteps(), stepId);
+        if (ret != null) {
+          return step.getType();
+        }
+      }
+    }
+    return null;
   }
 
   private PausedStepAttempt pausedStepAttemptFromResultSet(ResultSet rs) throws SQLException {
@@ -946,10 +970,13 @@ public class MaestroStepBreakpointDao extends AbstractDatabaseDao {
     WorkflowDefinition workflowDefinition =
         workflowDao.getWorkflowDefinition(workflowId, Constants.WorkflowVersion.DEFAULT.name());
     try {
-      final boolean isNestedStep = validateStep(workflowDefinition.getWorkflow(), stepId);
-      return isNestedStep
-          ? IdHelper.getInlineWorkflowPrefixId(workflowDefinition.getInternalId())
-          : workflowId;
+      Optional<StepType> rootStepType =
+          getRootStepTypeForNestedStep(workflowDefinition.getWorkflow(), stepId);
+      return rootStepType
+          .map(
+              stepType ->
+                  IdHelper.getInlineWorkflowPrefixId(workflowDefinition.getInternalId(), stepType))
+          .orElse(workflowId);
     } catch (MaestroBadRequestException e) {
       if (!latestVersionStepExistEnforced) {
         return workflowId;

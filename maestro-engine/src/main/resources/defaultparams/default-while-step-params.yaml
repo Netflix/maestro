@@ -1,0 +1,15 @@
+loop_params:
+  internal_mode: REQUIRED
+  mode: MUTABLE_ON_START
+  type: MAP
+  validator: "@NotEmpty"
+  value: {}
+loop_index:
+  internal_mode: RESERVED
+  type: LONG
+  value: -1
+  validator: "@Min(0)"
+condition:
+  internal_mode: RESERVED
+  type: BOOLEAN
+  value: false

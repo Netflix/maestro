@@ -17,6 +17,7 @@ import com.netflix.maestro.engine.concurrency.InstanceStepConcurrencyHandler;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceActionDao;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
+import com.netflix.maestro.engine.eval.ParamEvaluator;
 import com.netflix.maestro.engine.execution.StepRuntimeCallbackDelayPolicy;
 import com.netflix.maestro.engine.execution.StepRuntimeFixedCallbackDelayPolicy;
 import com.netflix.maestro.engine.execution.StepRuntimeManager;
@@ -36,6 +37,7 @@ import com.netflix.maestro.engine.steps.NoOpStepRuntime;
 import com.netflix.maestro.engine.steps.SleepStepRuntime;
 import com.netflix.maestro.engine.steps.StepRuntime;
 import com.netflix.maestro.engine.steps.SubworkflowStepRuntime;
+import com.netflix.maestro.engine.steps.WhileStepRuntime;
 import com.netflix.maestro.engine.tracing.MaestroTracingManager;
 import com.netflix.maestro.engine.utils.WorkflowEnrichmentHelper;
 import com.netflix.maestro.engine.utils.WorkflowHelper;
@@ -168,11 +170,11 @@ public class MaestroStepRuntimeConfiguration {
   public SubworkflowStepRuntime subworkflow(
       @Qualifier(STEP_RUNTIME_QUALIFIER) Map<StepType, StepRuntime> stepRuntimeMap,
       WorkflowActionHandler actionHandler,
-      WorkflowInstanceActionHandler instanceActionHandler,
-      InstanceStepConcurrencyHandler instanceStepConcurrencyHandler,
       MaestroWorkflowInstanceDao instanceDao,
       MaestroStepInstanceDao stepInstanceDao,
+      WorkflowInstanceActionHandler instanceActionHandler,
       MaestroQueueSystem queueSystem,
+      InstanceStepConcurrencyHandler instanceStepConcurrencyHandler,
       StepRuntimeProperties stepRuntimeProperties) {
     LOG.info("Creating Subworkflow step within Spring boot...");
     Set<String> alwaysPassDownParamNames =
@@ -180,11 +182,11 @@ public class MaestroStepRuntimeConfiguration {
     SubworkflowStepRuntime step =
         new SubworkflowStepRuntime(
             actionHandler,
-            instanceActionHandler,
-            instanceStepConcurrencyHandler,
             instanceDao,
             stepInstanceDao,
+            instanceActionHandler,
             queueSystem,
+            instanceStepConcurrencyHandler,
             alwaysPassDownParamNames);
     stepRuntimeMap.put(StepType.SUBWORKFLOW, step);
     return step;
@@ -217,6 +219,28 @@ public class MaestroStepRuntimeConfiguration {
   }
 
   @Bean
+  public WhileStepRuntime whileLoop(
+      @Qualifier(STEP_RUNTIME_QUALIFIER) Map<StepType, StepRuntime> stepRuntimeMap,
+      WorkflowActionHandler actionHandler,
+      MaestroWorkflowInstanceDao instanceDao,
+      MaestroStepInstanceDao stepInstanceDao,
+      MaestroQueueSystem queueSystem,
+      InstanceStepConcurrencyHandler instanceStepConcurrencyHandler,
+      ParamEvaluator paramEvaluator) {
+    LOG.info("Creating While step within Spring boot...");
+    WhileStepRuntime step =
+        new WhileStepRuntime(
+            actionHandler,
+            instanceDao,
+            stepInstanceDao,
+            queueSystem,
+            instanceStepConcurrencyHandler,
+            paramEvaluator);
+    stepRuntimeMap.put(StepType.WHILE, step);
+    return step;
+  }
+
+  @Bean
   public DryRunValidator getDryRunValidator(
       @Qualifier(STEP_RUNTIME_QUALIFIER) Map<StepType, StepRuntime> stepRuntimeMap,
       DefaultParamManager defaultParamManager,
@@ -242,7 +266,7 @@ public class MaestroStepRuntimeConfiguration {
   }
 
   @Bean
-  @DependsOn({"sleep", "noop", "subworkflow", "foreach", "kubernetes", "notebook"})
+  @DependsOn({"sleep", "noop", "subworkflow", "foreach", "whileLoop", "kubernetes", "notebook"})
   public StepRuntimeManager stepRuntimeManager(
       @Qualifier(STEP_RUNTIME_QUALIFIER) Map<StepType, StepRuntime> stepRuntimeMap,
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,

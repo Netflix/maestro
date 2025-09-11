@@ -31,6 +31,7 @@ public class StepTranslator implements Translator<Step, TaskDef> {
       case JOIN:
         return createMaestroGateTask((JoinStep) step);
       case FOREACH:
+      case WHILE:
       case SUBWORKFLOW:
       case NOOP:
       case SLEEP:

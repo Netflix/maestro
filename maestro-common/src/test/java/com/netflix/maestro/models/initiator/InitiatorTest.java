@@ -34,6 +34,7 @@ public class InitiatorTest extends MaestroBaseTest {
     Initiator manual2;
     Initiator subworkflow;
     Initiator foreach;
+    Initiator whileLoop;
     Initiator template;
     Initiator cron;
     Initiator signal;
@@ -66,6 +67,9 @@ public class InitiatorTest extends MaestroBaseTest {
         "FOREACH step ([maestro_foreach-parent][1][1][test-step][1]) runs a new workflow instance",
         initiators.getForeach().getTimelineEvent().getMessage());
     assertEquals(
+        "WHILE step ([maestro_while-parent][1][1][test-step][1]) runs a new workflow instance",
+        initiators.getWhileLoop().getTimelineEvent().getMessage());
+    assertEquals(
         "TEMPLATE step ([test-parent][1][1][test-step][1]) runs a new workflow instance",
         initiators.getTemplate().getTimelineEvent().getMessage());
     assertEquals(
@@ -88,6 +92,9 @@ public class InitiatorTest extends MaestroBaseTest {
         ((ForeachInitiator) initiators.getForeach()).getNonInlineParent().getWorkflowId());
     assertEquals(
         "test-parent",
+        ((WhileInitiator) initiators.getWhileLoop()).getNonInlineParent().getWorkflowId());
+    assertEquals(
+        "test-parent",
         ((TemplateInitiator) initiators.getTemplate()).getNonInlineParent().getWorkflowId());
   }
 
@@ -101,6 +108,8 @@ public class InitiatorTest extends MaestroBaseTest {
     assertNull(((UpstreamInitiator) initiators.getSubworkflow()).getRoot().getSync());
     assertFalse(initiators.getForeach().getParent().isAsync());
     assertNull(initiators.getForeach().getParent().getSync());
+    assertFalse(initiators.getWhileLoop().getParent().isAsync());
+    assertNull(initiators.getWhileLoop().getParent().getSync());
     assertFalse(initiators.getTemplate().getParent().isAsync());
     assertTrue(initiators.getTemplate().getParent().getSync());
     assertFalse(((UpstreamInitiator) initiators.getTemplate()).getRoot().isAsync());

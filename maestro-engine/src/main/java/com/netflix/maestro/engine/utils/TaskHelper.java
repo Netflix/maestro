@@ -23,6 +23,7 @@ import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.artifact.ForeachArtifact;
 import com.netflix.maestro.models.artifact.SubworkflowArtifact;
+import com.netflix.maestro.models.artifact.WhileArtifact;
 import com.netflix.maestro.models.definition.StepTransition;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.instance.StepInstance;
@@ -177,6 +178,16 @@ public final class TaskHelper {
                         if (artifact.getForeachOverview() != null
                             && artifact.getForeachOverview().getCheckpoint() > 0) {
                           return artifact.getForeachOverview().getOverallRollup();
+                        }
+                      }
+                      break;
+                    case WHILE:
+                      if (stepSummary.getArtifacts().containsKey(Artifact.Type.WHILE.key())) {
+                        WhileArtifact artifact =
+                            stepSummary.getArtifacts().get(Artifact.Type.WHILE.key()).asWhile();
+                        if (artifact != null
+                            && artifact.getLastIteration() >= artifact.getFirstIteration()) {
+                          return artifact.getOverallRollup();
                         }
                       }
                       break;

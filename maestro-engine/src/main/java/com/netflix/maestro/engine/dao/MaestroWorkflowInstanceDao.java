@@ -179,26 +179,26 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
           + "AND status='FAILED' order by instance_id ASC LIMIT ?)";
 
   private static final String FROM_WORKFLOW_INSTANCE_TABLE = "FROM maestro_workflow_instance ";
-  private static final String FROM_FOREACH_WORKFLOW_INSTANCE_TABLE = FROM_WORKFLOW_INSTANCE_TABLE;
+  private static final String FROM_INLINE_WORKFLOW_INSTANCE_TABLE = FROM_WORKFLOW_INSTANCE_TABLE;
 
   private static final String ORDER_BY_INSTANCE_ID_RUN_ID_DESC =
       "ORDER BY instance_id DESC, run_id DESC";
 
   private static final String GET_BATCH_LATEST_RUN_FOREACH_ITERATIONS_ROLLUP_QUERY =
       "SELECT DISTINCT ON (instance_id) instance_id as id, runtime_overview->'rollup_overview' as payload "
-          + FROM_FOREACH_WORKFLOW_INSTANCE_TABLE
+          + FROM_INLINE_WORKFLOW_INSTANCE_TABLE
           + "WHERE workflow_id=? AND instance_id=ANY(?) AND initiator_type='FOREACH' "
           + ORDER_BY_INSTANCE_ID_RUN_ID_DESC;
 
   private static final String GET_RUNNING_FOREACH_ITERATION_OVERVIEW_QUERY =
       "SELECT instance_id as id, status, runtime_overview->'rollup_overview' as payload "
-          + FROM_FOREACH_WORKFLOW_INSTANCE_TABLE
+          + FROM_INLINE_WORKFLOW_INSTANCE_TABLE
           + "WHERE workflow_id=? AND run_id=? AND instance_id>=? AND initiator_type='FOREACH' "
           + "ORDER BY instance_id DESC";
 
   private static final String GET_RESTARTING_FOREACH_ITERATION_OVERVIEW_QUERY =
       "SELECT DISTINCT ON (instance_id) instance_id as id,run_id,status,runtime_overview->'rollup_overview' as payload "
-          + FROM_FOREACH_WORKFLOW_INSTANCE_TABLE
+          + FROM_INLINE_WORKFLOW_INSTANCE_TABLE
           + "WHERE workflow_id=? AND run_id>? AND instance_id>=? AND initiator_type='FOREACH' "
           + ORDER_BY_INSTANCE_ID_RUN_ID_DESC;
 
@@ -233,6 +233,13 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
 
   private static final String TERMINATION_MESSAGE_TEMPLATE =
       "Workflow instance status becomes [%s] due to reason [%s]";
+
+  private static final String GET_BATCH_LATEST_RUN_WHILE_ITERATIONS_ROLLUP_QUERY =
+      "SELECT DISTINCT ON (instance_id) instance_id, runtime_overview->'rollup_overview' as payload "
+          + FROM_INLINE_WORKFLOW_INSTANCE_TABLE
+          + "WHERE workflow_id=? AND instance_id<? "
+          + ORDER_BY_INSTANCE_ID_RUN_ID_DESC
+          + " LIMIT ?";
 
   private final MaestroQueueSystem queueSystem;
 
@@ -1094,7 +1101,6 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
    * @param instanceIds the workflow instance ids for iterations we want to query
    * @return a list of workflow rollups.
    */
-  @SuppressWarnings({"PMD.AvoidInstantiatingObjectsInLoops"})
   public List<WorkflowRollupOverview> getBatchForeachLatestRunRollupForIterations(
       String workflowId, List<Long> instanceIds) {
     List<WorkflowRollupOverview> rollups = new ArrayList<>();
@@ -1108,18 +1114,7 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
                     stmt.setString(1, workflowId);
                     stmt.setArray(2, conn.createArrayOf("INT8", instanceIds.toArray(new Long[0])));
                     try (ResultSet result = stmt.executeQuery()) {
-                      while (result.next()) {
-                        String payload = result.getString(PAYLOAD_COLUMN);
-                        if (payload != null) {
-                          WorkflowRollupOverview rollup =
-                              fromJson(
-                                  result.getString(PAYLOAD_COLUMN), WorkflowRollupOverview.class);
-                          if (rollup != null) {
-                            rollups.add(rollup);
-                          }
-                        }
-                      }
-                      return rollups;
+                      return getWorkflowRollupOverviews(rollups, result);
                     }
                   }
                 }),
@@ -1164,5 +1159,47 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
         "existWorkflowIdInInstances",
         "Failed to check the existence of the workflow instance for workflow id [{}]",
         workflowId);
+  }
+
+  /**
+   * Get rollups of the latest runs of while loop inline workflow instances.
+   *
+   * @param workflowId while loop inline workflow id
+   * @param maxIterationId the maximal workflow instance id for iterations (exclusive)
+   * @return a list of workflow rollups.
+   */
+  public List<WorkflowRollupOverview> getBatchWhileLatestRunRollupForIterations(
+      String workflowId, long maxIterationId) {
+    List<WorkflowRollupOverview> rollups = new ArrayList<>();
+    return withMetricLogError(
+        () ->
+            withRetryableQuery(
+                GET_BATCH_LATEST_RUN_WHILE_ITERATIONS_ROLLUP_QUERY,
+                stmt -> {
+                  int idx = 0;
+                  stmt.setString(++idx, workflowId);
+                  stmt.setLong(++idx, maxIterationId);
+                  stmt.setLong(++idx, Constants.BATCH_SIZE_ROLLUP_STEP_ARTIFACTS_QUERY);
+                },
+                result -> getWorkflowRollupOverviews(rollups, result)),
+        "getBatchWhileLatestRunRollupForIterations",
+        "Failed to get rollups of the latest while inline instances for inline workflow id [{}]",
+        workflowId);
+  }
+
+  @SuppressWarnings({"PMD.AvoidInstantiatingObjectsInLoops"})
+  private List<WorkflowRollupOverview> getWorkflowRollupOverviews(
+      List<WorkflowRollupOverview> rollups, ResultSet result) throws SQLException {
+    while (result.next()) {
+      String payload = result.getString(PAYLOAD_COLUMN);
+      if (payload != null) {
+        WorkflowRollupOverview rollup =
+            fromJson(result.getString(PAYLOAD_COLUMN), WorkflowRollupOverview.class);
+        if (rollup != null) {
+          rollups.add(rollup);
+        }
+      }
+    }
+    return rollups;
   }
 }

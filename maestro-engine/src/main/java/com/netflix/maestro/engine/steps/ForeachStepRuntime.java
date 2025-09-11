@@ -37,7 +37,6 @@ import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.definition.Tag;
 import com.netflix.maestro.models.definition.Workflow;
 import com.netflix.maestro.models.error.Details;
-import com.netflix.maestro.models.initiator.UpstreamInitiator;
 import com.netflix.maestro.models.instance.ForeachAction;
 import com.netflix.maestro.models.instance.ForeachStepOverview;
 import com.netflix.maestro.models.instance.RestartConfig;
@@ -53,8 +52,6 @@ import com.netflix.maestro.models.timeline.TimelineLogEvent;
 import com.netflix.maestro.queue.MaestroQueueSystem;
 import com.netflix.maestro.queue.models.MessageDto;
 import com.netflix.maestro.utils.Checks;
-import com.netflix.maestro.utils.HashHelper;
-import com.netflix.maestro.utils.IdHelper;
 import com.netflix.maestro.utils.ObjectHelper;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -87,7 +84,7 @@ public class ForeachStepRuntime implements StepRuntime {
   private static final String FOREACH_TAG_NAME = Constants.FOREACH_INLINE_WORKFLOW_PREFIX;
   private static final String LOOP_PARAMS_NAME = Constants.LOOP_PARAMS_NAME;
   private static final String INDEX_PARAM_NAME = Constants.INDEX_PARAM_NAME;
-  private static final int FOREACH_ITERATION_LIMIT = Constants.FOREACH_ITERATION_LIMIT;
+  private static final int FOREACH_ITERATION_LIMIT = Constants.ITERATION_LIMIT;
 
   private final WorkflowActionHandler actionHandler;
   private final MaestroWorkflowInstanceDao instanceDao;
@@ -138,7 +135,8 @@ public class ForeachStepRuntime implements StepRuntime {
         runtimeSummary.getIdentity());
 
     ForeachArtifact artifact = new ForeachArtifact();
-    artifact.setForeachWorkflowId(generateForeachWorkflowId(workflowSummary, runtimeSummary));
+    artifact.setForeachWorkflowId(
+        StepHelper.generateInlineWorkflowId(workflowSummary, runtimeSummary));
     artifact.setForeachIdentity(workflowSummary.getIdentity() + runtimeSummary.getIdentity());
     artifact.setForeachRunId(1L);
 
@@ -290,26 +288,6 @@ public class ForeachStepRuntime implements StepRuntime {
       }
     }
     return total;
-  }
-
-  /** Use the md5 of workflow id, instance id, and step id as the generated inline workflow id. */
-  private String generateForeachWorkflowId(
-      WorkflowSummary workflowSummary, StepRuntimeSummary runtimeSummary) {
-    long instanceId = workflowSummary.getWorkflowInstanceId();
-    if (workflowSummary.getInitiator().getType().isInline()) {
-      instanceId =
-          ((UpstreamInitiator) workflowSummary.getInitiator()).getNonInlineParent().getInstanceId();
-    }
-
-    return String.format(
-        "%s_%s_%s_%s",
-        FOREACH_TAG_NAME,
-        IdHelper.hashKey(workflowSummary.getInternalId()),
-        IdHelper.rangeKey(instanceId),
-        HashHelper.md5(
-            runtimeSummary.getStepId(),
-            String.valueOf(workflowSummary.getWorkflowInstanceId()),
-            workflowSummary.getWorkflowId()));
   }
 
   /** foreach execute to launch and monitor foreach iterations. */

@@ -70,10 +70,14 @@ public final class Constants {
   public static final String INDEX_PARAM_NAME = "loop_index";
 
   /** System-wide foreach loop iteration limit. */
-  public static final int FOREACH_ITERATION_LIMIT = 25 * 1000;
+  public static final int ITERATION_LIMIT = 25 * 1000;
 
   /** Maximum limit for foreach concurrency. */
   public static final int FOREACH_CONCURRENCY_MAX_LIMIT = 500;
+
+  /** Maestro while inline workflow prefix. */
+  public static final String WHILE_INLINE_WORKFLOW_PREFIX =
+      MAESTRO_PREFIX + StepType.WHILE.getType();
 
   /** Maximum limit for step concurrency. */
   public static final long STEP_CONCURRENCY_MAX_LIMIT = 1000L;

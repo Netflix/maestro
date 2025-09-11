@@ -174,10 +174,15 @@ public class ParamsManagerTest extends MaestroEngineBaseTest {
         singletonMap(
             "stepid", singletonMap("p1", ParamDefinition.buildParamDefinition("p1", "d1")));
     ParamSource[] expectedSources =
-        new ParamSource[] {ParamSource.FOREACH, ParamSource.SUBWORKFLOW, ParamSource.TEMPLATE};
+        new ParamSource[] {
+          ParamSource.FOREACH, ParamSource.WHILE, ParamSource.SUBWORKFLOW, ParamSource.TEMPLATE
+        };
     Initiator.Type[] initiators =
         new Initiator.Type[] {
-          Initiator.Type.FOREACH, Initiator.Type.SUBWORKFLOW, Initiator.Type.TEMPLATE
+          Initiator.Type.FOREACH,
+          Initiator.Type.WHILE,
+          Initiator.Type.SUBWORKFLOW,
+          Initiator.Type.TEMPLATE
         };
     for (int i = 0; i < initiators.length; i++) {
       UpstreamInitiator upstreamInitiator = UpstreamInitiator.withType(initiators[i]);
@@ -281,10 +286,15 @@ public class ParamsManagerTest extends MaestroEngineBaseTest {
         singletonMap("p1", ParamDefinition.buildParamDefinition("p1", "d1"));
 
     ParamSource[] expectedSources =
-        new ParamSource[] {ParamSource.FOREACH, ParamSource.SUBWORKFLOW, ParamSource.TEMPLATE};
+        new ParamSource[] {
+          ParamSource.FOREACH, ParamSource.WHILE, ParamSource.SUBWORKFLOW, ParamSource.TEMPLATE
+        };
     Initiator.Type[] initiators =
         new Initiator.Type[] {
-          Initiator.Type.FOREACH, Initiator.Type.SUBWORKFLOW, Initiator.Type.TEMPLATE
+          Initiator.Type.FOREACH,
+          Initiator.Type.WHILE,
+          Initiator.Type.SUBWORKFLOW,
+          Initiator.Type.TEMPLATE
         };
     for (int i = 0; i < initiators.length; i++) {
       RunRequest request =
@@ -319,10 +329,15 @@ public class ParamsManagerTest extends MaestroEngineBaseTest {
     when(defaultParamManager.getDefaultWorkflowParams()).thenReturn(defaultParams);
 
     ParamSource[] expectedSources =
-        new ParamSource[] {ParamSource.FOREACH, ParamSource.SUBWORKFLOW, ParamSource.TEMPLATE};
+        new ParamSource[] {
+          ParamSource.FOREACH, ParamSource.WHILE, ParamSource.SUBWORKFLOW, ParamSource.TEMPLATE
+        };
     Initiator.Type[] initiators =
         new Initiator.Type[] {
-          Initiator.Type.FOREACH, Initiator.Type.SUBWORKFLOW, Initiator.Type.TEMPLATE
+          Initiator.Type.FOREACH,
+          Initiator.Type.WHILE,
+          Initiator.Type.SUBWORKFLOW,
+          Initiator.Type.TEMPLATE
         };
     for (int i = 0; i < initiators.length; i++) {
       RunRequest request =
@@ -371,7 +386,10 @@ public class ParamsManagerTest extends MaestroEngineBaseTest {
 
     Initiator.Type[] initiators =
         new Initiator.Type[] {
-          Initiator.Type.FOREACH, Initiator.Type.SUBWORKFLOW, Initiator.Type.TEMPLATE
+          Initiator.Type.FOREACH,
+          Initiator.Type.WHILE,
+          Initiator.Type.SUBWORKFLOW,
+          Initiator.Type.TEMPLATE
         };
     for (Initiator.Type initiator : initiators) {
       RunRequest request =

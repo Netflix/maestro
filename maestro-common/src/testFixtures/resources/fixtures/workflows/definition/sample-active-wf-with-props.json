@@ -169,6 +169,40 @@
             }
           ]
         }
+      },
+      {
+        "while": {
+          "id": "job.6",
+          "transition": {},
+          "failure_mode": "FAIL_AFTER_RUNNING",
+          "condition": "i <= 20200105",
+          "params": {
+            "loop_params": {
+              "value": {
+                "i": {
+                  "value": 20200101,
+                  "type": "LONG"
+                }
+              },
+              "type": "MAP"
+            }
+          },
+          "steps": [
+            {
+              "step": {
+                "id": "job.7",
+                "transition": {},
+                "type": "NoOp",
+                "params": {
+                  "i": {
+                    "expression": "i+1",
+                    "type": "LONG"
+                  }
+                }
+              }
+            }
+          ]
+        }
       }
     ]
   },

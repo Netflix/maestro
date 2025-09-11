@@ -19,6 +19,7 @@ import com.netflix.maestro.models.Constants;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.junit.Test;
 
 public class WorkflowTest extends MaestroBaseTest {
@@ -41,10 +42,11 @@ public class WorkflowTest extends MaestroBaseTest {
                 WorkflowDefinition.class)
             .getWorkflow();
     assertEquals(
-        threeItemMap(
+        Map.of(
             "job.1", wf.getSteps().get(0).getTransition(),
             "job.2", wf.getSteps().get(1).getTransition(),
-            "job.3", wf.getSteps().get(2).getTransition()),
+            "job.3", wf.getSteps().get(2).getTransition(),
+            "job.6", wf.getSteps().get(3).getTransition()),
         wf.getDag());
   }
 
@@ -65,13 +67,18 @@ public class WorkflowTest extends MaestroBaseTest {
     step.setId("foo");
     ForeachStep foreachStep = new ForeachStep();
     foreachStep.setId("foreach-step");
-    foreachStep.setSteps(Collections.nCopies(Constants.STEP_LIST_SIZE_LIMIT - 1, step));
+    foreachStep.setSteps(Collections.nCopies(Constants.STEP_LIST_SIZE_LIMIT - 10, step));
+    WhileStep whileStep = new WhileStep();
+    whileStep.setId("while-step");
+    whileStep.setSteps(Collections.nCopies(8, step));
 
-    Workflow workflow = Workflow.builder().steps(Collections.singletonList(foreachStep)).build();
+    Workflow workflow = Workflow.builder().steps(List.of(foreachStep, whileStep)).build();
     assertEquals(Constants.STEP_LIST_SIZE_LIMIT, workflow.getAllStepIds().size());
     List<String> expected = new ArrayList<>();
     expected.add("foreach-step");
-    expected.addAll(Collections.nCopies(Constants.STEP_LIST_SIZE_LIMIT - 1, "foo"));
+    expected.addAll(Collections.nCopies(Constants.STEP_LIST_SIZE_LIMIT - 10, "foo"));
+    expected.add("while-step");
+    expected.addAll(Collections.nCopies(8, "foo"));
     assertEquals(expected, workflow.getAllStepIds());
   }
 

@@ -61,6 +61,7 @@ public final class ParamsMergeHelper {
       Map.of(
           ParamSource.DEFINITION, DEFAULT_UPDATE_MODES,
           ParamSource.FOREACH, DEFAULT_UPDATE_MODES,
+          ParamSource.WHILE, DEFAULT_UPDATE_MODES,
           ParamSource.LAUNCH, DEFAULT_UPDATE_MODES,
           ParamSource.SIGNAL, DEFAULT_UPDATE_MODES,
           ParamSource.SUBWORKFLOW, DEFAULT_UPDATE_MODES,

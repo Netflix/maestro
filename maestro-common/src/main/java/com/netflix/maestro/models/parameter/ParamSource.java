@@ -59,6 +59,9 @@ public enum ParamSource {
   /** Set by foreach launch. */
   FOREACH(false),
 
+  /** Set by while launch. */
+  WHILE(false),
+
   /** Indicates the parameter is set by the workflow level parameter with the same name. */
   WORKFLOW_PARAMETER(false);
 

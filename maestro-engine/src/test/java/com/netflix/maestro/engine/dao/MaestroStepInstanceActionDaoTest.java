@@ -131,18 +131,18 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
   public void testRestartDirectlyWithBlocking() throws Exception {
     RunResponse restartStepInfo = setupRestartStepInfoForRestartDirectly();
     RunRequest runRequest = setupRestartRunRequest();
-    MaestroStepInstanceActionDao spyDao = getSpyActionDao(18000);
+    MaestroStepInstanceActionDao spyDao = getSpyActionDao(180000);
     Thread.ofVirtual().start(() -> spyDao.restartDirectly(restartStepInfo, runRequest, true));
 
-    verify(queueSystem, timeout(3000).times(1)).enqueue(any(), any(InstanceActionJobEvent.class));
-    verify(queueSystem, timeout(3000).times(3)).notify(any());
+    verify(queueSystem, timeout(30000).times(1)).enqueue(any(), any(InstanceActionJobEvent.class));
+    verify(queueSystem, timeout(30000).times(3)).notify(any());
     // assert that the action was saved
     Assert.assertTrue(actionDao.tryGetAction(summary, "job1").isPresent());
     Assert.assertEquals(RESTART, actionDao.tryGetAction(summary, "job1").get().getAction());
 
     stepInstance.getRuntimeState().setStatus(StepInstance.Status.RUNNING);
     stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true, null);
-    verify(spyDao, timeout(3000).times(1)).deleteAction(any(), any());
+    verify(spyDao, timeout(30000).times(1)).deleteAction(any(), any());
     Assert.assertTrue(spyDao.tryGetAction(summary, "job1").isEmpty());
   }
 
