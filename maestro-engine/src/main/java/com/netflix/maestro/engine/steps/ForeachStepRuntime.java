@@ -128,7 +128,7 @@ public class ForeachStepRuntime implements StepRuntime {
     int total = getLoopParamsTotalCount(runtimeSummary);
     Checks.checkTrue(
         total <= FOREACH_ITERATION_LIMIT,
-        "Foreach iteration number %s is over the loop size limit %s for step {}{}",
+        "Foreach iteration number [%s] is over the loop size limit [%s] for step %s%s",
         total,
         FOREACH_ITERATION_LIMIT,
         workflowSummary.getIdentity(),

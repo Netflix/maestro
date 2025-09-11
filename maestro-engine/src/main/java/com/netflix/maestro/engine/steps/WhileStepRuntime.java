@@ -210,10 +210,11 @@ public class WhileStepRuntime implements StepRuntime {
       String whileLoopWorkflowId, long toRestart) {
     WorkflowRollupOverview aggregated = new WorkflowRollupOverview();
     for (int i = 1; i < toRestart; ) {
+      int endId = (int) Math.min(i + Constants.BATCH_SIZE_ROLLUP_STEP_ARTIFACTS_QUERY, toRestart);
       List<WorkflowRollupOverview> rollups =
-          instanceDao.getBatchWhileLatestRunRollupForIterations(whileLoopWorkflowId, toRestart);
+          instanceDao.getBatchWhileLatestRunRollupForIterations(whileLoopWorkflowId, i, endId);
       rollups.forEach(aggregated::aggregate);
-      i += rollups.size();
+      i = endId;
     }
     return aggregated;
   }
@@ -372,7 +373,7 @@ public class WhileStepRuntime implements StepRuntime {
     long nextInstanceId = artifact.getLastIteration() + 1;
     Checks.checkTrue(
         nextInstanceId <= Constants.ITERATION_LIMIT,
-        "While loop iteration count [%s] is over the loop size limit [%s] for step {}{}",
+        "While loop iteration count [%s] is over the loop size limit [%s] for step %s%s",
         nextInstanceId,
         Constants.ITERATION_LIMIT,
         workflowSummary.getIdentity(),

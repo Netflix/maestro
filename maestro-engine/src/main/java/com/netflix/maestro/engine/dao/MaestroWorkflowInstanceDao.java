@@ -237,9 +237,8 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
   private static final String GET_BATCH_LATEST_RUN_WHILE_ITERATIONS_ROLLUP_QUERY =
       "SELECT DISTINCT ON (instance_id) instance_id, runtime_overview->'rollup_overview' as payload "
           + FROM_INLINE_WORKFLOW_INSTANCE_TABLE
-          + "WHERE workflow_id=? AND instance_id<? "
-          + ORDER_BY_INSTANCE_ID_RUN_ID_DESC
-          + " LIMIT ?";
+          + "WHERE workflow_id=? AND instance_id>=? AND instance_id<? "
+          + ORDER_BY_INSTANCE_ID_RUN_ID_DESC;
 
   private final MaestroQueueSystem queueSystem;
 
@@ -1165,11 +1164,12 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
    * Get rollups of the latest runs of while loop inline workflow instances.
    *
    * @param workflowId while loop inline workflow id
-   * @param maxIterationId the maximal workflow instance id for iterations (exclusive)
+   * @param startId the minimal workflow instance id for iterations (inclusive)
+   * @param endId the maximal workflow instance id for iterations (exclusive)
    * @return a list of workflow rollups.
    */
   public List<WorkflowRollupOverview> getBatchWhileLatestRunRollupForIterations(
-      String workflowId, long maxIterationId) {
+      String workflowId, long startId, long endId) {
     List<WorkflowRollupOverview> rollups = new ArrayList<>();
     return withMetricLogError(
         () ->
@@ -1178,8 +1178,8 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
                 stmt -> {
                   int idx = 0;
                   stmt.setString(++idx, workflowId);
-                  stmt.setLong(++idx, maxIterationId);
-                  stmt.setLong(++idx, Constants.BATCH_SIZE_ROLLUP_STEP_ARTIFACTS_QUERY);
+                  stmt.setLong(++idx, startId);
+                  stmt.setLong(++idx, endId);
                 },
                 result -> getWorkflowRollupOverviews(rollups, result)),
         "getBatchWhileLatestRunRollupForIterations",

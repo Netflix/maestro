@@ -1078,7 +1078,11 @@ public class MaestroWorkflowInstanceDaoTest extends MaestroDaoBaseTest {
     assertEquals(5, result.get(1).getTotalLeafCount());
 
     // test getBatchWhileLatestRunRollupForIterations
-    result = instanceDao.getBatchWhileLatestRunRollupForIterations(TEST_WORKFLOW_ID, 103L);
+    result = instanceDao.getBatchWhileLatestRunRollupForIterations(TEST_WORKFLOW_ID, 101L, 102L);
+    assertEquals(1, result.size());
+    assertEquals(5, result.getFirst().getTotalLeafCount());
+
+    result = instanceDao.getBatchWhileLatestRunRollupForIterations(TEST_WORKFLOW_ID, 101L, 103L);
     assertEquals(2, result.size());
     assertEquals(20, result.getFirst().getTotalLeafCount());
     assertEquals(5, result.get(1).getTotalLeafCount());
