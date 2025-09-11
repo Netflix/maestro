@@ -60,14 +60,14 @@ public class RollupAggregationHelperTest extends MaestroEngineBaseTest {
   }
 
   @Test
-  public void testGetStepIdToRunIdForForeachAndSubworkflowFromPreviousRuns() throws IOException {
+  public void testGetStepIdToRunIdForLoopAndSubworkflowFromPreviousRuns() throws IOException {
     WorkflowInstance sampleInstance =
         loadObject(
             "fixtures/instances/sample-workflow-instance-created-foreach-subworkflow-1.json",
             WorkflowInstance.class);
 
     Map<String, Long> stepIdRunId =
-        RollupAggregationHelper.getStepIdToRunIdForForeachAndSubworkflowFromPreviousRuns(
+        RollupAggregationHelper.getStepIdToRunIdForLoopAndSubworkflowFromPreviousRuns(
             sampleInstance);
 
     // both subworkflow and foreach steps are included in the current run
@@ -76,7 +76,7 @@ public class RollupAggregationHelperTest extends MaestroEngineBaseTest {
     sampleInstance.getRuntimeDag().remove("job_subworkflow");
 
     stepIdRunId =
-        RollupAggregationHelper.getStepIdToRunIdForForeachAndSubworkflowFromPreviousRuns(
+        RollupAggregationHelper.getStepIdToRunIdForLoopAndSubworkflowFromPreviousRuns(
             sampleInstance);
 
     // foreach step is included in the current run
@@ -87,7 +87,7 @@ public class RollupAggregationHelperTest extends MaestroEngineBaseTest {
     sampleInstance.getRuntimeDag().remove("job_foreach");
 
     stepIdRunId =
-        RollupAggregationHelper.getStepIdToRunIdForForeachAndSubworkflowFromPreviousRuns(
+        RollupAggregationHelper.getStepIdToRunIdForLoopAndSubworkflowFromPreviousRuns(
             sampleInstance);
 
     // both are included
@@ -100,7 +100,7 @@ public class RollupAggregationHelperTest extends MaestroEngineBaseTest {
             "fixtures/instances/sample-workflow-instance-created.json", WorkflowInstance.class);
 
     stepIdRunId =
-        RollupAggregationHelper.getStepIdToRunIdForForeachAndSubworkflowFromPreviousRuns(
+        RollupAggregationHelper.getStepIdToRunIdForLoopAndSubworkflowFromPreviousRuns(
             sampleInstanceNoForeachSubworkflow);
 
     assertEquals(0, stepIdRunId.size());
@@ -128,24 +128,26 @@ public class RollupAggregationHelperTest extends MaestroEngineBaseTest {
     RollupAggregationHelper rollupAggregationHelper = new RollupAggregationHelper(stepInstanceDao);
 
     List<WorkflowRollupOverview> rollups =
-        rollupAggregationHelper.getForeachAndSubworkflowStepRollups(
+        rollupAggregationHelper.getLoopAndSubworkflowStepRollups(
             workflowId, workflowInstanceId, stepIdToRunId);
 
-    assertEquals(2, rollups.size());
+    assertEquals(3, rollups.size());
     assertEquals(29, rollups.get(0).getTotalLeafCount());
     assertEquals(2, rollups.get(0).getOverview().size());
     assertEquals(14, rollups.get(1).getTotalLeafCount());
     assertEquals(2, rollups.get(1).getOverview().size());
+    assertEquals(5, rollups.get(2).getTotalLeafCount());
+    assertEquals(1, rollups.get(2).getOverview().size());
 
     // passing null stepIdToRunId
     rollups =
-        this.rollupAggregationHelper.getForeachAndSubworkflowStepRollups(
+        this.rollupAggregationHelper.getLoopAndSubworkflowStepRollups(
             workflowId, workflowInstanceId, null);
     assertTrue(rollups.isEmpty());
 
     // passing empty stepIdToRunId
     rollups =
-        this.rollupAggregationHelper.getForeachAndSubworkflowStepRollups(
+        this.rollupAggregationHelper.getLoopAndSubworkflowStepRollups(
             workflowId, workflowInstanceId, new HashMap<>());
     assertTrue(rollups.isEmpty());
   }

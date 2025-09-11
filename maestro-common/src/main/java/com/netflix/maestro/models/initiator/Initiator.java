@@ -28,6 +28,7 @@ import lombok.Getter;
   @JsonSubTypes.Type(name = "MANUAL", value = ManualInitiator.class),
   @JsonSubTypes.Type(name = "SUBWORKFLOW", value = SubworkflowInitiator.class),
   @JsonSubTypes.Type(name = "FOREACH", value = ForeachInitiator.class),
+  @JsonSubTypes.Type(name = "WHILE", value = WhileInitiator.class),
   @JsonSubTypes.Type(name = "TEMPLATE", value = TemplateInitiator.class),
   @JsonSubTypes.Type(name = "TIME", value = TimeInitiator.class),
   @JsonSubTypes.Type(name = "SIGNAL", value = SignalInitiator.class)
@@ -58,6 +59,8 @@ public interface Initiator {
     SUBWORKFLOW(false, false),
     /** Initiator for workflow instances initiated by foreach step. */
     FOREACH(false, true),
+    /** Initiator for workflow instances initiated by while step. */
+    WHILE(false, true),
     /** Initiator for workflow instances initiated by template step. */
     TEMPLATE(false, true),
     /** Initiator for workflow instances initiated by a time trigger. */

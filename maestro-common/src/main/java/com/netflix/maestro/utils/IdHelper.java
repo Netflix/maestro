@@ -14,6 +14,7 @@ package com.netflix.maestro.utils;
 
 import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.models.Constants;
+import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.Workflow;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.signal.SignalParamValue;
@@ -88,14 +89,15 @@ public final class IdHelper {
   }
 
   /** assemble the inline workflow id prefix based on workflow internal id. */
-  public static String getInlineWorkflowPrefixId(long workflowInternalId) {
+  public static String getInlineWorkflowPrefixId(long workflowInternalId, StepType type) {
     return String.format(
-        "%s_%s_", Constants.FOREACH_INLINE_WORKFLOW_PREFIX, hashKey(workflowInternalId));
+        "%s%s_%s_", Constants.MAESTRO_PREFIX, type.getType(), hashKey(workflowInternalId));
   }
 
   /** determine if the given workflow id is for an inline workflow. */
   public static boolean isInlineWorkflowId(String workflowId) {
-    return workflowId.startsWith(Constants.FOREACH_INLINE_WORKFLOW_PREFIX);
+    return workflowId.startsWith(Constants.FOREACH_INLINE_WORKFLOW_PREFIX)
+        || workflowId.startsWith(Constants.WHILE_INLINE_WORKFLOW_PREFIX);
   }
 
   /**

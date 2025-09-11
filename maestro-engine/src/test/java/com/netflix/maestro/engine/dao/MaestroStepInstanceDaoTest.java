@@ -33,6 +33,7 @@ import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.artifact.ForeachArtifact;
 import com.netflix.maestro.models.artifact.SubworkflowArtifact;
+import com.netflix.maestro.models.artifact.WhileArtifact;
 import com.netflix.maestro.models.definition.TagList;
 import com.netflix.maestro.models.instance.RunPolicy;
 import com.netflix.maestro.models.instance.StepAttemptState;
@@ -363,6 +364,24 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
     assertEquals(6L, artifact.getAncestorIterationCount().longValue());
     assertEquals(6, artifact.getNextLoopIndex());
     assertEquals(si.getArtifacts().get("maestro_foreach"), artifact);
+  }
+
+  @Test
+  public void testGetLatestWhileArtifactForRuns() throws Exception {
+    WhileArtifact artifact = stepDao.getLatestWhileArtifact("sample-while-wf", 1L, "while-step1");
+    assertNull(artifact);
+    si =
+        loadObject(
+            "fixtures/instances/sample-while-step-instance-running.json", StepInstance.class);
+    stepDao.insertOrUpsertStepInstance(si, true, null);
+    artifact = stepDao.getLatestWhileArtifact("sample-while-wf", 1L, "while-step1");
+    assertEquals(
+        "maestro_while_Ib2_11_457838faf327c310fb36817c1367c0f0", artifact.getLoopWorkflowId());
+    assertEquals(5L, artifact.getRunId());
+    assertEquals(RunPolicy.START_FRESH_NEW_RUN, artifact.getRunPolicy());
+    assertEquals(1, artifact.getFirstIteration());
+    assertEquals(5, artifact.getLastIteration());
+    assertEquals(si.getArtifacts().get("maestro_while"), artifact);
   }
 
   @Test

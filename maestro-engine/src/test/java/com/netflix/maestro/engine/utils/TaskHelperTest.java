@@ -22,6 +22,7 @@ import com.netflix.maestro.flow.models.Flow;
 import com.netflix.maestro.flow.models.Task;
 import com.netflix.maestro.flow.models.TaskDef;
 import com.netflix.maestro.models.Constants;
+import com.netflix.maestro.models.artifact.WhileArtifact;
 import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.StepRuntimeState;
 import com.netflix.maestro.models.instance.WorkflowRollupOverview;
@@ -141,6 +142,35 @@ public class TaskHelperTest extends MaestroEngineBaseTest {
     WorkflowRollupOverview.CountReference ref = new WorkflowRollupOverview.CountReference();
     ref.setCnt(1);
     expected.setOverview(singletonEnumMap(StepInstance.Status.SUCCEEDED, ref));
+    Assert.assertEquals(expected, overview.getRollupOverview());
+  }
+
+  @Test
+  public void testComputeOverviewWithWhileStep() throws Exception {
+    WorkflowSummary workflowSummary =
+        loadObject("fixtures/parameters/sample-wf-summary-params.json", WorkflowSummary.class);
+    Task t = new Task();
+    TaskDef taskDef = new TaskDef("job1", Constants.MAESTRO_TASK_NAME, null);
+    t.setTaskDef(taskDef);
+    t.setSeq(1);
+    Map<String, Object> summary = new HashMap<>();
+    summary.put("runtime_state", Collections.singletonMap("status", "SUCCEEDED"));
+    summary.put("type", "WHILE");
+    summary.put("artifacts", Map.of("maestro_while", new WhileArtifact()));
+    t.setOutputData(Collections.singletonMap(Constants.STEP_RUNTIME_SUMMARY_FIELD, summary));
+    WorkflowRuntimeOverview overview =
+        TaskHelper.computeOverview(
+            MAPPER,
+            workflowSummary,
+            new WorkflowRollupOverview(),
+            Collections.singletonMap("job1", t));
+    Assert.assertEquals(4, overview.getTotalStepCount());
+    Assert.assertEquals(
+        singletonEnumMap(
+            StepInstance.Status.SUCCEEDED,
+            WorkflowStepStatusSummary.of(0L).addStep(Arrays.asList(2L, null, null))),
+        overview.getStepOverview());
+    WorkflowRollupOverview expected = new WorkflowRollupOverview();
     Assert.assertEquals(expected, overview.getRollupOverview());
   }
 

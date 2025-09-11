@@ -51,6 +51,7 @@ import com.netflix.maestro.models.Defaults;
 import com.netflix.maestro.models.api.WorkflowActionResponse;
 import com.netflix.maestro.models.api.WorkflowCreateRequest;
 import com.netflix.maestro.models.artifact.ForeachArtifact;
+import com.netflix.maestro.models.artifact.WhileArtifact;
 import com.netflix.maestro.models.definition.PropertiesSnapshot;
 import com.netflix.maestro.models.definition.RunStrategy;
 import com.netflix.maestro.models.definition.User;
@@ -71,6 +72,7 @@ import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.timeline.TimelineEvent;
 import com.netflix.maestro.models.trigger.TriggerUuids;
 import com.netflix.maestro.queue.jobevents.WorkflowVersionUpdateJobEvent;
+import com.netflix.maestro.utils.IdHelper;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -374,7 +376,7 @@ public class WorkflowActionHandlerTest extends MaestroEngineBaseTest {
     verify(workflowDao, times(1)).getWorkflowDefinition("sample-minimal-wf", "active");
     verify(runStrategyDao, times(1)).startBatchWithRunStrategy(any(), any(), any());
     assertEquals(2, responses.size());
-    assertEquals(1L, responses.get(0).getWorkflowVersionId());
+    assertEquals(1L, responses.getFirst().getWorkflowVersionId());
     assertEquals("41f0281e-41a2-468d-b830-56141b2f768b", responses.get(0).getWorkflowUuid());
     assertEquals(RunResponse.Status.WORKFLOW_RUN_CREATED, responses.get(0).getStatus());
     assertEquals(1L, responses.get(1).getWorkflowVersionId());
@@ -431,10 +433,10 @@ public class WorkflowActionHandlerTest extends MaestroEngineBaseTest {
         .runWorkflowInstances(eq(artifact.getForeachWorkflowId()), captor.capture());
     List<WorkflowInstance> res = captor.getValue();
     assertEquals(1, res.size());
-    assertEquals(artifact.getForeachWorkflowId(), res.get(0).getWorkflowId());
-    assertEquals(5L, res.get(0).getWorkflowInstanceId());
-    assertEquals(3L, res.get(0).getWorkflowRunId());
-    assertEquals(10L, res.get(0).getWorkflowVersionId());
+    assertEquals(artifact.getForeachWorkflowId(), res.getFirst().getWorkflowId());
+    assertEquals(5L, res.getFirst().getWorkflowInstanceId());
+    assertEquals(3L, res.getFirst().getWorkflowRunId());
+    assertEquals(10L, res.getFirst().getWorkflowVersionId());
   }
 
   @Test
@@ -796,5 +798,60 @@ public class WorkflowActionHandlerTest extends MaestroEngineBaseTest {
     TimelineEvent event = actionHandler.unblock("maestro_foreach-sample-minimal-wf", tester);
     assertEquals("Unblocked the workflow.", event.getMessage());
     verify(instanceDao, times(0)).tryUnblockFailedWorkflowInstances(any(), anyInt(), any());
+  }
+
+  @Test
+  public void testRunInlineWorkflowInstanceFreshRun() {
+    runInlineWorkflowInstance(RunPolicy.START_FRESH_NEW_RUN, 1L, 1L);
+    verify(instanceDao, times(1)).runWorkflowInstances(any(), any());
+    verify(workflowHelper, times(1)).createWorkflowInstance(any(), any(), anyLong(), any(), any());
+  }
+
+  private void runInlineWorkflowInstance(
+      RunPolicy runPolicy, long instanceId, long firstIteration) {
+    WhileArtifact artifact = new WhileArtifact();
+    artifact.setRunPolicy(runPolicy);
+    artifact.setLoopRunId(3L);
+    artifact.setFirstIteration(firstIteration);
+
+    RunRequest request =
+        RunRequest.builder()
+            .initiator(new ManualInitiator())
+            .currentPolicy(runPolicy)
+            .requestId(IdHelper.createUuid("foo"))
+            .build();
+
+    Optional<Details> result =
+        actionHandler.runInlineWorkflowInstance(
+            definition.getWorkflow(),
+            123L,
+            1L,
+            new RunProperties(),
+            "while-step",
+            artifact,
+            request,
+            instanceId);
+    assertFalse(result.isPresent());
+  }
+
+  @Test
+  public void testRunInlineWorkflowInstanceNewIteration() {
+    runInlineWorkflowInstance(RunPolicy.RESTART_FROM_INCOMPLETE, 3L, 1L);
+    verify(instanceDao, times(1)).runWorkflowInstances(any(), any());
+    verify(workflowHelper, times(1)).createWorkflowInstance(any(), any(), anyLong(), any(), any());
+  }
+
+  @Test
+  public void testRunInlineWorkflowInstanceRestart() {
+    doNothing().when(workflowHelper).updateWorkflowInstance(any(), any());
+    when(instanceDao.getWorkflowInstanceRun(anyString(), anyLong(), anyLong()))
+        .thenReturn(instance);
+
+    runInlineWorkflowInstance(RunPolicy.RESTART_FROM_INCOMPLETE, 2L, 2L);
+    verify(instanceDao, times(1)).runWorkflowInstances(any(), any());
+    verify(instanceDao, times(1)).getWorkflowInstanceRun(definition.getWorkflow().getId(), 2L, 2L);
+    verify(workflowHelper, times(1)).updateWorkflowInstance(any(), any());
+    assertEquals(2L, instance.getWorkflowInstanceId());
+    assertEquals(3L, instance.getWorkflowRunId());
   }
 }

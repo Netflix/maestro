@@ -31,7 +31,7 @@ import lombok.Data;
 
 /**
  * Upstream workflow initiator with its parent workflow and the step (subworkflow or foreach or
- * template) info.
+ * while or template) info.
  */
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -128,6 +128,8 @@ public abstract class UpstreamInitiator implements Initiator {
         return new SubworkflowInitiator();
       case FOREACH:
         return new ForeachInitiator();
+      case WHILE:
+        return new WhileInitiator();
       case TEMPLATE:
         return new TemplateInitiator();
       default:

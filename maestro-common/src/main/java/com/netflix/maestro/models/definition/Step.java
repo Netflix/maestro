@@ -25,6 +25,7 @@ import java.util.Map;
   @JsonSubTypes.Type(name = "step", value = TypedStep.class),
   @JsonSubTypes.Type(name = "subworkflow", value = SubworkflowStep.class),
   @JsonSubTypes.Type(name = "foreach", value = ForeachStep.class),
+  @JsonSubTypes.Type(name = "while", value = WhileStep.class),
   @JsonSubTypes.Type(name = "template", value = TemplateStep.class)
 })
 public interface Step {

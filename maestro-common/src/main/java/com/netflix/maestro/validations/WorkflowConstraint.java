@@ -18,6 +18,7 @@ import com.netflix.maestro.models.definition.ForeachStep;
 import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.definition.StepTransition;
 import com.netflix.maestro.models.definition.StepType;
+import com.netflix.maestro.models.definition.WhileStep;
 import com.netflix.maestro.models.definition.Workflow;
 import jakarta.validation.Constraint;
 import jakarta.validation.ConstraintValidator;
@@ -182,7 +183,7 @@ public @interface WorkflowConstraint {
     private boolean hasDuplicateLoopParamNames(
         List<Step> steps, ConstraintValidatorContext context, Set<String> loopParamNames) {
       for (Step step : steps) {
-        if (step.getType() == StepType.FOREACH) {
+        if (step.getType() == StepType.FOREACH || step.getType() == StepType.WHILE) {
           Set<String> currentLoopNames =
               step.getParams().get(Constants.LOOP_PARAMS_NAME).asMapParamDef().getValue().keySet();
           for (String name : currentLoopNames) {
@@ -199,8 +200,11 @@ public @interface WorkflowConstraint {
             }
           }
           // recursively pass down all upper level loop param names to nested loop.
-          if (hasDuplicateLoopParamNames(
-              ((ForeachStep) step).getSteps(), context, loopParamNames)) {
+          List<Step> nestedSteps =
+              step.getType() == StepType.FOREACH
+                  ? ((ForeachStep) step).getSteps()
+                  : ((WhileStep) step).getSteps();
+          if (hasDuplicateLoopParamNames(nestedSteps, context, loopParamNames)) {
             return true;
           }
           // remove all param names from current foreach step.

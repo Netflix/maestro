@@ -22,6 +22,8 @@ public enum StepType {
   JOIN("Join", false),
   /** foreach loop step. */
   FOREACH("foreach", false),
+  /** sequential while loop step. */
+  WHILE("while", false),
   /** subworkflow step. */
   SUBWORKFLOW("subworkflow", false),
   /** template step. */

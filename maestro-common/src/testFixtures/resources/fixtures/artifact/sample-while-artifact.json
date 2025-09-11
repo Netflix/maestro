@@ -1,0 +1,52 @@
+{
+  "loop_workflow_id": "inline-wf",
+  "loop_identity": "bar",
+  "loop_run_id": 2,
+  "run_policy": "RESTART_FROM_SPECIFIC",
+  "run_id": 2,
+  "first_iteration": 3,
+  "last_iteration": 5,
+  "last_status": "SUCCEEDED",
+  "last_overview": {
+    "total_step_count": 1,
+    "step_overview": {
+      "SUCCEEDED": {
+        "cnt": 1,
+        "steps": [
+          [
+            1,
+            1757544252583,
+            1757544252584
+          ]
+        ]
+      }
+    },
+    "rollup_overview": {
+      "total_leaf_count": 1,
+      "overview": {
+        "SUCCEEDED": {
+          "cnt": 1
+        }
+      }
+    }
+  },
+  "rollup": {
+    "total_leaf_count": 4,
+    "overview": {
+      "SUCCEEDED": {
+        "cnt": 4
+      }
+    }
+  },
+  "loop_param_values": {
+    "i": [
+      20200101,
+      20200102,
+      20200103,
+      20200104,
+      20200105,
+      20200106
+    ]
+  },
+  "type": "WHILE"
+}

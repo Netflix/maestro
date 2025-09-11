@@ -19,6 +19,7 @@ import com.netflix.maestro.models.definition.ForeachStep;
 import com.netflix.maestro.models.definition.StepTransition;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.TypedStep;
+import com.netflix.maestro.models.definition.WhileStep;
 import com.netflix.maestro.models.definition.Workflow;
 import com.netflix.maestro.models.parameter.MapParamDefinition;
 import com.netflix.maestro.models.parameter.ParamDefinition;
@@ -26,6 +27,7 @@ import jakarta.validation.ConstraintViolation;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import org.junit.Test;
 
@@ -88,14 +90,17 @@ public class WorkflowConstraintTest extends BaseConstraintTest {
   }
 
   @Test
-  public void isForeachStepListSizeTooLarge() {
+  public void isLoopStepListSizeTooLarge() {
     TypedStep step = new TypedStep();
     step.setId("foo");
     ForeachStep foreachStep = new ForeachStep();
     foreachStep.setId("foreach-step");
-    foreachStep.setSteps(Collections.nCopies(Constants.STEP_LIST_SIZE_LIMIT + 1, step));
+    foreachStep.setSteps(Collections.nCopies(Constants.STEP_LIST_SIZE_LIMIT - 10, step));
+    WhileStep whileStep = new WhileStep();
+    whileStep.setId("while-step");
+    whileStep.setSteps(Collections.nCopies(10, step));
 
-    Workflow workflow = Workflow.builder().steps(Collections.singletonList(foreachStep)).build();
+    Workflow workflow = Workflow.builder().steps(List.of(foreachStep, whileStep)).build();
     Set<ConstraintViolation<TestWorkflow>> violations =
         validator.validate(new TestWorkflow(workflow));
     assertEquals(1, violations.size());
@@ -126,6 +131,21 @@ public class WorkflowConstraintTest extends BaseConstraintTest {
     ForeachStep foreach = new ForeachStep();
     foreach.setSteps(Collections.singletonList(step));
     Workflow workflow = Workflow.builder().steps(Arrays.asList(step, foreach)).build();
+    Set<ConstraintViolation<TestWorkflow>> violations =
+        validator.validate(new TestWorkflow(workflow));
+    assertEquals(1, violations.size());
+    ConstraintViolation<TestWorkflow> violation = violations.iterator().next();
+    assertEquals("workflow.steps", violation.getPropertyPath().toString());
+    assertEquals("[workflow step definitions] contain duplicate step ids", violation.getMessage());
+  }
+
+  @Test
+  public void isStepDuplicateIncludingWhile() {
+    TypedStep step = new TypedStep();
+    step.setId("foo");
+    WhileStep whileStep = new WhileStep();
+    whileStep.setSteps(Collections.singletonList(step));
+    Workflow workflow = Workflow.builder().steps(Arrays.asList(step, whileStep)).build();
     Set<ConstraintViolation<TestWorkflow>> violations =
         validator.validate(new TestWorkflow(workflow));
     assertEquals(1, violations.size());
@@ -193,6 +213,70 @@ public class WorkflowConstraintTest extends BaseConstraintTest {
     foreach2.setSteps(Collections.singletonList(step2));
     // outerForeach and foreach2 are not nested
     workflow = Workflow.builder().steps(Arrays.asList(outerForeach, foreach2)).build();
+    violations = validator.validate(new TestWorkflow(workflow));
+    // verify there is no violation
+    assertEquals(0, violations.size());
+  }
+
+  @Test
+  public void isLoopParamNameValidWithForeachWhileLoop() {
+    // 1. nested foreach with duplicate loop param names should be blocked
+    String duplicateName = "bar";
+    TypedStep step = new TypedStep();
+    step.setId("foo");
+
+    ParamDefinition innerParam =
+        MapParamDefinition.builder()
+            .name("inner")
+            .value(
+                Collections.singletonMap(
+                    duplicateName, ParamDefinition.buildParamDefinition("name", 1)))
+            .build();
+    ForeachStep innerForeach = new ForeachStep();
+    innerForeach.setId("inner-foreach");
+    innerForeach.setParams(Collections.singletonMap(Constants.LOOP_PARAMS_NAME, innerParam));
+    innerForeach.setSteps(Collections.singletonList(step));
+
+    ParamDefinition outerParam =
+        MapParamDefinition.builder()
+            .name("outer")
+            .value(
+                Collections.singletonMap(
+                    duplicateName, ParamDefinition.buildParamDefinition("name", 2)))
+            .build();
+    WhileStep outerLoop = new WhileStep();
+    outerLoop.setId("outer-loop");
+    outerLoop.setParams(Collections.singletonMap(Constants.LOOP_PARAMS_NAME, outerParam));
+    outerLoop.setSteps(Collections.singletonList(innerForeach));
+
+    Workflow workflow = Workflow.builder().steps(Collections.singletonList(outerLoop)).build();
+    Set<ConstraintViolation<TestWorkflow>> violations =
+        validator.validate(new TestWorkflow(workflow));
+    assertEquals(1, violations.size());
+    ConstraintViolation<TestWorkflow> violation = violations.iterator().next();
+    assertEquals("workflow.steps", violation.getPropertyPath().toString());
+    assertEquals(
+        "[workflow step definitions] contain duplicate loop param name [bar]",
+        violation.getMessage());
+
+    // 2. non-nested loop with duplicate loop param names should be acceptable
+    outerLoop.setSteps(Collections.singletonList(step));
+    // create another foreach that's independent of outerForeach
+    ParamDefinition param =
+        MapParamDefinition.builder()
+            .name("foreach-2")
+            .value(
+                Collections.singletonMap(
+                    duplicateName, ParamDefinition.buildParamDefinition("name", 3)))
+            .build();
+    ForeachStep foreach2 = new ForeachStep();
+    foreach2.setId("foreach-2");
+    foreach2.setParams(Collections.singletonMap(Constants.LOOP_PARAMS_NAME, param));
+    TypedStep step2 = new TypedStep();
+    step2.setId("foo2");
+    foreach2.setSteps(Collections.singletonList(step2));
+    // outerForeach and foreach2 are not nested
+    workflow = Workflow.builder().steps(Arrays.asList(outerLoop, foreach2)).build();
     violations = validator.validate(new TestWorkflow(workflow));
     // verify there is no violation
     assertEquals(0, violations.size());

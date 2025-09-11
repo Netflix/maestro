@@ -148,6 +148,8 @@ public class Workflow {
           stepIds.add(step.getId());
           if (step.getType() == StepType.FOREACH) {
             getAllStepIds(((ForeachStep) step).getSteps(), stepIds);
+          } else if (step.getType() == StepType.WHILE) {
+            getAllStepIds(((WhileStep) step).getSteps(), stepIds);
           }
         });
   }

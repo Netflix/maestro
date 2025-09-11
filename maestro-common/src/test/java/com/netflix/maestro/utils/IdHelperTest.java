@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.utils;
 
+import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.Workflow;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.signal.SignalParamValue;
@@ -138,5 +139,24 @@ public class IdHelperTest {
     Assert.assertTrue("0".compareTo(v13) > 0);
     Assert.assertTrue(v13.compareTo(v14) > 0);
     Assert.assertTrue(v14.compareTo(v15) > 0);
+  }
+
+  @Test
+  public void testGetInlineWorkflowPrefixId() {
+    String foreachPrefix = IdHelper.getInlineWorkflowPrefixId(1000000L, StepType.FOREACH);
+    Assert.assertEquals("maestro_foreach_29C4_", foreachPrefix);
+
+    String whilePrefix = IdHelper.getInlineWorkflowPrefixId(1000000L, StepType.WHILE);
+    Assert.assertEquals("maestro_while_29C4_", whilePrefix);
+
+    String templatePrefix = IdHelper.getInlineWorkflowPrefixId(123456L, StepType.TEMPLATE);
+    Assert.assertEquals("maestro_template_E7W_", templatePrefix);
+  }
+
+  @Test
+  public void testIsInlineWorkflowId() {
+    Assert.assertTrue(IdHelper.isInlineWorkflowId("maestro_foreach_abc123_test"));
+    Assert.assertTrue(IdHelper.isInlineWorkflowId("maestro_while_def456_test"));
+    Assert.assertFalse(IdHelper.isInlineWorkflowId("test-workflow-id"));
   }
 }

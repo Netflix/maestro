@@ -20,7 +20,7 @@ import com.netflix.maestro.models.parameter.ParamSource;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
-/** Foreach initiator to store its parent workflow and the foreach step info at runtime. */
+/** While initiator to store its parent workflow and the while step info at runtime. */
 @EqualsAndHashCode(callSuper = true)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -28,14 +28,14 @@ import lombok.ToString;
     value = {"ancestors", "depth", "type"},
     alphabetic = true)
 @ToString(callSuper = true)
-public final class ForeachInitiator extends UpstreamInitiator {
+public final class WhileInitiator extends UpstreamInitiator {
   @Override
   public Type getType() {
-    return Type.FOREACH;
+    return Type.WHILE;
   }
 
   @Override
   public ParamSource getParameterSource() {
-    return ParamSource.FOREACH;
+    return ParamSource.WHILE;
   }
 }

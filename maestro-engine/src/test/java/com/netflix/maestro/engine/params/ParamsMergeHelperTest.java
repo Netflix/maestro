@@ -54,10 +54,11 @@ public class ParamsMergeHelperTest extends MaestroEngineBaseTest {
   private ParamsMergeHelper.MergeContext systemMergeContext;
   private ParamsMergeHelper.MergeContext definitionContext;
   private ParamsMergeHelper.MergeContext upstreamMergeContext;
-  // This context will be used by subworkflow and foreach step.
+  // This context will be used by subworkflow, foreach, and while loop step.
   private ParamsMergeHelper.MergeContext upstreamDefinitionMergeContext;
   private ParamsMergeHelper.MergeContext upstreamRestartMergeContext;
   private ParamsMergeHelper.MergeContext foreachRestartMergeContext;
+  private ParamsMergeHelper.MergeContext whileRestartMergeContext;
 
   @BeforeClass
   public static void init() {
@@ -80,6 +81,8 @@ public class ParamsMergeHelperTest extends MaestroEngineBaseTest {
         new ParamsMergeHelper.MergeContext(ParamSource.SUBWORKFLOW, false, true, true);
     this.foreachRestartMergeContext =
         new ParamsMergeHelper.MergeContext(ParamSource.FOREACH, false, true, true);
+    this.whileRestartMergeContext =
+        new ParamsMergeHelper.MergeContext(ParamSource.WHILE, false, true, true);
   }
 
   private Map<String, ParamDefinition> parseParamDefMap(String json)
@@ -1106,6 +1109,12 @@ public class ParamsMergeHelperTest extends MaestroEngineBaseTest {
         MaestroValidationException.class,
         "Cannot modify param with mode [MUTABLE_ON_START] for parameter [loop_params]",
         () -> ParamsMergeHelper.mergeParams(allParams, paramsToMerge, foreachRestartMergeContext));
+
+    AssertHelper.assertThrows(
+        "throws exception when a while source restarts and tries to mutate params with MUTABLE_ON_START mode",
+        MaestroValidationException.class,
+        "Cannot modify param with mode [MUTABLE_ON_START] for parameter [loop_params]",
+        () -> ParamsMergeHelper.mergeParams(allParams, paramsToMerge, whileRestartMergeContext));
   }
 
   @Test

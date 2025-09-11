@@ -21,6 +21,7 @@ import com.netflix.maestro.exceptions.MaestroRetryableError;
 import com.netflix.maestro.exceptions.MaestroTimeoutException;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.Constants;
+import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.timeline.Timeline;
 import com.netflix.maestro.models.timeline.TimelineEvent;
 import com.netflix.maestro.models.timeline.TimelineLogEvent;
@@ -90,15 +91,20 @@ public class MaestroWorkflowDeletionDao extends AbstractDatabaseDao {
     DELETING_INLINE_INSTANCES(
         "DELETE FROM maestro_workflow_instance WHERE (workflow_id, instance_id, run_id) IN ("
             + "SELECT workflow_id, instance_id, run_id FROM maestro_workflow_instance WHERE "
-            + "workflow_id >= ? AND workflow_id < ? LIMIT ?)") {
+            + "(workflow_id >= ? AND workflow_id < ?) OR (workflow_id >= ? AND workflow_id < ?) LIMIT ?)") {
       @Override
       void prepareQuery(PreparedStatement stmt, String workflowId, long internalId)
           throws SQLException {
         int idx = 0;
-        stmt.setString(++idx, IdHelper.getInlineWorkflowPrefixId(internalId));
+        stmt.setString(++idx, IdHelper.getInlineWorkflowPrefixId(internalId, StepType.FOREACH));
         stmt.setString(
             ++idx,
-            IdHelper.getInlineWorkflowPrefixId(internalId)
+            IdHelper.getInlineWorkflowPrefixId(internalId, StepType.FOREACH)
+                + Constants.INLINE_WORKFLOW_ID_LARGEST_CHAR_IN_USE); // upper bound
+        stmt.setString(++idx, IdHelper.getInlineWorkflowPrefixId(internalId, StepType.WHILE));
+        stmt.setString(
+            ++idx,
+            IdHelper.getInlineWorkflowPrefixId(internalId, StepType.WHILE)
                 + Constants.INLINE_WORKFLOW_ID_LARGEST_CHAR_IN_USE); // upper bound
         stmt.setInt(++idx, Constants.BATCH_DELETION_LIMIT);
       }
@@ -107,7 +113,8 @@ public class MaestroWorkflowDeletionDao extends AbstractDatabaseDao {
         "DELETE FROM maestro_step_instance WHERE "
             + "(workflow_id, workflow_instance_id, step_id, workflow_run_id, step_attempt_id) IN ("
             + "SELECT workflow_id, workflow_instance_id, step_id, workflow_run_id, step_attempt_id FROM "
-            + "maestro_step_instance WHERE workflow_id>= ? AND workflow_id< ? LIMIT ?)") {
+            + "maestro_step_instance WHERE (workflow_id >= ? AND workflow_id < ?) "
+            + "OR (workflow_id >= ? AND workflow_id < ?) LIMIT ?)") {
       @Override
       void prepareQuery(PreparedStatement stmt, String workflowId, long internalId)
           throws SQLException {

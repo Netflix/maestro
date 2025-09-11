@@ -983,7 +983,7 @@ public class MaestroWorkflowInstanceDaoTest extends MaestroDaoBaseTest {
   }
 
   @Test
-  public void testGetBatchForeachLatestRunRollupForIterations() throws Exception {
+  public void testGetBatchLatestRunRollupForIterations() throws Exception {
     boolean res =
         instanceDao.tryTerminateQueuedInstance(wfi, WorkflowInstance.Status.FAILED, "test-reason");
     assertTrue(res);
@@ -1069,12 +1069,24 @@ public class MaestroWorkflowInstanceDaoTest extends MaestroDaoBaseTest {
             summary, overview, null, WorkflowInstance.Status.SUCCEEDED, 12345, null);
     assertFalse(details.isPresent());
 
+    // test getBatchForeachLatestRunRollupForIterations
     List<WorkflowRollupOverview> result =
         instanceDao.getBatchForeachLatestRunRollupForIterations(
             TEST_WORKFLOW_ID, Arrays.asList(101L, 102L));
     assertEquals(2, result.size());
     assertEquals(20, result.getFirst().getTotalLeafCount());
     assertEquals(5, result.get(1).getTotalLeafCount());
+
+    // test getBatchWhileLatestRunRollupForIterations
+    result = instanceDao.getBatchWhileLatestRunRollupForIterations(TEST_WORKFLOW_ID, 101L, 102L);
+    assertEquals(1, result.size());
+    assertEquals(5, result.getFirst().getTotalLeafCount());
+
+    result = instanceDao.getBatchWhileLatestRunRollupForIterations(TEST_WORKFLOW_ID, 101L, 103L);
+    assertEquals(2, result.size());
+    assertEquals(20, result.getFirst().getTotalLeafCount());
+    assertEquals(5, result.get(1).getTotalLeafCount());
+
     MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID, 101);
     MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID, 102);
   }

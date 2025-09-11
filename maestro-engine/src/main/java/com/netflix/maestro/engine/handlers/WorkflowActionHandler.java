@@ -28,6 +28,7 @@ import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.api.WorkflowActionResponse;
 import com.netflix.maestro.models.api.WorkflowCreateRequest;
 import com.netflix.maestro.models.artifact.ForeachArtifact;
+import com.netflix.maestro.models.artifact.WhileArtifact;
 import com.netflix.maestro.models.definition.RunStrategy;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.definition.Workflow;
@@ -176,6 +177,51 @@ public class WorkflowActionHandler {
         requests.size(),
         workflowId);
     return responses;
+  }
+
+  /**
+   * Run a while loop inline workflow instance. Additionally, the instance id and run id have
+   * already been decided to avoid race condition and ensure idempotency. It will bypass run
+   * strategy manager as while step manages its own inline workflow instances.
+   *
+   * @param workflow workflow definition
+   * @param internalId workflow internal id
+   * @param workflowVersionId workflow version id
+   * @param runProperties run properties
+   * @param whileStepId while step id
+   * @param artifact while step artifact
+   * @param runRequest run request
+   * @param instanceId instance id
+   * @return the details of run while loop inline workflow instance.
+   */
+  public Optional<Details> runInlineWorkflowInstance(
+      Workflow workflow,
+      Long internalId,
+      long workflowVersionId,
+      RunProperties runProperties,
+      String whileStepId,
+      WhileArtifact artifact,
+      RunRequest runRequest,
+      long instanceId) {
+    WorkflowInstance instance;
+    if (artifact.isFreshRun() || instanceId > artifact.getFirstIteration()) {
+      if (!artifact.isFreshRun()) { // reset to fresh run for new iteration
+        runRequest.clearRestartFor(RunPolicy.RESTART_FROM_BEGINNING);
+      }
+      instance =
+          workflowHelper.createWorkflowInstance(
+              workflow, internalId, workflowVersionId, runProperties, runRequest);
+    } else {
+      // for while loop restart, only the first iteration will be restarted
+      instance =
+          instanceDao.getWorkflowInstanceRun(
+              workflow.getId(), instanceId, artifact.getLoopRunId() - 1);
+      runRequest.updateForDownstreamIfNeeded(whileStepId, instance);
+      workflowHelper.updateWorkflowInstance(instance, runRequest);
+    }
+    instance.setWorkflowInstanceId(instanceId);
+    instance.setWorkflowRunId(artifact.getLoopRunId());
+    return instanceDao.runWorkflowInstances(workflow.getId(), List.of(instance));
   }
 
   /**

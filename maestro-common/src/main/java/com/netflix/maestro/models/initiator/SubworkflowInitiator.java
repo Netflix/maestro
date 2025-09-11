@@ -20,10 +20,7 @@ import com.netflix.maestro.models.parameter.ParamSource;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
-/**
- * Upstream workflow artifact to store its parent workflow and the step (subworkflow or foreach or
- * template) info at runtime.
- */
+/** Subworkflow initiator to store its parent workflow and the subworkflow step info at runtime. */
 @EqualsAndHashCode(callSuper = true)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)

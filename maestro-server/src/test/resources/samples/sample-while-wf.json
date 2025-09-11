@@ -1,0 +1,36 @@
+{
+  "properties": {
+    "owner": "tester",
+    "run_strategy": "sequential"
+  },
+  "workflow": {
+    "id": "sample-while-wf",
+    "name": "Test while loop workflow",
+    "description": "Long description about this workflow",
+    "params": {
+      "foo":  {
+        "expression": "new DateTime(1569018000000).withZone(DateTimeZone.forID('UTC')).monthOfYear().getAsText();",
+        "type":  "STRING"
+      }
+    },
+    "steps": [
+      {"while": {
+        "id": "while-job",
+        "condition": "i <= 20200105",
+        "params": {"loop_params": {
+          "value": {
+          "i": {
+            "value": 20200101,
+            "type": "LONG"}
+          },
+          "type": "MAP"
+        }},
+        "steps": [
+          {"step": {"id": "job.1", "type": "NoOp",
+            "params": {"i":  {"expression": "i+1", "type":  "LONG"}},
+            "transition": {}}}
+        ]
+      }}
+    ]
+  }
+}
