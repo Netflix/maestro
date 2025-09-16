@@ -23,7 +23,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.engine.MaestroEngineBaseTest;
-import com.netflix.maestro.engine.dao.OutputDataDao;
+import com.netflix.maestro.engine.dao.MaestroOutputDataDao;
 import com.netflix.maestro.engine.dto.OutputData;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.exceptions.MaestroValidationException;
@@ -55,7 +55,7 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
   private static final String TASK_ID = "t1234";
   private static final TypeReference<Map<String, Parameter>> PARAM_MAP = new TypeReference<>() {};
 
-  private @Mock OutputDataDao outputDataDao;
+  private @Mock MaestroOutputDataDao outputDataDao;
   private OutputDataManager outputDataManager;
   private StepRuntimeSummary runtimeSummary;
   private Map<String, Artifact> artifacts;
@@ -63,7 +63,6 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
 
   @Before
   public void before() throws JsonProcessingException {
-    outputDataDao = Mockito.mock(OutputDataDao.class);
     outputDataManager = new OutputDataManager(outputDataDao);
 
     runtimeSummary = runtimeSummaryBuilder().build();

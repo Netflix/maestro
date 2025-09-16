@@ -1,5 +1,6 @@
 package com.netflix.maestro.flow.runtime;
 
+import com.netflix.maestro.flow.Constants;
 import com.netflix.maestro.flow.models.FlowDef;
 import java.util.Map;
 import java.util.Set;
@@ -52,18 +53,28 @@ public interface FlowOperation {
    * @param groupId group id to group flow instances
    * @param flowReference reference is what the caller would like to refer a flow
    * @param taskReference task reference
+   * @param code notification signaling code, which is passed to the task when it is woken up
    * @return true if the task is woken up successfully. Otherwise, false. The caller can retry based
    *     on the returned result.
    */
-  boolean wakeUp(long groupId, String flowReference, String taskReference);
+  boolean wakeUp(long groupId, String flowReference, String taskReference, int code);
+
+  default boolean wakeUp(long groupId, String flowReference, String taskReference) {
+    return wakeUp(groupId, flowReference, taskReference, Constants.TASK_PING_CODE);
+  }
 
   /**
    * Wake up all the tasks in a list of flows for a group.
    *
    * @param groupId group id to group flow instances
    * @param flowReferences flow references
+   * @param code notification signaling code, which is passed to the task when it is woken up
    * @return true if all the flows are woken up successfully. Otherwise, false. The caller can retry
    *     based on the returned result.
    */
-  boolean wakeUp(long groupId, Set<String> flowReferences);
+  boolean wakeUp(long groupId, Set<String> flowReferences, int code);
+
+  default boolean wakeUp(long groupId, Set<String> flowReferences) {
+    return wakeUp(groupId, flowReferences, Constants.TASK_PING_CODE);
+  }
 }

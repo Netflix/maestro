@@ -63,20 +63,25 @@ public class FlowEngineController {
   }
 
   @PostMapping(
-      value = "/{groupId}/flows/{flowReference}/tasks/{taskReference}/notify",
+      value = "/{groupId}/flows/{flowReference}/tasks/{taskReference}/notify/{code}",
       consumes = MediaType.ALL_VALUE)
   @Operation(summary = "Wake up a specific flow task in a group")
   public Boolean wakeUp(
       @PathVariable("groupId") long groupId,
       @Valid @NotNull @PathVariable("flowReference") String flowReference,
-      @Valid @NotNull @PathVariable("taskReference") String taskReference) {
-    return flowExecutor.wakeUp(groupId, flowReference, taskReference);
+      @Valid @NotNull @PathVariable("taskReference") String taskReference,
+      @PathVariable("groupId") int code) {
+    return flowExecutor.wakeUp(groupId, flowReference, taskReference, code);
   }
 
-  @PostMapping(value = "/{groupId}/flows/notify", consumes = MediaType.APPLICATION_JSON_VALUE)
+  @PostMapping(
+      value = "/{groupId}/flows/notify/{code}",
+      consumes = MediaType.APPLICATION_JSON_VALUE)
   @Operation(summary = "Wake up all the tasks in a list of flows in a group")
   public Boolean wakeUp(
-      @PathVariable("groupId") long groupId, @Valid @NotNull @RequestBody Set<String> refs) {
-    return refs.stream().allMatch(ref -> flowExecutor.wakeUp(groupId, ref, null));
+      @PathVariable("groupId") long groupId,
+      @PathVariable("code") int code,
+      @Valid @NotNull @RequestBody Set<String> refs) {
+    return refs.stream().allMatch(ref -> flowExecutor.wakeUp(groupId, ref, null, code));
   }
 }

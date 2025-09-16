@@ -26,7 +26,7 @@ import java.util.Optional;
 import javax.sql.DataSource;
 
 /** DAO for saving and retrieving output data. */
-public class OutputDataDao extends AbstractDatabaseDao {
+public class MaestroOutputDataDao extends AbstractDatabaseDao {
   private static final String GET_OUTPUT_DATA_JOB_QUERY =
       "SELECT payload, create_ts, modify_ts from maestro_output_data "
           + "WHERE external_job_id = ? AND external_job_type = ? LIMIT 1";
@@ -36,7 +36,7 @@ public class OutputDataDao extends AbstractDatabaseDao {
           + "payload=EXCLUDED.payload,modify_ts=CURRENT_TIMESTAMP";
 
   /** Constructor for OutputDataDAO. */
-  public OutputDataDao(
+  public MaestroOutputDataDao(
       DataSource dataSource,
       ObjectMapper objectMapper,
       DatabaseConfiguration config,

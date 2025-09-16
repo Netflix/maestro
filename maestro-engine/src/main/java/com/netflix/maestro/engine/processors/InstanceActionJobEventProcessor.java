@@ -26,6 +26,7 @@ import com.netflix.maestro.queue.jobevents.MaestroJobEvent;
 import com.netflix.maestro.queue.processors.MaestroEventProcessor;
 import com.netflix.maestro.utils.Checks;
 import com.netflix.maestro.utils.IdHelper;
+import com.netflix.maestro.utils.ObjectHelper;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Optional;
@@ -44,6 +45,9 @@ import lombok.extern.slf4j.Slf4j;
 @AllArgsConstructor
 public class InstanceActionJobEventProcessor
     implements MaestroEventProcessor<InstanceActionJobEvent> {
+  private static final Integer DEFAULT_ACTION_CODE =
+      com.netflix.maestro.flow.Constants.TASK_PING_CODE;
+
   private final FlowOperation flowOperation;
   private final MaestroWorkflowInstanceDao instanceDao;
   private final MaestroStepInstanceDao stepInstanceDao;
@@ -60,6 +64,7 @@ public class InstanceActionJobEventProcessor
       case WORKFLOW -> processForWorkflowEntity(jobEvent);
       case STEP -> processForStepEntity(jobEvent);
       case FLOW -> processForFlowEntity(jobEvent);
+      case TASK -> processForTaskEntity(jobEvent);
     }
     return Optional.empty();
   }
@@ -185,5 +190,21 @@ public class InstanceActionJobEventProcessor
                 refs);
           }
         });
+  }
+
+  // Best effort wakeup the actor. It ignores any error or if wakeup is not done.
+  private void processForTaskEntity(InstanceActionJobEvent jobEvent) {
+    try {
+      // if not done or failed, no retry here.
+      int actionCode = ObjectHelper.valueOrDefault(jobEvent.getActionCode(), DEFAULT_ACTION_CODE);
+      flowOperation.wakeUp(
+          jobEvent.getGroupInfo(), jobEvent.getWorkflowId(), jobEvent.getStepId(), actionCode);
+    } catch (RuntimeException e) {
+      LOG.info(
+          "running into an exception while waking up underlying task [{}][{}][{}], will ignore it",
+          jobEvent.getGroupInfo(),
+          jobEvent.getWorkflowId(),
+          jobEvent.getStepId());
+    }
   }
 }

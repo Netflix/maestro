@@ -13,6 +13,7 @@
 package com.netflix.maestro.engine.processors;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
@@ -89,6 +90,7 @@ public class InstanceActionJobEventProcessorTest extends MaestroEngineBaseTest {
     setupInstanceBase();
     when(flowOperation.wakeUp(anyLong(), any())).thenReturn(true);
     when(flowOperation.wakeUp(anyLong(), any(), any())).thenReturn(true);
+    when(flowOperation.wakeUp(anyLong(), any(), any(), anyInt())).thenReturn(true);
   }
 
   private void setupInstanceBase() {
@@ -266,5 +268,41 @@ public class InstanceActionJobEventProcessorTest extends MaestroEngineBaseTest {
     Mockito.when(flowOperation.wakeUp(anyLong(), any())).thenReturn(false);
     Assert.assertTrue(processor.process(event).isEmpty());
     Mockito.verify(flowOperation, Mockito.times(3)).wakeUp(anyLong(), any());
+  }
+
+  @Test
+  public void testTaskActionSuccess() {
+    event.setEntityType(InstanceActionJobEvent.EntityType.TASK);
+    event.setActionCode(123);
+    Assert.assertTrue(processor.process(event).isEmpty());
+
+    Mockito.verifyNoInteractions(stepInstanceDao);
+    Mockito.verifyNoInteractions(instanceDao);
+    Mockito.verify(flowOperation, Mockito.times(1)).wakeUp(groupInfo, workflowId, stepId, 123);
+  }
+
+  @Test
+  public void testTaskActionWithException() {
+    event.setEntityType(InstanceActionJobEvent.EntityType.TASK);
+    event.setActionCode(123);
+    when(flowOperation.wakeUp(anyLong(), any(), any(), anyInt()))
+        .thenThrow(new RuntimeException("Test exception"));
+
+    Assert.assertTrue(processor.process(event).isEmpty());
+
+    Mockito.verifyNoInteractions(stepInstanceDao);
+    Mockito.verifyNoInteractions(instanceDao);
+    Mockito.verify(flowOperation, Mockito.times(1)).wakeUp(groupInfo, workflowId, stepId, 123);
+  }
+
+  @Test
+  public void testTaskActionWithDefaultCode() {
+    event.setEntityType(InstanceActionJobEvent.EntityType.TASK);
+    // action code is not set, should use the default value
+    Assert.assertTrue(processor.process(event).isEmpty());
+
+    Mockito.verifyNoInteractions(stepInstanceDao);
+    Mockito.verifyNoInteractions(instanceDao);
+    Mockito.verify(flowOperation, Mockito.times(1)).wakeUp(groupInfo, workflowId, stepId, 0);
   }
 }

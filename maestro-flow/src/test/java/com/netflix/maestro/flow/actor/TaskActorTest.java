@@ -52,9 +52,11 @@ public class TaskActorTest extends ActorBaseTest {
 
   @Test
   public void testRunForActionTaskStart() {
+    assertFalse(task.isStarted());
     taskActor.runForAction(Action.TASK_START);
     verify(context, times(1)).start(any(), any());
     verifyActions(taskActor, Action.TASK_PING);
+    assertTrue(task.isStarted());
   }
 
   @Test
@@ -99,6 +101,7 @@ public class TaskActorTest extends ActorBaseTest {
     task.setStartTime(System.currentTimeMillis());
     task.setTimeoutInMillis(3600000L);
     task.setStartDelayInMillis(3000000);
+    task.setStarted(true);
     when(context.execute(flow, task)).thenReturn(true);
 
     taskActor.runForAction(Action.TASK_PING);
@@ -127,6 +130,7 @@ public class TaskActorTest extends ActorBaseTest {
   public void testRunForActionTaskPingForTerminatedTask() {
     task.setStatus(Task.Status.FAILED);
     task.setStartDelayInMillis(3000000);
+    task.setStarted(true);
     when(context.execute(flow, task)).thenReturn(false);
 
     taskActor.runForAction(Action.TASK_PING);
@@ -145,6 +149,7 @@ public class TaskActorTest extends ActorBaseTest {
 
   private void verifyExecute(Action action, boolean activeFlag) {
     task.setActive(activeFlag);
+    task.setStarted(true);
     task.setStartDelayInMillis(3000000L);
     when(context.execute(flow, task)).thenReturn(false);
 
@@ -155,6 +160,35 @@ public class TaskActorTest extends ActorBaseTest {
     assertEquals(Set.of(Action.TASK_PING), taskActor.getScheduledActions().keySet());
     verify(context, times(0)).cloneTask(any());
     verifyEmptyAction(flowActor);
+  }
+
+  @Test
+  public void testExecuteNotStarted() {
+    taskActor.runForAction(Action.TASK_PING);
+    taskActor.runForAction(new Action.TaskPing(123));
+    taskActor.runForAction(new Action.TaskActivate(123));
+    taskActor.runForAction(Action.TASK_TIMEOUT);
+
+    // Should not execute if task is not started
+    verify(context, times(0)).execute(any(), any());
+    assertEquals(0, task.getPollCount());
+    assertEquals(Set.of(), taskActor.getScheduledActions().keySet());
+  }
+
+  @Test
+  public void testExecuteWithCustomCode() {
+    task.setStarted(true);
+    when(context.execute(flow, task))
+        .thenAnswer(
+            invocation -> {
+              Task taskArg = invocation.getArgument(1);
+              assertEquals(123, taskArg.getCode());
+              return false;
+            });
+    taskActor.runForAction(new Action.TaskActivate(123));
+
+    verify(context, times(1)).execute(any(), any());
+    assertEquals(0, task.getCode()); // reset action code
   }
 
   @Test

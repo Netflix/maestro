@@ -14,6 +14,7 @@ package com.netflix.maestro.server.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.database.DatabaseSourceProvider;
+import com.netflix.maestro.engine.dao.MaestroOutputDataDao;
 import com.netflix.maestro.engine.dao.MaestroRunStrategyDao;
 import com.netflix.maestro.engine.dao.MaestroStepBreakpointDao;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceActionDao;
@@ -21,7 +22,6 @@ import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowDeletionDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
-import com.netflix.maestro.engine.dao.OutputDataDao;
 import com.netflix.maestro.engine.utils.TriggerSubscriptionClient;
 import com.netflix.maestro.flow.dao.MaestroFlowDao;
 import com.netflix.maestro.metrics.MaestroMetrics;
@@ -155,13 +155,13 @@ public class DatabaseConfiguration {
   }
 
   @Bean
-  public OutputDataDao outputDataDao(
+  public MaestroOutputDataDao outputDataDao(
       DataSource maestroDataSource,
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
       MaestroEngineProperties props,
       MaestroMetrics metrics) {
     LOG.info("Creating outputDataDao within Spring boot...");
-    return new OutputDataDao(maestroDataSource, objectMapper, props, metrics);
+    return new MaestroOutputDataDao(maestroDataSource, objectMapper, props, metrics);
   }
 
   @Bean

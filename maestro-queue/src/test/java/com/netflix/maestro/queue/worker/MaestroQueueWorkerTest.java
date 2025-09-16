@@ -193,7 +193,7 @@ public class MaestroQueueWorkerTest extends MaestroBaseTest {
   @SuppressWarnings("unchecked")
   public void testRunWithInternalMessage() throws InterruptedException {
     when(messageQueue.take())
-        .thenReturn(new MessageDto(0, "msgId", null, 123456L))
+        .thenReturn(new MessageDto(Long.MAX_VALUE, "msgId", null, 123456L))
         .thenThrow(new InterruptedException("test"));
     when(dispatcher.processJobEvent(any())).thenReturn(Optional.empty());
     when(queueDao.dequeueUnownedMessages(anyInt(), anyLong(), anyInt()))

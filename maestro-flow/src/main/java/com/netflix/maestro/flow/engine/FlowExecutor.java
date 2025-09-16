@@ -202,13 +202,15 @@ public class FlowExecutor {
    * @param groupId group id to group flow instances
    * @param flowReference flow reference
    * @param taskReference task reference. If it is null, it wakes up all the tasks in the flow.
+   * @param code notification signaling code, which is passed to the task when it is woken up
    * @return true if the flow or task is woken up successfully, otherwise, false. The caller can
    *     retry based on the returned result.
    */
-  public boolean wakeUp(long groupId, String flowReference, @Nullable String taskReference) {
+  public boolean wakeUp(
+      long groupId, String flowReference, @Nullable String taskReference, int code) {
     Actor groupActor = groupActors.get(groupId);
     if (groupActor != null && groupActor.isRunning()) {
-      groupActor.post(new Action.FlowWakeUp(flowReference, taskReference));
+      groupActor.post(new Action.FlowWakeUp(flowReference, taskReference, code));
       return true;
     }
     return false;

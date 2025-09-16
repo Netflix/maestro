@@ -38,17 +38,17 @@ import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 
-public class OutputDataDaoTest extends MaestroDaoBaseTest {
+public class MaestroOutputDataDaoTest extends MaestroDaoBaseTest {
   public static final String WORKFLOW_ID = "wid";
   private static final StepType JOB_TYPE = StepType.TITUS;
   private static final String EXT_JOB_ID = "JOB_123";
-  private OutputDataDao dao;
+  private MaestroOutputDataDao dao;
   private Map<String, Parameter> params;
   private Map<String, Artifact> artifacts;
 
   @Before
   public void setUp() throws IOException {
-    dao = new OutputDataDao(DATA_SOURCE, MAPPER, CONFIG, metricRepo);
+    dao = new MaestroOutputDataDao(DATA_SOURCE, MAPPER, CONFIG, metricRepo);
     WorkflowDefinition definition =
         loadObject("fixtures/parameters/sample-wf-notebook.json", WorkflowDefinition.class);
     params = toParameters(definition.getWorkflow().getParams());
@@ -61,7 +61,8 @@ public class OutputDataDaoTest extends MaestroDaoBaseTest {
   @Test
   public void testParamsSizeOverLimit() throws Exception {
     ObjectMapper mockMapper = mock(ObjectMapper.class);
-    OutputDataDao testDao = new OutputDataDao(DATA_SOURCE, mockMapper, CONFIG, metricRepo);
+    MaestroOutputDataDao testDao =
+        new MaestroOutputDataDao(DATA_SOURCE, mockMapper, CONFIG, metricRepo);
     when(mockMapper.writeValueAsString(any()))
         .thenReturn(new String(new char[Constants.JSONIFIED_PARAMS_STRING_SIZE_LIMIT + 1]));
     AssertHelper.assertThrows(
@@ -171,7 +172,7 @@ public class OutputDataDaoTest extends MaestroDaoBaseTest {
     OutputData data =
         new OutputData(
             JOB_TYPE,
-            OutputDataDaoTest.EXT_JOB_ID,
+            MaestroOutputDataDaoTest.EXT_JOB_ID,
             WORKFLOW_ID,
             System.currentTimeMillis(),
             System.currentTimeMillis(),
@@ -181,7 +182,7 @@ public class OutputDataDaoTest extends MaestroDaoBaseTest {
   }
 
   private void verifyExpectedDTOs(OutputData paramResult) {
-    assertEquals(OutputDataDaoTest.EXT_JOB_ID, paramResult.getExternalJobId());
+    assertEquals(MaestroOutputDataDaoTest.EXT_JOB_ID, paramResult.getExternalJobId());
     assertEquals(JOB_TYPE, paramResult.getExternalJobType());
     assertEquals(WORKFLOW_ID, paramResult.getWorkflowId());
     assertEquals(3, paramResult.getParams().size());

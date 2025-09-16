@@ -1,6 +1,7 @@
 package com.netflix.maestro.flow.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.netflix.maestro.flow.Constants;
 import java.util.Map;
 import lombok.Data;
 import lombok.Getter;
@@ -19,7 +20,8 @@ import lombok.Getter;
  * for its own snapshots.
  *
  * <p>Basic rule: flow actor can only activate a task actor. A task actor can only deactivate itself
- * and inform its parent flow actor.
+ * and inform its parent flow actor. Only the task actor itself can set the started flag to true
+ * after proper initialization.
  *
  * @author jun-he
  */
@@ -67,6 +69,8 @@ public class Task {
   private long retryCount;
   private int pollCount;
   private boolean active = true; // flag to indicate if a running task is active or not
+  private boolean started = false; // flag to indicate if a running task is started or not
+  private int code = Constants.TASK_PING_CODE; // wakeup code for custom signaling
   private Long startTime; // used to record the execution start time
   private Long timeoutInMillis; // keep unset timeout value from maestro engine
   private Long endTime; // used to record the execution end time

@@ -12,7 +12,7 @@
  */
 package com.netflix.maestro.engine.params;
 
-import com.netflix.maestro.engine.dao.OutputDataDao;
+import com.netflix.maestro.engine.dao.MaestroOutputDataDao;
 import com.netflix.maestro.engine.dto.OutputData;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.models.artifact.Artifact;
@@ -24,7 +24,7 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class OutputDataManager {
 
-  private OutputDataDao outputDataDao;
+  private MaestroOutputDataDao outputDataDao;
 
   public void saveOutputData(OutputData outputData) {
     outputDataDao.insertOrUpdateOutputData(outputData);

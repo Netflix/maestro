@@ -95,13 +95,18 @@ public class FlowExecutorTest extends ActorBaseTest {
 
   @Test
   public void testWakeUp() {
-    assertFalse(executor.wakeUp(1L, "wf-1", "task1"));
+    assertFalse(executor.wakeUp(1L, "wf-1", "task1", 0));
     when(context.trySaveGroup(1, "test-address"))
         .thenReturn(new FlowGroup(1, 1, "test-address", 12345));
 
     executor.startFlow(1, "test-id", "wf-1", new FlowDef(), Map.of());
-    assertTrue(executor.wakeUp(1L, "wf-1", "task1"));
-    assertFalse(executor.wakeUp(2L, "wf-1", "task1"));
-    assertTrue(executor.wakeUp(1L, "wf-2", "task1"));
+    assertTrue(executor.wakeUp(1L, "wf-1", "task1", 0));
+    assertFalse(executor.wakeUp(2L, "wf-1", "task1", 0));
+    assertTrue(executor.wakeUp(1L, "wf-2", "task1", 0));
+
+    // Test with custom action code
+    assertTrue(executor.wakeUp(1L, "wf-1", "task1", 123));
+    assertFalse(executor.wakeUp(2L, "wf-1", "task1", -1));
+    assertTrue(executor.wakeUp(1L, "wf-2", null, 123));
   }
 }

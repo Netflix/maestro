@@ -77,21 +77,22 @@ public class RestBasedFlowOperation implements FlowOperation {
   }
 
   @Override
-  public boolean wakeUp(long groupId, String flowReference, String taskReference) {
+  public boolean wakeUp(long groupId, String flowReference, String taskReference, int code) {
     try {
       FlowGroup group = loadFlowGroup(groupId);
       if (group == null || localAddress.equals(group.address())) {
-        return flowExecutor.wakeUp(groupId, flowReference, taskReference);
+        return flowExecutor.wakeUp(groupId, flowReference, taskReference, code);
       } else {
         return Boolean.TRUE.equals(
             restTemplate.postForObject(
                 group.address()
-                    + "/api/v3/groups/{groupId}/flows/{flowReference}/tasks/{taskReference}/notify",
+                    + "/api/v3/groups/{groupId}/flows/{flowReference}/tasks/{taskReference}/notify/{code}",
                 null,
                 Boolean.class,
                 groupId,
                 flowReference,
-                taskReference));
+                taskReference,
+                code));
       }
     } catch (MaestroRetryableError e) {
       addressCache.remove(groupId);
@@ -100,18 +101,19 @@ public class RestBasedFlowOperation implements FlowOperation {
   }
 
   @Override
-  public boolean wakeUp(long groupId, Set<String> refs) {
+  public boolean wakeUp(long groupId, Set<String> refs, int code) {
     try {
       FlowGroup group = loadFlowGroup(groupId);
       if (group == null || localAddress.equals(group.address())) {
-        return refs.stream().allMatch(ref -> flowExecutor.wakeUp(groupId, ref, null));
+        return refs.stream().allMatch(ref -> flowExecutor.wakeUp(groupId, ref, null, code));
       } else {
         return Boolean.TRUE.equals(
             restTemplate.postForObject(
-                group.address() + "/api/v3/groups/{groupId}/flows/notify",
+                group.address() + "/api/v3/groups/{groupId}/flows/notify/{code}",
                 refs,
                 Boolean.class,
-                groupId));
+                groupId,
+                code));
       }
     } catch (MaestroRetryableError e) {
       addressCache.remove(groupId);

@@ -9,6 +9,12 @@
       "type": "STRING",
       "evaluated_result": "bar",
       "evaluated_time": 1625871404000
+    },
+    "stringarray": {
+      "value": ["foo", "bar"],
+      "type": "STRING_ARRAY",
+      "evaluated_result": ["foo", "bar"],
+      "evaluated_time": 1625871404000
     }
   },
   "artifacts": {

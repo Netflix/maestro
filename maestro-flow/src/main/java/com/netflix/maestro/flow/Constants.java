@@ -16,4 +16,10 @@ public final class Constants {
 
   /** Exit code to indicate an invalid ownership. */
   public static final int INVALID_OWNERSHIP_EXIT_CODE = 1;
+
+  /** Default action code for task ping action. */
+  public static final int TASK_PING_CODE = 0;
+
+  /** Default action code for task timeout action. */
+  public static final int TIMEOUT_TASK_CODE = -1;
 }

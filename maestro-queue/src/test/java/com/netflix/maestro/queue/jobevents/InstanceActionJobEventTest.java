@@ -25,7 +25,8 @@ public class InstanceActionJobEventTest extends MaestroBaseTest {
         List.of(
             "fixtures/jobevents/sample-instance-step-action-job-event.json",
             "fixtures/jobevents/sample-instance-workflow-action-job-event.json",
-            "fixtures/jobevents/sample-instance-flow-action-job-event.json")) {
+            "fixtures/jobevents/sample-instance-flow-action-job-event.json",
+            "fixtures/jobevents/sample-instance-task-action-job-event.json")) {
       InstanceActionJobEvent sampleEvent = loadObject(json, InstanceActionJobEvent.class);
       Assert.assertEquals(
           sampleEvent,
