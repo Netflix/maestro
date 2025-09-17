@@ -70,7 +70,7 @@ public class FlowEngineController {
       @PathVariable("groupId") long groupId,
       @Valid @NotNull @PathVariable("flowReference") String flowReference,
       @Valid @NotNull @PathVariable("taskReference") String taskReference,
-      @PathVariable("groupId") int code) {
+      @PathVariable("code") int code) {
     return flowExecutor.wakeUp(groupId, flowReference, taskReference, code);
   }
 
