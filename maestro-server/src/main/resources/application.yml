@@ -92,7 +92,7 @@ stepruntime:
       RUNNING:
         default: 3
       WAITING_FOR_PERMITS:
-        default: 5
+        default: 15
       WAITING_FOR_SIGNALS:
         default: 5
       PAUSED:
@@ -101,6 +101,11 @@ stepruntime:
         default: 5
       NOT_CREATED:
         default: 30
+  enable-tag-permit: true
+  tag-permit-task:
+    batch-size: 512
+    clean-up-interval: 60000
+    scan-interval: 30000
 
 triggers:
   #time trigger configurations

@@ -29,7 +29,7 @@ import lombok.ToString;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(
-    value = {"timestamp", "type", "action", "author", "message", "reason"},
+    value = {"timestamp", "type", "action", "author", "message", "reason", "info"},
     alphabetic = true)
 @JsonDeserialize(builder = TimelineActionEvent.TimelineActionEventBuilder.class)
 @Builder
@@ -42,6 +42,7 @@ public class TimelineActionEvent implements TimelineEvent {
   private final User author;
   private final String message;
   private final String reason;
+  private final Long info;
 
   @Override
   public Type getType() {
@@ -62,7 +63,8 @@ public class TimelineActionEvent implements TimelineEvent {
     return Objects.equals(this.action, other.action)
         && Objects.equals(this.author, other.author)
         && Objects.equals(this.message, other.message)
-        && Objects.equals(this.reason, other.reason);
+        && Objects.equals(this.reason, other.reason)
+        && Objects.equals(this.info, other.info);
   }
 
   /** builder class for lombok and jackson. */
@@ -74,7 +76,7 @@ public class TimelineActionEvent implements TimelineEvent {
       if (timestamp == null) {
         timestamp = System.currentTimeMillis();
       }
-      return new TimelineActionEvent(timestamp, action, author, message, reason);
+      return new TimelineActionEvent(timestamp, action, author, message, reason, info);
     }
 
     /** build action with an enum object. */

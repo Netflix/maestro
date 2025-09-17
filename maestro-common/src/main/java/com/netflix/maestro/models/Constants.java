@@ -46,6 +46,12 @@ public final class Constants {
   public static final Set<String> USER_DEFINED_TASKS =
       Collections.singleton(Constants.MAESTRO_TASK_NAME);
 
+  /** Maestro internal tag permit task name. */
+  public static final String TAG_PERMIT_TASK_NAME = MAESTRO_PREFIX + "tag_permit";
+
+  /** Maestro internal flow name for internal operations. */
+  public static final String INTERNAL_FLOW_NAME = "internal_flow" + MAESTRO_SUFFIX;
+
   /** Maestro workflow instance summary field name. */
   public static final String WORKFLOW_SUMMARY_FIELD = MAESTRO_PREFIX + "workflow_summary";
 

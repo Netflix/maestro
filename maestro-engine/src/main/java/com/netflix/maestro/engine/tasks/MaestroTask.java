@@ -67,6 +67,7 @@ import com.netflix.maestro.models.parameter.MapParameter;
 import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.models.signal.SignalDependencies;
 import com.netflix.maestro.models.signal.SignalOutputsDefinition;
+import com.netflix.maestro.models.timeline.TimelineActionEvent;
 import com.netflix.maestro.models.timeline.TimelineLogEvent;
 import com.netflix.maestro.utils.DurationParser;
 import com.netflix.maestro.utils.MapHelper;
@@ -811,7 +812,7 @@ public class MaestroTask implements FlowTask {
                 evaluateParams(flow, task, stepDefinition, workflowSummary, runtimeSummary);
             break;
           case WAITING_FOR_PERMITS:
-            if (permitsReady(workflowSummary, runtimeSummary)) {
+            if (permitsReady(flow, workflowSummary, runtimeSummary)) {
               // If all required tag permits are acquired, then transition to starting.
               runtimeSummary.markStarting(tracingManager);
               task.setStartTime(runtimeSummary.getRuntimeState().getStartTime());
@@ -1049,15 +1050,27 @@ public class MaestroTask implements FlowTask {
     return stepInstance;
   }
 
-  private boolean permitsReady(WorkflowSummary workflowSummary, StepRuntimeSummary runtimeSummary) {
+  private boolean permitsReady(
+      Flow flow, WorkflowSummary workflowSummary, StepRuntimeSummary runtimeSummary) {
     try {
       List<Tag> allTags = workflowSummary.deriveRuntimeTagPermits(runtimeSummary);
       allTags.addAll(runtimeSummary.getTags().getTags());
 
       TagPermitManager.Status tagPermitStatus =
-          tagPermitAcquirer.acquire(allTags, runtimeSummary.getStepInstanceUuid());
-      runtimeSummary.addTimeline(TimelineLogEvent.info(tagPermitStatus.getMessage()));
-      return tagPermitStatus.isSuccess();
+          tagPermitAcquirer.acquire(
+              allTags,
+              runtimeSummary.getStepInstanceUuid(),
+              TimelineActionEvent.builder()
+                  .action("AcquireTagPermit")
+                  .reason(
+                      "Acquire tag permits for step %s%s",
+                      workflowSummary.getIdentity(), runtimeSummary.getIdentity())
+                  .info(flow.getGroupId())
+                  .message(flow.getReference())
+                  .author(User.create(runtimeSummary.getStepId()))
+                  .build());
+      runtimeSummary.addTimeline(TimelineLogEvent.info(tagPermitStatus.message()));
+      return tagPermitStatus.success();
     } catch (RuntimeException e) { // Currently, assume all runtime exception is retryable
       runtimeSummary.addTimeline(
           TimelineLogEvent.warn(

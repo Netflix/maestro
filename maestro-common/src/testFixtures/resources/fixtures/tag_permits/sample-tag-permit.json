@@ -1,5 +1,48 @@
 {
   "tag": "tag1",
-  "current_used": 1,
-  "max_allowed": 42
+  "max_allowed": 42,
+  "timeline": [
+    {
+      "timestamp": 1758087046642,
+      "type": "LOG",
+      "level": "INFO",
+      "message": "User [tester] created the tag permit with limit [1]"
+    },
+    {
+      "timestamp": 1758087170534,
+      "type": "LOG",
+      "level": "INFO",
+      "message": "User [tester] updated the tag permit to the new limit [2]"
+    },
+    {
+      "timestamp": 1758087249760,
+      "type": "LOG",
+      "level": "INFO",
+      "message": "User [tester] updated the tag permit to the new limit [1]"
+    },
+    {
+      "timestamp": 1758087268094,
+      "type": "LOG",
+      "level": "INFO",
+      "message": "User [tester] updated the tag permit to the new limit [3]"
+    },
+    {
+      "timestamp": 1758087360250,
+      "type": "LOG",
+      "level": "INFO",
+      "message": "User [tester] updated the tag permit to the new limit [0]"
+    },
+    {
+      "timestamp": 1758087590295,
+      "type": "LOG",
+      "level": "INFO",
+      "message": "User [tester] updated the tag permit to the new limit [3]"
+    },
+    {
+      "timestamp": 1758087702845,
+      "type": "LOG",
+      "level": "INFO",
+      "message": "User [tester] updated the tag permit to the new limit [0]"
+    }
+  ]
 }

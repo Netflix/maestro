@@ -14,6 +14,7 @@ package com.netflix.maestro.engine.handlers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
@@ -249,5 +250,33 @@ public class MaestroExecutionPreparerTest extends MaestroEngineBaseTest {
     assertEquals(3, flow.getSeq());
     assertNull(flow.getPrepareTask().getStartTime());
     assertTrue(flow.getRunningTasks().isEmpty());
+  }
+
+  @Test
+  public void testResumeInternalFlow() {
+    Flow internalFlow =
+        new Flow(
+            10,
+            Constants.INTERNAL_FLOW_NAME,
+            1,
+            System.currentTimeMillis(),
+            Constants.INTERNAL_FLOW_NAME);
+    boolean result = executionPreparer.resume(internalFlow);
+
+    assertTrue(result);
+    assertEquals(Flow.Status.RUNNING, internalFlow.getStatus());
+    assertNotNull(internalFlow.getFlowDef());
+    assertEquals(1, internalFlow.getFlowDef().getTasks().size());
+    assertEquals(1, internalFlow.getFlowDef().getTasks().getFirst().size());
+    TaskDef tagPermitTask = internalFlow.getFlowDef().getTasks().getFirst().getFirst();
+    assertEquals(Constants.TAG_PERMIT_TASK_NAME, tagPermitTask.taskReferenceName());
+    assertEquals(Constants.TAG_PERMIT_TASK_NAME, tagPermitTask.type());
+    assertNull(tagPermitTask.joinOn());
+    assertEquals(-1, internalFlow.getFlowDef().getTimeoutInMillis());
+    assertFalse(internalFlow.getFlowDef().isFinalFlowStatusCallbackEnabled());
+    assertNotNull(internalFlow.getPrepareTask());
+    assertNotNull(internalFlow.getMonitorTask());
+    assertNull(internalFlow.getPrepareTask().getTaskDef());
+    assertNull(internalFlow.getMonitorTask().getTaskDef());
   }
 }
