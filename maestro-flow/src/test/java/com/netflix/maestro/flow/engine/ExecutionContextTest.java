@@ -116,12 +116,30 @@ public class ExecutionContextTest extends FlowBaseTest {
   }
 
   @Test
+  public void testPrepareWithNullTaskDef() {
+    Task prepare = flow.newTask(null, true);
+    flow.setPrepareTask(prepare);
+
+    context.prepare(flow);
+    verify(flowTask, times(0)).execute(flow, prepare);
+  }
+
+  @Test
   public void testRefresh() {
     Task monitor = flow.newTask(new TaskDef("monitor", "noop", null), true);
     flow.setMonitorTask(monitor);
 
     context.refresh(flow);
     verify(flowTask, times(1)).execute(flow, monitor);
+  }
+
+  @Test
+  public void testRefreshWithNullTaskDef() {
+    Task monitor = flow.newTask(null, true);
+    flow.setMonitorTask(monitor);
+
+    context.refresh(flow);
+    verify(flowTask, times(0)).execute(flow, monitor);
   }
 
   @Test

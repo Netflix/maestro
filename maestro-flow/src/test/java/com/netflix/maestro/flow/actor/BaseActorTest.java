@@ -24,8 +24,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.netflix.maestro.AssertHelper;
+import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import org.junit.Before;
@@ -66,6 +68,17 @@ public class BaseActorTest extends ActorBaseTest {
 
     groupActor.post(Action.GROUP_START);
     verifyActions(groupActor, Action.GROUP_START);
+  }
+
+  @Test
+  public void testPostActionDeduplication() {
+    verifyEmptyAction(groupActor);
+
+    groupActor.post(Action.GROUP_START);
+    groupActor.post(Action.GROUP_HEARTBEAT);
+    groupActor.post(Action.GROUP_START);
+
+    verifyActions(groupActor, Action.GROUP_START, Action.GROUP_HEARTBEAT);
   }
 
   @Test
@@ -299,7 +312,7 @@ public class BaseActorTest extends ActorBaseTest {
     groupActor.schedule(Action.TASK_PING, 0);
     groupActor.schedule(Action.TASK_PING, 0);
     verify(context, times(0)).schedule(any(), anyLong());
-    verifyActions(groupActor, Action.TASK_PING, Action.TASK_PING);
+    verifyActions(groupActor, Action.TASK_PING);
   }
 
   @Test
@@ -368,5 +381,49 @@ public class BaseActorTest extends ActorBaseTest {
         .counter("num_of_finished_flows", FlowActor.class, "finalized", "false");
     verifyActions(groupActor, Action.FLOW_DOWN);
     verifyEmptyAction(flowActor);
+  }
+
+  @Test
+  public void testQueuedActionsMapTracksPostings() throws Exception {
+    ConcurrentHashMap<Action, Boolean> queuedActions = getQueuedActionsMap(groupActor);
+
+    assertTrue(queuedActions.isEmpty());
+
+    groupActor.post(Action.GROUP_START);
+    assertEquals(1, queuedActions.size());
+    assertTrue(queuedActions.containsKey(Action.GROUP_START));
+
+    groupActor.post(Action.GROUP_HEARTBEAT);
+    assertEquals(2, queuedActions.size());
+    assertTrue(queuedActions.containsKey(Action.GROUP_START));
+    assertTrue(queuedActions.containsKey(Action.GROUP_HEARTBEAT));
+
+    groupActor.post(Action.GROUP_START);
+    assertEquals(2, queuedActions.size());
+  }
+
+  @Test
+  public void testConcurrentPostingSameAction() throws Exception {
+    ConcurrentHashMap<Action, Boolean> queuedActions = getQueuedActionsMap(groupActor);
+
+    assertTrue(queuedActions.isEmpty());
+
+    groupActor.post(Action.GROUP_START);
+    assertEquals(1, queuedActions.size());
+    assertEquals(1, groupActor.getActions().size());
+
+    groupActor.post(Action.GROUP_START);
+    assertEquals(1, queuedActions.size());
+    assertEquals(1, groupActor.getActions().size());
+
+    groupActor.post(Action.GROUP_HEARTBEAT);
+    assertEquals(2, queuedActions.size());
+    assertEquals(2, groupActor.getActions().size());
+  }
+
+  private ConcurrentHashMap<Action, Boolean> getQueuedActionsMap(BaseActor actor) throws Exception {
+    Field queuedActionsField = BaseActor.class.getDeclaredField("queuedActions");
+    queuedActionsField.setAccessible(true);
+    return (ConcurrentHashMap<Action, Boolean>) queuedActionsField.get(actor);
   }
 }
