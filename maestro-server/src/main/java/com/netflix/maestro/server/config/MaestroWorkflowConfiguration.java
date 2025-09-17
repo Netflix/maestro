@@ -17,11 +17,11 @@ import brave.Tracer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.engine.concurrency.InstanceStepConcurrencyHandler;
 import com.netflix.maestro.engine.concurrency.TagPermitManager;
+import com.netflix.maestro.engine.dao.MaestroOutputDataDao;
 import com.netflix.maestro.engine.dao.MaestroStepBreakpointDao;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceActionDao;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
-import com.netflix.maestro.engine.dao.OutputDataDao;
 import com.netflix.maestro.engine.eval.MaestroParamExtensionRepo;
 import com.netflix.maestro.engine.eval.ParamEvaluator;
 import com.netflix.maestro.engine.execution.StepRuntimeCallbackDelayPolicy;
@@ -211,7 +211,7 @@ public class MaestroWorkflowConfiguration {
   }
 
   @Bean
-  public OutputDataManager outputParamsManager(OutputDataDao outputDataDao) {
+  public OutputDataManager outputParamsManager(MaestroOutputDataDao outputDataDao) {
     LOG.info("Creating OutputParamsManager within Spring boot...");
     return new OutputDataManager(outputDataDao);
   }

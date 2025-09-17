@@ -120,7 +120,7 @@ public class GroupActorTest extends ActorBaseTest {
 
   @Test
   public void testRunForActionFlowWakeUp() {
-    groupActor.runForAction(new Action.FlowWakeUp(flow.getReference(), "taskRef"));
+    groupActor.runForAction(new Action.FlowWakeUp(flow.getReference(), "taskRef", 0));
     assertNull(groupActor.getChild(flow.getReference()));
 
     groupActor.runForAction(new Action.FlowLaunch(flow, false));
@@ -128,8 +128,11 @@ public class GroupActorTest extends ActorBaseTest {
     var child = groupActor.getChild(flow.getReference());
     verifyActions(child, Action.FLOW_START);
 
-    groupActor.runForAction(new Action.FlowWakeUp(flow.getReference(), "taskRef"));
-    verifyActions(child, new Action.TaskWakeUp("taskRef"));
+    groupActor.runForAction(new Action.FlowWakeUp(flow.getReference(), "taskRef", 0));
+    verifyActions(child, new Action.TaskWakeUp("taskRef", 0));
+
+    groupActor.runForAction(new Action.FlowWakeUp(flow.getReference(), "taskRef", 123));
+    verifyActions(child, new Action.TaskWakeUp("taskRef", 123));
   }
 
   @Test

@@ -28,15 +28,24 @@ import java.util.Map;
  */
 public record MessageDto(
     long ownedUntil, String msgId, @Nullable MaestroJobEvent event, long createTime) {
+  private static final long IN_MEMORY_OWNED_UNTIL = Long.MAX_VALUE;
+
   /** The constant for the system operational message. */
   public static final MessageDto SCAN_CMD_MSG =
-      new MessageDto(Long.MAX_VALUE, "maestro-queue-scan", null, System.currentTimeMillis());
+      new MessageDto(IN_MEMORY_OWNED_UNTIL, "maestro-queue-scan", null, System.currentTimeMillis());
 
   public static MessageDto createMessageForWakeUp(
       String workflowId, long groupInfo, Map<Long, Long> instanceRunIds) {
     var jobEvent = InstanceActionJobEvent.create(workflowId, groupInfo, instanceRunIds);
     return new MessageDto(
-        Long.MAX_VALUE, jobEvent.getIdentity(), jobEvent, System.currentTimeMillis());
+        IN_MEMORY_OWNED_UNTIL, jobEvent.getIdentity(), jobEvent, System.currentTimeMillis());
+  }
+
+  public static MessageDto createMessageForWakeUp(
+      long groupId, String flowRef, String taskRef, int code) {
+    var jobEvent = InstanceActionJobEvent.create(groupId, flowRef, taskRef, code);
+    return new MessageDto(
+        IN_MEMORY_OWNED_UNTIL, jobEvent.getIdentity(), jobEvent, System.currentTimeMillis());
   }
 
   /** Get the event type from the event. */
@@ -60,6 +69,6 @@ public record MessageDto(
   }
 
   public boolean inMemory() {
-    return ownedUntil == Long.MAX_VALUE;
+    return ownedUntil == IN_MEMORY_OWNED_UNTIL;
   }
 }

@@ -1,6 +1,7 @@
 package com.netflix.maestro.flow.actor;
 
 import com.netflix.maestro.exceptions.MaestroUnprocessableEntityException;
+import com.netflix.maestro.flow.Constants;
 import com.netflix.maestro.flow.engine.ExecutionContext;
 import com.netflix.maestro.flow.models.Flow;
 import com.netflix.maestro.flow.models.Task;
@@ -43,9 +44,9 @@ final class TaskActor extends BaseActor {
     switch (action) {
       case Action.TaskStart s -> start(s.resume());
       case Action.TaskStop ts -> stop();
-      case Action.TaskPing p -> execute();
-      case Action.TaskActivate a -> activate();
-      case Action.TaskTimeout t -> execute();
+      case Action.TaskPing p -> execute(p.code());
+      case Action.TaskActivate a -> activate(a.code());
+      case Action.TaskTimeout t -> execute(Constants.TIMEOUT_TASK_CODE);
       case Action.TaskShutdown d -> shutdown();
       default ->
           throw new MaestroUnprocessableEntityException(
@@ -79,13 +80,14 @@ final class TaskActor extends BaseActor {
       getContext().start(flow, task);
     }
     post(Action.TASK_PING); // immediately execute over TASK_PING
+    task.setStarted(true);
   }
 
-  private void activate() {
+  private void activate(int code) {
     if (!task.isActive()) {
       task.setActive(true);
     }
-    execute();
+    execute(code);
   }
 
   private void stop() {
@@ -105,10 +107,16 @@ final class TaskActor extends BaseActor {
    * check will discover it as it also checks the parent status. Maestro engine makes sure to flip
    * the active flag if the task should not execution (e.g. NOT_CREATED case).
    */
-  private void execute() {
+  private void execute(int code) {
+    if (!task.isStarted()) {
+      LOG.info("Flow task [{}] is not started yet, skip execution", name);
+      return;
+    }
     boolean changed = false;
     if (task.isActive()) { // execution only for active tasks
+      task.setCode(code);
       changed = getContext().execute(flow, task);
+      task.setCode(Constants.TASK_PING_CODE);
     }
     if (task.getStatus().isTerminal()) {
       terminateNow(); // if terminal state, then stop

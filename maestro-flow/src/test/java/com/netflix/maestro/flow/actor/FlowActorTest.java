@@ -74,6 +74,13 @@ public class FlowActorTest extends ActorBaseTest {
   }
 
   @Test
+  public void testRunForActionFlowStartWithoutTimeout() {
+    flow.getFlowDef().setTimeoutInMillis(-1);
+    flowActor.runForAction(Action.FLOW_START);
+    assertEquals(Set.of(), flowActor.getScheduledActions().keySet());
+  }
+
+  @Test
   public void testRunForActionFlowResumeWithRunningFlow() {
     assertNull(flow.getPrepareTask());
     assertNull(flow.getMonitorTask());
@@ -262,7 +269,7 @@ public class FlowActorTest extends ActorBaseTest {
 
     flowActor.runForAction(new Action.TaskUpdate(task2));
     assertEquals(
-        Set.of(Action.FLOW_REFRESH, new Action.TaskWakeUp("task1")),
+        Set.of(Action.FLOW_REFRESH, new Action.TaskWakeUp("task1", 0)),
         flowActor.getScheduledActions().keySet());
     assertEquals(task2, flow.getRunningTasks().get("task1"));
   }
@@ -311,13 +318,22 @@ public class FlowActorTest extends ActorBaseTest {
 
     Task task2 = flow.getRunningTasks().get("task1");
     task2.setActive(false);
-    flowActor.runForAction(new Action.TaskWakeUp("task1"));
+    flowActor.runForAction(new Action.TaskWakeUp("task1", 0));
     assertTrue(task2.isActive());
     verifyActions(flowActor.getChild("task1"), Action.TASK_ACTIVATE);
   }
 
   @Test
   public void testTaskWakeUpWithQueuedTask() {
+    testTaskWakeUp(0, Action.TASK_ACTIVATE);
+  }
+
+  @Test
+  public void testTaskWakeUpWithCustomActionCode() {
+    testTaskWakeUp(123, new Action.TaskActivate(123));
+  }
+
+  private void testTaskWakeUp(int code, Action expectedAction) {
     var future = Mockito.mock(ScheduledFuture.class);
     when(context.schedule(any(), anyLong())).thenReturn(future);
     when(future.cancel(false)).thenReturn(true);
@@ -329,9 +345,9 @@ public class FlowActorTest extends ActorBaseTest {
     flowActor.runForAction(Action.FLOW_RESUME);
     assertFalse(flowActor.containsChild("task1"));
 
-    flowActor.runForAction(new Action.TaskWakeUp("task1"));
+    flowActor.runForAction(new Action.TaskWakeUp("task1", code));
     verify(future, times(1)).cancel(false);
-    verifyActions(flowActor.getChild("task1"), Action.TASK_START, Action.TASK_ACTIVATE);
+    verifyActions(flowActor.getChild("task1"), Action.TASK_START, expectedAction);
     assertTrue(flowActor.containsChild("task1"));
     verify(context, times(1)).getMetrics();
     verify(metrics, times(1)).counter("num_of_wakeup_flows", FlowActor.class, "forall", "false");
@@ -339,6 +355,15 @@ public class FlowActorTest extends ActorBaseTest {
 
   @Test
   public void testTaskWakeUpForAllFlowTasks() {
+    testTaskWakeUpForAll(0, Action.TASK_PING);
+  }
+
+  @Test
+  public void testTaskWakeUpAllWithCustomActionCode() {
+    testTaskWakeUpForAll(123, new Action.TaskPing(123));
+  }
+
+  public void testTaskWakeUpForAll(int code, Action expectedAction) {
     var future = Mockito.mock(ScheduledFuture.class);
     when(context.schedule(any(), anyLong())).thenReturn(future);
     when(future.cancel(false)).thenReturn(true);
@@ -354,10 +379,10 @@ public class FlowActorTest extends ActorBaseTest {
     assertFalse(flowActor.containsChild("task1"));
     assertTrue(flowActor.containsChild("task2"));
 
-    flowActor.runForAction(new Action.TaskWakeUp(null));
+    flowActor.runForAction(new Action.TaskWakeUp(null, code));
     verify(future, times(1)).cancel(false);
-    verifyActions(flowActor.getChild("task1"), Action.TASK_START, Action.TASK_PING);
-    verifyActions(flowActor.getChild("task2"), Action.TASK_RESUME, Action.TASK_PING);
+    verifyActions(flowActor.getChild("task1"), Action.TASK_START, expectedAction);
+    verifyActions(flowActor.getChild("task2"), Action.TASK_RESUME, expectedAction);
     assertTrue(flowActor.containsChild("task1"));
     assertTrue(flowActor.containsChild("task2"));
     verify(context, times(1)).getMetrics();
@@ -411,7 +436,7 @@ public class FlowActorTest extends ActorBaseTest {
     AssertHelper.assertThrows(
         "should throw for unexpected action",
         MaestroUnprocessableEntityException.class,
-        "Unexpected action: [TaskPing[]] for flow ",
+        "Unexpected action: [TaskPing[code=0]] for flow ",
         () -> flowActor.runForAction(Action.TASK_PING));
   }
 

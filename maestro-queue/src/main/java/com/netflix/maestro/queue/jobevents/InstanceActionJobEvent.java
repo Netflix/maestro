@@ -40,6 +40,7 @@ import lombok.Data;
       "step_action",
       "workflow_action",
       "instance_run_ids",
+      "action_code",
       "entity_type"
     },
     alphabetic = true)
@@ -55,6 +56,7 @@ public class InstanceActionJobEvent implements MaestroJobEvent {
   @Nullable private Actions.StepInstanceAction stepAction;
   @Nullable private Actions.WorkflowInstanceAction workflowAction;
   @Nullable private Map<Long, Long> instanceRunIds;
+  @Nullable private Integer actionCode;
   private EntityType entityType;
 
   @Override
@@ -69,7 +71,9 @@ public class InstanceActionJobEvent implements MaestroJobEvent {
     /** The step level entity. */
     STEP,
     /** The flow level entity. */
-    FLOW
+    FLOW,
+    /** The task level entity. */
+    TASK
   }
 
   /**
@@ -135,6 +139,27 @@ public class InstanceActionJobEvent implements MaestroJobEvent {
     return event;
   }
 
+  /**
+   * Static method to create an InstanceActionJobEvent for a task action. It expected to stay only
+   * in the memory and does not need any guarantee.
+   *
+   * @param groupId the group id of the flow
+   * @param flowRef the flow reference id
+   * @param taskRef the task reference id
+   * @param code action code
+   * @return a task action event object
+   */
+  public static InstanceActionJobEvent create(
+      long groupId, String flowRef, String taskRef, int code) {
+    InstanceActionJobEvent event = new InstanceActionJobEvent();
+    event.workflowId = flowRef;
+    event.groupInfo = groupId;
+    event.stepId = taskRef;
+    event.actionCode = code;
+    event.entityType = EntityType.TASK;
+    return event;
+  }
+
   @JsonIgnore
   public String getIdentity() {
     return switch (entityType) {
@@ -158,6 +183,8 @@ public class InstanceActionJobEvent implements MaestroJobEvent {
               stepAction.name());
       case FLOW ->
           String.format("[%s][%s]%s", entityType.name(), workflowId, instanceRunIds.size());
+      case TASK ->
+          String.format("[%s][%s][%s][%s]", entityType.name(), workflowId, stepId, actionCode);
     };
   }
 }

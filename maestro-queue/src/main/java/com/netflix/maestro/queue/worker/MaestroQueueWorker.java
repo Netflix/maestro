@@ -231,7 +231,7 @@ public final class MaestroQueueWorker implements Runnable {
 
   private MessageDto extendOwnershipIfNeeded(MessageDto message) {
     long curTime = System.currentTimeMillis();
-    if (message.isInternal() || message.ownedUntil() > curTime + executionBudget) {
+    if (message.inMemory() || message.ownedUntil() > curTime + executionBudget) {
       return message;
     } else {
       return queueDao.extendOwnership(message, curTime + timeout + retryInterval);

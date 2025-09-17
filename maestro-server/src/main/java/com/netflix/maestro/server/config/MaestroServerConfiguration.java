@@ -107,13 +107,14 @@ public class MaestroServerConfiguration {
 
   @Bean
   public UpdateJobEventProcessor publishJobEventProcessor(
+      TagPermitManager tagPermitManager,
       InstanceStepConcurrencyHandler instanceStepConcurrencyHandler,
       MaestroStepInstanceActionDao maestroStepInstanceActionDao,
       FlowOperation flowOperation,
       MaestroQueueSystem queueSystem) {
     LOG.info("Creating publishJobEventProcessor within Spring boot...");
     return new UpdateJobEventProcessor(
-        TagPermitManager.NOOP_TAG_PERMIT_MANAGER,
+        tagPermitManager,
         instanceStepConcurrencyHandler,
         maestroStepInstanceActionDao,
         flowOperation,

@@ -1,0 +1,8 @@
+{
+  "workflow_id": "sample-flow-ref",
+  "group_info": 3,
+  "step_id": "task-ref",
+  "action_code": 3,
+  "entity_type": "TASK",
+  "type": "INSTANCE_ACTION"
+}

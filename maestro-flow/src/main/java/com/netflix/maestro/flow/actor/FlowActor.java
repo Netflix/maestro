@@ -4,6 +4,7 @@ import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.exceptions.MaestroNotFoundException;
 import com.netflix.maestro.exceptions.MaestroResourceConflictException;
 import com.netflix.maestro.exceptions.MaestroUnprocessableEntityException;
+import com.netflix.maestro.flow.Constants;
 import com.netflix.maestro.flow.engine.ExecutionContext;
 import com.netflix.maestro.flow.models.Flow;
 import com.netflix.maestro.flow.models.Task;
@@ -67,7 +68,7 @@ final class FlowActor extends BaseActor {
       case Action.FlowRefresh fr -> refresh();
       case Action.FlowTaskRetry t -> retryTask(t.taskRefName());
       case Action.TaskUpdate u -> updateFlow(u.updatedTask());
-      case Action.TaskWakeUp w -> wakeup(w.taskRef());
+      case Action.TaskWakeUp w -> wakeup(w.taskRef(), w.code());
       case Action.FlowTimeout ft -> timeoutFlow();
       case Action.FlowShutdown sd -> startShutdown(Action.TASK_SHUTDOWN);
       case Action.TaskDown td -> checkShutdown();
@@ -124,9 +125,11 @@ final class FlowActor extends BaseActor {
       getContext().prepare(flow);
     }
 
-    // schedule flow timeout
-    var offset = flow.getStartTime() + flow.getTimeoutInMillis() - System.currentTimeMillis();
-    schedule(Action.FLOW_TIMEOUT, offset);
+    // schedule flow timeout and negative value means no timeout
+    if (flow.getTimeoutInMillis() >= 0) {
+      var offset = flow.getStartTime() + flow.getTimeoutInMillis() - System.currentTimeMillis();
+      schedule(Action.FLOW_TIMEOUT, offset);
+    }
 
     post(new Action.FlowReconcile(System.currentTimeMillis()));
   }
@@ -191,7 +194,7 @@ final class FlowActor extends BaseActor {
         schedule(Action.FLOW_REFRESH, delayForNext(refreshInterval));
         if (!updatedTask.isActive()) {
           schedule(
-              new Action.TaskWakeUp(updatedTask.referenceTaskName()),
+              new Action.TaskWakeUp(updatedTask.referenceTaskName(), Constants.TASK_PING_CODE),
               delayForNext(updatedTask.getStartDelayInMillis()));
         }
       } else {
@@ -226,11 +229,11 @@ final class FlowActor extends BaseActor {
   // This is the best effort. The task actor might not run while flow thinks it's running or the
   // actor is shutdown. In those cases, missing wakeup will cause the step won't take any action
   // during retry backoff delay. Callers have to retry for wakeup.
-  private void wakeup(@Nullable String taskRef) {
+  private void wakeup(@Nullable String taskRef, int code) {
     getMetrics()
         .counter("num_of_wakeup_flows", getClass(), "forall", taskRef == null ? "true" : "false");
     if (taskRef == null) { // wakeup all tasks if taskRef is null
-      wakeupAll();
+      wakeupAll(code);
       return;
     }
     Task snapshot = flow.getRunningTasks().get(taskRef);
@@ -241,13 +244,21 @@ final class FlowActor extends BaseActor {
     } else if (!snapshot.isActive()) {
       snapshot.setActive(true);
     }
-    wakeUpChildActor(taskRef, Action.TASK_ACTIVATE);
+    if (code == Constants.TASK_PING_CODE) {
+      wakeUpChildActor(taskRef, Action.TASK_ACTIVATE);
+    } else {
+      wakeUpChildActor(taskRef, new Action.TaskActivate(code));
+    }
   }
 
   // wake up all tasks but do not activate inactive tasks
-  private void wakeupAll() {
+  private void wakeupAll(int code) {
     dequeRetryActions().forEach(this::retryTask);
-    wakeUpChildActors(Action.TASK_PING);
+    if (code == Constants.TASK_PING_CODE) {
+      wakeUpChildActors(Action.TASK_PING);
+    } else {
+      wakeUpChildActors(new Action.TaskPing(code));
+    }
   }
 
   private void timeoutFlow() {
