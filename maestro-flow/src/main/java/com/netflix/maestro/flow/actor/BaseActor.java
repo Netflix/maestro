@@ -7,6 +7,7 @@ import com.netflix.maestro.metrics.MaestroMetrics;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
@@ -20,6 +21,8 @@ import org.slf4j.Logger;
  */
 abstract sealed class BaseActor implements Actor permits GroupActor, FlowActor, TaskActor {
   private final BlockingQueue<Action> actions = new LinkedBlockingQueue<>();
+  // best effort de-duplication. Still possible that same actions are in the queue multiple times.
+  private final ConcurrentHashMap<Action, Boolean> queuedActions = new ConcurrentHashMap<>();
   // it may contain finished actions, which will be replaced during schedule() call
   private final Map<Action, ScheduledFuture<?>> scheduledActions = new HashMap<>();
   private final Map<String, BaseActor> childActors = new HashMap<>();
@@ -45,7 +48,12 @@ abstract sealed class BaseActor implements Actor permits GroupActor, FlowActor, 
 
   @Override
   public BaseActor post(Action action) {
-    actions.offer(action);
+    queuedActions.computeIfAbsent(
+        action,
+        a -> {
+          actions.offer(a);
+          return Boolean.TRUE;
+        });
     return this;
   }
 
@@ -213,6 +221,7 @@ abstract sealed class BaseActor implements Actor permits GroupActor, FlowActor, 
   private Action dequeueAction() {
     try {
       Action action = actions.take();
+      queuedActions.remove(action);
       getLogger().debug("dequeued an action [{}] for [{}]", action, name());
       return action;
     } catch (InterruptedException e) {

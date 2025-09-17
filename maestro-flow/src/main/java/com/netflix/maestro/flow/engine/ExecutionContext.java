@@ -128,6 +128,9 @@ public class ExecutionContext {
   public void prepare(Flow flow) {
     try {
       Task prepare = flow.getPrepareTask();
+      if (prepare.getTaskDef() == null) { // maestro internal flow does not define a prepare task
+        return;
+      }
       prepare.setStartTime(System.currentTimeMillis());
       runInternally(
           () -> flowTaskMap.get(prepare.getTaskType()).execute(flow, prepare),
@@ -152,6 +155,9 @@ public class ExecutionContext {
   /** Run monitoring task. */
   public void refresh(Flow flow) {
     Task monitor = flow.getMonitorTask();
+    if (monitor.getTaskDef() == null) { // maestro internal flow does not define a monitor task
+      return;
+    }
     // safe to access tasks directly in the execution as the monitor task is run within the flow
     runInternally(
         () -> flowTaskMap.get(monitor.getTaskType()).execute(flow, monitor),
