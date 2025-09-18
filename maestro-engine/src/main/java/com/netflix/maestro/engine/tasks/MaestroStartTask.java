@@ -32,7 +32,7 @@ import lombok.extern.slf4j.Slf4j;
  * be simplified with the new internal flow engine but not required for now.
  */
 @Slf4j
-public class MaestroStartTask implements FlowTask {
+public final class MaestroStartTask implements FlowTask {
   /** Special prefix to indicate that the failure is due to dedup and ignore its finalized. */
   public static final String DEDUP_FAILURE_PREFIX = "[DEDUP][IGNORE]";
 
