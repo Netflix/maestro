@@ -231,12 +231,17 @@ public class MaestroTagPermitDaoTest extends MaestroDaoBaseTest {
     List<StepTagPermit> permits = tagPermitDao.markAndLoadStepTagPermits(0, 10);
     assertNotNull(permits);
     assertEquals(2, permits.size());
-    assertEquals(uuid1, permits.getFirst().uuid());
-    assertEquals(1, permits.getFirst().seqNum());
-    assertArrayEquals(new String[] {tag1}, permits.getFirst().tags());
-    assertEquals(uuid2, permits.getLast().uuid());
-    assertEquals(2, permits.getLast().seqNum());
-    assertArrayEquals(new String[] {tag1}, permits.getLast().tags());
+    var check1 = permits.stream().filter(p -> uuid1.equals(p.uuid())).findAny();
+    assertTrue(check1.isPresent());
+    assertEquals(uuid1, check1.get().uuid());
+    assertEquals(1, check1.get().seqNum());
+    assertArrayEquals(new String[] {tag1}, check1.get().tags());
+
+    var check2 = permits.stream().filter(p -> uuid2.equals(p.uuid())).findAny();
+    assertTrue(check2.isPresent());
+    assertEquals(uuid2, check2.get().uuid());
+    assertEquals(2, check2.get().seqNum());
+    assertArrayEquals(new String[] {tag1}, check2.get().tags());
   }
 
   @Test

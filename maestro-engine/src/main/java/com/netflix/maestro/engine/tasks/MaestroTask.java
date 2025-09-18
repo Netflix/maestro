@@ -97,7 +97,7 @@ import lombok.extern.slf4j.Slf4j;
  * data update and persistence.
  */
 @Slf4j
-public class MaestroTask implements FlowTask {
+public final class MaestroTask implements FlowTask {
   private static final User MAESTRO_TASK_USER = User.create(Constants.MAESTRO_TASK_NAME);
 
   private final StepRuntimeManager stepRuntimeManager;

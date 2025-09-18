@@ -86,4 +86,13 @@ public final class MetricConstants extends com.netflix.maestro.metrics.MetricCon
 
   /** Metrics jobevents publish failures. */
   public static final String JOB_EVENT_PUBLISH_FAILURE_METRIC = "jobevent.publish.failure";
+
+  /** Metrics for tag permit task execution. */
+  public static final String TAG_PERMIT_EXECUTION_METRIC = "tag.permit.execution.count";
+
+  /** Metrics for tag permit task start duration. */
+  public static final String TAG_PERMIT_START_DURATION_METRIC = "tag.permit.start.duration";
+
+  /** Metrics for tag permit task acquired count. */
+  public static final String TAG_PERMIT_ACQUIRED_METRIC = "tag.permit.step.acquired";
 }

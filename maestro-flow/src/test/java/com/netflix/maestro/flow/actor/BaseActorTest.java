@@ -382,7 +382,11 @@ public class BaseActorTest extends ActorBaseTest {
   @Test
   public void testRun() {
     flowActor.post(Action.TASK_DOWN);
+    ConcurrentHashMap<Action, Boolean> queuedActions = flowActor.getQueuedActions();
+    assertEquals(1, queuedActions.size());
+    assertTrue(queuedActions.containsKey(Action.TASK_DOWN));
     flowActor.run();
+    assertTrue(queuedActions.isEmpty());
     verify(context, times(2)).getMetrics();
     verify(metrics, times(1)).counter("num_of_running_flows", FlowActor.class);
     verify(metrics, times(1))

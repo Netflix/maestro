@@ -101,7 +101,7 @@ stepruntime:
         default: 5
       NOT_CREATED:
         default: 30
-  enable-tag-permit: true
+  enable-tag-permit: true # enable tag permit only for postgres
   tag-permit-task:
     batch-size: 512
     clean-up-interval: 60000

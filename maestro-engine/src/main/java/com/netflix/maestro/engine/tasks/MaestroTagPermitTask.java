@@ -40,7 +40,7 @@ import lombok.extern.slf4j.Slf4j;
  * is an internal task and should not be used externally by users.
  */
 @Slf4j
-public class MaestroTagPermitTask implements FlowTask {
+public final class MaestroTagPermitTask implements FlowTask {
   /** Status code for step acquired tag permits. */
   public static final int ACQUIRED_STATUS_CODE = 7;
 
@@ -64,7 +64,7 @@ public class MaestroTagPermitTask implements FlowTask {
   private final MaestroQueueSystem queueSystem;
   private final MaestroMetrics metrics;
 
-  private static class TagPermitTaskState {
+  private static final class TagPermitTaskState {
     // key is tag, val is maxAllowed permits
     private final Map<String, Integer> tagPermits = new HashMap<>();
     // for tag permit not saved in DB and come from the tag directly.
@@ -138,7 +138,7 @@ public class MaestroTagPermitTask implements FlowTask {
     }
 
     private void assignTagPermits(
-        MaestroTagPermitDao tagPermitDao, MaestroQueueSystem queueSystem) {
+        MaestroTagPermitDao tagPermitDao, MaestroQueueSystem queueSystem, MaestroMetrics metrics) {
       List<Long> toDelete = new ArrayList<>();
       for (Map.Entry<Long, StepTagPermit> entry : queuedSteps.entrySet()) {
         StepTagPermit stp = entry.getValue();
@@ -169,6 +169,7 @@ public class MaestroTagPermitTask implements FlowTask {
                   stp.event().getAuthor().getName(),
                   DEFAULT_ACTION_CODE);
           queueSystem.notify(msg);
+          metrics.counter(MetricConstants.TAG_PERMIT_ACQUIRED_METRIC, getClass());
         }
       }
       toDelete.forEach(queuedSteps::remove);
@@ -199,7 +200,7 @@ public class MaestroTagPermitTask implements FlowTask {
 
     long duration = System.nanoTime() - start;
     LOG.info("took [{}] ns to load tag permits and step tag permits", duration);
-    metrics.timer(MetricConstants.STEP_INITIALIZE_DELAY_METRIC, duration, getClass());
+    metrics.timer(MetricConstants.TAG_PERMIT_START_DURATION_METRIC, duration, getClass());
 
     task.getOutputData().put(Constants.STEP_RUNTIME_SUMMARY_FIELD, state);
   }
@@ -254,9 +255,10 @@ public class MaestroTagPermitTask implements FlowTask {
       markAndLoadStepTagPermitsToState(state);
     }
 
-    state.assignTagPermits(tagPermitDao, queueSystem);
+    state.assignTagPermits(tagPermitDao, queueSystem, metrics);
 
     task.setStartDelayInMillis(properties.getScanInterval());
+    metrics.counter(MetricConstants.TAG_PERMIT_EXECUTION_METRIC, getClass());
     return false;
   }
 

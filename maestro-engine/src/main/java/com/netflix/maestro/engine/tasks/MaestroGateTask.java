@@ -33,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
  * execution following the order defined in the DAG of the Maestro workflow definition.
  */
 @Slf4j
-public class MaestroGateTask implements FlowTask {
+public final class MaestroGateTask implements FlowTask {
 
   private final MaestroStepInstanceDao stepInstanceDao;
   private final ObjectMapper objectMapper;
