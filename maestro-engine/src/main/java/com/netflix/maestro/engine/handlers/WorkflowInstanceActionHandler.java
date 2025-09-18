@@ -254,6 +254,7 @@ public class WorkflowInstanceActionHandler {
         TimelineActionEvent.builder()
             .action(Actions.WorkflowAction.UNBLOCK)
             .author(caller)
+            .message("Unblocked the workflow instance.")
             .reason("[API] call to UNBLOCK a failed workflow instance run.")
             .build();
     boolean updated =
