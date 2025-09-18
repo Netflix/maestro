@@ -19,6 +19,7 @@ import com.netflix.maestro.engine.dao.MaestroRunStrategyDao;
 import com.netflix.maestro.engine.dao.MaestroStepBreakpointDao;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceActionDao;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
+import com.netflix.maestro.engine.dao.MaestroTagPermitDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowDeletionDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
@@ -174,6 +175,16 @@ public class DatabaseConfiguration {
     LOG.info("Creating maestroStepBreakpointDao within Spring boot...");
     return new MaestroStepBreakpointDao(
         maestroDataSource, objectMapper, props, workflowDao, metrics);
+  }
+
+  @Bean
+  public MaestroTagPermitDao tagPermitDao(
+      DataSource maestroDataSource,
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
+      MaestroEngineProperties props,
+      MaestroMetrics metrics) {
+    LOG.info("Creating maestroTagPermitDao within Spring boot...");
+    return new MaestroTagPermitDao(maestroDataSource, objectMapper, props, metrics);
   }
 
   // below are Maestro Signal Daos

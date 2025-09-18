@@ -245,4 +245,9 @@ abstract sealed class BaseActor implements Actor permits GroupActor, FlowActor, 
   BlockingQueue<Action> getActions() {
     return actions;
   }
+
+  @VisibleForTesting
+  ConcurrentHashMap<Action, Boolean> getQueuedActions() {
+    return queuedActions;
+  }
 }

@@ -16,11 +16,13 @@ import brave.Span;
 import brave.Tracer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.engine.concurrency.InstanceStepConcurrencyHandler;
+import com.netflix.maestro.engine.concurrency.MaestroTagPermitManager;
 import com.netflix.maestro.engine.concurrency.TagPermitManager;
 import com.netflix.maestro.engine.dao.MaestroOutputDataDao;
 import com.netflix.maestro.engine.dao.MaestroStepBreakpointDao;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceActionDao;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
+import com.netflix.maestro.engine.dao.MaestroTagPermitDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
 import com.netflix.maestro.engine.eval.MaestroParamExtensionRepo;
 import com.netflix.maestro.engine.eval.ParamEvaluator;
@@ -36,6 +38,7 @@ import com.netflix.maestro.engine.params.ParamsManager;
 import com.netflix.maestro.engine.tasks.MaestroEndTask;
 import com.netflix.maestro.engine.tasks.MaestroGateTask;
 import com.netflix.maestro.engine.tasks.MaestroStartTask;
+import com.netflix.maestro.engine.tasks.MaestroTagPermitTask;
 import com.netflix.maestro.engine.tasks.MaestroTask;
 import com.netflix.maestro.engine.tracing.MaestroTracingManager;
 import com.netflix.maestro.engine.transformation.DagTranslator;
@@ -48,7 +51,9 @@ import com.netflix.maestro.flow.runtime.ExecutionPreparer;
 import com.netflix.maestro.flow.runtime.FlowOperation;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.Constants;
+import com.netflix.maestro.queue.MaestroQueueSystem;
 import com.netflix.maestro.server.properties.MaestroEngineProperties;
+import com.netflix.maestro.server.properties.StepRuntimeProperties;
 import com.netflix.maestro.signal.dao.MaestroSignalBrokerDao;
 import com.netflix.maestro.signal.handler.MaestroSignalHandler;
 import lombok.extern.slf4j.Slf4j;
@@ -181,6 +186,17 @@ public class MaestroWorkflowConfiguration {
   }
 
   @Bean
+  public MaestroTagPermitTask maestroTagPermitTask(
+      MaestroTagPermitDao tagPermitDao,
+      StepRuntimeProperties properties,
+      MaestroQueueSystem queueSystem,
+      MaestroMetrics metrics) {
+    LOG.info("Creating Maestro TagPermitTask within Spring boot...");
+    return new MaestroTagPermitTask(
+        tagPermitDao, properties.getTagPermitTask(), queueSystem, metrics);
+  }
+
+  @Bean
   public RollupAggregationHelper rollupAggregationHelper(MaestroStepInstanceDao stepInstanceDao) {
     LOG.info("Creating Maestro RollupAggregationHelper within Spring boot...");
     return new RollupAggregationHelper(stepInstanceDao);
@@ -224,5 +240,13 @@ public class MaestroWorkflowConfiguration {
   public TagPermitManager noopTagPermitManager() {
     LOG.info("Creating maestro noop tagPermitManager within Spring boot...");
     return TagPermitManager.NOOP_TAG_PERMIT_MANAGER;
+  }
+
+  @Bean
+  @ConditionalOnProperty(value = "stepruntime.enable-tag-permit", havingValue = "true")
+  public TagPermitManager maestroTagPermitManager(
+      MaestroTagPermitDao tagPermitDao, MaestroQueueSystem queueSystem) {
+    LOG.info("Creating maestro TagPermitManager within Spring boot...");
+    return new MaestroTagPermitManager(tagPermitDao, queueSystem);
   }
 }

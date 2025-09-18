@@ -36,7 +36,7 @@ public class MaestroInterceptorMvcConfig implements WebMvcConfigurer {
   public void addInterceptors(InterceptorRegistry registry) {
     registry
         .addInterceptor(userInfoInterceptor)
-        .addPathPatterns("/api/v3/workflows/**", "/api/v3/groups/**");
+        .addPathPatterns("/api/v3/workflows/**", "/api/v3/groups/**", "/api/v3/tag-permits/**");
   }
 
   /** create request scope bean for caller. */

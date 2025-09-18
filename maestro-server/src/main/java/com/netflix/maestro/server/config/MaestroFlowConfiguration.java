@@ -8,6 +8,7 @@ import com.netflix.maestro.engine.listeners.MaestroFinalFlowStatusCallback;
 import com.netflix.maestro.engine.tasks.MaestroEndTask;
 import com.netflix.maestro.engine.tasks.MaestroGateTask;
 import com.netflix.maestro.engine.tasks.MaestroStartTask;
+import com.netflix.maestro.engine.tasks.MaestroTagPermitTask;
 import com.netflix.maestro.engine.tasks.MaestroTask;
 import com.netflix.maestro.engine.transformation.WorkflowTranslator;
 import com.netflix.maestro.engine.utils.RollupAggregationHelper;
@@ -121,6 +122,7 @@ public class MaestroFlowConfiguration {
       MaestroStartTask startTask,
       MaestroEndTask endTask,
       MaestroGateTask gateTask,
+      MaestroTagPermitTask tagPermitTask,
       FinalFlowStatusCallback finalCallback,
       MaestroEngineProperties properties,
       MaestroMetrics metrics) {
@@ -134,7 +136,9 @@ public class MaestroFlowConfiguration {
             Constants.DEFAULT_END_TASK_NAME,
             endTask,
             StepType.JOIN.name(),
-            gateTask),
+            gateTask,
+            Constants.TAG_PERMIT_TASK_NAME,
+            tagPermitTask),
         finalCallback,
         executionPreparer,
         flowDao,

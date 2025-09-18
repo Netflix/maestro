@@ -16,6 +16,7 @@ import com.netflix.maestro.engine.utils.TaskHelper;
 import com.netflix.maestro.engine.utils.WorkflowHelper;
 import com.netflix.maestro.exceptions.MaestroInvalidStatusException;
 import com.netflix.maestro.flow.models.Flow;
+import com.netflix.maestro.flow.models.FlowDef;
 import com.netflix.maestro.flow.models.Task;
 import com.netflix.maestro.flow.models.TaskDef;
 import com.netflix.maestro.flow.runtime.ExecutionPreparer;
@@ -145,6 +146,23 @@ public class MaestroExecutionPreparer implements ExecutionPreparer {
     return cloned;
   }
 
+  private FlowDef createMaestroInternalFlowDef() {
+    TaskDef tagPermitTask =
+        new TaskDef(
+            Constants.TAG_PERMIT_TASK_NAME,
+            Constants.TAG_PERMIT_TASK_NAME,
+            null); // tag permit task
+
+    FlowDef flow = new FlowDef();
+    // maestro internal flow does not define prepare and monitor tasks
+    flow.setTasks(List.of(List.of(tagPermitTask)));
+    long timeoutInMillis = -1; // means disabling timeout
+    flow.setTimeoutInMillis(timeoutInMillis);
+    // disable final flow status callback.
+    flow.setFinalFlowStatusCallbackEnabled(false);
+    return flow;
+  }
+
   /**
    * Rebuild all transient data based on maestro engine workflow and step instance data and fill
    * them into the provided flow. It also adds extra task data to the prepare task for the restart
@@ -156,6 +174,16 @@ public class MaestroExecutionPreparer implements ExecutionPreparer {
    */
   @Override
   public boolean resume(Flow flow) {
+    if (Constants.INTERNAL_FLOW_NAME.equals(flow.getFlowId())) {
+      // special loading internal tag permit flow
+      flow.setFlowDef(createMaestroInternalFlowDef());
+      flow.setStatus(Flow.Status.RUNNING);
+      Task dummyTask = flow.newTask(null, true);
+      flow.setPrepareTask(dummyTask);
+      flow.setMonitorTask(dummyTask);
+      flow.markUpdate();
+      return true;
+    }
     WorkflowInstance instance = getWorkflowInstance(flow);
     flow.setInput(
         Collections.singletonMap(

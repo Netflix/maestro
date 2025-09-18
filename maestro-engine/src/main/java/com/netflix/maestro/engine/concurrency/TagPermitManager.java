@@ -12,48 +12,71 @@
  */
 package com.netflix.maestro.engine.concurrency;
 
+import com.netflix.maestro.exceptions.MaestroNotFoundException;
 import com.netflix.maestro.models.definition.Tag;
-import java.util.Collections;
+import com.netflix.maestro.models.definition.User;
+import com.netflix.maestro.models.tagpermits.TagPermit;
+import com.netflix.maestro.models.timeline.TimelineEvent;
 import java.util.List;
-import lombok.Getter;
 
-/** Interface for tag permit acquirer. */
+/** Interface for tag permit manager. */
 public interface TagPermitManager {
   /** A noop tag permit handler. */
   TagPermitManager NOOP_TAG_PERMIT_MANAGER =
       new TagPermitManager() {
         @Override
-        public Status acquire(List<Tag> tagsList, String uuid) {
+        public Status acquire(List<Tag> tagsList, String uuid, TimelineEvent event) {
           return new Status(
               true,
-              "Using NoOp tag permit acquirer, tag permit feature is disabled and skip the tag permit acquisition");
+              "Using NoOp tag permit manager, tag permit feature is disabled and skip the tag permit acquisition");
         }
 
         @Override
-        public List<String> releaseTagPermits(String stepUuid) {
-          return Collections.emptyList();
+        public void releaseTagPermits(String uuid) {}
+
+        @Override
+        public void upsertTagPermit(String tag, int limit, User user) {}
+
+        @Override
+        public void removeTagPermit(String tag) {}
+
+        @Override
+        public TagPermit getTagPermit(String tag) {
+          throw new MaestroNotFoundException("No tag permit found for tag " + tag);
         }
       };
 
-  @Getter
-  class Status {
-    private final boolean success;
-    private final String message;
-
-    public Status(boolean success, String message) {
-      this.success = success;
-      this.message = message;
-    }
-  }
+  record Status(boolean success, String message) {}
 
   /** acquire permits for every tag in tagList for a given an uuid (e.g. step uuid). */
-  Status acquire(List<Tag> tagsList, String uuid);
+  Status acquire(List<Tag> tagsList, String uuid, TimelineEvent event);
 
   /**
-   * Releases the tag permits and returns the list of released tags.
+   * Releases the tag permits held by a step.
    *
-   * @param stepUuid step uuid.
-   * @return list of tags released.
+   * @param uuid step uuid.
    */
-  List<String> releaseTagPermits(String stepUuid);
+  void releaseTagPermits(String uuid);
+
+  /**
+   * Create or update the tag permit limit.
+   *
+   * @param tag tag name
+   * @param limit tag permit limit
+   */
+  void upsertTagPermit(String tag, int limit, User user);
+
+  /**
+   * Remove the tag permit.
+   *
+   * @param tag tag name
+   */
+  void removeTagPermit(String tag);
+
+  /**
+   * Get the tag permit.
+   *
+   * @param tag tag name
+   */
+  TagPermit getTagPermit(String tag);
 }

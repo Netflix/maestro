@@ -15,6 +15,7 @@ package com.netflix.maestro.server.properties;
 import com.netflix.maestro.engine.properties.CallbackDelayConfig;
 import com.netflix.maestro.engine.properties.ForeachStepRuntimeProperties;
 import com.netflix.maestro.engine.properties.SubworkflowStepRuntimeProperties;
+import com.netflix.maestro.engine.properties.TagPermitTaskProperties;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -33,6 +34,8 @@ public class StepRuntimeProperties {
   private final Cache cache;
 
   private final CallbackDelayConfig callbackDelayConfig;
+
+  private final TagPermitTaskProperties tagPermitTask;
 
   /** Cache Properties. */
   @Getter

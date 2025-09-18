@@ -16,6 +16,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.netflix.maestro.models.timeline.Timeline;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -23,19 +24,19 @@ import lombok.NoArgsConstructor;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(
-    value = {"tag", "current_used", "max_allowed"},
+    value = {"tag", "max_allowed", "timeline"},
     alphabetic = true)
 @NoArgsConstructor
 @Data
 public class TagPermit {
   private String tag;
   private int maxAllowed;
-  private int currentUsed;
+  private Timeline timeline;
 
   /** Constructor. */
-  public TagPermit(String tag, int maxAllowed, int currentUsed) {
+  public TagPermit(String tag, int maxAllowed, Timeline timeline) {
     this.tag = tag;
     this.maxAllowed = maxAllowed;
-    this.currentUsed = currentUsed;
+    this.timeline = timeline;
   }
 }
