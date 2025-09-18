@@ -394,7 +394,7 @@ public class MaestroTagPermitDao extends AbstractDatabaseDao {
                   return res;
                 }),
         "markAndLoadStepTagPermits",
-        "Failed marking and loading step tag permits from seq [] with a limit [{}]",
+        "Failed marking and loading step tag permits from seq [{}] with a limit [{}]",
         maxSeqNum,
         limit);
   }
