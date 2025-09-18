@@ -51,7 +51,7 @@ public class TagPermitController {
   }
 
   /**
-   * Sets or Updates a tag permit with the given max_allowed value.
+   * Set or Update a tag permit with the given max_allowed value.
    *
    * @param tagPermitRequest tag permit request
    */
@@ -64,7 +64,7 @@ public class TagPermitController {
   }
 
   /**
-   * Fetches an existing tag permit.
+   * Fetch an existing tag permit.
    *
    * @param tag tag name
    * @return the tag permit
@@ -80,7 +80,7 @@ public class TagPermitController {
   }
 
   /**
-   * Removed an existing tag permit.
+   * Remove an existing tag permit.
    *
    * @param tag tag name
    */
