@@ -160,7 +160,7 @@ RUN_DATE_MINUS_7:
     '
   mode: MUTABLE_ON_START
   type: STRING
-yaml_sha:
+job_template_version:
   internal_mode: OPTIONAL
   type: STRING
 owner:

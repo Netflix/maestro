@@ -19,6 +19,7 @@ import com.netflix.maestro.engine.kubernetes.KubernetesStepContext;
 import com.netflix.maestro.engine.notebook.PapermillCommand;
 import com.netflix.maestro.engine.notebook.PapermillEntrypointBuilder;
 import com.netflix.maestro.engine.params.OutputDataManager;
+import com.netflix.maestro.engine.templates.JobTemplateManager;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.artifact.NotebookArtifact;
@@ -34,11 +35,18 @@ public class NotebookStepRuntime extends KubernetesStepRuntime {
   public NotebookStepRuntime(
       KubernetesRuntimeExecutor runtimeExecutor,
       KubernetesCommandGenerator commandGenerator,
+      JobTemplateManager jobTemplateManager,
       OutputDataManager outputDataManager,
       ObjectMapper objectMapper,
       MaestroMetrics metrics,
       PapermillEntrypointBuilder entrypointBuilder) {
-    super(runtimeExecutor, commandGenerator, outputDataManager, objectMapper, metrics);
+    super(
+        runtimeExecutor,
+        commandGenerator,
+        jobTemplateManager,
+        outputDataManager,
+        objectMapper,
+        metrics);
     this.entrypointBuilder = entrypointBuilder;
   }
 
