@@ -1,14 +1,14 @@
 # This is a Gradle generated file for dependency locking.
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
-com.fasterxml.jackson.core:jackson-annotations:2.19.1=compileClasspath
-com.fasterxml.jackson.core:jackson-core:2.19.1=compileClasspath
-com.fasterxml.jackson.core:jackson-databind:2.19.1=compileClasspath
-com.fasterxml.jackson.dataformat:jackson-dataformat-toml:2.19.1=compileClasspath
-com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.1=compileClasspath
-com.fasterxml.jackson:jackson-bom:2.19.1=compileClasspath
-com.netflix.spectator:spectator-api:1.8.16=compileClasspath
-com.zaxxer:HikariCP:6.3.0=compileClasspath
+com.fasterxml.jackson.core:jackson-annotations:2.20=compileClasspath
+com.fasterxml.jackson.core:jackson-core:2.20.0=compileClasspath
+com.fasterxml.jackson.core:jackson-databind:2.20.0=compileClasspath
+com.fasterxml.jackson.dataformat:jackson-dataformat-toml:2.20.0=compileClasspath
+com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.0=compileClasspath
+com.fasterxml.jackson:jackson-bom:2.20.0=compileClasspath
+com.netflix.spectator:spectator-api:1.9.0=compileClasspath
+com.zaxxer:HikariCP:6.3.3=compileClasspath
 io.zipkin.brave:brave:5.18.1=compileClasspath
 io.zipkin.reporter2:zipkin-reporter-brave:2.17.2=compileClasspath
 io.zipkin.reporter2:zipkin-reporter:2.17.2=compileClasspath
@@ -16,6 +16,6 @@ io.zipkin.zipkin2:zipkin:2.27.0=compileClasspath
 jakarta.validation:jakarta.validation-api:3.1.1=compileClasspath
 org.flywaydb:flyway-core:10.22.0=compileClasspath
 org.flywaydb:flyway-database-postgresql:10.22.0=compileClasspath
-org.projectlombok:lombok:1.18.38=annotationProcessor,compileClasspath
-org.slf4j:slf4j-api:1.7.36=compileClasspath
+org.projectlombok:lombok:1.18.42=annotationProcessor,compileClasspath
+org.slf4j:slf4j-api:2.0.17=compileClasspath
 empty=

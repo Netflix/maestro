@@ -521,9 +521,13 @@ public class WorkflowActionHandler {
    */
   public TimelineEvent unblock(String workflowId, User caller) {
     TimelineActionEvent.TimelineActionEventBuilder eventBuilder =
-        TimelineActionEvent.builder().author(caller).reason("Unblock workflow [%s]", workflowId);
+        TimelineActionEvent.builder()
+            .action(Actions.WorkflowAction.UNBLOCK)
+            .message("Unblocked the workflow.")
+            .author(caller)
+            .reason("Unblock workflow [%s]", workflowId);
     if (IdHelper.isInlineWorkflowId(workflowId)) {
-      return eventBuilder.message("Unblocked the workflow.").build();
+      return eventBuilder.build();
     }
     int totalUnblocked =
         instanceDao.tryUnblockFailedWorkflowInstances(

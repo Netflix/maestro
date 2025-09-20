@@ -586,8 +586,10 @@ public class WorkflowInstanceActionHandlerTest extends MaestroEngineBaseTest {
     when(instance.getStatus()).thenReturn(WorkflowInstance.Status.FAILED);
     when(workflowDao.getRunStrategy("test-workflow"))
         .thenReturn(RunStrategy.create("STRICT_SEQUENTIAL"));
-    boolean res = actionHandler.unblock("test-workflow", 1, 1, user).isCompleted();
-    assertTrue(res);
+    var resp = actionHandler.unblock("test-workflow", 1, 1, user);
+    assertTrue(resp.isCompleted());
+    assertEquals("UNBLOCK", resp.getTimelineEvent().asAction().getAction());
+    assertEquals("Unblocked the workflow instance.", resp.getTimelineEvent().getMessage());
     verify(instanceDao, times(1)).getLatestWorkflowInstanceRun("test-workflow", 1);
     verify(instanceDao, times(1))
         .tryUnblockFailedWorkflowInstance(eq("test-workflow"), eq(1L), eq(1L), any());
