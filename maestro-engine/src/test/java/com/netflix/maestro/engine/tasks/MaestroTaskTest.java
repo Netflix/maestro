@@ -14,19 +14,24 @@ package com.netflix.maestro.engine.tasks;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.netflix.maestro.engine.MaestroEngineBaseTest;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceActionDao;
 import com.netflix.maestro.engine.db.DbOperation;
+import com.netflix.maestro.engine.db.StepAction;
 import com.netflix.maestro.engine.execution.StepRuntimeCallbackDelayPolicy;
+import com.netflix.maestro.engine.execution.StepRuntimeManager;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
 import com.netflix.maestro.engine.params.OutputDataManager;
 import com.netflix.maestro.flow.models.Flow;
 import com.netflix.maestro.flow.models.Task;
+import com.netflix.maestro.models.Actions;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.Defaults;
 import com.netflix.maestro.models.definition.ParsableLong;
@@ -47,18 +52,21 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mock;
 
 public class MaestroTaskTest extends MaestroEngineBaseTest {
 
-  private MaestroTask maestroTask;
+  @Mock private MaestroStepInstanceActionDao actionDao;
+  @Mock private StepRuntimeManager stepRuntimeManager;
+  @Mock private MaestroTask maestroTask;
 
   @Before
   public void setup() {
-    maestroTask = mock(MaestroTask.class);
     doCallRealMethod().when(maestroTask).updateRetryDelayTimeToTimeline(any());
     when(maestroTask.isStepSkipped(any(), any())).thenCallRealMethod();
   }
@@ -354,22 +362,26 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
             ? loadObject("fixtures/typedsteps/sample-step-with-param-retries.json", Step.class)
             : loadObject("fixtures/typedsteps/sample-step-with-retries.json", Step.class);
     StepRuntimeSummary runtimeSummary =
-        createAndRunMaestroTask(false, stepDef, null, workflowSummary);
+        createAndRunMaestroTask(0, null, stepDef, null, workflowSummary);
     return runtimeSummary.getStepRetry();
   }
 
   private StepRuntimeSummary createAndRunMaestroTask(
-      boolean started, Step stepDef, StepRuntimeSummary input, WorkflowSummary workflowSummary) {
+      int runCode,
+      Flow.Status status,
+      Step stepDef,
+      StepRuntimeSummary input,
+      WorkflowSummary workflowSummary) {
     maestroTask =
         new MaestroTask(
-            null,
+            stepRuntimeManager,
             null,
             paramEvaluator,
             MAPPER,
             null,
             mock(OutputDataManager.class),
             null,
-            mock(MaestroStepInstanceActionDao.class),
+            actionDao,
             null,
             null,
             mock(StepRuntimeCallbackDelayPolicy.class),
@@ -389,11 +401,14 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
     workflowSummary.setStepMap(Map.of("job1", stepDef));
     when(flow.getInput()).thenReturn(Map.of(Constants.WORKFLOW_SUMMARY_FIELD, workflowSummary));
     when(flow.getPrepareTask()).thenReturn(task);
+    when(flow.getStatus()).thenReturn(status);
 
-    if (started) {
-      Assert.assertTrue(maestroTask.execute(flow, task));
-    } else {
+    if (runCode == 0) { // start
       maestroTask.start(flow, task);
+    } else if (runCode == 1) { // execute
+      Assert.assertTrue(maestroTask.execute(flow, task));
+    } else { // cancel
+      maestroTask.cancel(flow, task);
     }
     return (StepRuntimeSummary) runtimeSummaryMap.get(Constants.STEP_RUNTIME_SUMMARY_FIELD);
   }
@@ -404,7 +419,7 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
     StepRuntimeSummary input =
         loadObject("fixtures/execution/sample-step-runtime-summary.json", StepRuntimeSummary.class);
     StepRuntimeSummary runtimeSummary =
-        createAndRunMaestroTask(true, stepDef, input, new WorkflowSummary());
+        createAndRunMaestroTask(1, null, stepDef, input, new WorkflowSummary());
 
     // verify there is only one static signal
     SignalOutputs outputs = runtimeSummary.getSignalOutputs();
@@ -419,7 +434,7 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
             "fixtures/execution/sample-step-runtime-summary-with-dynamic-output.json",
             StepRuntimeSummary.class);
     StepRuntimeSummary runtimeSummary =
-        createAndRunMaestroTask(true, stepDef, input, new WorkflowSummary());
+        createAndRunMaestroTask(1, null, stepDef, input, new WorkflowSummary());
 
     // verify there are two dynamic signals
     SignalOutputs outputs = runtimeSummary.getSignalOutputs();
@@ -440,7 +455,7 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
             "fixtures/execution/sample-step-runtime-summary-with-dynamic-output.json",
             StepRuntimeSummary.class);
     StepRuntimeSummary runtimeSummary =
-        createAndRunMaestroTask(true, stepDef, input, new WorkflowSummary());
+        createAndRunMaestroTask(1, null, stepDef, input, new WorkflowSummary());
 
     // verify there are 3 output signals:  1 static + 2 dynamic
     SignalOutputs outputs = runtimeSummary.getSignalOutputs();
@@ -470,5 +485,48 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
       }
     }
     Assert.assertArrayEquals(new boolean[] {true, true, true}, signalFound);
+  }
+
+  @Test
+  public void testCancelWithTimeOutFlowStatus() throws Exception {
+    testCancel(Flow.Status.TIMED_OUT, StepInstance.Status.TIMED_OUT);
+  }
+
+  @Test
+  public void testCancelWithStoppedFlowStatus() throws Exception {
+    testCancel(Flow.Status.RUNNING, StepInstance.Status.STOPPED);
+  }
+
+  private void testCancel(Flow.Status flowStatus, StepInstance.Status stepStatus) throws Exception {
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+    Step stepDefinition = loadObject("fixtures/typedsteps/sample-typed-step.json", Step.class);
+    StepRuntimeSummary runtimeSummary =
+        loadObject("fixtures/execution/sample-step-runtime-summary.json", StepRuntimeSummary.class);
+
+    createAndRunMaestroTask(2, flowStatus, stepDefinition, runtimeSummary, workflowSummary);
+
+    verify(stepRuntimeManager).terminate(eq(workflowSummary), eq(runtimeSummary), eq(stepStatus));
+  }
+
+  @Test
+  public void testExecuteWithTimeOutAction() throws Exception {
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+    Step stepDef = loadObject("fixtures/typedsteps/sample-typed-step.json", Step.class);
+    StepRuntimeSummary runtimeSummary =
+        loadObject("fixtures/execution/sample-step-runtime-summary.json", StepRuntimeSummary.class);
+
+    StepAction timeoutAction =
+        StepAction.builder()
+            .action(Actions.StepInstanceAction.TIME_OUT)
+            .workflowId("test-workflow")
+            .workflowInstanceId(1)
+            .build();
+    when(actionDao.tryGetAction(workflowSummary, stepDef.getId()))
+        .thenReturn(Optional.of(timeoutAction));
+
+    createAndRunMaestroTask(1, Flow.Status.RUNNING, stepDef, runtimeSummary, workflowSummary);
+
+    verify(stepRuntimeManager)
+        .terminate(eq(workflowSummary), eq(runtimeSummary), eq(StepInstance.Status.TIMED_OUT));
   }
 }

@@ -42,7 +42,7 @@ public final class Actions {
     ACTIVATE,
     /** Deactivate a workflow. */
     DEACTIVATE,
-    /** action to flag all failed instances to unblock strict sequential. */
+    /** Action to flag all failed instances to unblock strict sequential. */
     UNBLOCK,
     /** todo support action to pause a workflow. */
     PAUSE,
@@ -53,18 +53,18 @@ public final class Actions {
   /** Supported workflow instance actions. */
   @Getter
   public enum WorkflowInstanceAction {
-    /** stop a workflow instance run and stop all its non-terminal steps. */
+    /** Stop a workflow instance run and stop all its non-terminal steps. */
     STOP(WorkflowInstance.Status.STOPPED),
-    /** kill a workflow instance run and kill all its non-terminal steps. */
+    /** Kill a workflow instance run and kill all its non-terminal steps. */
     KILL(WorkflowInstance.Status.FAILED),
-    /** restart a workflow instance. */
+    /** Restart a workflow instance. */
     RESTART(WorkflowInstance.Status.CREATED),
-    /** action to flag failed instance to unblock strict sequential. */
+    /** Action to flag failed instance to unblock strict sequential. */
     UNBLOCK(WorkflowInstance.Status.IN_PROGRESS);
 
     @JsonIgnore private final WorkflowInstance.Status status;
 
-    /** the status after the action. */
+    /** The status after the action. */
     WorkflowInstanceAction(WorkflowInstance.Status status) {
       this.status = status;
     }
@@ -88,19 +88,24 @@ public final class Actions {
     /** Bypass dependencies. */
     BYPASS_STEP_DEPENDENCIES(StepInstance.Status.EVALUATING_PARAMS, false),
     /**
-     * stop a step instance. Maestro will not stop the whole workflow instance if other steps are
+     * Stop a step instance. Maestro will not stop the whole workflow instance if other steps are
      * running.
      */
     STOP(StepInstance.Status.STOPPED, true),
     /**
-     * fail a step instance. Maestro will decide to fail the workflow or just this step by checking
+     * Internal action to time out a step instance. The action might from the upstream workflow or
+     * step instance.
+     */
+    TIME_OUT(StepInstance.Status.TIMED_OUT, true),
+    /**
+     * Fail a step instance. Maestro will decide to fail the workflow or just this step by checking
      * the step failure mode.
      */
     KILL(StepInstance.Status.FATALLY_FAILED, true),
-    /** skip a step instance and then continue dag execution to the next step. */
+    /** Skip a step instance and then continue dag execution to the next step. */
     SKIP(StepInstance.Status.SKIPPED, true),
     /**
-     * restart a failed or stopped step instance. If the workflow is running, it creates a new step
+     * Restart a failed or stopped step instance. If the workflow is running, it creates a new step
      * attempt. Otherwise, it creates a new workflow run to execute this step.
      */
     RESTART(StepInstance.Status.CREATED, false);
