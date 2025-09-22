@@ -629,6 +629,7 @@ public final class MaestroTask implements FlowTask {
               runtimeSummary.configIgnoreFailureMode(action, workflowSummary);
               // fall through
             case STOP: // mark the step stopped, kill job
+            case TIME_OUT: // mark the step timed out, kill job
             case SKIP: // mark the step skipped, terminate job and then continue with next step
               if (status != StepInstance.Status.NOT_CREATED) {
                 // might throw retryable error if it is still terminating.
@@ -1124,8 +1125,8 @@ public final class MaestroTask implements FlowTask {
               workflowSummary,
               runtimeSummary.getStepId(),
               MAESTRO_TASK_USER,
-              Actions.StepInstanceAction.STOP,
-              "step is stopped due to timeout");
+              Actions.StepInstanceAction.TIME_OUT,
+              "step is timed out by either step or workflow timeout");
         }
         stepRuntimeManager.terminate(workflowSummary, runtimeSummary, toStatus);
       }
