@@ -1066,7 +1066,7 @@ public final class MaestroTask implements FlowTask {
                   .reason(
                       "Acquire tag permits for step %s%s",
                       workflowSummary.getIdentity(), runtimeSummary.getIdentity())
-                  .info(flow.getGroupId())
+                  .info(flow.getGroupId()) // use info field to store flow group id
                   .message(flow.getReference())
                   .author(User.create(runtimeSummary.getStepId()))
                   .build());

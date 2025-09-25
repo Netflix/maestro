@@ -42,7 +42,7 @@ public class TimelineActionEvent implements TimelineEvent {
   private final User author;
   private final String message;
   private final String reason;
-  private final Long info;
+  private final Long info; // optional numeric info field to carry extra info
 
   @Override
   public Type getType() {

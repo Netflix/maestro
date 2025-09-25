@@ -48,7 +48,15 @@ public interface TagPermitManager {
 
   record Status(boolean success, String message) {}
 
-  /** acquire permits for every tag in tagList for a given an uuid (e.g. step uuid). */
+  /**
+   * Acquire permits for every tag in tagList for a given an uuid (e.g. step uuid) with a timeline
+   * event carrying additional info.
+   *
+   * @param tagsList list of tags to acquire permits for.
+   * @param uuid step uuid.
+   * @param event timeline event carrying additional info.
+   * @return status of acquisition.
+   */
   Status acquire(List<Tag> tagsList, String uuid, TimelineEvent event);
 
   /**
@@ -63,6 +71,7 @@ public interface TagPermitManager {
    *
    * @param tag tag name
    * @param limit tag permit limit
+   * @param user user performing the operation
    */
   void upsertTagPermit(String tag, int limit, User user);
 
