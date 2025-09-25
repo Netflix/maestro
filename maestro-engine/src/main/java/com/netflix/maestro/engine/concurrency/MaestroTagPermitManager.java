@@ -28,6 +28,7 @@ import java.util.UUID;
 /** Database based implementation of tag permit manager. */
 public class MaestroTagPermitManager implements TagPermitManager {
   private static final int NOT_FOUND_STATUS_CODE = -1;
+  private static final int INTERNAL_FLOW_GROUP_ID = 0;
 
   private final MaestroTagPermitDao tagPermitDao;
   private final MaestroQueueSystem queueSystem;
@@ -60,21 +61,23 @@ public class MaestroTagPermitManager implements TagPermitManager {
       }
       statusCode = 0;
     }
-    boolean status = statusCode == MaestroTagPermitTask.ACQUIRED_STATUS_CODE;
+    boolean success = statusCode == MaestroTagPermitTask.ACQUIRED_STATUS_CODE;
     return new Status(
-        status, status ? "Tag permit acquired" : "The step is still waiting for tag permit");
+        success, success ? "Tag permit acquired" : "The step is still waiting for tag permit");
   }
 
   private void wakeUpTagPermitTask(int code) {
     var msg =
         MessageDto.createMessageForWakeUp(
-            0, Constants.INTERNAL_FLOW_NAME, Constants.TAG_PERMIT_TASK_NAME, code);
+            INTERNAL_FLOW_GROUP_ID,
+            Constants.INTERNAL_FLOW_NAME,
+            Constants.TAG_PERMIT_TASK_NAME,
+            code);
     queueSystem.notify(msg);
   }
 
   /**
-   * Releases the tag permits and returns the list of released tags. Expect caller to periodically
-   * call this method until success.
+   * Releases the tag permits. Expect caller to periodically call this method until success.
    *
    * <p>It will wake up the tag permit handler to re-check the queue with the best effort. If the
    * async release is missed, either reconciliation or another release will fix it.

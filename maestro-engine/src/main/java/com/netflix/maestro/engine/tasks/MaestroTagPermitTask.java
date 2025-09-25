@@ -125,10 +125,7 @@ public final class MaestroTagPermitTask implements FlowTask {
     private boolean reachedLimit(String tag, Integer limit) {
       Integer maxAllowed = tagPermits.get(tag);
       if (maxAllowed == null) {
-        maxAllowed = tmpTagPermits.get(tag);
-      }
-      if (maxAllowed == null) {
-        maxAllowed = limit;
+        maxAllowed = tmpTagPermits.getOrDefault(tag, limit);
       }
       if (maxAllowed == null) {
         return false; // no limit
