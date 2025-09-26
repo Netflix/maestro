@@ -21,8 +21,11 @@ public class MaestroRuntimeException extends RuntimeException {
     /** Bad Request. */
     BAD_REQUEST(400),
 
-    /** 403 - Unauthorized. */
-    UNAUTHORIZED(403),
+    /** 401 - Unauthorized. */
+    UNAUTHORIZED(401),
+
+    /** 403 - Forbidden. */
+    FORBIDDEN(403),
 
     /** Resource not found. */
     NOT_FOUND(404),
@@ -74,6 +77,8 @@ public class MaestroRuntimeException extends RuntimeException {
         return BAD_REQUEST;
       } else if (statusCode == UNAUTHORIZED.getStatusCode()) {
         return UNAUTHORIZED;
+      } else if (statusCode == FORBIDDEN.getStatusCode()) {
+        return FORBIDDEN;
       } else if (statusCode == NOT_FOUND.getStatusCode()) {
         return NOT_FOUND;
       } else if (statusCode == REQUEST_TIMEOUT.getStatusCode()) {
