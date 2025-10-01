@@ -156,7 +156,7 @@ public class MaestroExecutionPreparer implements ExecutionPreparer {
     FlowDef flow = new FlowDef();
     // maestro internal flow does not define prepare and monitor tasks
     flow.setTasks(List.of(List.of(tagPermitTask)));
-    long timeoutInMillis = -1; // means disabling timeout
+    long timeoutInMillis = com.netflix.maestro.flow.Constants.TIMEOUT_DISABLED;
     flow.setTimeoutInMillis(timeoutInMillis);
     // disable final flow status callback.
     flow.setFinalFlowStatusCallbackEnabled(false);
