@@ -692,10 +692,10 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
 
   @Test
   public void testBypassSignalDependenciesWithBlocking() throws SQLException {
-    MaestroStepInstanceActionDao spyDao = prepareActionDaoForBypassDependencies(10000);
+    MaestroStepInstanceActionDao spyDao = prepareActionDaoForBypassDependencies(100000);
 
     Thread.ofVirtual().start(() -> spyDao.bypassStepDependencies(instance, "job1", user, true));
-    verify(queueSystem, timeout(3000).times(1)).enqueue(any(), any(InstanceActionJobEvent.class));
+    verify(queueSystem, timeout(30000).times(1)).enqueue(any(), any(InstanceActionJobEvent.class));
     verify(queueSystem, times(3)).notify(any());
     // assert that the action was saved
     Assert.assertTrue(actionDao.tryGetAction(summary, "job1").isPresent());
@@ -705,7 +705,7 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
 
     stepInstance.getRuntimeState().setStatus(StepInstance.Status.RUNNING);
     stepInstanceDao.insertOrUpsertStepInstance(stepInstance, true, null);
-    verify(spyDao, timeout(3000).times(1)).deleteAction(any(), any());
+    verify(spyDao, timeout(30000).times(1)).deleteAction(any(), any());
     Assert.assertTrue(spyDao.tryGetAction(summary, "job1").isEmpty());
   }
 

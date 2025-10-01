@@ -11,6 +11,9 @@ public final class Constants {
   /** Graceful shutdown timeout config in seconds. */
   public static final long GRACEFUL_SHUTDOWN_TIMEOUT_IN_SECS = 60;
 
+  /** Timeout value indicating disabling timeout. */
+  public static final long TIMEOUT_DISABLED = -1;
+
   /** Initial generation number value. */
   public static final long INITIAL_GENERATION_NUMBER = 1;
 

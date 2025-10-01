@@ -126,7 +126,7 @@ final class FlowActor extends BaseActor {
     }
 
     // schedule flow timeout and negative value means no timeout
-    if (flow.getTimeoutInMillis() >= 0) {
+    if (flow.getTimeoutInMillis() > Constants.TIMEOUT_DISABLED) {
       var offset = flow.getStartTime() + flow.getTimeoutInMillis() - System.currentTimeMillis();
       schedule(Action.FLOW_TIMEOUT, offset);
     }
