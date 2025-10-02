@@ -25,8 +25,10 @@ import com.netflix.maestro.flow.models.Flow;
 import com.netflix.maestro.flow.models.Task;
 import com.netflix.maestro.flow.models.TaskDef;
 import java.util.Set;
+import java.util.concurrent.ScheduledFuture;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public class TaskActorTest extends ActorBaseTest {
 
@@ -144,7 +146,10 @@ public class TaskActorTest extends ActorBaseTest {
 
   @Test
   public void testRunForActionTaskActivate() {
+    var mockFuture = Mockito.mock(ScheduledFuture.class);
+    taskActor.getScheduledActions().put(Action.TASK_PING, mockFuture);
     verifyExecute(Action.TASK_ACTIVATE, false);
+    verify(mockFuture, times(1)).cancel(false);
   }
 
   private void verifyExecute(Action action, boolean activeFlag) {
