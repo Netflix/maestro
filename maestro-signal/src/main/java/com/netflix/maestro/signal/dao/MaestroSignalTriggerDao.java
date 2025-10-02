@@ -7,6 +7,7 @@ import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.trigger.SignalTrigger;
 import com.netflix.maestro.signal.models.SignalTriggerDto;
 import com.netflix.maestro.signal.models.SignalTriggerMatch;
+import java.sql.Array;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -113,12 +114,20 @@ public class MaestroSignalTriggerDao extends AbstractDatabaseDao {
       try (ResultSet rs = stmt.executeQuery()) {
         if (rs.next()) {
           idx = 0;
-          return new SignalTriggerDto(
-              workflowId,
-              triggerUuid,
-              rs.getString(++idx),
-              (String[]) rs.getArray(++idx).getArray(),
-              (Long[]) rs.getArray(++idx).getArray());
+          String def = rs.getString(++idx);
+          Array signalsArray = rs.getArray(++idx);
+          Array checkpointsArray = rs.getArray(++idx);
+          try {
+            return new SignalTriggerDto(
+                workflowId,
+                triggerUuid,
+                def,
+                (String[]) signalsArray.getArray(),
+                (Long[]) checkpointsArray.getArray());
+          } finally {
+            signalsArray.free();
+            checkpointsArray.free();
+          }
         }
         return null; // not existing
       }

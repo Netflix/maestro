@@ -954,13 +954,17 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
   private Timeline getTimelineIfPresent(ResultSet rs) throws SQLException {
     Array payload = rs.getArray("timeline");
     if (payload != null) {
-      String[] json = (String[]) payload.getArray();
-      if (json != null) {
-        Timeline timeline = new Timeline(null);
-        for (String event : json) {
-          timeline.add(fromJson(event, TimelineEvent.class));
+      try {
+        String[] json = (String[]) payload.getArray();
+        if (json != null) {
+          Timeline timeline = new Timeline(null);
+          for (String event : json) {
+            timeline.add(fromJson(event, TimelineEvent.class));
+          }
+          return timeline;
         }
-        return timeline;
+      } finally {
+        payload.free();
       }
     }
     return null;

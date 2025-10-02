@@ -24,6 +24,7 @@ import com.netflix.maestro.models.timeline.Timeline;
 import com.netflix.maestro.models.timeline.TimelineActionEvent;
 import com.netflix.maestro.models.timeline.TimelineEvent;
 import com.netflix.maestro.models.timeline.TimelineLogEvent;
+import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -154,9 +155,12 @@ public class MaestroTagPermitDao extends AbstractDatabaseDao {
                     stmt -> stmt.setString(1, tag),
                     rs -> {
                       if (rs.next()) {
-                        int idx = 0;
-                        return new TagPermitRecord(
-                            rs.getInt(++idx), (String[]) rs.getArray(++idx).getArray());
+                        Array array = rs.getArray(2);
+                        try {
+                          return new TagPermitRecord(rs.getInt(1), (String[]) array.getArray());
+                        } finally {
+                          array.free();
+                        }
                       } else {
                         return null;
                       }
@@ -402,14 +406,25 @@ public class MaestroTagPermitDao extends AbstractDatabaseDao {
   private void stepTagPermitsFromResult(ResultSet rs, List<StepTagPermit> res) throws SQLException {
     while (rs.next()) {
       int idx = 0;
-      res.add(
-          new StepTagPermit(
-              rs.getObject(++idx, UUID.class),
-              rs.getLong(++idx),
-              rs.getInt(++idx),
-              (String[]) rs.getArray(++idx).getArray(),
-              (Integer[]) rs.getArray(++idx).getArray(),
-              fromJson(rs.getString(++idx), TimelineActionEvent.class)));
+      UUID uuid = rs.getObject(++idx, UUID.class);
+      long seqNum = rs.getLong(++idx);
+      int status = rs.getInt(++idx);
+      Array tagArray = rs.getArray(++idx);
+      Array limitArray = rs.getArray(++idx);
+      TimelineActionEvent event = fromJson(rs.getString(++idx), TimelineActionEvent.class);
+      try {
+        res.add(
+            new StepTagPermit(
+                uuid,
+                seqNum,
+                status,
+                (String[]) tagArray.getArray(),
+                (Integer[]) limitArray.getArray(),
+                event));
+      } finally {
+        tagArray.free();
+        limitArray.free();
+      }
     }
   }
 
