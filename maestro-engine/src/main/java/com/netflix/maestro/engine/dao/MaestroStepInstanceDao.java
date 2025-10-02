@@ -421,15 +421,19 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
     if (payload == null) {
       return new Timeline(Collections.emptyList());
     }
-    String[] json = (String[]) payload.getArray();
-    if (json == null) {
-      return new Timeline(Collections.emptyList());
+    try {
+      String[] json = (String[]) payload.getArray();
+      if (json == null) {
+        return new Timeline(Collections.emptyList());
+      }
+      Timeline timeline = new Timeline(null);
+      for (String event : json) {
+        timeline.add(fromJson(event, TimelineEvent.class));
+      }
+      return timeline;
+    } finally {
+      payload.free();
     }
-    Timeline timeline = new Timeline(null);
-    for (String event : json) {
-      timeline.add(fromJson(event, TimelineEvent.class));
-    }
-    return timeline;
   }
 
   private SignalOutputs getOutputs(ResultSet rs) throws SQLException {
