@@ -87,8 +87,10 @@ final class TaskActor extends BaseActor {
     if (!task.isActive()) {
       task.setActive(true);
     }
-    // cancel any existing scheduled task ping as activate will schedule a new ping.
-    var future = getScheduledActions().get(new Action.TaskPing(code));
+    // cancel any existing scheduled task ping as the activate call does the same action.
+    var dedupAction =
+        code == Constants.TASK_PING_CODE ? Action.TASK_PING : new Action.TaskPing(code);
+    var future = getScheduledActions().get(dedupAction);
     if (future != null) {
       future.cancel(false);
     }
