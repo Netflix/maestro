@@ -14,6 +14,7 @@ package com.netflix.maestro.engine.tasks;
 
 import com.netflix.maestro.engine.dao.MaestroTagPermitDao;
 import com.netflix.maestro.engine.dto.StepTagPermit;
+import com.netflix.maestro.engine.dto.StepUuidSeq;
 import com.netflix.maestro.engine.metrics.MetricConstants;
 import com.netflix.maestro.engine.properties.TagPermitTaskProperties;
 import com.netflix.maestro.flow.models.Flow;
@@ -89,17 +90,18 @@ public final class MaestroTagPermitTask implements FlowTask {
       tagPermits.remove(tag);
     }
 
-    private void removeStep(UUID stepUuid) {
-      var tags = stepHoldingTags.remove(stepUuid);
+    private void removeStep(StepUuidSeq stepUuidSeq) {
+      var tags = stepHoldingTags.remove(stepUuidSeq.uuid());
       if (tags != null) {
         for (String tag : tags) {
-          tagUsage.get(tag).remove(stepUuid);
+          tagUsage.get(tag).remove(stepUuidSeq.uuid());
           if (tagUsage.get(tag).isEmpty()) {
             tagUsage.remove(tag);
             tmpTagPermits.remove(tag);
           }
         }
       }
+      queuedSteps.remove(stepUuidSeq.seqNum());
     }
 
     private void addStepTagPermit(StepTagPermit stp) {
@@ -153,7 +155,10 @@ public final class MaestroTagPermitTask implements FlowTask {
           }
         }
         if (canAcquire) {
-          tagPermitDao.markStepTagPermitAcquired(stp.uuid());
+          boolean acquired = tagPermitDao.markStepTagPermitAcquired(stp.uuid());
+          if (!acquired) {
+            continue;
+          }
           addStepTagPermit(
               new StepTagPermit(
                   stp.uuid(), stp.seqNum(), ACQUIRED_STATUS_CODE, stp.tags(), null, null));
