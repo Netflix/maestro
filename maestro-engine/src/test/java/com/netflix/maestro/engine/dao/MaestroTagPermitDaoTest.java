@@ -20,9 +20,11 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import com.netflix.maestro.engine.dto.StepTagPermit;
+import com.netflix.maestro.engine.dto.StepUuidSeq;
 import com.netflix.maestro.models.definition.Tag;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.tagpermits.TagPermit;
+import com.netflix.maestro.models.timeline.TimelineActionEvent;
 import com.netflix.maestro.models.timeline.TimelineLogEvent;
 import java.util.Arrays;
 import java.util.List;
@@ -211,9 +213,8 @@ public class MaestroTagPermitDaoTest extends MaestroDaoBaseTest {
     tagPermitDao.releaseStepTagPermit(uuid1);
 
     // Remove released step tag permits
-    List<UUID> removedUuids = tagPermitDao.removeReleasedStepTagPermits(10);
-    assertNotNull(removedUuids);
-    assertTrue(removedUuids.contains(uuid1));
+    var removedUuids = tagPermitDao.removeReleasedStepTagPermits(10);
+    assertEquals(List.of(new StepUuidSeq(uuid1, 0)), removedUuids);
 
     // UUID should no longer exist
     assertEquals(-1, tagPermitDao.getStepTagPermitStatus(uuid1));
@@ -247,12 +248,24 @@ public class MaestroTagPermitDaoTest extends MaestroDaoBaseTest {
   @Test
   public void testMarkStepTagPermitAcquired() {
     List<Tag> tags = List.of(createTag(tag1, 5));
-    tagPermitDao.insertStepTagPermit(tags, uuid1, null);
+    tagPermitDao.insertStepTagPermit(
+        tags, uuid1, TimelineActionEvent.builder().author(User.create("tester")).build());
 
-    tagPermitDao.markStepTagPermitAcquired(uuid1);
+    assertFalse(tagPermitDao.markStepTagPermitAcquired(uuid1));
+    var res = tagPermitDao.markAndLoadStepTagPermits(10, 10);
+    assertEquals(1, res.size());
+    assertEquals(11, res.getFirst().seqNum());
+    assertEquals(uuid1, res.getFirst().uuid());
+    assertEquals(6, res.getFirst().status());
+
+    assertTrue(tagPermitDao.markStepTagPermitAcquired(uuid1));
 
     // Status should now be 7 (ACQUIRED_STATUS_CODE)
     int status = tagPermitDao.getStepTagPermitStatus(uuid1);
     assertEquals(7, status);
+
+    tagPermitDao.releaseStepTagPermit(uuid1);
+    var removedUuids = tagPermitDao.removeReleasedStepTagPermits(10);
+    assertEquals(List.of(new StepUuidSeq(uuid1, 11)), removedUuids);
   }
 }

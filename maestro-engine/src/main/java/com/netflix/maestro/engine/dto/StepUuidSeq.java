@@ -12,23 +12,12 @@
  */
 package com.netflix.maestro.engine.dto;
 
-import com.netflix.maestro.models.timeline.TimelineActionEvent;
 import java.util.UUID;
 
 /**
- * A wrapper class to hold step tag permit information.
+ * A wrapper class to hold step uuid and sequence number together.
  *
  * @param uuid step uuid
  * @param seqNum step tag permit sequence number
- * @param status status of the tag permit acquisition
- * @param tags tags
- * @param limits tag permit limits
- * @param event timeline action event
  */
-public record StepTagPermit(
-    UUID uuid,
-    long seqNum,
-    int status,
-    String[] tags,
-    Integer[] limits,
-    TimelineActionEvent event) {}
+public record StepUuidSeq(UUID uuid, long seqNum) {}

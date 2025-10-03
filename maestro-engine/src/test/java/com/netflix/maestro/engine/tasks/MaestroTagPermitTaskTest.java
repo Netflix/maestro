@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 import com.netflix.maestro.engine.MaestroEngineBaseTest;
 import com.netflix.maestro.engine.dao.MaestroTagPermitDao;
 import com.netflix.maestro.engine.dto.StepTagPermit;
+import com.netflix.maestro.engine.dto.StepUuidSeq;
 import com.netflix.maestro.engine.properties.TagPermitTaskProperties;
 import com.netflix.maestro.flow.models.Flow;
 import com.netflix.maestro.flow.models.Task;
@@ -109,7 +110,9 @@ public class MaestroTagPermitTaskTest extends MaestroEngineBaseTest {
         .thenReturn(Arrays.asList("tag1", "tag2"))
         .thenReturn(Collections.emptyList());
     when(tagPermitDao.removeReleasedStepTagPermits(anyInt()))
-        .thenReturn(Arrays.asList(UUID.randomUUID(), UUID.randomUUID()))
+        .thenReturn(
+            Arrays.asList(
+                new StepUuidSeq(UUID.randomUUID(), 1), new StepUuidSeq(UUID.randomUUID(), 2)))
         .thenReturn(Collections.emptyList());
     when(properties.getCleanUpInterval()).thenReturn(Long.MAX_VALUE);
 
@@ -176,6 +179,11 @@ public class MaestroTagPermitTaskTest extends MaestroEngineBaseTest {
     tagPermitTask.execute(flow, task);
 
     verify(tagPermitDao, times(1)).markStepTagPermitAcquired(stepUuid);
+    verify(queueSystem, times(0)).notify(any());
+
+    when(tagPermitDao.markStepTagPermitAcquired(any())).thenReturn(true);
+    tagPermitTask.execute(flow, task);
+    verify(tagPermitDao, times(2)).markStepTagPermitAcquired(stepUuid);
     verify(queueSystem, times(1)).notify(any());
   }
 

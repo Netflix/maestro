@@ -24,8 +24,10 @@ import com.netflix.maestro.queue.models.MessageDto;
 import com.netflix.maestro.utils.ObjectHelper;
 import java.util.List;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 
 /** Database based implementation of tag permit manager. */
+@Slf4j
 public class MaestroTagPermitManager implements TagPermitManager {
   private static final int NOT_FOUND_STATUS_CODE = -1;
   private static final int INTERNAL_FLOW_GROUP_ID = 0;
@@ -91,6 +93,8 @@ public class MaestroTagPermitManager implements TagPermitManager {
     if (released) {
       wakeUpTagPermitTask(MaestroTagPermitTask.STEP_TAG_PERMIT_DELETE_CODE);
     }
+    LOG.debug(
+        "Release tag permits for step: [{}] with the released flag: [{}]", stepUuid, released);
   }
 
   /**

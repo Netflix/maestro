@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.database.AbstractDatabaseDao;
 import com.netflix.maestro.database.DatabaseConfiguration;
 import com.netflix.maestro.engine.dto.StepTagPermit;
+import com.netflix.maestro.engine.dto.StepUuidSeq;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.definition.Tag;
 import com.netflix.maestro.models.definition.User;
@@ -71,7 +72,7 @@ public class MaestroTagPermitDao extends AbstractDatabaseDao {
       GET_STEP_TAG_PERMITS_PREFIX + "AND uuid>? ORDER BY uuid ASC LIMIT ?";
   private static final String REMOVE_RELEASED_STEP_TAG_PERMITS_QUERY =
       "DELETE from maestro_step_tag_permit WHERE uuid IN "
-          + "(SELECT uuid FROM maestro_step_tag_permit WHERE status=1 LIMIT ?) RETURNING uuid";
+          + "(SELECT uuid FROM maestro_step_tag_permit WHERE status=1 LIMIT ?) RETURNING uuid,seq_num";
 
   private static final String MARK_STEP_TAG_PERMITS_SYNCED_QUERY =
       "UPDATE maestro_step_tag_permit SET (status,seq_num)=(6,ranked.sn) FROM "
@@ -79,7 +80,7 @@ public class MaestroTagPermitDao extends AbstractDatabaseDao {
           + " WHERE status=0 order by create_ts ASC LIMIT ?) ranked WHERE maestro_step_tag_permit.uuid = ranked.uuid "
           + "RETURNING maestro_step_tag_permit.uuid,seq_num,status,tags,limits,timeline[1]";
   private static final String MARK_STEP_TAG_PERMITS_ACQUIRED_QUERY =
-      "UPDATE maestro_step_tag_permit SET status=7 WHERE uuid=?";
+      "UPDATE maestro_step_tag_permit SET (status,acquire_ts)=(7,NOW()) WHERE uuid=? AND status=6";
 
   private record TagPermitRecord(int maxAllowed, String[] events) {}
 
@@ -358,8 +359,8 @@ public class MaestroTagPermitDao extends AbstractDatabaseDao {
    *
    * @return the uuids of deleted records.
    */
-  public List<UUID> removeReleasedStepTagPermits(int limit) {
-    List<UUID> res = new ArrayList<>();
+  public List<StepUuidSeq> removeReleasedStepTagPermits(int limit) {
+    List<StepUuidSeq> res = new ArrayList<>();
     return withMetricLogError(
         () ->
             withRetryableQuery(
@@ -367,7 +368,7 @@ public class MaestroTagPermitDao extends AbstractDatabaseDao {
                 stmt -> stmt.setInt(1, limit),
                 rs -> {
                   while (rs.next()) {
-                    res.add(rs.getObject(1, UUID.class));
+                    res.add(new StepUuidSeq(rs.getObject(1, UUID.class), rs.getLong(2)));
                   }
                   return res;
                 }),
@@ -432,14 +433,16 @@ public class MaestroTagPermitDao extends AbstractDatabaseDao {
    * Mark step tag permit status to be acquired.
    *
    * @param uuid step uuid
+   * @return whether there is an update on a record
    */
-  public void markStepTagPermitAcquired(UUID uuid) {
-    withMetricLogError(
-        () ->
-            withRetryableUpdate(
-                MARK_STEP_TAG_PERMITS_ACQUIRED_QUERY, stmt -> stmt.setObject(1, uuid)),
-        "markStepTagPermitAcquired",
-        "Failed marking step tag permit acquisition status for uuid: [{}]",
-        uuid);
+  public boolean markStepTagPermitAcquired(UUID uuid) {
+    return withMetricLogError(
+            () ->
+                withRetryableUpdate(
+                    MARK_STEP_TAG_PERMITS_ACQUIRED_QUERY, stmt -> stmt.setObject(1, uuid)),
+            "markStepTagPermitAcquired",
+            "Failed marking step tag permit acquisition status for uuid: [{}]",
+            uuid)
+        == SUCCESS_WRITE_SIZE;
   }
 }
