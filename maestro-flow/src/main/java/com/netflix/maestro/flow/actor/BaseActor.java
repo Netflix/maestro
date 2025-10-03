@@ -184,7 +184,7 @@ abstract sealed class BaseActor implements Actor permits GroupActor, FlowActor, 
       getLogger()
           .debug(
               "enqueue an action [{}] for [{}] with a delay [{}]ms", action, name(), delayInMillis);
-      var future = context.schedule(() -> actions.offer(action), delayInMillis);
+      var future = context.schedule(() -> post(action), delayInMillis);
       scheduledActions.put(action, future);
     }
   }

@@ -25,8 +25,10 @@ import com.netflix.maestro.flow.models.Flow;
 import com.netflix.maestro.flow.models.Task;
 import com.netflix.maestro.flow.models.TaskDef;
 import java.util.Set;
+import java.util.concurrent.ScheduledFuture;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public class TaskActorTest extends ActorBaseTest {
 
@@ -144,10 +146,21 @@ public class TaskActorTest extends ActorBaseTest {
 
   @Test
   public void testRunForActionTaskActivate() {
-    verifyExecute(Action.TASK_ACTIVATE, false);
+    var mockFuture = Mockito.mock(ScheduledFuture.class);
+    taskActor.getScheduledActions().put(Action.TASK_PING, mockFuture);
+    verifyExecute(Action.TASK_ACTIVATE, false, null);
+    verify(mockFuture, times(1)).cancel(false);
   }
 
-  private void verifyExecute(Action action, boolean activeFlag) {
+  @Test
+  public void testRunForActionTaskActivateWithoutCancel() {
+    var mockFuture = Mockito.mock(ScheduledFuture.class);
+    taskActor.getScheduledActions().put(new Action.TaskPing(123), mockFuture);
+    verifyExecute(Action.TASK_ACTIVATE, false, new Action.TaskPing(123));
+    verify(mockFuture, times(0)).cancel(false);
+  }
+
+  private void verifyExecute(Action action, boolean activeFlag, Action extra) {
     task.setActive(activeFlag);
     task.setStarted(true);
     task.setStartDelayInMillis(3000000L);
@@ -157,7 +170,8 @@ public class TaskActorTest extends ActorBaseTest {
     assertTrue(task.isActive());
     verify(context, times(1)).execute(any(), any());
     assertEquals(1, task.getPollCount());
-    assertEquals(Set.of(Action.TASK_PING), taskActor.getScheduledActions().keySet());
+    var actions = extra == null ? Set.of(Action.TASK_PING) : Set.of(Action.TASK_PING, extra);
+    assertEquals(actions, taskActor.getScheduledActions().keySet());
     verify(context, times(0)).cloneTask(any());
     verifyEmptyAction(flowActor);
   }
@@ -193,7 +207,7 @@ public class TaskActorTest extends ActorBaseTest {
 
   @Test
   public void testRunForActionTaskTimeout() {
-    verifyExecute(Action.TASK_TIMEOUT, true);
+    verifyExecute(Action.TASK_TIMEOUT, true, null);
   }
 
   @Test
