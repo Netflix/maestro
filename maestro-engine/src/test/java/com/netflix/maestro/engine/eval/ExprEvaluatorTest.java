@@ -21,6 +21,7 @@ import com.netflix.maestro.exceptions.MaestroInvalidExpressionException;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Collections;
+import java.util.HashMap;
 import org.junit.Test;
 
 public class ExprEvaluatorTest extends MaestroEngineBaseTest {
@@ -82,5 +83,17 @@ public class ExprEvaluatorTest extends MaestroEngineBaseTest {
   @Test
   public void testDefaultReturn() {
     assertEquals(1L, evaluator.eval("x = 1", Collections.singletonMap("x", 10)));
+  }
+
+  @Test
+  public void testExtFunction() {
+    assertEquals("\"10\"", evaluator.eval("Util.toJson(x)", Collections.singletonMap("x", "10")));
+    var map = new HashMap<String, Integer>();
+    map.put("foo", 10);
+    assertEquals(
+        "{\"foo\":10}", evaluator.eval("Util.toJson(x)", Collections.singletonMap("x", map)));
+    assertEquals(
+        "[10,20]",
+        evaluator.eval("Util.toJson(x)", Collections.singletonMap("x", new long[] {10, 20})));
   }
 }

@@ -12,11 +12,15 @@
  */
 package com.netflix.maestro.engine.eval;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
 import com.netflix.maestro.engine.handlers.SignalHandler;
+import com.netflix.maestro.exceptions.MaestroUnprocessableEntityException;
+import com.netflix.maestro.utils.Checks;
 import com.netflix.sel.ext.Extension;
+import com.netflix.sel.type.SelUtilFunc;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -72,6 +76,7 @@ public class MaestroParamExtensionRepo {
   /** Initialize the ExtensionRepo. */
   void initialize() {
     LOG.info("Initializing ExtensionRepo within Spring boot...");
+    SelUtilFunc.register("toJson", this::toJsonExtFunction);
     executor = Executors.newFixedThreadPool(THREAD_NUM);
     ((ThreadPoolExecutor) executor).prestartAllCoreThreads();
   }
@@ -82,5 +87,18 @@ public class MaestroParamExtensionRepo {
     LOG.info("Shutdown ExtensionRepo within Spring boot...");
     executor.shutdown();
     executor = null;
+  }
+
+  // Add a SEL function to convert the input object to a JSON string. If there are more, will
+  // refactor them to a class.
+  private String toJsonExtFunction(Object[] value) {
+    Checks.checkTrue(
+        value != null && value.length == 1, "toJson function requires exactly one argument");
+    try {
+      return objectMapper.writeValueAsString(value[0]);
+    } catch (JsonProcessingException e) {
+      throw new MaestroUnprocessableEntityException(
+          "Failed to write an object to json string due to [%s]", e.getMessage());
+    }
   }
 }
