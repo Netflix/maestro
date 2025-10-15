@@ -39,11 +39,11 @@ public class SelUtilFuncTest {
     SelType res =
         SelUtilFunc.INSTANCE.call(
             "incrementDateInt", new SelType[] {SelString.of("20190101"), SelLong.of(5)});
-    assertEquals("STRING: 20190106", res.type() + ": " + res.toString());
+    assertEquals("STRING: 20190106", res.type() + ": " + res);
     res =
         SelUtilFunc.INSTANCE.call(
             "incrementDateInt", new SelType[] {SelLong.of("20190101"), SelLong.of(5)});
-    assertEquals("STRING: 20190106", res.type() + ": " + res.toString());
+    assertEquals("STRING: 20190106", res.type() + ": " + res);
   }
 
   @Test(expected = ClassCastException.class)
@@ -56,9 +56,9 @@ public class SelUtilFuncTest {
   public void testCallDateIntToTs() {
     SelType res =
         SelUtilFunc.INSTANCE.call("dateIntToTs", new SelType[] {SelString.of("20190101")});
-    assertEquals("LONG: 1546300800000", res.type() + ": " + res.toString());
+    assertEquals("LONG: 1546300800000", res.type() + ": " + res);
     res = SelUtilFunc.INSTANCE.call("dateIntToTs", new SelType[] {SelLong.of("20190101")});
-    assertEquals("LONG: 1546300800000", res.type() + ": " + res.toString());
+    assertEquals("LONG: 1546300800000", res.type() + ": " + res);
   }
 
   @Test(expected = IllegalFieldValueException.class)
@@ -78,7 +78,7 @@ public class SelUtilFuncTest {
               SelString.of("01"),
               SelString.of("01")
             });
-    assertEquals("LONG: 1546214400000", res.type() + ": " + res.toString());
+    assertEquals("LONG: 1546214400000", res.type() + ": " + res);
     res =
         SelUtilFunc.INSTANCE.call(
             "dateIntHourToTs",
@@ -89,7 +89,7 @@ public class SelUtilFuncTest {
               SelLong.of("01"),
               SelLong.of("01")
             });
-    assertEquals("LONG: 1546214400000", res.type() + ": " + res.toString());
+    assertEquals("LONG: 1546214400000", res.type() + ": " + res);
   }
 
   @Test
@@ -101,7 +101,7 @@ public class SelUtilFuncTest {
               SelJodaDateTime.of(new DateTime("2019-01-01", DateTimeZone.UTC)),
               SelString.of("1 day")
             });
-    assertEquals("STRING: 1546387187655 milliseconds", res.type() + ": " + res.toString());
+    assertEquals("STRING: 1546387187655 milliseconds", res.type() + ": " + res);
   }
 
   @Test(expected = UnsupportedOperationException.class)
@@ -115,12 +115,12 @@ public class SelUtilFuncTest {
         SelUtilFunc.INSTANCE.call(
             "timeoutForDateIntDeadline",
             new SelType[] {SelString.of("20190101"), SelString.of("1 day")});
-    assertEquals("STRING: 1546387187655 milliseconds", res.type() + ": " + res.toString());
+    assertEquals("STRING: 1546387187655 milliseconds", res.type() + ": " + res);
     res =
         SelUtilFunc.INSTANCE.call(
             "timeoutForDateIntDeadline",
             new SelType[] {SelLong.of(20190101), SelString.of("1 day")});
-    assertEquals("STRING: 1546387187655 milliseconds", res.type() + ": " + res.toString());
+    assertEquals("STRING: 1546387187655 milliseconds", res.type() + ": " + res);
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -133,9 +133,9 @@ public class SelUtilFuncTest {
   @Test
   public void testCallTsToDateInt() {
     SelType res = SelUtilFunc.INSTANCE.call("tsToDateInt", new SelType[] {SelLong.of("12345")});
-    assertEquals("STRING: 19700101", res.type() + ": " + res.toString());
+    assertEquals("STRING: 19700101", res.type() + ": " + res);
     res = SelUtilFunc.INSTANCE.call("tsToDateInt", new SelType[] {SelString.of("12345")});
-    assertEquals("STRING: 19700101", res.type() + ": " + res.toString());
+    assertEquals("STRING: 19700101", res.type() + ": " + res);
   }
 
   @Test
@@ -145,15 +145,13 @@ public class SelUtilFuncTest {
             "dateIntsBetween",
             new SelType[] {SelString.of("20190226"), SelLong.of(20190303), SelString.of("1")});
     assertEquals(
-        "LONG_ARRAY: [20190226, 20190227, 20190228, 20190301, 20190302]",
-        res.type() + ": " + res.toString());
+        "LONG_ARRAY: [20190226, 20190227, 20190228, 20190301, 20190302]", res.type() + ": " + res);
 
     res =
         SelUtilFunc.INSTANCE.call(
             "dateIntsBetween",
             new SelType[] {SelLong.of("20181228"), SelString.of("20191002"), SelLong.of(90)});
-    assertEquals(
-        "LONG_ARRAY: [20181228, 20190328, 20190626, 20190924]", res.type() + ": " + res.toString());
+    assertEquals("LONG_ARRAY: [20181228, 20190328, 20190626, 20190924]", res.type() + ": " + res);
 
     res =
         SelUtilFunc.INSTANCE.call(
@@ -161,27 +159,26 @@ public class SelUtilFuncTest {
             new SelType[] {SelLong.of(20200226), SelLong.of(20200303), SelLong.of(1)});
     assertEquals(
         "LONG_ARRAY: [20200226, 20200227, 20200228, 20200229, 20200301, 20200302]",
-        res.type() + ": " + res.toString());
+        res.type() + ": " + res);
 
     res =
         SelUtilFunc.INSTANCE.call(
             "dateIntsBetween",
             new SelType[] {SelLong.of(20191226), SelLong.of(20190303), SelLong.of(1)});
-    assertEquals("LONG_ARRAY: []", res.type() + ": " + res.toString());
+    assertEquals("LONG_ARRAY: []", res.type() + ": " + res);
 
     res =
         SelUtilFunc.INSTANCE.call(
             "dateIntsBetween",
             new SelType[] {SelString.of("20190303"), SelLong.of(20190226), SelString.of("-1")});
     assertEquals(
-        "LONG_ARRAY: [20190302, 20190301, 20190228, 20190227, 20190226]",
-        res.type() + ": " + res.toString());
+        "LONG_ARRAY: [20190302, 20190301, 20190228, 20190227, 20190226]", res.type() + ": " + res);
 
     res =
         SelUtilFunc.INSTANCE.call(
             "dateIntsBetween",
             new SelType[] {SelLong.of("20181228"), SelString.of("20191002"), SelLong.of(-90)});
-    assertEquals("LONG_ARRAY: []", res.type() + ": " + res.toString());
+    assertEquals("LONG_ARRAY: []", res.type() + ": " + res);
   }
 
   @Test
@@ -189,32 +186,32 @@ public class SelUtilFuncTest {
     SelType res =
         SelUtilFunc.INSTANCE.call(
             "intsBetween", new SelType[] {SelString.of("5"), SelLong.of("10"), SelLong.of(2)});
-    assertEquals("LONG_ARRAY: [5, 7, 9]", res.type() + ": " + res.toString());
+    assertEquals("LONG_ARRAY: [5, 7, 9]", res.type() + ": " + res);
 
     res =
         SelUtilFunc.INSTANCE.call(
             "intsBetween", new SelType[] {SelLong.of("-5"), SelString.of("1"), SelLong.of(2)});
-    assertEquals("LONG_ARRAY: [-5, -3, -1]", res.type() + ": " + res.toString());
+    assertEquals("LONG_ARRAY: [-5, -3, -1]", res.type() + ": " + res);
 
     res =
         SelUtilFunc.INSTANCE.call(
             "intsBetween", new SelType[] {SelLong.of("5"), SelString.of("1"), SelString.of("2")});
-    assertEquals("LONG_ARRAY: []", res.type() + ": " + res.toString());
+    assertEquals("LONG_ARRAY: []", res.type() + ": " + res);
 
     res =
         SelUtilFunc.INSTANCE.call(
             "intsBetween", new SelType[] {SelLong.of("-5"), SelString.of("1"), SelLong.of(-2)});
-    assertEquals("LONG_ARRAY: []", res.type() + ": " + res.toString());
+    assertEquals("LONG_ARRAY: []", res.type() + ": " + res);
 
     res =
         SelUtilFunc.INSTANCE.call(
             "intsBetween", new SelType[] {SelLong.of("1"), SelString.of("-5"), SelLong.of(-2)});
-    assertEquals("LONG_ARRAY: [1, -1, -3]", res.type() + ": " + res.toString());
+    assertEquals("LONG_ARRAY: [1, -1, -3]", res.type() + ": " + res);
 
     res =
         SelUtilFunc.INSTANCE.call(
             "intsBetween", new SelType[] {SelLong.of("5"), SelString.of("1"), SelString.of("-2")});
-    assertEquals("LONG_ARRAY: [5, 3]", res.type() + ": " + res.toString());
+    assertEquals("LONG_ARRAY: [5, 3]", res.type() + ": " + res);
   }
 
   @Test(expected = NumberFormatException.class)
@@ -240,7 +237,7 @@ public class SelUtilFuncTest {
         SelUtilFunc.INSTANCE.call(
             "dateIntsBetween",
             new SelType[] {SelLong.of("20181228"), SelString.of("20191002"), SelLong.of(0)});
-    assertEquals("LONG_ARRAY: []", res.type() + ": " + res.toString());
+    assertEquals("LONG_ARRAY: []", res.type() + ": " + res);
   }
 
   @Test(expected = NumberFormatException.class)
@@ -249,12 +246,19 @@ public class SelUtilFuncTest {
         SelUtilFunc.INSTANCE.call(
             "dateIntsBetween",
             new SelType[] {SelLong.of("20181228"), SelString.of("20191002"), SelLong.of("abc")});
-    assertEquals("LONG_ARRAY: []", res.type() + ": " + res.toString());
+    assertEquals("LONG_ARRAY: []", res.type() + ": " + res);
   }
 
   @Test(expected = NumberFormatException.class)
   public void testInvalidCallIntsBetween() {
     SelUtilFunc.INSTANCE.call(
         "intsBetween", new SelType[] {SelString.of("foo"), SelLong.of(3), SelLong.of(1)});
+  }
+
+  @Test
+  public void testRegisterExtFunction() {
+    SelUtilFunc.register("testExtFunc", args -> "Hello " + args[0]);
+    SelType res = SelUtilFunc.INSTANCE.call("testExtFunc", new SelType[] {SelString.of("World")});
+    assertEquals("STRING: Hello World", res.type() + ": " + res);
   }
 }

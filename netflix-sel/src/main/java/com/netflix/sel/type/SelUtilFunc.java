@@ -12,10 +12,13 @@
  */
 package com.netflix.sel.type;
 
+import com.netflix.sel.ext.ExtFunction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Days;
@@ -27,6 +30,12 @@ import org.joda.time.format.PeriodFormat;
 public final class SelUtilFunc implements SelType {
 
   static final SelUtilFunc INSTANCE = new SelUtilFunc();
+
+  private static final Map<String, ExtFunction> EXT_FUNCTIONS = new ConcurrentHashMap<>();
+
+  public static void register(String methodName, ExtFunction extFunction) {
+    EXT_FUNCTIONS.put(methodName, extFunction);
+  }
 
   private SelUtilFunc() {}
 
@@ -42,6 +51,15 @@ public final class SelUtilFunc implements SelType {
 
   @Override
   public SelType call(String methodName, SelType[] args) {
+    if (EXT_FUNCTIONS.containsKey(methodName)) {
+      ExtFunction extFunction = EXT_FUNCTIONS.get(methodName);
+      Object[] varargs = new Object[args.length];
+      for (int i = 0; i < varargs.length; ++i) {
+        varargs[i] = args[i].unbox();
+      }
+      return SelTypeUtil.box(extFunction.call(varargs));
+    }
+
     if (args.length == 1) {
       if ("dateIntToTs".equals(methodName)) {
         return dateIntToTs(args[0]);
