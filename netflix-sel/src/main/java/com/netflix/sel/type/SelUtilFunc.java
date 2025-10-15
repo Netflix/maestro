@@ -51,8 +51,8 @@ public final class SelUtilFunc implements SelType {
 
   @Override
   public SelType call(String methodName, SelType[] args) {
-    if (EXT_FUNCTIONS.containsKey(methodName)) {
-      ExtFunction extFunction = EXT_FUNCTIONS.get(methodName);
+    ExtFunction extFunction = EXT_FUNCTIONS.get(methodName);
+    if (extFunction != null) {
       Object[] varargs = new Object[args.length];
       for (int i = 0; i < varargs.length; ++i) {
         varargs[i] = args[i].unbox();
