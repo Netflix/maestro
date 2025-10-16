@@ -69,6 +69,7 @@ import lombok.extern.slf4j.Slf4j;
  * because a new run might unexpectedly stop all previously queued or running instances.
  */
 @SuppressFBWarnings("OBL_UNSATISFIED_OBLIGATION")
+@SuppressWarnings({"PMD.ExhaustiveSwitchHasDefault", "PMD.ReplaceJavaUtilDate"})
 @Slf4j
 public class MaestroRunStrategyDao extends AbstractDatabaseDao {
   private static final String ONE_STRING = "1";

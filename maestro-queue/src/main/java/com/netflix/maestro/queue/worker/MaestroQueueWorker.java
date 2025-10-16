@@ -114,6 +114,7 @@ public final class MaestroQueueWorker implements Runnable {
     LOG.info("[{}] is not running any more.", name);
   }
 
+  @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
   private void releaseOwnership() {
     int res = batchLimit;
     int total = 0;

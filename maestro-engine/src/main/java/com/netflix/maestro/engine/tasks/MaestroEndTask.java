@@ -58,7 +58,6 @@ import lombok.extern.slf4j.Slf4j;
  * total number of leaf steps is greater than {@link Constants#TOTAL_LEAF_STEP_COUNT_LIMIT}, it will
  * terminate this workflow instance DAG tree.
  */
-@SuppressWarnings("PMD.BeanMembersShouldSerialize")
 @Slf4j
 public final class MaestroEndTask implements FlowTask {
   private static final long WORKFLOW_LONG_START_DELAY_INTERVAL = 180000;

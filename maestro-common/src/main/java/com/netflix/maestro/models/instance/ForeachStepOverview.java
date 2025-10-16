@@ -43,6 +43,7 @@ import lombok.Data;
     },
     alphabetic = true)
 @Data
+@SuppressWarnings("PMD.LooseCoupling")
 public class ForeachStepOverview {
   // checkpoint of the current first non-terminated iteration of the base run (no restarting)
   private long checkpoint;

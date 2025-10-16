@@ -44,6 +44,9 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder(toBuilder = true)
 @EqualsAndHashCode(callSuper = true)
 public final class BooleanParameter extends AbstractParameter {
+  private static final String TRUE = "true";
+  private static final String FALSE = "false";
+
   private final Boolean value;
   private Boolean evaluatedResult;
 
@@ -69,9 +72,9 @@ public final class BooleanParameter extends AbstractParameter {
     if (result instanceof String) {
       this.getMeta()
           .put("warn", "Implicitly converted the evaluated result to a boolean for type String");
-      if ("true".equalsIgnoreCase((String) result)) {
+      if (TRUE.equalsIgnoreCase((String) result)) {
         this.evaluatedResult = Boolean.TRUE;
-      } else if ("false".equalsIgnoreCase((String) result)) {
+      } else if (FALSE.equalsIgnoreCase((String) result)) {
         this.evaluatedResult = Boolean.FALSE;
       } else {
         throw new IllegalArgumentException(

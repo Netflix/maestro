@@ -37,7 +37,6 @@ import lombok.ToString;
  *
  * <p>Properties changes are kept separately and can evolve independently in Maestro.
  */
-@SuppressWarnings("PMD.MissingStaticMethodInNonInstantiatableClass") // false positive with lombok
 @JsonDeserialize(builder = PropertiesSnapshot.PropertiesSnapshotBuilder.class)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)

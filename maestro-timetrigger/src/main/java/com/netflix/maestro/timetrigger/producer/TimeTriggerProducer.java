@@ -15,6 +15,7 @@ package com.netflix.maestro.timetrigger.producer;
 import com.netflix.maestro.timetrigger.models.TimeTriggerExecution;
 
 /** Producer for Time trigger messages. */
+@FunctionalInterface
 public interface TimeTriggerProducer {
   /**
    * Push a time trigger execution message.

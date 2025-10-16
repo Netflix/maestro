@@ -50,6 +50,7 @@ public class TimeTriggerExecutionProcessor {
   private TimeTriggerProperties props;
   private MaestroMetrics metrics;
 
+  @SuppressWarnings("PMD.ReplaceJavaUtilDate")
   public void process(Supplier<TimeTriggerExecution> messageSupplier) {
     long start = System.currentTimeMillis();
     metrics.counter(MetricConstants.EXECUTION_PROCESS_METRIC, getClass());
@@ -148,6 +149,7 @@ public class TimeTriggerExecutionProcessor {
         System.currentTimeMillis() - start);
   }
 
+  @SuppressWarnings("PMD.ReplaceJavaUtilDate")
   private long calculateMessageDelay(Date firstExecutionDate) {
     long fullDelayForExecution =
         new BigDecimal(firstExecutionDate.getTime() - System.currentTimeMillis())

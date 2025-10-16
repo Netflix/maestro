@@ -62,7 +62,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 
 /** Beans for maestro workflow classes. */
-@SuppressWarnings("JavadocMethod")
+@SuppressWarnings({"JavadocMethod", "PMD.LooseCoupling"})
 @Configuration
 @Slf4j
 @EnableConfigurationProperties({StepRuntimeProperties.class})

@@ -66,6 +66,7 @@ public class WorkflowEnrichmentHelper {
     }
   }
 
+  @SuppressWarnings("PMD.ReplaceJavaUtilDate")
   private void enrichNextRunDate(
       WorkflowDefinition workflowDefinition, WorkflowDefinitionExtras enrichedWorkflowExtras) {
     if (workflowDefinition.getWorkflow().getTimeTriggers() == null) {

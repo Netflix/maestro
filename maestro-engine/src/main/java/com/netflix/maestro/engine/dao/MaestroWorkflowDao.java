@@ -83,6 +83,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 // mute the false positive error due to https://github.com/spotbugs/spotbugs/issues/293
 @SuppressFBWarnings("OBL_UNSATISFIED_OBLIGATION")
+@SuppressWarnings({"PMD.LooseCoupling", "PMD.ReplaceJavaUtilDate"})
 @Slf4j
 public class MaestroWorkflowDao extends AbstractDatabaseDao {
   private static final String WORKFLOW_ID_COLUMN = "workflow_id";
@@ -393,6 +394,7 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
     }
   }
 
+  @FunctionalInterface
   private interface SupplierWithSQLException<T> {
     T get() throws SQLException;
   }
@@ -540,8 +542,7 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
                 ? workflowInfo.getLatestVersionId()
                 : currActiveVersionId;
         break;
-      case EXACT:
-      default:
+      default: // for the case of EXACT
         versionId =
             ObjectHelper.toNumeric(version)
                 .orElseThrow(() -> new InvalidWorkflowVersionException(workflowId, version));
@@ -1047,7 +1048,7 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
 
   private SequencedMap<String, String> prepareProperties(
       List<StatementPreparer> preparers, String workflowId, PropertiesSnapshot snapshot) {
-    LinkedHashMap<String, String> fields = new LinkedHashMap<>();
+    SequencedMap<String, String> fields = new LinkedHashMap<>();
     prepareStringField(fields, WORKFLOW_ID_COLUMN, preparers, workflowId);
     if (snapshot != null) {
       prepareJsonbField(fields, PROPERTIES_COLUMN, preparers, snapshot);

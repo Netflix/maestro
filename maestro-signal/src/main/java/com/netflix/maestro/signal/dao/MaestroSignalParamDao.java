@@ -119,8 +119,9 @@ public class MaestroSignalParamDao extends AbstractDatabaseDao {
     StringBuilder sqlBuilder =
         new StringBuilder(toSql(signalName, paramMatchIterator.next(), checkpoint, queryParams));
     while (paramMatchIterator.hasNext()) {
-      sqlBuilder.append(INTERSECT_JOIN);
-      sqlBuilder.append(toSql(signalName, paramMatchIterator.next(), checkpoint, queryParams));
+      sqlBuilder
+          .append(INTERSECT_JOIN)
+          .append(toSql(signalName, paramMatchIterator.next(), checkpoint, queryParams));
     }
     return sqlBuilder.append(LIMIT_ONE).toString();
   }

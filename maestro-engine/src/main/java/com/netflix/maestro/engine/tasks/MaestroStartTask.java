@@ -54,7 +54,6 @@ public final class MaestroStartTask implements FlowTask {
    * It provides exactly once execution start. It handles the case that the same instance is started
    * twice in internal flow engine, which might happen in certain rare scenarios.
    */
-  @SuppressWarnings({"PMD.AvoidCatchingNPE"})
   @Override
   public boolean execute(Flow flow, Task task) {
     try {

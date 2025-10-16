@@ -48,7 +48,6 @@ import lombok.AllArgsConstructor;
  * class should be read-only and not mutate any states of the input. Also, it takes its own security
  * risks as it is not restricted by SEL security feature.
  */
-@SuppressWarnings({"PMD.DoNotUseThreads", "PMD.BeanMembersShouldSerialize"})
 @AllArgsConstructor
 public class MaestroParamExtension extends AbstractParamExtension {
   private static final int RANDOM_JITTER_DELAY = 10;

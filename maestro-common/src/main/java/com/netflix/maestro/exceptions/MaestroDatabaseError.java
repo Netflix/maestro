@@ -4,6 +4,7 @@ import com.netflix.maestro.models.error.Details;
 import lombok.Getter;
 
 @Getter
+@SuppressWarnings("PMD.NonSerializableClass")
 public class MaestroDatabaseError extends MaestroRuntimeException {
   private static final long serialVersionUID = 7334668492533395123L;
 

@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 
 /** step runtime manager to manage step runtime and their results. */
+@SuppressWarnings("PMD.ExhaustiveSwitchHasDefault")
 public final class StepRuntimeManager {
   private final Map<StepType, StepRuntime> stepRuntimeMap;
   private final ObjectMapper objectMapper;

@@ -31,6 +31,7 @@ public class SnsEventNotificationPublisher implements MaestroNotificationPublish
   private final ObjectMapper objectMapper;
 
   /** Send a Maestro event to the SNS topic. */
+  @Override
   public void send(MaestroEvent event) {
     try {
       String payload = objectMapper.writeValueAsString(event);

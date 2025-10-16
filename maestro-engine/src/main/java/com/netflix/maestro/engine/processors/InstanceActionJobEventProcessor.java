@@ -165,6 +165,7 @@ public class InstanceActionJobEventProcessor
   }
 
   // Best effort wakeup the actors. It ignores any error or if wakeup is not done.
+  @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
   private void processForFlowEntity(InstanceActionJobEvent jobEvent) {
     String workflowId = jobEvent.getWorkflowId();
     long groupInfo = jobEvent.getGroupInfo();

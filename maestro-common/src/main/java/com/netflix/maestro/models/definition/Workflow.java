@@ -93,7 +93,6 @@ public class Workflow {
 
   @Valid private final List<Step> steps;
 
-  @SuppressWarnings({"PMD.NullAssignment"})
   @Builder(toBuilder = true)
   Workflow(
       String id,

@@ -17,11 +17,13 @@ import com.netflix.maestro.timetrigger.models.PlannedTimeTriggerExecution;
 import com.netflix.maestro.timetrigger.models.TimeTriggerExecution;
 import com.netflix.maestro.timetrigger.models.TimeTriggerWithWatermark;
 import com.netflix.maestro.utils.TriggerHelper;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /** Utility class to plan time trigger executions. */
@@ -45,10 +47,11 @@ public class TimeTriggerExecutionPlanner {
    * @param workflowId used by fuzzy cron as salt to calculate random jitter
    * @return a list of planned executions
    */
+  @SuppressWarnings({"PMD.AvoidInstantiatingObjectsInLoops", "PMD.ReplaceJavaUtilDate"})
   public List<PlannedTimeTriggerExecution> calculatePlannedExecutions(
       List<TimeTriggerWithWatermark> timeTriggerWithWatermarks, Date endDate, String workflowId) {
 
-    ArrayList<PlannedTimeTriggerExecution> plannedList = new ArrayList<>();
+    List<PlannedTimeTriggerExecution> plannedList = new ArrayList<>();
     for (TimeTriggerWithWatermark t : timeTriggerWithWatermarks) {
       Optional<Date> nextExecutionDate =
           TriggerHelper.nextExecutionDate(
@@ -72,6 +75,7 @@ public class TimeTriggerExecutionPlanner {
    * @param timeTriggers an array of time triggers with watermark
    * @return the earliest date
    */
+  @SuppressWarnings("PMD.ReplaceJavaUtilDate")
   public Optional<Date> calculateEarliestExecutionDate(
       List<TimeTriggerWithWatermark> timeTriggers, String workflowId) {
     return timeTriggers.stream()
@@ -95,20 +99,20 @@ public class TimeTriggerExecutionPlanner {
       TimeTriggerExecution timeTriggerExecution,
       List<PlannedTimeTriggerExecution> executedTimeTriggers) {
     var timeTriggerWithWatermarks = timeTriggerExecution.getTimeTriggersWithWatermarks();
-    HashMap<TimeTrigger, Date> latestExecutedByTrigger = new HashMap<>();
+    Map<TimeTrigger, Instant> latestExecutedByTrigger = new HashMap<>();
 
     executedTimeTriggers.forEach(
         t -> {
           if (latestExecutedByTrigger.containsKey(t.timeTriggerWithWatermark().getTimeTrigger())) {
-            Date executionDate =
+            Instant executionInstant =
                 latestExecutedByTrigger.get(t.timeTriggerWithWatermark().getTimeTrigger());
-            if (t.executionDate().compareTo(executionDate) > 0) {
+            if (t.executionDate().toInstant().compareTo(executionInstant) > 0) {
               latestExecutedByTrigger.put(
-                  t.timeTriggerWithWatermark().getTimeTrigger(), t.executionDate());
+                  t.timeTriggerWithWatermark().getTimeTrigger(), t.executionDate().toInstant());
             }
           } else {
             latestExecutedByTrigger.put(
-                t.timeTriggerWithWatermark().getTimeTrigger(), t.executionDate());
+                t.timeTriggerWithWatermark().getTimeTrigger(), t.executionDate().toInstant());
           }
         });
 
@@ -120,10 +124,7 @@ public class TimeTriggerExecutionPlanner {
                     return TimeTriggerWithWatermark.builder()
                         .timeTrigger(t.getTimeTrigger())
                         .lastTriggerTimestamp(
-                            latestExecutedByTrigger
-                                .get(t.getTimeTrigger())
-                                .toInstant()
-                                .toEpochMilli())
+                            latestExecutedByTrigger.get(t.getTimeTrigger()).toEpochMilli())
                         .build();
                   } else {
                     return t;

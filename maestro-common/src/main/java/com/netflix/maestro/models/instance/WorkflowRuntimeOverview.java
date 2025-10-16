@@ -36,6 +36,7 @@ import lombok.Data;
     value = {"total_step_count", "step_overview", "rollup_overview", "run_status"},
     alphabetic = true)
 @Data
+@SuppressWarnings("PMD.LooseCoupling")
 public class WorkflowRuntimeOverview {
   private long totalStepCount;
   private EnumMap<StepInstance.Status, WorkflowStepStatusSummary> stepOverview =

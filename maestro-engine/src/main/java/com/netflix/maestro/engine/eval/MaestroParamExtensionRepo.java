@@ -28,7 +28,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import lombok.extern.slf4j.Slf4j;
 
 /** A repository to hold maestro param extensions for the param evaluation. */
-@SuppressWarnings({"PMD.DoNotUseThreads", "PMD.BeanMembersShouldSerialize"})
 @Slf4j
 public class MaestroParamExtensionRepo {
   private static final int THREAD_NUM = 3;
@@ -91,7 +90,8 @@ public class MaestroParamExtensionRepo {
 
   // Add a SEL function to convert the input object to a JSON string. If there are more, will
   // refactor them to a class.
-  private String toJsonExtFunction(Object[] value) {
+  @SuppressWarnings("PMD.PreserveStackTrace")
+  private String toJsonExtFunction(Object... value) {
     Checks.checkTrue(
         value != null && value.length == 1, "toJson function requires exactly one argument");
     try {

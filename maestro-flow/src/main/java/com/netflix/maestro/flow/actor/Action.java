@@ -10,7 +10,7 @@ import com.netflix.maestro.flow.models.Task;
  *
  * @author jun-he
  */
-@SuppressWarnings({"JavadocVariable", "checkstyle:InterfaceIsType"})
+@SuppressWarnings({"JavadocVariable", "checkstyle:InterfaceIsType", "PMD.ConstantsInInterface"})
 public sealed interface Action {
   // actions for flow group actors
   record GroupStart() implements Action {}

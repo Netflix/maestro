@@ -33,6 +33,7 @@ import com.netflix.maestro.models.Constants;
   @JsonSubTypes.Type(name = "DYNAMIC_OUTPUT", value = DynamicOutputArtifact.class),
   @JsonSubTypes.Type(name = "KUBERNETES", value = KubernetesArtifact.class),
 })
+@SuppressWarnings("PMD.ImplicitFunctionalInterface")
 public interface Artifact {
   /** Get artifact type info. */
   Type getType();

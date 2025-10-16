@@ -51,9 +51,9 @@ import lombok.With;
 /** Helper for Params merging and cleanup. */
 public final class ParamsMergeHelper {
 
-  private static final EnumSet<ParamMode> DEFAULT_UPDATE_MODES =
+  private static final Set<ParamMode> DEFAULT_UPDATE_MODES =
       EnumSet.of(ParamMode.MUTABLE, ParamMode.MUTABLE_ON_START, ParamMode.MUTABLE_ON_START_RESTART);
-  private static final EnumSet<ParamMode> RESTART_UPDATE_MODES =
+  private static final Set<ParamMode> RESTART_UPDATE_MODES =
       EnumSet.of(ParamMode.MUTABLE, ParamMode.MUTABLE_ON_START_RESTART);
 
   /** Allowed update modes for each stage for non system. */
@@ -603,7 +603,7 @@ public final class ParamsMergeHelper {
    */
   private static Set<ParamMode> getAllowedModes(MergeContext context) {
     final Set<ParamMode> allowedModesFromMergeSource =
-        new HashSet<>(
+        EnumSet.copyOf(
             ALLOWED_UPDATE_MODES.getOrDefault(context.getMergeSource(), DEFAULT_UPDATE_MODES));
     if (!context.isRestartMerge()) {
       return allowedModesFromMergeSource;

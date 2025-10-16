@@ -28,6 +28,7 @@ import lombok.EqualsAndHashCode;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(alphabetic = true)
 @Data
+@SuppressWarnings("PMD.ReplaceJavaUtilDate")
 public class IntervalTimeTrigger extends TimeTriggerWithJitter {
   private String interval;
 

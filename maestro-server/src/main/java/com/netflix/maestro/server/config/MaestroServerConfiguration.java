@@ -55,6 +55,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @Slf4j
 @EnableConfigurationProperties(MaestroProperties.class)
+@SuppressWarnings("PMD.LooseCoupling")
 public class MaestroServerConfiguration {
   private static final String EVENT_QUEUES_QUALIFIER = "EventQueues";
 

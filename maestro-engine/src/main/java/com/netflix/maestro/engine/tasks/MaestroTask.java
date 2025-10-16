@@ -711,6 +711,7 @@ public final class MaestroTask implements FlowTask {
     }
   }
 
+  @SuppressWarnings("PMD.NullAssignment")
   private void configTaskStartDelay(
       Task task, StepRuntimeSummary runtimeSummary, boolean firstCall) {
     Long delayInMillis = null;
@@ -749,6 +750,7 @@ public final class MaestroTask implements FlowTask {
   }
 
   /** Executes the step instance. It returns true, if the task is in dummy run mode. */
+  @SuppressWarnings("PMD.ExhaustiveSwitchHasDefault")
   private boolean doExecute(
       Flow flow,
       Task task,

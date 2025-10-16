@@ -280,6 +280,7 @@ public class MaestroFinalFlowStatusCallback implements FinalFlowStatusCallback {
     return StepHelper.retrieveWorkflowRuntimeSummary(objectMapper, task.getOutputData());
   }
 
+  @SuppressWarnings("PMD.LooseCoupling")
   private void validateAndUpdateOverview(
       WorkflowRuntimeOverview overview, WorkflowSummary summary) {
     Map<String, StepRuntimeState> states =

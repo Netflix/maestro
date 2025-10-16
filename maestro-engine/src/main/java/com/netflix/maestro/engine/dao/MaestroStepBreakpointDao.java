@@ -76,7 +76,6 @@ import lombok.extern.slf4j.Slf4j;
  * of paused step attempt is same as that of breakpoint.
  */
 @SuppressFBWarnings("OBL_UNSATISFIED_OBLIGATION")
-@SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
 @Slf4j
 public class MaestroStepBreakpointDao extends AbstractDatabaseDao {
   private static final String WORKFLOW_ID = "workflow_id";
@@ -832,8 +831,7 @@ public class MaestroStepBreakpointDao extends AbstractDatabaseDao {
       query.append(CONDITION_BY_SPECIFIC_ATTEMPT_ID);
     }
     if (entryLimit != null) {
-      query.append(ENTRY_LIMIT);
-      query.append(")");
+      query.append(ENTRY_LIMIT).append(')');
     }
 
     PreparedStatement stmt = conn.prepareStatement(query.toString());

@@ -88,11 +88,9 @@ public class PropertiesUpdate {
             proposedChange.getTags() != null && proposedChange.getTags().getTags().size() == 1,
             "only a single tag must be present in order to perform add workflow tag.");
 
-        // create a new list of tags;
-        TagList currTagList = new TagList(null);
-
         // merge the previous tags if any;
         TagList prevTagList = prevSnapshot.getTags();
+        TagList currTagList;
         if (prevTagList == null) {
           currTagList = upsertTag(new ArrayList<>(), proposedChange.getTags().getTags().getFirst());
         } else {

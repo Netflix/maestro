@@ -16,6 +16,7 @@ import com.netflix.maestro.models.definition.Alerting;
 import jakarta.validation.ConstraintValidatorContext;
 
 /** Interface for validating an {@link Alerting} object. */
+@FunctionalInterface
 public interface AlertingValidator {
 
   /**

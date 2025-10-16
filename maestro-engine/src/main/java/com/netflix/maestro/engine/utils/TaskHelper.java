@@ -46,6 +46,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /** Utility class for maestro task. */
 @Slf4j
+@SuppressWarnings({"PMD.ExhaustiveSwitchHasDefault", "PMD.LooseCoupling"})
 public final class TaskHelper {
   private TaskHelper() {}
 

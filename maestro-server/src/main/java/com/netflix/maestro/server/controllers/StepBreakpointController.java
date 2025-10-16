@@ -57,6 +57,7 @@ import org.springframework.web.bind.annotation.RestController;
     value = "/api/v3/workflows/steps/breakpoints",
     produces = MediaType.APPLICATION_JSON_VALUE,
     consumes = MediaType.APPLICATION_JSON_VALUE)
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class StepBreakpointController {
   private final MaestroStepBreakpointDao stepBreakpointDao;
   private final MaestroWorkflowInstanceDao instanceDao;

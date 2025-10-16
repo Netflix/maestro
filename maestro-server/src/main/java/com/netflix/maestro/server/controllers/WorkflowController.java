@@ -63,6 +63,7 @@ import org.springframework.web.bind.annotation.RestController;
     value = "/api/v3/workflows",
     produces = MediaType.APPLICATION_JSON_VALUE,
     consumes = MediaType.APPLICATION_JSON_VALUE)
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class WorkflowController {
   private static final Set<Type> VALID_UPDATE_PROPERTY_TAGS_TYPES =
       Set.of(Type.ADD_WORKFLOW_TAG, Type.DELETE_WORKFLOW_TAG);
@@ -204,6 +205,7 @@ public class WorkflowController {
         workflowId, props, new PropertiesUpdate(PropertiesUpdate.Type.DELETE_WORKFLOW_TAG));
   }
 
+  @SuppressWarnings("PMD.PreserveStackTrace")
   private PropertiesSnapshot updateProperties(
       String workflowId, Properties changes, PropertiesUpdate update) {
     try {

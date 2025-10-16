@@ -42,6 +42,7 @@ import lombok.Getter;
   @JsonSubTypes.Type(name = "NOTIFICATION", value = NotificationJobEvent.class),
   @JsonSubTypes.Type(name = "DELETE_WORKFLOW", value = DeleteWorkflowJobEvent.class),
 })
+@SuppressWarnings("PMD.ImplicitFunctionalInterface")
 public interface MaestroJobEvent {
   /** Get a maestro event type. */
   @JsonProperty(access = JsonProperty.Access.READ_ONLY)
@@ -82,6 +83,7 @@ public interface MaestroJobEvent {
     return UUID.randomUUID().toString();
   }
 
+  @SuppressWarnings({"PMD.LooseCoupling", "PMD.AvoidInstantiatingObjectsInLoops"})
   static EnumMap<MaestroJobEvent.Type, BlockingQueue<MessageDto>> createQueuesForJobEvents() {
     EnumMap<MaestroJobEvent.Type, BlockingQueue<MessageDto>> eventQueues =
         new EnumMap<>(MaestroJobEvent.Type.class);

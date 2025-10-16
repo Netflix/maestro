@@ -39,7 +39,6 @@ public class StepTranslator implements Translator<Step, TaskDef> {
       case NOTEBOOK:
       case KUBERNETES:
         return createMaestroTask((AbstractStep) step);
-      case TEMPLATE:
       default:
         throw new UnsupportedOperationException(
             step.getType() + " step type is not implemented yet.");

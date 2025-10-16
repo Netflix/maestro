@@ -18,6 +18,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 /** Interface for client functionality managing trigger subscriptions. */
+@FunctionalInterface
 public interface TriggerSubscriptionClient {
   /**
    * Upsert workflow trigger subscription to external service.

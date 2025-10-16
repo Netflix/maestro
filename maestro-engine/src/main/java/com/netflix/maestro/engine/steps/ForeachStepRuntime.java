@@ -80,6 +80,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @AllArgsConstructor
+@SuppressWarnings("PMD.ExhaustiveSwitchHasDefault")
 public class ForeachStepRuntime implements StepRuntime {
   private static final String FOREACH_TAG_NAME = Constants.FOREACH_INLINE_WORKFLOW_PREFIX;
   private static final String LOOP_PARAMS_NAME = Constants.LOOP_PARAMS_NAME;

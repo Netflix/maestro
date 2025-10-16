@@ -26,7 +26,6 @@ import static org.mockito.Mockito.when;
 import com.netflix.maestro.AssertHelper;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import org.junit.Before;
@@ -71,7 +70,7 @@ public class BaseActorTest extends ActorBaseTest {
 
   @Test
   public void testPostActionDeduplication() {
-    ConcurrentHashMap<Action, Boolean> queuedActions = groupActor.getQueuedActions();
+    Map<Action, Boolean> queuedActions = groupActor.getQueuedActions();
     verifyEmptyAction(groupActor);
 
     groupActor.post(Action.GROUP_START);
@@ -382,7 +381,7 @@ public class BaseActorTest extends ActorBaseTest {
   @Test
   public void testRun() {
     flowActor.post(Action.TASK_DOWN);
-    ConcurrentHashMap<Action, Boolean> queuedActions = flowActor.getQueuedActions();
+    Map<Action, Boolean> queuedActions = flowActor.getQueuedActions();
     assertEquals(1, queuedActions.size());
     assertTrue(queuedActions.containsKey(Action.TASK_DOWN));
     flowActor.run();

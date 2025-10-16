@@ -44,6 +44,11 @@ import lombok.extern.slf4j.Slf4j;
  * @author jun-he
  */
 @Slf4j
+@SuppressWarnings({
+  "PMD.ReplaceJavaUtilDate",
+  "PMD.AbstractClassWithoutAbstractMethod",
+  "PMD.PreserveStackTrace"
+})
 public abstract class AbstractDatabaseDao {
   private static final String RETRY_SQL_STATE = "40001";
   private static final String QUERY_ERROR_METRIC_NAME = "maestro_db_query_error";

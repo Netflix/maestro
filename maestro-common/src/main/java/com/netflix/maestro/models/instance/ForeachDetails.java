@@ -45,6 +45,7 @@ import lombok.ToString;
 @ToString
 @EqualsAndHashCode
 @Getter
+@SuppressWarnings("PMD.LooseCoupling")
 public class ForeachDetails {
   @JsonValue @NotNull private final EnumMap<WorkflowInstance.Status, List<Interval>> info;
 

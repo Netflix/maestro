@@ -26,7 +26,6 @@ import java.util.concurrent.ExecutionException;
 import lombok.extern.slf4j.Slf4j;
 
 /** SEL expression evaluator wrapper. */
-@SuppressWarnings("PMD.BeanMembersShouldSerialize")
 @Slf4j
 public class ExprEvaluator {
   private static final String SEMICOLON = ";";

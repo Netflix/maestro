@@ -41,6 +41,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 /** Global exception handler for all REST controllers. */
 @Slf4j
 @ControllerAdvice
+@SuppressWarnings("PMD.LooseCoupling")
 public class MaestroRestExceptionHandler extends ResponseEntityExceptionHandler {
   private static final HttpHeaders EMPTY_HEADER = new HttpHeaders();
   private static final String EMPTY_SPACE = " ";
