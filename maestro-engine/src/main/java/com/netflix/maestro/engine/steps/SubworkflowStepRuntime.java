@@ -232,6 +232,7 @@ public class SubworkflowStepRuntime implements StepRuntime {
     return runParams;
   }
 
+  @SuppressWarnings("PMD.ExhaustiveSwitchHasDefault")
   private Result trackSubworkflowInstance(Step step, StepRuntimeSummary runtimeSummary) {
     if (ObjectHelper.valueOrDefault(
         ((SubworkflowStep) step).getSync(), Defaults.DEFAULT_SUBWORKFLOW_SYNC_FLAG)) {

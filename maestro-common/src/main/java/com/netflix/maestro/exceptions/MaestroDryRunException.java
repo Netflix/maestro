@@ -17,6 +17,7 @@ import lombok.Getter;
 
 /** Maestro Validation exception. */
 @Getter
+@SuppressWarnings("PMD.NonSerializableClass")
 public class MaestroDryRunException extends MaestroRuntimeException {
   private static final long serialVersionUID = -597334728023305632L;
 

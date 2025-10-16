@@ -96,6 +96,7 @@ final class GroupActor extends BaseActor {
    * might be loaded by more than 1 node during race condition. Generation ensures the current owner
    * will load every flow. Old owners will detect it during heartbeat or DB insert.
    */
+  @SuppressWarnings({"PMD.NullAssignment", "PMD.AvoidInstantiatingObjectsInLoops"})
   private void startGroup() {
     schedule(Action.GROUP_HEARTBEAT, heartbeatInterval);
     String idCursor = FLOW_ID_START_CURSOR;

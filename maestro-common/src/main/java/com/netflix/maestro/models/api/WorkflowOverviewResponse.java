@@ -53,6 +53,7 @@ import lombok.ToString;
 @Getter
 @ToString
 @EqualsAndHashCode
+@SuppressWarnings("PMD.LooseCoupling")
 public class WorkflowOverviewResponse {
   @Valid @NotNull private final String workflowId;
   private final Long activeVersionId;

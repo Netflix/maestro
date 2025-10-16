@@ -206,6 +206,7 @@ public class WhileStepRuntime implements StepRuntime {
    * @param toRestart the instance id to restart from, which is the max iteration id
    * @return aggregated rollups for the passed iteration ids
    */
+  @SuppressWarnings("PMD.AvoidReassigningLoopVariables")
   private WorkflowRollupOverview getAggregatedRollupFromIterations(
       String whileLoopWorkflowId, long toRestart) {
     WorkflowRollupOverview aggregated = new WorkflowRollupOverview();
@@ -300,7 +301,7 @@ public class WhileStepRuntime implements StepRuntime {
     } else {
       long curInstanceId = artifact.getLastIteration();
       if (curInstanceId >= artifact.getFirstIteration()) {
-        updateWhileParams(runtimeSummary, artifact);
+        updateWhileParams(artifact);
       }
       Parameter condition = evalCondition(summary, runtimeSummary, step, artifact);
       if (condition.asBoolean()) {
@@ -345,7 +346,7 @@ public class WhileStepRuntime implements StepRuntime {
   }
 
   // re-eval loop params and conditions
-  private void updateWhileParams(StepRuntimeSummary runtimeSummary, WhileArtifact artifact) {
+  private void updateWhileParams(WhileArtifact artifact) {
     List<StepInstance> stepViews =
         stepInstanceDao.getStepInstanceViews(
             artifact.getLoopWorkflowId(), artifact.getLastIteration(), artifact.getLoopRunId());

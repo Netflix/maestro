@@ -94,6 +94,7 @@ public final class TriggerHelper {
    *     workflow, and ensuring uniqueness is the caller's responsibility.
    * @return next execution date if present
    */
+  @SuppressWarnings("PMD.ReplaceJavaUtilDate")
   public static Optional<Date> nextExecutionDate(
       TimeTrigger trigger, Date startDate, String uniqueId) {
     CronTimeTrigger cronTimeTrigger = getCronTimeTrigger(trigger);

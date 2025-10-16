@@ -73,6 +73,7 @@ public class WorkflowVersionUpdateJobEvent implements MaestroJobEvent {
    * @param definition workflow definition from API
    * @return a workflow definition change event
    */
+  @SuppressWarnings("PMD.NullAssignment")
   public static WorkflowVersionUpdateJobEvent create(
       WorkflowDefinition definition, PropertiesSnapshot snapshot, long activeVersionId) {
     WorkflowVersionUpdateJobEvent event = new WorkflowVersionUpdateJobEvent();

@@ -46,7 +46,12 @@ import org.junit.BeforeClass;
 import org.mockito.MockitoAnnotations;
 
 /** Maestro test base class. */
-@SuppressWarnings({"VisibilityModifier", "PMD.UseVarargs"})
+@SuppressWarnings({
+  "VisibilityModifier",
+  "PMD.UseVarargs",
+  "PMD.TestClassWithoutTestCases",
+  "PMD.LooseCoupling"
+})
 public class MaestroBaseTest {
   protected static final ObjectMapper MAPPER;
 

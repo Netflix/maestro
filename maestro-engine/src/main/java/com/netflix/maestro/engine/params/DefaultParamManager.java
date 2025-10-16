@@ -50,7 +50,6 @@ public class DefaultParamManager {
   }
 
   /** Postconstruct initialization for DefaultParamManager. */
-  @SuppressWarnings({"PMD.AvoidInstantiatingObjectsInLoops"})
   public void init() throws IOException {
     defaultSystemParams = loadParamsFromFile(WORKFLOW_PARAMS_FILE);
     defaultStepParams = loadParamsFromFile(NETFLIX_PARAMS_FILE);

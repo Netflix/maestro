@@ -15,6 +15,7 @@ package com.netflix.maestro.engine.publisher;
 import com.netflix.maestro.models.events.MaestroEvent;
 
 /** Publisher to publish notifications to the external systems over pub/sub, e.g. SNS or Kafka. */
+@FunctionalInterface
 public interface MaestroNotificationPublisher {
   /**
    * Send a Maestro event to external topics.

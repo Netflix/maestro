@@ -18,6 +18,7 @@ package com.netflix.maestro.engine.transformation;
  * @param <T> Source data model type.
  * @param <R> Destination data model type.
  */
+@FunctionalInterface
 public interface Translator<T, R> {
   /** flow engine task default polling interval in milliseconds. */
   int DEFAULT_FLOW_TASK_DELAY_IN_MILLIS = 0;

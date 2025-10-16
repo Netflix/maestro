@@ -32,6 +32,7 @@ public class SqsTimeTriggerProducer implements TimeTriggerProducer {
   private final MaestroMetrics metrics;
 
   /** Push TimeTriggerExecution message. */
+  @Override
   public void push(TimeTriggerExecution execution, int delaySecs) {
     try {
       LOG.debug("Publishing time trigger execution: [{}] with delay [{}]", execution, delaySecs);

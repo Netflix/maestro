@@ -17,6 +17,7 @@ import lombok.Getter;
 
 /** Maestro backend non-retryable error. */
 @Getter
+@SuppressWarnings("PMD.NonSerializableClass")
 public class MaestroInternalError extends MaestroRuntimeException {
   private static final long serialVersionUID = 2554668492533395123L;
 

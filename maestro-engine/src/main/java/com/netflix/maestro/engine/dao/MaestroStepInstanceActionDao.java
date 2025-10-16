@@ -761,6 +761,7 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
   }
 
   /** Batch upsert step actions, payloads must fit into a single batch. */
+  @SuppressWarnings("PMD.UseVarargs")
   private int upsertActions(
       String identity,
       int upserted,

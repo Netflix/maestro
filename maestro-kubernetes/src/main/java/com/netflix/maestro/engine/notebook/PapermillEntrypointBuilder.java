@@ -133,7 +133,7 @@ public class PapermillEntrypointBuilder {
 
   /** Build extra papermill arguments. */
   private String buildExtraArguments(MapParameter notebookParams) {
-    ArrayList<String> extraArgs = new ArrayList<>();
+    List<String> extraArgs = new ArrayList<>();
     if (notebookParams.containsParam(NotebookConstants.PAPERMILL_ARG_PARAM)) {
       String[] userArgs =
           notebookParams.getEvaluatedParam(NotebookConstants.PAPERMILL_ARG_PARAM).asStringArray();

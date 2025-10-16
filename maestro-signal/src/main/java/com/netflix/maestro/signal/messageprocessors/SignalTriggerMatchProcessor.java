@@ -44,15 +44,14 @@ public class SignalTriggerMatchProcessor {
           getClass(),
           MetricConstants.TYPE_TAG,
           String.valueOf(status));
+    } catch (MaestroRetryableError mre) {
+      metrics.counter(
+          MetricConstants.SIGNAL_TRIGGER_MATCH_FAILURE,
+          getClass(),
+          MetricConstants.TYPE_TAG,
+          "retryable");
+      throw mre;
     } catch (RuntimeException e) {
-      if (e instanceof MaestroRetryableError) {
-        metrics.counter(
-            MetricConstants.SIGNAL_TRIGGER_MATCH_FAILURE,
-            getClass(),
-            MetricConstants.TYPE_TAG,
-            "retryable");
-        throw e;
-      }
       metrics.counter(
           MetricConstants.SIGNAL_TRIGGER_MATCH_FAILURE,
           getClass(),

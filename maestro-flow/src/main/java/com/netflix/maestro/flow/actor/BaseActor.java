@@ -22,7 +22,7 @@ import org.slf4j.Logger;
 abstract sealed class BaseActor implements Actor permits GroupActor, FlowActor, TaskActor {
   private final BlockingQueue<Action> actions = new LinkedBlockingQueue<>();
   // best effort de-duplication. Still possible that same actions are in the queue multiple times.
-  private final ConcurrentHashMap<Action, Boolean> queuedActions = new ConcurrentHashMap<>();
+  private final Map<Action, Boolean> queuedActions = new ConcurrentHashMap<>();
   // it may contain finished actions, which will be replaced during schedule() call
   private final Map<Action, ScheduledFuture<?>> scheduledActions = new HashMap<>();
   private final Map<String, BaseActor> childActors = new HashMap<>();
@@ -247,7 +247,7 @@ abstract sealed class BaseActor implements Actor permits GroupActor, FlowActor, 
   }
 
   @VisibleForTesting
-  ConcurrentHashMap<Action, Boolean> getQueuedActions() {
+  Map<Action, Boolean> getQueuedActions() {
     return queuedActions;
   }
 }

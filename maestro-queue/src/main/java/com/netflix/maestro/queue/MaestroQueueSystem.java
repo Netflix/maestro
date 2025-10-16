@@ -28,6 +28,7 @@ import java.util.concurrent.BlockingQueue;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@SuppressWarnings("PMD.LooseCoupling")
 public class MaestroQueueSystem {
   private final EnumMap<MaestroJobEvent.Type, BlockingQueue<MessageDto>> eventQueues;
   private final MaestroQueueDao queueDao;

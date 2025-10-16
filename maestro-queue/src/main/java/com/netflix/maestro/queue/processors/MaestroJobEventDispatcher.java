@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @AllArgsConstructor
 @Slf4j
+@SuppressWarnings("PMD.LooseCoupling")
 public class MaestroJobEventDispatcher {
   private final EnumMap<MaestroJobEvent.Type, MaestroEventProcessor<? extends MaestroJobEvent>>
       jobEventProcessors;

@@ -29,6 +29,7 @@ public class DatabaseSourceProvider {
     this.configuration = configuration;
   }
 
+  @SuppressWarnings("PMD.AvoidCatchingThrowable")
   public DataSource get() {
     HikariDataSource dataSource = null;
     try {

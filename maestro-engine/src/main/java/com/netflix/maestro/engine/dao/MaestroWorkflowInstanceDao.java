@@ -70,7 +70,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 // mute the false positive error due to https://github.com/spotbugs/spotbugs/issues/293
 @SuppressFBWarnings("OBL_UNSATISFIED_OBLIGATION")
-@SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
+@SuppressWarnings("PMD.ReplaceJavaUtilDate")
 @Slf4j
 public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
   private static final String SINGLE_PLACE_HOLDER = "?,";
@@ -271,6 +271,7 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
    *
    * <p>It explicitly builds a batch query because executeBatch won't work in some cases
    */
+  @SuppressWarnings("PMD.UseVarargs")
   private Set<Long> insertMaestroWorkflowInstances(
       Connection conn,
       List<WorkflowInstance> instances,
@@ -690,7 +691,6 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
   }
 
   /** Mark the execution id for idempotency. */
-  @SuppressWarnings({"PMD.AvoidCatchingNPE"})
   public Optional<Details> executeWorkflowInstance(WorkflowSummary summary, String executionId) {
     try {
       int updated =
@@ -1191,7 +1191,6 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
         workflowId);
   }
 
-  @SuppressWarnings({"PMD.AvoidInstantiatingObjectsInLoops"})
   private List<WorkflowRollupOverview> getWorkflowRollupOverviews(
       List<WorkflowRollupOverview> rollups, ResultSet result) throws SQLException {
     while (result.next()) {

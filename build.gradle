@@ -72,7 +72,7 @@ configure(allprojects - project(':netflix-sel')) {
     }
 
     pmd {
-        toolVersion = "6.21.0"
+        toolVersion = "7.16.0"
         pmdTest.enabled = false
         consoleOutput = true
         rulesMinimumPriority = 5

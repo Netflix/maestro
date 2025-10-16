@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.models.definition.Alerting;
 import java.io.Serializable;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
@@ -68,7 +69,7 @@ public class AlertingTypeConfig implements Serializable {
   @JsonSetter("actions")
   public void deserializeActions(final Set<String> actionsStr) {
     if (actionsStr != null && !actionsStr.isEmpty()) {
-      actions = new HashSet<>();
+      actions = EnumSet.noneOf(Action.class);
       actionsStr.forEach(s -> actions.add(Action.valueOf(s.toUpperCase(Locale.US))));
     }
   }

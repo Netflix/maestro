@@ -49,6 +49,7 @@ import org.springframework.web.bind.annotation.RestController;
     value = "/api/v3/workflows",
     produces = MediaType.APPLICATION_JSON_VALUE,
     consumes = MediaType.APPLICATION_JSON_VALUE)
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class WorkflowActionController {
   private final WorkflowActionHandler actionHandler;
   private final User.UserBuilder callerBuilder;

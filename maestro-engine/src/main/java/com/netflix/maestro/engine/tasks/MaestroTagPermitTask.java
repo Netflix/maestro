@@ -79,8 +79,8 @@ public final class MaestroTagPermitTask implements FlowTask {
     // key is seq_num, value is step tag permit
     private final SortedMap<Long, StepTagPermit> queuedSteps = new TreeMap<>();
 
-    private long lastCleanupTs = 0;
-    private long maxSeqNum = 0;
+    private long lastCleanupTs;
+    private long maxSeqNum;
 
     private void addTagPermits(List<TagPermit> tps) {
       tps.forEach(tp -> tagPermits.put(tp.getTag(), tp.getMaxAllowed()));
@@ -104,6 +104,7 @@ public final class MaestroTagPermitTask implements FlowTask {
       queuedSteps.remove(stepUuidSeq.seqNum());
     }
 
+    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
     private void addStepTagPermit(StepTagPermit stp) {
       if (stp.status() == ACQUIRED_STATUS_CODE) { // acquired
         stepHoldingTags.put(stp.uuid(), new HashSet<>(List.of(stp.tags())));
@@ -136,6 +137,7 @@ public final class MaestroTagPermitTask implements FlowTask {
       return used >= maxAllowed;
     }
 
+    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
     private void assignTagPermits(
         MaestroTagPermitDao tagPermitDao, MaestroQueueSystem queueSystem, MaestroMetrics metrics) {
       List<Long> toDelete = new ArrayList<>();

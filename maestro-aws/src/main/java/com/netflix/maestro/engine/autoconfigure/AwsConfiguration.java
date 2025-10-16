@@ -60,6 +60,10 @@ public class AwsConfiguration {
   /** qualifier for Maestro Aws SQS Sync Publishers bean. */
   private static final String MAESTRO_AWS_SQS_SYNC = "maestroAwsSqsSync";
 
+  private static final String SQS_TYPE = "sqs";
+  private static final String TIME_TRIGGER_TYPE_PROPERTY = "triggers.time-trigger.type";
+  private static final String SIGNAL_TRIGGER_TYPE_PROPERTY = "triggers.signal-trigger.type";
+
   /** create event notification client wrapper. */
   @Bean
   @ConditionalOnProperty(value = "maestro.notifier.type", havingValue = "sns")
@@ -73,13 +77,13 @@ public class AwsConfiguration {
 
   /** create sqs template. */
   @Bean(MAESTRO_AWS_SQS_SYNC)
-  @ConditionalOnProperty(value = "triggers.time-trigger.type", havingValue = "sqs")
+  @ConditionalOnProperty(value = TIME_TRIGGER_TYPE_PROPERTY, havingValue = SQS_TYPE)
   public SqsTemplate sqsTemplate(SqsAsyncClient sqsAsyncClient) {
     return SqsTemplate.builder().sqsAsyncClient(sqsAsyncClient).build();
   }
 
   @Bean
-  @ConditionalOnProperty(value = "triggers.time-trigger.type", havingValue = "sqs")
+  @ConditionalOnProperty(value = TIME_TRIGGER_TYPE_PROPERTY, havingValue = SQS_TYPE)
   public TimeTriggerProducer sqsTimeTriggerProducer(
       @Qualifier(MAESTRO_AWS_SQS_SYNC) SqsTemplate amazonSqs,
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
@@ -90,7 +94,7 @@ public class AwsConfiguration {
   }
 
   @Bean
-  @ConditionalOnProperty(value = "triggers.time-trigger.type", havingValue = "sqs")
+  @ConditionalOnProperty(value = TIME_TRIGGER_TYPE_PROPERTY, havingValue = SQS_TYPE)
   public SqsTimeTriggerExecutionListener sqsTimeTriggerExecutionListener(
       TimeTriggerExecutionProcessor timeTriggerExecutionProcessor, ObjectMapper mapper) {
     LOG.info("Creating sqsTimeTriggerExecutionListener within Spring boot...");
@@ -98,7 +102,7 @@ public class AwsConfiguration {
   }
 
   @Bean
-  @ConditionalOnProperty(value = "triggers.signal-trigger.type", havingValue = "sqs")
+  @ConditionalOnProperty(value = SIGNAL_TRIGGER_TYPE_PROPERTY, havingValue = SQS_TYPE)
   public SignalQueueProducer sqsSignalQueueProducer(
       @Qualifier(MAESTRO_AWS_SQS_SYNC) SqsTemplate amazonSqs,
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
@@ -109,7 +113,7 @@ public class AwsConfiguration {
   }
 
   @Bean
-  @ConditionalOnProperty(value = "triggers.signal-trigger.type", havingValue = "sqs")
+  @ConditionalOnProperty(value = SIGNAL_TRIGGER_TYPE_PROPERTY, havingValue = SQS_TYPE)
   public SqsSignalInstanceListener sqsSignalInstanceListener(
       SignalInstanceProcessor processor, ObjectMapper mapper) {
     LOG.info("Creating sqsSignalInstanceListener within Spring boot...");
@@ -117,7 +121,7 @@ public class AwsConfiguration {
   }
 
   @Bean
-  @ConditionalOnProperty(value = "triggers.signal-trigger.type", havingValue = "sqs")
+  @ConditionalOnProperty(value = SIGNAL_TRIGGER_TYPE_PROPERTY, havingValue = SQS_TYPE)
   public SqsSignalTriggerMatchListener sqsSignalTriggerMatchListener(
       SignalTriggerMatchProcessor processor, ObjectMapper mapper) {
     LOG.info("Creating sqsSignalTriggerMatchListener within Spring boot...");
@@ -125,7 +129,7 @@ public class AwsConfiguration {
   }
 
   @Bean
-  @ConditionalOnProperty(value = "triggers.signal-trigger.type", havingValue = "sqs")
+  @ConditionalOnProperty(value = SIGNAL_TRIGGER_TYPE_PROPERTY, havingValue = SQS_TYPE)
   public SqsSignalTriggerExecutionListener sqsSignalTriggerExecutionListener(
       SignalTriggerExecutionProcessor processor, ObjectMapper mapper) {
     LOG.info("Creating sqsSignalTriggerExecutionListener within Spring boot...");
@@ -134,7 +138,7 @@ public class AwsConfiguration {
 
   /** SqsAsyncClient has already been created by springboot sqs autoconfiguration. */
   @Bean
-  @ConditionalOnProperty(value = "maestro.time-trigger.type", havingValue = "sqs")
+  @ConditionalOnProperty(value = "maestro.time-trigger.type", havingValue = SQS_TYPE)
   public SqsMessageListenerContainerFactory<Object> simpleMessageListenerContainerFactory(
       SqsAsyncClient amazonSqs, AwsProperties props) {
     LOG.info("Creating simpleMessageListenerContainerFactory within Spring boot...");
@@ -198,8 +202,7 @@ public class AwsConfiguration {
             .addSentinelAddress(redisServerAddress)
             .setTimeout(connectionTimeout);
         break;
-      case SINGLE:
-      default:
+      default: // for the case of SINGLE
         redisConfig.useSingleServer().setAddress(redisServerAddress).setTimeout(connectionTimeout);
         break;
     }

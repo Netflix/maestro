@@ -8,6 +8,7 @@ import com.netflix.maestro.flow.models.Task;
  *
  * @author jun-he
  */
+@SuppressWarnings("PMD.ImplicitFunctionalInterface")
 public interface FlowTask {
   default void start(Flow flow, Task task) {}
 

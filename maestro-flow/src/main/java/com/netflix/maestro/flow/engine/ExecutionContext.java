@@ -220,6 +220,7 @@ public class ExecutionContext {
   }
 
   /** Clone the task by making a deep copy. */
+  @SuppressWarnings("PMD.PreserveStackTrace")
   public Task cloneTask(Task task) {
     try {
       return executionPreparer.cloneTask(task);
@@ -330,6 +331,7 @@ public class ExecutionContext {
    *
    * @param group flow group to heartbeat
    */
+  @SuppressWarnings("PMD.DoNotTerminateVM")
   public long heartbeatGroup(FlowGroup group) {
     Long heartbeatTs = flowDao.heartbeatGroup(group);
     if (heartbeatTs == null) {

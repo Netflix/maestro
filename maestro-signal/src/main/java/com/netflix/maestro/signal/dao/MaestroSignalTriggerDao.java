@@ -156,6 +156,7 @@ public class MaestroSignalTriggerDao extends AbstractDatabaseDao {
   }
 
   /** Update trigger checkpoints. */
+  @SuppressWarnings("PMD.UseVarargs")
   boolean updateTriggerCheckpoints(
       Connection conn, String workflowId, String triggerUuid, Long[] checkpoints)
       throws SQLException {

@@ -54,6 +54,7 @@ public @interface TimeTriggerConstraint {
     public void initialize(TimeTriggerConstraint constraint) {}
 
     @Override
+    @SuppressWarnings("PMD.ReplaceJavaUtilDate")
     public boolean isValid(TimeTrigger trigger, ConstraintValidatorContext context) {
       try {
         Optional<Date> d1 = TriggerHelper.nextExecutionDate(trigger, new Date(), "");

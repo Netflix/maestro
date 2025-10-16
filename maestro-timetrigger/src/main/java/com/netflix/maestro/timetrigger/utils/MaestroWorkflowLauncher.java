@@ -23,7 +23,7 @@ import com.netflix.maestro.timetrigger.Constants;
 import com.netflix.maestro.timetrigger.models.PlannedTimeTriggerExecution;
 import com.netflix.maestro.timetrigger.models.TimeTriggerWithWatermark;
 import com.netflix.maestro.utils.IdHelper;
-import java.util.Date;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,12 +65,12 @@ public class MaestroWorkflowLauncher {
 
   private RunRequest createWorkflowRunRequest(
       String workflowId, PlannedTimeTriggerExecution plannedExecution, String workflowTriggerUuid) {
-    Date executionDate = plannedExecution.executionDate();
+    Instant executionInstance = plannedExecution.executionDate().toInstant();
     TimeTriggerWithWatermark timeTrigger = plannedExecution.timeTriggerWithWatermark();
 
     TimeInitiator timeInitiator = new TimeInitiator();
     timeInitiator.setTriggerUuid(workflowTriggerUuid);
-    timeInitiator.setTriggerTime(executionDate.toInstant().toEpochMilli());
+    timeInitiator.setTriggerTime(executionInstance.toEpochMilli());
     timeInitiator.setTimezone(timeTrigger.getTimeTrigger().getTimezone());
 
     Map<String, ParamDefinition> runParams = new LinkedHashMap<>();
@@ -78,7 +78,7 @@ public class MaestroWorkflowLauncher {
         Constants.MAESTRO_RUN_PARAM_NAME,
         LongParamDefinition.builder()
             .name(Constants.MAESTRO_RUN_PARAM_NAME)
-            .value(executionDate.toInstant().toEpochMilli())
+            .value(executionInstance.toEpochMilli())
             .build());
 
     return RunRequest.builder()
@@ -90,7 +90,7 @@ public class MaestroWorkflowLauncher {
                     "%s:%s:%d",
                     workflowId,
                     timeTrigger.getTimeTrigger().toString(),
-                    executionDate.toInstant().getEpochSecond())))
+                    executionInstance.getEpochSecond())))
         .currentPolicy(RunPolicy.START_FRESH_NEW_RUN)
         .runParams(runParams)
         .persistFailedRun(true)

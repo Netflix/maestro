@@ -6,8 +6,8 @@
     <description>Maestro PMD ruleset</description>
 
     <rule ref="category/java/errorprone.xml">
-        <exclude name="BeanMembersShouldSerialize" />
-        <exclude name="DataflowAnomalyAnalysis"/>
+        <exclude name="ReturnEmptyCollectionRatherThanNull"/>
+        <exclude name="AvoidFieldNameMatchingMethodName"/>
     </rule>
 
     <rule ref="category/java/bestpractices.xml">
@@ -29,6 +29,8 @@
 
     <rule ref="category/java/multithreading.xml">
         <exclude name="UseConcurrentHashMap"/>
+        <exclude name="AvoidUsingVolatile"/>
+        <exclude name="DoNotUseThreads"/>
     </rule>
 
     <rule ref="category/java/performance.xml">

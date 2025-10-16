@@ -34,6 +34,10 @@ public class MaestroSignalHandler implements SignalHandler {
    * @return true if sending the output signals task is done. Otherwise, false.
    */
   @Override
+  @SuppressWarnings({
+    "PMD.AvoidInstantiatingObjectsInLoops",
+    "PMD.AvoidInstanceofChecksInCatchClause"
+  })
   public boolean sendOutputSignals(
       WorkflowSummary workflowSummary, StepRuntimeSummary stepRuntimeSummary) {
     if (stepRuntimeSummary.getSignalOutputs() != null) {

@@ -43,6 +43,7 @@ import lombok.Getter;
     value = {"total_leaf_count", "overview"},
     alphabetic = true)
 @Data
+@SuppressWarnings("PMD.LooseCoupling")
 public class WorkflowRollupOverview {
   private long totalLeafCount;
 

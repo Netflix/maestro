@@ -102,7 +102,7 @@ public class User {
         Map<String, Object> extraInfo = new LinkedHashMap<>();
         while (it.hasNext()) {
           Map.Entry<String, JsonNode> e = it.next();
-          if (e.getKey().equals(NAME_KEY)) {
+          if (NAME_KEY.equals(e.getKey())) {
             Checks.checkTrue(
                 e.getValue().isTextual(),
                 "User name field only supports StringNode: " + e.getValue().getClass());

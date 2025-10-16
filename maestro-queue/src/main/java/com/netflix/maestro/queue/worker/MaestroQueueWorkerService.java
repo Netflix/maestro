@@ -34,6 +34,7 @@ public final class MaestroQueueWorkerService {
   private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
   private final ExecutorService workers; // worker pools for each job type
 
+  @SuppressWarnings({"PMD.LooseCoupling", "PMD.AvoidInstantiatingObjectsInLoops"})
   public MaestroQueueWorkerService(
       EnumMap<MaestroJobEvent.Type, BlockingQueue<MessageDto>> eventQueues,
       MaestroJobEventDispatcher dispatcher,

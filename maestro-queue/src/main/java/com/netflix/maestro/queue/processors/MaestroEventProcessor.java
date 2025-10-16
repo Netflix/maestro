@@ -27,6 +27,7 @@ import java.util.Optional;
  *
  * @param <T>
  */
+@FunctionalInterface
 public interface MaestroEventProcessor<T extends MaestroJobEvent> {
   /**
    * Processes the message of type T. After processing, it is optionally to return a MaestroJobEvent

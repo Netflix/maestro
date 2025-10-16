@@ -81,6 +81,7 @@ public class FlowExecutor {
    * <p>In the future, we might add support for nodes to talk with each other to take the ownership
    * a group from existing nodes.
    */
+  @SuppressWarnings("PMD.DoNotTerminateVM")
   private void maintenance() {
     LOG.debug("[{}] tries to check if any group ownership is expired", address);
     try {
