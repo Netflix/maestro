@@ -45,7 +45,7 @@
             "internal_mode": "PROVIDED"
           },
           "input_path": {
-            "value": "https://raw.githubusercontent.com/oss-maestro/maestro-notebook-templates/d51d251cbbb5660d343bc2bb0765881ebbfed6a0/examples/demo01.ipynb",
+            "value": "examples/demo01.ipynb",
             "type": "STRING",
             "internal_mode": "PROVIDED"
           }

@@ -66,8 +66,8 @@ public class JobTemplateManagerTest extends MaestroBaseTest {
 
   @Test
   public void testLoadRuntimeParamsWithTemplate() {
-    when(jobTemplateDao.getJobTemplate("shell", "default")).thenReturn(jobTemplate);
-    Map<String, ParamDefinition> params = jobTemplateManager.loadRuntimeParams(step, "default");
+    when(jobTemplateDao.getJobTemplate("shell", "v1")).thenReturn(jobTemplate);
+    Map<String, ParamDefinition> params = jobTemplateManager.loadRuntimeParams(step, "v1");
 
     assertEquals(3, params.size());
     assertEquals("echo hello world", ((StringParamDefinition) params.get("script")).getValue());
@@ -76,13 +76,13 @@ public class JobTemplateManagerTest extends MaestroBaseTest {
   @Test
   public void testLoadRuntimeParamsWithStepTypeMismatch() {
     jobTemplate.getDefinition().setStepType(StepType.KUBERNETES);
-    when(jobTemplateDao.getJobTemplate("shell", "default")).thenReturn(jobTemplate);
+    when(jobTemplateDao.getJobTemplate("shell", "v1")).thenReturn(jobTemplate);
 
     AssertHelper.assertThrows(
         "Step type mismatch should throw exception",
         IllegalArgumentException.class,
         "Job template definition step type [KUBERNETES] does not match the current step type [NOTEBOOK]",
-        () -> jobTemplateManager.loadRuntimeParams(step, "default"));
+        () -> jobTemplateManager.loadRuntimeParams(step, "v1"));
   }
 
   @Test
@@ -99,9 +99,9 @@ public class JobTemplateManagerTest extends MaestroBaseTest {
 
     jobTemplate.getDefinition().setInheritFrom(Map.of("parent-job-type", "default"));
     when(jobTemplateDao.getJobTemplate("parent-job-type", "default")).thenReturn(parentTemplate);
-    when(jobTemplateDao.getJobTemplate("shell", "default")).thenReturn(jobTemplate);
+    when(jobTemplateDao.getJobTemplate("shell", "v1")).thenReturn(jobTemplate);
 
-    Map<String, ParamDefinition> params = jobTemplateManager.loadRuntimeParams(step, "default");
+    Map<String, ParamDefinition> params = jobTemplateManager.loadRuntimeParams(step, "v1");
 
     // Child has cpu, memory, child_param = 3 params
     // Parent params are not added because parent doesn't have inheritFrom
@@ -124,9 +124,9 @@ public class JobTemplateManagerTest extends MaestroBaseTest {
 
     jobTemplate.getDefinition().setInheritFrom(Map.of("parent-job-type", "default"));
     when(jobTemplateDao.getJobTemplate("parent-job-type", "default")).thenReturn(parentTemplate);
-    when(jobTemplateDao.getJobTemplate("shell", "default")).thenReturn(jobTemplate);
+    when(jobTemplateDao.getJobTemplate("shell", "v1")).thenReturn(jobTemplate);
 
-    Map<String, ParamDefinition> params = jobTemplateManager.loadRuntimeParams(step, "default");
+    Map<String, ParamDefinition> params = jobTemplateManager.loadRuntimeParams(step, "v1");
 
     assertEquals(3, params.size());
     assertTrue(params.containsKey("kubernetes"));
@@ -140,28 +140,28 @@ public class JobTemplateManagerTest extends MaestroBaseTest {
     parentTemplate.setDefinition(new JobTemplate.Definition());
     parentTemplate.getDefinition().setStepType(StepType.KUBERNETES);
     parentTemplate.getDefinition().setJobType("parent-job-type");
-    parentTemplate.getDefinition().setInheritFrom(Map.of("shell", "default"));
+    parentTemplate.getDefinition().setInheritFrom(Map.of("shell", "v1"));
 
     jobTemplate.getDefinition().setInheritFrom(Map.of("parent-job-type", "default"));
     when(jobTemplateDao.getJobTemplate("parent-job-type", "default")).thenReturn(parentTemplate);
-    when(jobTemplateDao.getJobTemplate("shell", "default")).thenReturn(jobTemplate);
+    when(jobTemplateDao.getJobTemplate("shell", "v1")).thenReturn(jobTemplate);
 
     AssertHelper.assertThrows(
         "Cyclic dependency should throw exception",
         IllegalArgumentException.class,
         "Cyclic dependency detected for step [test-step][NOTEBOOK][shell] when inheriting job type [parent-job-type]",
-        () -> jobTemplateManager.loadRuntimeParams(step, "default"));
+        () -> jobTemplateManager.loadRuntimeParams(step, "v1"));
   }
 
   @Test
   public void testCaching() {
-    when(jobTemplateDao.getJobTemplate("shell", "default")).thenReturn(jobTemplate);
+    when(jobTemplateDao.getJobTemplate("shell", "v1")).thenReturn(jobTemplate);
 
-    jobTemplateManager.loadRuntimeParams(step, "default");
-    jobTemplateManager.loadRuntimeParams(step, "default");
-    jobTemplateManager.loadRuntimeParams(step, "default");
+    jobTemplateManager.loadRuntimeParams(step, "v1");
+    jobTemplateManager.loadRuntimeParams(step, "v1");
+    jobTemplateManager.loadRuntimeParams(step, "v1");
 
-    verify(jobTemplateDao, times(1)).getJobTemplate("shell", "default");
+    verify(jobTemplateDao, times(1)).getJobTemplate("shell", "v1");
   }
 
   @Test

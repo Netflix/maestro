@@ -59,8 +59,9 @@ public class JobTemplateManager {
   /**
    * Load runtime parameters based on the step type and its subtype.
    *
-   * @return a collections of runtime generated parameters to inject
+   * @return a collection of runtime generated parameters to inject
    * @param step step definition
+   * @param version job template version
    */
   public Map<String, ParamDefinition> loadRuntimeParams(Step step, String version) {
     Map<String, ParamDefinition> params = new LinkedHashMap<>();
