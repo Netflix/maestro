@@ -25,6 +25,7 @@ import com.netflix.maestro.engine.kubernetes.KubernetesStepContext;
 import com.netflix.maestro.engine.notebook.PapermillCommand;
 import com.netflix.maestro.engine.notebook.PapermillEntrypointBuilder;
 import com.netflix.maestro.engine.params.OutputDataManager;
+import com.netflix.maestro.engine.templates.JobTemplateManager;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.stepruntime.KubernetesCommand;
@@ -38,6 +39,7 @@ public class NotebookStepRuntimeTest extends MaestroBaseTest {
         new NotebookStepRuntime(
             mock(KubernetesRuntimeExecutor.class),
             mock(KubernetesCommandGenerator.class),
+            mock(JobTemplateManager.class),
             mock(OutputDataManager.class),
             MAPPER,
             mock(MaestroMetrics.class),

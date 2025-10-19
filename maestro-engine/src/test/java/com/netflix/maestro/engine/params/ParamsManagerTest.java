@@ -267,6 +267,56 @@ public class ParamsManagerTest extends MaestroEngineBaseTest {
   }
 
   @Test
+  public void testInjectedJobTemplateParams() {
+    when(stepRuntime.injectRuntimeParams(any(), any()))
+        .thenReturn(singletonMap("p2", ParamDefinition.buildParamDefinition("p2", "d2")));
+    when(defaultParamManager.getDefaultParamsForType(any()))
+        .thenReturn(
+            Optional.of(singletonMap("p3", ParamDefinition.buildParamDefinition("p3", "d3"))));
+
+    Map<String, Parameter> stepParams =
+        paramsManager.generateMergedStepParams(workflowSummary, step, stepRuntime, runtimeSummary);
+
+    Assert.assertTrue(stepParams.containsKey("p2"));
+    Assert.assertTrue(stepParams.containsKey("p3"));
+    Assert.assertEquals("d2", stepParams.get("p2").asStringParam().getValue());
+    Assert.assertEquals("d3", stepParams.get("p3").asStringParam().getValue());
+    Assert.assertEquals(ParamSource.TEMPLATE_SCHEMA, stepParams.get("p2").getSource());
+    Assert.assertEquals(ParamSource.SYSTEM_DEFAULT, stepParams.get("p3").getSource());
+  }
+
+  @Test
+  public void testInjectedJobTemplateParamsOverride() {
+    when(stepRuntime.injectRuntimeParams(any(), any()))
+        .thenReturn(singletonMap("p3", ParamDefinition.buildParamDefinition("p3", "d2")));
+    when(defaultParamManager.getDefaultParamsForType(any()))
+        .thenReturn(
+            Optional.of(singletonMap("p3", ParamDefinition.buildParamDefinition("p3", "d3"))));
+
+    Map<String, Parameter> stepParams =
+        paramsManager.generateMergedStepParams(workflowSummary, step, stepRuntime, runtimeSummary);
+
+    Assert.assertTrue(stepParams.containsKey("p3"));
+    Assert.assertEquals("d2", stepParams.get("p3").asStringParam().getValue());
+    Assert.assertEquals(ParamSource.TEMPLATE_SCHEMA, stepParams.get("p3").getSource());
+  }
+
+  @Test
+  public void testInjectedJobTemplateParamsOverridden() {
+    when(stepRuntime.injectRuntimeParams(any(), any()))
+        .thenReturn(singletonMap("p3", ParamDefinition.buildParamDefinition("p3", "d2")));
+    ((TypedStep) step)
+        .setParams(singletonMap("p3", ParamDefinition.buildParamDefinition("p3", "d1")));
+
+    Map<String, Parameter> stepParams =
+        paramsManager.generateMergedStepParams(workflowSummary, step, stepRuntime, runtimeSummary);
+
+    Assert.assertTrue(stepParams.containsKey("p3"));
+    Assert.assertEquals("d1", stepParams.get("p3").asStringParam().getValue());
+    Assert.assertEquals(ParamSource.DEFINITION, stepParams.get("p3").getSource());
+  }
+
+  @Test
   public void testWorkflowParamSanity() {
     Map<String, ParamDefinition> params = new LinkedHashMap<>();
     RunRequest request =

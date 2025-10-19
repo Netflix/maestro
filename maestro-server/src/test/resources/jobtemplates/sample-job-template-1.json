@@ -1,0 +1,56 @@
+{
+  "owner": "tester",
+  "status": "alpha",
+  "support": "support-team",
+  "test_workflows":  ["sample-dag-test-1"],
+  "git_info": {
+    "branch": "foo",
+    "origin": "bar",
+    "path": "test_path",
+    "author": "test_author",
+    "sha": "121EF7B36826EDEDEB662F53A12DB5951E1AE1D7",
+    "timestamp": 1627332490,
+    "uncommitted_changes": false
+  },
+  "definition": {
+    "job_type": "shell",
+    "step_type": "Notebook",
+    "version": "v1",
+    "description": "A notebook based job template to run a provided shell script. Expect users to provide a param called script in the job definition.",
+    "inherit_from": {},
+    "params": {
+      "kubernetes": {
+        "value": {
+          "image": {
+            "value": "python:3",
+            "type": "STRING",
+            "internal_mode": "PROVIDED"
+          }
+        },
+        "type": "MAP",
+        "internal_mode": "PROVIDED"
+      },
+      "notebook": {
+        "value": {
+          "init_command": {
+            "value": "python3 -m pip --no-cache-dir install notebook papermill &&",
+            "type": "STRING",
+            "internal_mode": "PROVIDED"
+          },
+          "input_path": {
+            "value": "https://raw.githubusercontent.com/oss-maestro/maestro-notebook-templates/d51d251cbbb5660d343bc2bb0765881ebbfed6a0/examples/demo01.ipynb",
+            "type": "STRING",
+            "internal_mode": "PROVIDED"
+          }
+        },
+        "type": "MAP",
+        "internal_mode": "PROVIDED"
+      },
+      "script": {
+        "value": "echo hello world",
+        "type": "STRING",
+        "internal_mode": "REQUIRED"
+      }
+    }
+  }
+}
