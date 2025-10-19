@@ -23,18 +23,22 @@ import com.netflix.maestro.engine.kubernetes.KubernetesStepContext;
 import com.netflix.maestro.engine.metrics.MetricConstants;
 import com.netflix.maestro.engine.params.OutputDataManager;
 import com.netflix.maestro.engine.steps.StepRuntime;
+import com.netflix.maestro.engine.templates.JobTemplateManager;
 import com.netflix.maestro.exceptions.MaestroBadRequestException;
 import com.netflix.maestro.exceptions.MaestroRetryableError;
 import com.netflix.maestro.exceptions.MaestroUnprocessableEntityException;
 import com.netflix.maestro.metrics.MaestroMetrics;
+import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.artifact.KubernetesArtifact;
 import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.error.Details;
+import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.timeline.TimelineDetailsEvent;
 import com.netflix.maestro.models.timeline.TimelineLogEvent;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -44,6 +48,7 @@ import lombok.extern.slf4j.Slf4j;
 public class KubernetesStepRuntime implements StepRuntime {
   private final KubernetesRuntimeExecutor runtimeExecutor;
   private final KubernetesCommandGenerator commandGenerator;
+  private final JobTemplateManager jobTemplateManager;
   private final OutputDataManager outputDataManager;
   private final ObjectMapper objectMapper;
   private final MaestroMetrics metrics;
@@ -240,5 +245,27 @@ public class KubernetesStepRuntime implements StepRuntime {
       }
     }
     return context.getJobResult().jobStatus();
+  }
+
+  @Override
+  public Map<String, ParamDefinition> injectRuntimeParams(
+      WorkflowSummary workflowSummary, Step step) {
+    String version = null;
+    if (workflowSummary.getParams() != null
+        && workflowSummary.getParams().containsKey(Constants.JOB_TEMPLATE_VERSION_PARAM)) {
+      version =
+          workflowSummary
+              .getParams()
+              .get(Constants.JOB_TEMPLATE_VERSION_PARAM)
+              .getEvaluatedResultString();
+    }
+    if (version == null || version.isEmpty()) {
+      version = Constants.DEFAULT_JOB_TEMPLATE_VERSION;
+    }
+
+    Map<String, ParamDefinition> allParams = jobTemplateManager.loadRuntimeParams(step, version);
+    // merge workflow level params into template schema introduced params.
+    jobTemplateManager.mergeWorkflowParamsIntoSchemaParams(allParams, workflowSummary.getParams());
+    return allParams;
   }
 }

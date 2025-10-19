@@ -14,6 +14,7 @@ package com.netflix.maestro.server.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.engine.concurrency.InstanceStepConcurrencyHandler;
+import com.netflix.maestro.engine.dao.MaestroJobTemplateDao;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceActionDao;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
@@ -38,6 +39,7 @@ import com.netflix.maestro.engine.steps.SleepStepRuntime;
 import com.netflix.maestro.engine.steps.StepRuntime;
 import com.netflix.maestro.engine.steps.SubworkflowStepRuntime;
 import com.netflix.maestro.engine.steps.WhileStepRuntime;
+import com.netflix.maestro.engine.templates.JobTemplateManager;
 import com.netflix.maestro.engine.tracing.MaestroTracingManager;
 import com.netflix.maestro.engine.utils.WorkflowEnrichmentHelper;
 import com.netflix.maestro.engine.utils.WorkflowHelper;
@@ -80,13 +82,19 @@ public class MaestroStepRuntimeConfiguration {
       @Qualifier(STEP_RUNTIME_QUALIFIER) Map<StepType, StepRuntime> stepRuntimeMap,
       KubernetesRuntimeExecutor runtimeExecutor,
       KubernetesCommandGenerator commandGenerator,
+      JobTemplateManager jobTemplateManager,
       OutputDataManager outputDataManager,
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
       MaestroMetrics metrics) {
     LOG.info("Creating kubernetes step runtime within Spring boot...");
     KubernetesStepRuntime step =
         new KubernetesStepRuntime(
-            runtimeExecutor, commandGenerator, outputDataManager, objectMapper, metrics);
+            runtimeExecutor,
+            commandGenerator,
+            jobTemplateManager,
+            outputDataManager,
+            objectMapper,
+            metrics);
     stepRuntimeMap.put(StepType.KUBERNETES, step);
     return step;
   }
@@ -117,6 +125,7 @@ public class MaestroStepRuntimeConfiguration {
       @Qualifier(STEP_RUNTIME_QUALIFIER) Map<StepType, StepRuntime> stepRuntimeMap,
       KubernetesRuntimeExecutor runtimeExecutor,
       KubernetesCommandGenerator commandGenerator,
+      JobTemplateManager jobTemplateManager,
       OutputDataManager outputDataManager,
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
       MaestroMetrics metrics,
@@ -126,6 +135,7 @@ public class MaestroStepRuntimeConfiguration {
         new NotebookStepRuntime(
             runtimeExecutor,
             commandGenerator,
+            jobTemplateManager,
             outputDataManager,
             objectMapper,
             metrics,
@@ -256,6 +266,13 @@ public class MaestroStepRuntimeConfiguration {
       @Qualifier(STEP_RUNTIME_QUALIFIER) Map<StepType, StepRuntime> stepRuntimeMap) {
     LOG.info("Creating WorkflowEnrichmentHelper within Spring boot...");
     return new WorkflowEnrichmentHelper(paramsManager, stepRuntimeMap);
+  }
+
+  @Bean
+  public JobTemplateManager jobTemplateManager(
+      MaestroJobTemplateDao jobTemplateDao, StepRuntimeProperties properties) {
+    LOG.info("Creating Maestro jobTemplateManager within Spring boot...");
+    return new JobTemplateManager(jobTemplateDao, properties.getJobTemplateCache());
   }
 
   @Bean

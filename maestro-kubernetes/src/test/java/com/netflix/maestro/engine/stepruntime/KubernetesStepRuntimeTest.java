@@ -12,7 +12,10 @@
  */
 package com.netflix.maestro.engine.stepruntime;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
@@ -28,37 +31,45 @@ import com.netflix.maestro.engine.metrics.MaestroMetricRepo;
 import com.netflix.maestro.engine.metrics.MetricConstants;
 import com.netflix.maestro.engine.params.OutputDataManager;
 import com.netflix.maestro.engine.steps.StepRuntime;
+import com.netflix.maestro.engine.templates.JobTemplateManager;
 import com.netflix.maestro.exceptions.MaestroBadRequestException;
 import com.netflix.maestro.exceptions.MaestroRetryableError;
 import com.netflix.maestro.exceptions.MaestroUnprocessableEntityException;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.artifact.KubernetesArtifact;
+import com.netflix.maestro.models.definition.TypedStep;
 import com.netflix.maestro.models.parameter.MapParameter;
+import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.spectator.api.DefaultRegistry;
 import java.util.List;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 
 /** Tests for {@link KubernetesStepRuntime}. */
 public class KubernetesStepRuntimeTest extends MaestroBaseTest {
-  private KubernetesRuntimeExecutor runtimeExecutor;
-  private OutputDataManager outputDataManager;
+  @Mock private KubernetesRuntimeExecutor runtimeExecutor;
+  @Mock private OutputDataManager outputDataManager;
+  @Mock private JobTemplateManager jobTemplateManager;
   private MaestroMetricRepo metricRepo;
   private KubernetesStepRuntime stepRuntime;
   private StepRuntimeSummary runtimeSummary;
 
   @Before
   public void setUp() throws Exception {
-    runtimeExecutor = Mockito.mock(KubernetesRuntimeExecutor.class);
-    outputDataManager = Mockito.mock(OutputDataManager.class);
     KubernetesCommandGenerator commandGenerator = new KubernetesCommandGenerator(MAPPER);
     metricRepo = new MaestroMetricRepo(new DefaultRegistry());
     stepRuntime =
         new KubernetesStepRuntime(
-            runtimeExecutor, commandGenerator, outputDataManager, MAPPER, metricRepo);
+            runtimeExecutor,
+            commandGenerator,
+            jobTemplateManager,
+            outputDataManager,
+            MAPPER,
+            metricRepo);
 
     runtimeSummary =
         loadObject("fixtures/execution/sample-step-runtime-summary.json", StepRuntimeSummary.class);
@@ -264,5 +275,44 @@ public class KubernetesStepRuntimeTest extends MaestroBaseTest {
         MaestroRetryableError.class,
         "Error terminating Kubernetes job for jobId",
         () -> stepRuntime.terminate(new WorkflowSummary(), runtimeSummary));
+  }
+
+  @Test
+  public void testInjectRuntimeParamsWithDefaultTag() {
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+    TypedStep step = new TypedStep();
+
+    Map<String, ParamDefinition> expectedParams =
+        Map.of("cpu", buildParam("cpu", "1").toDefinition());
+    when(jobTemplateManager.loadRuntimeParams(eq(step), eq("default"))).thenReturn(expectedParams);
+
+    var result = stepRuntime.injectRuntimeParams(workflowSummary, step);
+
+    assertEquals(1, result.size());
+    assertTrue(result.containsKey("cpu"));
+    Mockito.verify(jobTemplateManager, times(1)).loadRuntimeParams(step, "default");
+    Mockito.verify(jobTemplateManager, times(1))
+        .mergeWorkflowParamsIntoSchemaParams(expectedParams, workflowSummary.getParams());
+  }
+
+  @Test
+  public void testInjectRuntimeParamsWithCustomTag() {
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+    workflowSummary.setParams(
+        Map.of("job_template_version", buildParam("job_template_version", "v1")));
+
+    TypedStep step = new TypedStep();
+
+    Map<String, ParamDefinition> expectedParams =
+        Map.of("cpu", buildParam("cpu", "1").toDefinition());
+    when(jobTemplateManager.loadRuntimeParams(eq(step), eq("v1"))).thenReturn(expectedParams);
+
+    var result = stepRuntime.injectRuntimeParams(workflowSummary, step);
+
+    assertEquals(1, result.size());
+    assertTrue(result.containsKey("cpu"));
+    Mockito.verify(jobTemplateManager, times(1)).loadRuntimeParams(step, "v1");
+    Mockito.verify(jobTemplateManager, times(1))
+        .mergeWorkflowParamsIntoSchemaParams(expectedParams, workflowSummary.getParams());
   }
 }

@@ -279,6 +279,12 @@ public final class Constants {
    */
   public static final String STEP_ERROR_RETRIES_PARAM = "MAESTRO_STEP_ERROR_RETRIES";
 
+  /** Param Key for job template version. * */
+  public static final String JOB_TEMPLATE_VERSION_PARAM = "job_template_version";
+
+  /** Default version for job template. * */
+  public static final String DEFAULT_JOB_TEMPLATE_VERSION = "default";
+
   /**
    * Match all instances. Special value to denote a breakpoint which is set to match all wf
    * instances.

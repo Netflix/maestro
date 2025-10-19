@@ -117,4 +117,24 @@ public final class MaestroTestHelper {
       throw new RuntimeException(e);
     }
   }
+
+  // deletion function for job templates in unit tests and integration tests
+  public static int removeJobTemplate(DataSource dataSource, String jobType, String tag) {
+    try (Connection conn = dataSource.getConnection();
+        PreparedStatement removeJobTemplate =
+            conn.prepareStatement(
+                tag != null
+                    ? "DELETE FROM maestro_job_template WHERE job_type=? AND tag=?"
+                    : "DELETE FROM maestro_job_template WHERE job_type=?")) {
+      removeJobTemplate.setString(1, jobType);
+      if (tag != null) {
+        removeJobTemplate.setString(2, tag);
+      }
+      int removedCount = removeJobTemplate.executeUpdate();
+      conn.commit();
+      return removedCount;
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
 }

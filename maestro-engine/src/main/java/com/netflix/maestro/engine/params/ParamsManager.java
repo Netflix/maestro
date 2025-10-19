@@ -145,6 +145,16 @@ public class ParamsManager {
           globalDefault,
           ParamsMergeHelper.MergeContext.stepCreate(ParamSource.SYSTEM_DEFAULT));
     }
+    // Merge in params applicable to step type
+    Optional<Map<String, ParamDefinition>> defaultStepTypeParams =
+        defaultParamManager.getDefaultParamsForType(stepDefinition.getType());
+    if (defaultStepTypeParams.isPresent()) {
+      LOG.debug("Merging step level default for {}", stepDefinition.getType());
+      ParamsMergeHelper.mergeParams(
+          allParamDefs,
+          defaultStepTypeParams.get(),
+          ParamsMergeHelper.MergeContext.stepCreate(ParamSource.SYSTEM_DEFAULT));
+    }
     // Merge in injected params returned by step if present (template schema)
     Map<String, ParamDefinition> injectedParams =
         stepRuntime.injectRuntimeParams(workflowSummary, stepDefinition);
@@ -155,16 +165,6 @@ public class ParamsManager {
           allParamDefs,
           injectedParams,
           ParamsMergeHelper.MergeContext.stepCreate(ParamSource.TEMPLATE_SCHEMA));
-    }
-    // Merge in params applicable to step type
-    Optional<Map<String, ParamDefinition>> defaultStepTypeParams =
-        defaultParamManager.getDefaultParamsForType(stepDefinition.getType());
-    if (defaultStepTypeParams.isPresent()) {
-      LOG.debug("Merging step level default for {}", stepDefinition.getType());
-      ParamsMergeHelper.mergeParams(
-          allParamDefs,
-          defaultStepTypeParams.get(),
-          ParamsMergeHelper.MergeContext.stepCreate(ParamSource.SYSTEM_DEFAULT));
     }
     // Merge in workflow and step info
     ParamsMergeHelper.mergeParams(

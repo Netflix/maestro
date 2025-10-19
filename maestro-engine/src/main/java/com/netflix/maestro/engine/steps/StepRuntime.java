@@ -182,7 +182,7 @@ public interface StepRuntime {
   /**
    * Inject runtime parameters based on the step definition data.
    *
-   * @return a collections of runtime generated parameters to inject
+   * @return a collection of runtime generated parameters to inject
    * @param workflowSummary workflow summary
    * @param step step definition
    */

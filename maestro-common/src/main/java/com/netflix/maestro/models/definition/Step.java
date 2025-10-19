@@ -70,6 +70,6 @@ public interface Step {
   /** Get signal step dependencies definition. */
   SignalDependenciesDefinition getSignalDependencies();
 
-  /** Get signal step outputs, e.g signal outputs. */
+  /** Get signal step outputs, e.g. signal outputs. */
   SignalOutputsDefinition getSignalOutputs();
 }

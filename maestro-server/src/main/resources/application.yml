@@ -81,11 +81,8 @@ stepruntime:
     get-rollup-batch-limit: 100
   subworkflow:
     always-pass-down-param-names: []
-  cache:
-    default-sha-cache-minutes: 43200  # 30 days
-    default-sha-max-size: 100
-    custom-sha-cache-minutes: 10
-    custom-sha-max-size: 50
+  job-template-cache:
+    cache-ttl: 60000  # in millis
   # callback delay interval setting based on step instance status and step type.
   callback-delay-config:
     fixed-callback-delay-in-secs:

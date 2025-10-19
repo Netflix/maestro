@@ -14,6 +14,7 @@ package com.netflix.maestro.server.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.database.DatabaseSourceProvider;
+import com.netflix.maestro.engine.dao.MaestroJobTemplateDao;
 import com.netflix.maestro.engine.dao.MaestroOutputDataDao;
 import com.netflix.maestro.engine.dao.MaestroRunStrategyDao;
 import com.netflix.maestro.engine.dao.MaestroStepBreakpointDao;
@@ -185,6 +186,16 @@ public class DatabaseConfiguration {
       MaestroMetrics metrics) {
     LOG.info("Creating maestroTagPermitDao within Spring boot...");
     return new MaestroTagPermitDao(maestroDataSource, objectMapper, props, metrics);
+  }
+
+  @Bean
+  public MaestroJobTemplateDao jobTemplateDao(
+      DataSource maestroDataSource,
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
+      MaestroEngineProperties props,
+      MaestroMetrics metrics) {
+    LOG.info("Creating MaestroJobTemplateDao within Spring boot...");
+    return new MaestroJobTemplateDao(maestroDataSource, objectMapper, props, metrics);
   }
 
   // below are Maestro Signal Daos
