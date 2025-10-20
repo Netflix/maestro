@@ -2,6 +2,7 @@ rootProject.name = 'maestro'
 
 include 'netflix-sel'
 include 'maestro-common'
+include 'maestro-dsl'
 include 'maestro-engine'
 include 'maestro-server'
 include 'maestro-database'

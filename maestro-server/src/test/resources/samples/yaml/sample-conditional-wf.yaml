@@ -1,0 +1,33 @@
+Workflow:
+  id: "sample-conditional-wf",
+  name: "Test conditional workflow",
+  description: "Long description about this workflow",
+  run_strategy: parallel,
+  param0: 15
+  jobs:
+    - job:
+        id: "job.1"
+        type: "NoOp"
+    - job:
+        id: "job.2"
+        type: "NoOp"
+    - job:
+        id: "job.3"
+        type: "NoOp"
+        param1: 15
+        param2: 15
+    - job:
+        id: "job.4"
+        type: "NoOp"
+        param3: 15
+    - job:
+        id: "job.5"
+        type: "NoOp"
+        param4: 15
+    - job:
+        id: "job.6"
+        type: "NoOp"
+    - job:
+        id: "job.7"
+        type: "NoOp"
+        '!param5': "params.get('param0')"

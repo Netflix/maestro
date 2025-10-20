@@ -1,0 +1,54 @@
+workflow:
+  id: sample-dsl-wf-1
+  name: Sample Workflow DSL Example 1
+  description: A comprehensive example workflow demonstrating Maestro DSL
+  run_strategy: parallel
+  workflow_concurrency: 5
+  tags:
+    - example
+  timeout: 2h
+  '!month': "new DateTime(1569018000000).withZone(DateTimeZone.forID('UTC')).monthOfYear().getAsText();"
+  data_source: s3://my-bucket/raw-data
+  output_path: s3://my-bucket/processed-data
+  '!partition_count<long>(constant)': "1+9"
+  criticality: CRITICAL
+  jobs:
+    - job:
+        id: extract_data
+        name: Extract Data from Source
+        description: Extract raw data from the data lake using Spark
+        type: spark
+        timeout: 30min
+    - foreach:
+        id: process_partitions
+        name: Process Data Partitions
+        description: Iterate over each data partition and process independently
+        params:
+          date: [20200101, 20200102, 20200103]
+        ranges:
+          hour:
+            from: 0
+            to: 24
+        foo: bar
+        jobs:
+          - while:
+              id: retry_failed_partitions
+              name: Retry Failed Partitions
+              description: Keep retrying failed partitions until success or max attempts
+              timeout: 1h
+              params:
+                attempt_cnt: 1
+              condition: "attempt_cnt < 10"
+              foo: bar
+              jobs:
+                - job:
+                    id: process_data
+                    name: Process Data from Source
+                    type: shell
+                - subworkflow:
+                    id: validation_workflow
+                    name: Data Validation Pipeline
+                    description: Run comprehensive data validation checks as a subworkflow
+                    version: default
+                    explicit_params: true
+                    foo: bar
