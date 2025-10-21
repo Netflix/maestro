@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.netflix.maestro.dsl.Dag;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -23,7 +24,7 @@ public class While extends BaseJob {
   private static final Set<String> RESERVED_FIELDS =
       Stream.concat(
               BaseJob.RESERVED_FIELDS.stream(),
-              Stream.of("loop_params", "params", "condition", "jobs"))
+              Stream.of("loop_params", "params", "condition", "jobs", "dag"))
           .collect(Collectors.toUnmodifiableSet());
 
   @JsonAlias({"params"})
@@ -32,6 +33,7 @@ public class While extends BaseJob {
   private String condition; // SEL expression to be evaluated before each iteration
 
   private List<Job> jobs;
+  private Dag dag;
 
   @Override
   Set<String> getReservedFields() {

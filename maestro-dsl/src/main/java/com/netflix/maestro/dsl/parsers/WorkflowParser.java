@@ -1,5 +1,6 @@
 package com.netflix.maestro.dsl.parsers;
 
+import com.netflix.maestro.dsl.Dag;
 import com.netflix.maestro.dsl.DslWorkflow;
 import com.netflix.maestro.dsl.DslWorkflowDef;
 import com.netflix.maestro.dsl.jobs.BaseJob;
@@ -48,6 +49,8 @@ public class WorkflowParser {
   private static final String SUBWORKFLOW_ID_PARAM_NAME = StepType.SUBWORKFLOW.getType() + "_id";
   private static final String SUBWORKFLOW_VERSION_PARAM_NAME =
       StepType.SUBWORKFLOW.getType() + "_version";
+  private static final String SEQUENTIAL_DAG_ORDER = "SEQUENTIAL";
+  private static final String PARALLEL_DAG_ORDER = "PARALLEL";
 
   private final Function<String, StepType> stepTypeResolver;
 
@@ -128,11 +131,58 @@ public class WorkflowParser {
     if (dslWorkflow.getTimeout() != null) {
       builder.timeout(ParsableLong.of(dslWorkflow.getTimeout()));
     }
-    builder.criticality(Criticality.create(dslWorkflow.getCriticality()));
+    if (dslWorkflow.getCriticality() != null) {
+      builder.criticality(Criticality.create(dslWorkflow.getCriticality()));
+    }
     builder.params(ParamParser.parse(dslWorkflow.getWorkflowParams()));
+    if (dslWorkflow.getDag() != null) {
+      addTransitionsToJobs(dslWorkflow.getJobs(), dslWorkflow.getDag());
+    }
     builder.steps(convertJobsToSteps(dslWorkflow.getJobs()));
 
     return builder.build();
+  }
+
+  /**
+   * Add transition info from dag field to jobs if not already present.
+   *
+   * @param jobs a list jobs
+   * @param dag the dag info
+   */
+  private void addTransitionsToJobs(List<Job> jobs, Dag dag) {
+    if (jobs == null || dag == null) {
+      return;
+    }
+
+    if (dag.order() != null) {
+      if (SEQUENTIAL_DAG_ORDER.equalsIgnoreCase(dag.order())) {
+        for (int i = 0; i < jobs.size() - 1; i++) {
+          var cur = jobs.get(i);
+          String toJobId = jobs.get(i + 1).getId();
+          if (ObjectHelper.isCollectionEmptyOrNull(cur.getTransition())) {
+            cur.setTransition(List.of(toJobId));
+          }
+          // if job already has transitions, we do not override them
+        }
+      } else if (!PARALLEL_DAG_ORDER.equalsIgnoreCase(dag.order())) {
+        throw new MaestroValidationException(
+            "Invalid DAG order: "
+                + dag.order()
+                + ". Supported orders are SEQUENTIAL and PARALLEL.");
+      }
+      // if PARALLEL order, do nothing as no transitions are needed
+    } else if (dag.transitions() != null) {
+      var jobMap = jobs.stream().collect(Collectors.toMap(Job::getId, j -> j));
+      for (var entry : dag.transitions().entrySet()) {
+        var cur = jobMap.get(entry.getKey());
+        Checks.checkTrue(
+            cur != null, "DAG transition refers to an unknown job id: [%s]", entry.getKey());
+        if (ObjectHelper.isCollectionEmptyOrNull(cur.getTransition())) {
+          cur.setTransition(entry.getValue());
+        }
+        // if job already has transitions, we do not override them
+      }
+    }
   }
 
   /**
@@ -216,6 +266,9 @@ public class WorkflowParser {
       step.setTimeout(ParsableLong.of(baseJob.getTimeout()));
     }
     step.setParams(ParamParser.parse(baseJob.getJobParams()));
+    if (!ObjectHelper.isCollectionEmptyOrNull(baseJob.getTransition())) {
+      step.setTransition(TransitionParser.parse(baseJob.getTransition()));
+    }
   }
 
   /**
@@ -262,6 +315,9 @@ public class WorkflowParser {
     fillBaseStepFieldsFromJob(step, foreach);
 
     step.setConcurrency(foreach.getConcurrency());
+    if (foreach.getDag() != null) {
+      addTransitionsToJobs(foreach.getJobs(), foreach.getDag());
+    }
     step.setSteps(convertJobsToSteps(foreach.getJobs())); // Convert nested jobs to steps
     Map<String, ParamDefinition> params = step.getParams();
     if (params == null) {
@@ -306,6 +362,9 @@ public class WorkflowParser {
     fillBaseStepFieldsFromJob(step, whileJob);
 
     step.setCondition(whileJob.getCondition());
+    if (whileJob.getDag() != null) {
+      addTransitionsToJobs(whileJob.getJobs(), whileJob.getDag());
+    }
     step.setSteps(convertJobsToSteps(whileJob.getJobs())); // Convert nested jobs to steps
     Map<String, ParamDefinition> params = step.getParams();
     if (params == null) {

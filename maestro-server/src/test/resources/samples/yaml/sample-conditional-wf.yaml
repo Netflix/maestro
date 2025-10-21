@@ -1,32 +1,45 @@
 Workflow:
-  id: "sample-conditional-wf",
-  name: "Test conditional workflow",
-  description: "Long description about this workflow",
-  run_strategy: parallel,
+  id: "sample-conditional-wf"
+  name: "Test conditional workflow"
+  description: "Long description about this workflow"
+  run_strategy: parallel
   param0: 15
   jobs:
     - job:
         id: "job.1"
         type: "NoOp"
+        transition:
+          - job.2
     - job:
         id: "job.2"
         type: "NoOp"
+        transition:
+          - job.3
     - job:
         id: "job.3"
         type: "NoOp"
         param1: 15
         param2: 15
+        transition:
+          - IF param2 < 0 THEN job.4
+          - OTHERWISE job.6
     - job:
         id: "job.4"
         type: "NoOp"
         param3: 15
+        transition:
+          - IF params.getFromStep('job.3', 'param2') > 0 then job.5
     - job:
         id: "job.5"
         type: "NoOp"
         param4: 15
+        transition:
+          - if params.getFromStep('job.4', 'param3') > 0 THEN job.6
     - job:
         id: "job.6"
         type: "NoOp"
+        transition:
+          - job.7
     - job:
         id: "job.7"
         type: "NoOp"

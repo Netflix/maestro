@@ -45,6 +45,8 @@ workflow:
                     id: process_data
                     name: Process Data from Source
                     type: shell
+                    transition:
+                      - IF foo == 'bar' THEN validation_workflow
                 - subworkflow:
                     id: validation_workflow
                     name: Data Validation Pipeline
@@ -52,3 +54,8 @@ workflow:
                     version: default
                     explicit_params: true
                     foo: bar
+              dag: sequential
+        dag: parallel
+  dag:
+    extract_data:
+      - IF partition_count > 0 Then process_partitions

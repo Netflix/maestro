@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.annotations.Nullable;
+import com.netflix.maestro.dsl.Dag;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -25,7 +26,13 @@ public class Foreach extends BaseJob {
       Stream.concat(
               BaseJob.RESERVED_FIELDS.stream(),
               Stream.of(
-                  "concurrency", "job_concurrency", "loop_params", "params", "ranges", "jobs"))
+                  "concurrency",
+                  "job_concurrency",
+                  "loop_params",
+                  "params",
+                  "ranges",
+                  "jobs",
+                  "dag"))
           .collect(Collectors.toUnmodifiableSet());
 
   @JsonAlias({"job_concurrency"})
@@ -37,6 +44,7 @@ public class Foreach extends BaseJob {
   private Map<String, Range> ranges;
 
   private List<Job> jobs;
+  private Dag dag;
 
   @Override
   Set<String> getReservedFields() {

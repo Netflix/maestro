@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import com.netflix.maestro.dsl.BaseTest;
+import com.netflix.maestro.dsl.Dag;
 import com.netflix.maestro.dsl.DslWorkflowDef;
 import com.netflix.maestro.models.Defaults;
 import com.netflix.maestro.models.api.WorkflowCreateRequest;
@@ -16,6 +17,8 @@ import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.SubworkflowStep;
 import com.netflix.maestro.models.definition.WhileStep;
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -79,6 +82,8 @@ public class WorkflowParserTest extends BaseTest {
     assertEquals(StepType.NOTEBOOK, step1.getType());
     assertEquals("spark", step1.getSubType());
     assertEquals("30min", step1.getTimeout().asString());
+    assertEquals(
+        Map.of("process_partitions", "partition_count > 0"), step1.getTransition().getSuccessors());
 
     var step2 = workflow.getSteps().getLast();
     assertEquals("process_partitions", step2.getId());
@@ -105,6 +110,8 @@ public class WorkflowParserTest extends BaseTest {
             .get("hour")
             .asLongArrayParamDef()
             .getExpression());
+    assertEquals("bar", step2.getParams().get("foo").asStringParamDef().getValue());
+    assertEquals(Map.of(), step2.getTransition().getSuccessors());
 
     assertEquals(1, ((ForeachStep) step2).getSteps().size());
     var step3 = ((ForeachStep) step2).getSteps().getFirst();
@@ -126,7 +133,7 @@ public class WorkflowParserTest extends BaseTest {
             .getValue()
             .longValue());
     assertEquals("bar", step3.getParams().get("foo").asStringParamDef().getValue());
-    assertEquals("bar", step3.getParams().get("foo").asStringParamDef().getValue());
+    assertEquals(Map.of(), step3.getTransition().getSuccessors());
 
     assertEquals(2, ((WhileStep) step3).getSteps().size());
     var step4 = ((WhileStep) step3).getSteps().getFirst();
@@ -134,6 +141,8 @@ public class WorkflowParserTest extends BaseTest {
     assertEquals("Process Data from Source", step4.getName());
     assertEquals(StepType.KUBERNETES, step4.getType());
     assertEquals("shell", step4.getSubType());
+    assertEquals(
+        Map.of("validation_workflow", "foo == 'bar'"), step4.getTransition().getSuccessors());
 
     var step5 = ((WhileStep) step3).getSteps().getLast();
     assertEquals("validation_workflow", step5.getId());
@@ -147,5 +156,13 @@ public class WorkflowParserTest extends BaseTest {
     assertEquals(
         "default", step5.getParams().get("subworkflow_version").asStringParamDef().getValue());
     assertEquals("bar", step5.getParams().get("foo").asStringParamDef().getValue());
+    assertEquals(Map.of(), step5.getTransition().getSuccessors());
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testWorkflowParserForDagWithNonexistingJobId() throws IOException {
+    var wfDef = loadObject("fixtures/sample-dsl-wf-1.yaml", DslWorkflowDef.class);
+    wfDef.workflow().setDag(new Dag(null, Map.of("foo", List.of("bar"))));
+    parser.toWorkflowCreateRequest(wfDef);
   }
 }

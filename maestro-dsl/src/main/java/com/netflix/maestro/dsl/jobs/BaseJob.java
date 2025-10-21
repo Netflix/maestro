@@ -19,7 +19,15 @@ import lombok.Data;
 public abstract class BaseJob implements Job {
   /** reserved fields cannot be set within jobParams. */
   static final Set<String> RESERVED_FIELDS =
-      Set.of("id", "name", "description", "failure_mode", "tags", "timeout", "job_params");
+      Set.of(
+          "id",
+          "name",
+          "description",
+          "failure_mode",
+          "tags",
+          "timeout",
+          "transition",
+          "job_params");
 
   private String id;
   private String name;
@@ -27,6 +35,7 @@ public abstract class BaseJob implements Job {
   private FailureMode failureMode;
   private List<String> tags;
   private String timeout;
+  private List<String> transition;
 
   private Map<String, Object> jobParams = new LinkedHashMap<>();
 

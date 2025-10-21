@@ -27,6 +27,7 @@ public class DslWorkflow {
   private String timeout;
   private String criticality;
   private List<Job> jobs;
+  private Dag dag;
 
   private Map<String, Object> workflowParams = new LinkedHashMap<>();
 
