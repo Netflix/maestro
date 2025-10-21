@@ -12,6 +12,7 @@
     "timestamp": 1627332490,
     "uncommitted_changes": false
   },
+  "foo": 10,
   "definition": {
     "job_type": "shell",
     "step_type": "Notebook",

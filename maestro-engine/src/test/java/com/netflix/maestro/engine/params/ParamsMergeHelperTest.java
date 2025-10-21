@@ -35,7 +35,6 @@ import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.models.parameter.StringMapParamDefinition;
 import com.netflix.maestro.models.parameter.StringParamDefinition;
 import com.netflix.maestro.models.parameter.StringParameter;
-import com.netflix.maestro.utils.JsonHelper;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -1091,8 +1090,7 @@ public class ParamsMergeHelperTest extends MaestroEngineBaseTest {
 
   @Test
   public void testMergeForeachRestartWithMutableOnStart() throws IOException {
-    DefaultParamManager defaultParamManager =
-        new DefaultParamManager(JsonHelper.objectMapperWithYaml());
+    DefaultParamManager defaultParamManager = new DefaultParamManager(YAML_MAPPER);
     defaultParamManager.init();
     Map<String, ParamDefinition> allParams =
         defaultParamManager.getDefaultParamsForType(StepType.FOREACH).get();
@@ -1119,8 +1117,7 @@ public class ParamsMergeHelperTest extends MaestroEngineBaseTest {
 
   @Test
   public void testMergeSubworkflowRestartWithMutableOnStart() throws IOException {
-    DefaultParamManager defaultParamManager =
-        new DefaultParamManager(JsonHelper.objectMapperWithYaml());
+    DefaultParamManager defaultParamManager = new DefaultParamManager(YAML_MAPPER);
     defaultParamManager.init();
     Map<String, ParamDefinition> allParams =
         defaultParamManager.getDefaultParamsForType(StepType.SUBWORKFLOW).get();

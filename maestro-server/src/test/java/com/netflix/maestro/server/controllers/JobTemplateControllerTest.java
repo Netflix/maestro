@@ -68,6 +68,12 @@ public class JobTemplateControllerTest extends MaestroBaseTest {
     assertEquals("bar", result.getMetadata().getExtraInfo().get("foo"));
 
     verify(jobTemplateDao, times(1)).upsertJobTemplate(eq(result));
+
+    JobTemplate result2 = jobTemplateController.upsertJobTemplateYaml(request);
+    result.getMetadata().setCreateTime(0);
+    result2.getMetadata().setCreateTime(0);
+    assertEquals(result, result2);
+    verify(jobTemplateDao, times(2)).upsertJobTemplate(Mockito.any(JobTemplate.class));
   }
 
   @Test

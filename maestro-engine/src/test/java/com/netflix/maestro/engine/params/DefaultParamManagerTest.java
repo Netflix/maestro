@@ -21,7 +21,6 @@ import com.netflix.maestro.engine.MaestroEngineBaseTest;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.ParamType;
-import com.netflix.maestro.utils.JsonHelper;
 import java.io.IOException;
 import java.util.Map;
 import org.junit.Before;
@@ -49,7 +48,7 @@ public class DefaultParamManagerTest extends MaestroEngineBaseTest {
 
   @Before
   public void setUp() throws IOException {
-    defaultParamManager = new DefaultParamManager(JsonHelper.objectMapperWithYaml());
+    defaultParamManager = new DefaultParamManager(YAML_MAPPER);
     defaultParamManager.init();
   }
 

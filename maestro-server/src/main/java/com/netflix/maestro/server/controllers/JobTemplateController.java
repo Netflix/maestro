@@ -77,6 +77,18 @@ public class JobTemplateController {
   }
 
   /**
+   * Create or Update a job template in yaml format.
+   *
+   * @param createRequest job template create request
+   */
+  @PostMapping(value = "", consumes = MediaType.APPLICATION_YAML_VALUE)
+  @Operation(summary = "Create or update a job template.")
+  public JobTemplate upsertJobTemplateYaml(
+      @Valid @RequestBody JobTemplateCreateRequest createRequest) {
+    return upsertJobTemplate(createRequest);
+  }
+
+  /**
    * Fetch an existing job template definition.
    *
    * @param jobType job type

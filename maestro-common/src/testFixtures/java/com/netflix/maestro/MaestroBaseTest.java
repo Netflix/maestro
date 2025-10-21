@@ -54,11 +54,13 @@ import org.mockito.MockitoAnnotations;
 })
 public class MaestroBaseTest {
   protected static final ObjectMapper MAPPER;
+  protected static final ObjectMapper YAML_MAPPER;
 
   protected MaestroBaseTest() {}
 
   static {
     MAPPER = JsonHelper.objectMapper();
+    YAML_MAPPER = JsonHelper.objectMapperWithYaml();
   }
 
   /** start up. */
