@@ -15,7 +15,6 @@ package com.netflix.maestro.engine.params;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.engine.MaestroEngineBaseTest;
 import com.netflix.maestro.engine.eval.InstanceWrapper;
@@ -52,7 +51,6 @@ import com.netflix.maestro.models.parameter.StringParamDefinition;
 import com.netflix.maestro.models.parameter.StringParameter;
 import com.netflix.maestro.models.signal.SignalDependenciesDefinition;
 import com.netflix.maestro.models.signal.SignalOutputsDefinition;
-import com.netflix.maestro.utils.JsonHelper;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -73,7 +71,6 @@ public class ParamsManagerTest extends MaestroEngineBaseTest {
   private @Mock DefaultParamManager defaultParamManager;
   private ParamsManager paramsManager;
   private WorkflowSummary workflowSummary;
-  private ObjectMapper yamlMapper;
   private Workflow workflow;
   private DefaultParamManager defaultsManager;
   private StepRuntimeSummary runtimeSummary;
@@ -88,10 +85,9 @@ public class ParamsManagerTest extends MaestroEngineBaseTest {
 
   @Before
   public void setUp() throws IOException {
-    yamlMapper = JsonHelper.objectMapperWithYaml();
     defaultParamManager = Mockito.mock(DefaultParamManager.class);
     paramsManager = new ParamsManager(defaultParamManager);
-    defaultsManager = new DefaultParamManager(yamlMapper);
+    defaultsManager = new DefaultParamManager(YAML_MAPPER);
     defaultsManager.init();
     workflowSummary = new WorkflowSummary();
     workflowSummary.setWorkflowId("abc");
@@ -535,7 +531,7 @@ public class ParamsManagerTest extends MaestroEngineBaseTest {
 
   @Test
   public void testCalculateTimezonesNoTriggers() throws IOException {
-    DefaultParamManager defaultsManager = new DefaultParamManager(yamlMapper);
+    DefaultParamManager defaultsManager = new DefaultParamManager(YAML_MAPPER);
     defaultsManager.init();
     paramsManager = new ParamsManager(defaultsManager);
     Step step = Mockito.mock(Step.class);
@@ -885,8 +881,7 @@ public class ParamsManagerTest extends MaestroEngineBaseTest {
    */
   @Test
   public void testRestartForeachStepRunParamMerge() throws IOException {
-    DefaultParamManager defaultParamManager =
-        new DefaultParamManager(JsonHelper.objectMapperWithYaml());
+    DefaultParamManager defaultParamManager = new DefaultParamManager(YAML_MAPPER);
     defaultParamManager.init();
     ParamsManager paramsManager = new ParamsManager(defaultParamManager);
     Map<String, ParamDefinition> loopParamsDef = new HashMap<>();
@@ -937,8 +932,7 @@ public class ParamsManagerTest extends MaestroEngineBaseTest {
    */
   @Test
   public void testRestartSubworkflowStepRunParamMerge() throws IOException {
-    DefaultParamManager defaultParamManager =
-        new DefaultParamManager(JsonHelper.objectMapperWithYaml());
+    DefaultParamManager defaultParamManager = new DefaultParamManager(YAML_MAPPER);
     defaultParamManager.init();
     ParamsManager paramsManager = new ParamsManager(defaultParamManager);
     for (String paramName : new String[] {"subworkflow_id", "subworkflow_version"}) {
