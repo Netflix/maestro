@@ -35,6 +35,7 @@ import lombok.ToString;
       "transition",
       "type",
       "sub_type",
+      "sub_type_version",
       "failure_mode",
       "retry_policy",
       "tags",
@@ -54,6 +55,8 @@ public final class TypedStep extends AbstractStep {
 
   @Getter(onMethod = @__({@Override}))
   private String subType; // optional
+
+  private String subTypeVersion; // optional
 
   @JsonProperty
   @Getter(onMethod = @__({@Override}))

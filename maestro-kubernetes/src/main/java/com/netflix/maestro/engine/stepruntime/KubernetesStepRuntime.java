@@ -32,6 +32,7 @@ import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.artifact.KubernetesArtifact;
 import com.netflix.maestro.models.definition.Step;
+import com.netflix.maestro.models.definition.TypedStep;
 import com.netflix.maestro.models.error.Details;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.timeline.TimelineDetailsEvent;
@@ -250,8 +251,10 @@ public class KubernetesStepRuntime implements StepRuntime {
   @Override
   public Map<String, ParamDefinition> injectRuntimeParams(
       WorkflowSummary workflowSummary, Step step) {
-    String version = null;
-    if (workflowSummary.getParams() != null
+    // subtype version is used for job template versioning if present.
+    String version = ((TypedStep) step).getSubTypeVersion();
+    if (version == null
+        && workflowSummary.getParams() != null
         && workflowSummary.getParams().containsKey(Constants.JOB_TEMPLATE_VERSION_PARAM)) {
       version =
           workflowSummary

@@ -278,7 +278,7 @@ public class KubernetesStepRuntimeTest extends MaestroBaseTest {
   }
 
   @Test
-  public void testInjectRuntimeParamsWithDefaultTag() {
+  public void testInjectRuntimeParamsWithDefaultVersion() {
     WorkflowSummary workflowSummary = new WorkflowSummary();
     TypedStep step = new TypedStep();
 
@@ -296,16 +296,15 @@ public class KubernetesStepRuntimeTest extends MaestroBaseTest {
   }
 
   @Test
-  public void testInjectRuntimeParamsWithCustomTag() {
+  public void testInjectRuntimeParamsWithCustomVersion() {
     WorkflowSummary workflowSummary = new WorkflowSummary();
     workflowSummary.setParams(
         Map.of("job_template_version", buildParam("job_template_version", "v1")));
 
     TypedStep step = new TypedStep();
 
-    Map<String, ParamDefinition> expectedParams =
-        Map.of("cpu", buildParam("cpu", "1").toDefinition());
-    when(jobTemplateManager.loadRuntimeParams(eq(step), eq("v1"))).thenReturn(expectedParams);
+    Map<String, ParamDefinition> jobParams1 = Map.of("cpu", buildParam("cpu", "1").toDefinition());
+    when(jobTemplateManager.loadRuntimeParams(eq(step), eq("v1"))).thenReturn(jobParams1);
 
     var result = stepRuntime.injectRuntimeParams(workflowSummary, step);
 
@@ -313,6 +312,17 @@ public class KubernetesStepRuntimeTest extends MaestroBaseTest {
     assertTrue(result.containsKey("cpu"));
     Mockito.verify(jobTemplateManager, times(1)).loadRuntimeParams(step, "v1");
     Mockito.verify(jobTemplateManager, times(1))
-        .mergeWorkflowParamsIntoSchemaParams(expectedParams, workflowSummary.getParams());
+        .mergeWorkflowParamsIntoSchemaParams(jobParams1, workflowSummary.getParams());
+
+    Map<String, ParamDefinition> jobParams2 = Map.of("cpu", buildParam("cpu", "2").toDefinition());
+    when(jobTemplateManager.loadRuntimeParams(eq(step), eq("v2"))).thenReturn(jobParams2);
+    step.setSubTypeVersion("v2");
+    result = stepRuntime.injectRuntimeParams(workflowSummary, step);
+
+    assertEquals(1, result.size());
+    assertEquals("2", result.get("cpu").asStringParamDef().getValue());
+    Mockito.verify(jobTemplateManager, times(1)).loadRuntimeParams(step, "v2");
+    Mockito.verify(jobTemplateManager, times(1))
+        .mergeWorkflowParamsIntoSchemaParams(jobParams2, workflowSummary.getParams());
   }
 }
