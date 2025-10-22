@@ -12,10 +12,13 @@
  */
 package com.netflix.maestro.engine.templates;
 
+import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.engine.dao.MaestroJobTemplateDao;
 import com.netflix.maestro.engine.params.ParamsMergeHelper;
 import com.netflix.maestro.engine.properties.JobTemplateCacheProperties;
+import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.Step;
+import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.Tag;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.ParamSource;
@@ -98,6 +101,23 @@ public class JobTemplateManager {
   }
 
   /**
+   * Load job type's corresponding step type.
+   *
+   * @param jobType job type id
+   * @param version job type version
+   * @return the job step type
+   */
+  public StepType loadStepType(String jobType, @Nullable String version) {
+    var jobVersion = version == null ? Constants.DEFAULT_JOB_TEMPLATE_VERSION : version;
+    var template = loadJobTemplateSchema(jobType, jobVersion);
+    if (template == null) {
+      return null;
+    } else {
+      return template.getStepType();
+    }
+  }
+
+  /**
    * Load all related (itself and ancestors) job template definitions based on its subtype and
    * version.
    *
@@ -164,6 +184,13 @@ public class JobTemplateManager {
     visited.remove(jobType);
   }
 
+  /**
+   * Load job template schema from cache or DB.
+   *
+   * @param jobType job type id
+   * @param version job type version
+   * @return the job template definition
+   */
   private JobTemplate.Definition loadJobTemplateSchema(String jobType, String version) {
     if (jobType != null) {
       var jobKey = new JobKey(jobType, version);

@@ -25,6 +25,7 @@ import com.netflix.maestro.models.definition.SubworkflowStep;
 import com.netflix.maestro.models.definition.Tag;
 import com.netflix.maestro.models.definition.TagList;
 import com.netflix.maestro.models.definition.TypedStep;
+import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.definition.WhileStep;
 import com.netflix.maestro.models.definition.Workflow;
 import com.netflix.maestro.models.parameter.LongArrayParamDefinition;
@@ -36,7 +37,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -52,9 +52,22 @@ public class WorkflowParser {
   private static final String SEQUENTIAL_DAG_ORDER = "SEQUENTIAL";
   private static final String PARALLEL_DAG_ORDER = "PARALLEL";
 
-  private final Function<String, StepType> stepTypeResolver;
+  /** Functional interface to resolve StepType for a given job type and version. */
+  @FunctionalInterface
+  public interface StepTypeResolver {
+    /**
+     * Resolve StepType for the given job type and version.
+     *
+     * @param jobType job type id
+     * @param version job type version
+     * @return the corresponding StepType, or null if not found
+     */
+    StepType resolve(String jobType, String version);
+  }
 
-  public WorkflowParser(Function<String, StepType> stepTypeResolver) {
+  private final StepTypeResolver stepTypeResolver;
+
+  public WorkflowParser(StepTypeResolver stepTypeResolver) {
     this.stepTypeResolver = Checks.notNull(stepTypeResolver, "stepTypeResolver cannot be null");
   }
 
@@ -87,6 +100,7 @@ public class WorkflowParser {
   private Properties buildProperties(DslWorkflow dslWorkflow) {
     Properties properties = new Properties();
 
+    properties.setOwner(User.create(dslWorkflow.getOwner()));
     if (dslWorkflow.getRunStrategy() != null) {
       RunStrategy.Rule rule = RunStrategy.Rule.create(dslWorkflow.getRunStrategy());
       properties.setRunStrategy(new RunStrategy(rule, dslWorkflow.getWorkflowConcurrency()));
@@ -233,9 +247,9 @@ public class WorkflowParser {
     String subType = null;
     StepType stepType = KNOWN_STEP_TYPES.get(typeStr);
 
-    if (stepType == null) {
+    if (stepType == null) { // get sub_type's step type
       subType = typedJob.getType();
-      stepType = stepTypeResolver.apply(subType); // get sub_type's step type
+      stepType = stepTypeResolver.resolve(subType, typedJob.getTypeVersion());
     }
 
     Checks.notNull(

@@ -81,7 +81,7 @@ public class JobTemplateController {
    *
    * @param createRequest job template create request
    */
-  @PostMapping(value = "", consumes = MediaType.APPLICATION_YAML_VALUE)
+  @PostMapping(value = "/yaml", consumes = MediaType.APPLICATION_YAML_VALUE)
   @Operation(summary = "Create or update a job template.")
   public JobTemplate upsertJobTemplateYaml(
       @Valid @RequestBody JobTemplateCreateRequest createRequest) {

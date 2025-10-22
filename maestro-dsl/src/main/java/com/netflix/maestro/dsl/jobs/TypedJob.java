@@ -18,10 +18,11 @@ import lombok.ToString;
 public class TypedJob extends BaseJob {
   /** reserved fields cannot be set within jobParams. */
   private static final Set<String> RESERVED_FIELDS =
-      Stream.concat(BaseJob.RESERVED_FIELDS.stream(), Stream.of("type"))
+      Stream.concat(BaseJob.RESERVED_FIELDS.stream(), Stream.of("type", "type_version"))
           .collect(Collectors.toUnmodifiableSet());
 
   private String type;
+  private String typeVersion;
 
   @Override
   Set<String> getReservedFields() {

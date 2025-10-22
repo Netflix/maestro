@@ -2,6 +2,7 @@ workflow:
   id: sample-dsl-wf-1
   name: Sample Workflow DSL Example 1
   description: A comprehensive example workflow demonstrating Maestro DSL
+  owner: tester
   run_strategy: parallel
   workflow_concurrency: 5
   tags:
@@ -18,6 +19,7 @@ workflow:
         name: Extract Data from Source
         description: Extract raw data from the data lake using Spark
         type: spark
+        type_version: v1
         timeout: 30min
     - foreach:
         id: process_partitions

@@ -21,6 +21,7 @@ public class DslWorkflow {
   private String id;
   private String name;
   private String description;
+  private String owner;
   private String runStrategy;
   private Long workflowConcurrency;
   private List<String> tags;
@@ -37,6 +38,7 @@ public class DslWorkflow {
           "id",
           "name",
           "description",
+          "owner",
           "run_strategy",
           "workflow_concurrency",
           "tags",

@@ -8,6 +8,7 @@ import static org.junit.Assert.assertTrue;
 import com.netflix.maestro.dsl.BaseTest;
 import com.netflix.maestro.dsl.Dag;
 import com.netflix.maestro.dsl.DslWorkflowDef;
+import com.netflix.maestro.dsl.jobs.TypedJob;
 import com.netflix.maestro.models.Defaults;
 import com.netflix.maestro.models.api.WorkflowCreateRequest;
 import com.netflix.maestro.models.definition.Criticality;
@@ -30,7 +31,7 @@ public class WorkflowParserTest extends BaseTest {
   public void setup() {
     parser =
         new WorkflowParser(
-            type -> {
+            (type, version) -> {
               if ("spark".equals(type)) {
                 return StepType.NOTEBOOK;
               } else if ("shell".equals(type)) {
@@ -164,5 +165,34 @@ public class WorkflowParserTest extends BaseTest {
     var wfDef = loadObject("fixtures/sample-dsl-wf-1.yaml", DslWorkflowDef.class);
     wfDef.workflow().setDag(new Dag(null, Map.of("foo", List.of("bar"))));
     parser.toWorkflowCreateRequest(wfDef);
+  }
+
+  @Test
+  public void testTypeVersionResolution() throws IOException {
+    WorkflowParser workflowParser =
+        new WorkflowParser(
+            (type, version) -> {
+              if ("shell".equals(type) && "v2".equals(version)) {
+                return StepType.NOTEBOOK;
+              } else if ("shell".equals(type)) {
+                return StepType.KUBERNETES;
+              }
+              return null;
+            });
+
+    var wfDef = loadObject("fixtures/sample-dsl-wf-1.yaml", DslWorkflowDef.class);
+    TypedJob typedJob = (TypedJob) wfDef.workflow().getJobs().getFirst();
+    typedJob.setType("shell");
+    typedJob.setTypeVersion("v2");
+
+    WorkflowCreateRequest request = workflowParser.toWorkflowCreateRequest(wfDef);
+    assertEquals(StepType.NOTEBOOK, request.getWorkflow().getSteps().getFirst().getType());
+    assertEquals(
+        StepType.KUBERNETES,
+        ((WhileStep)
+                ((ForeachStep) request.getWorkflow().getSteps().getLast()).getSteps().getFirst())
+            .getSteps()
+            .getFirst()
+            .getType());
   }
 }

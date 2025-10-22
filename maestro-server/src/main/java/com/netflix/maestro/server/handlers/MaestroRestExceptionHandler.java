@@ -28,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.method.ParameterErrors;
@@ -157,7 +158,11 @@ public class MaestroRestExceptionHandler extends ResponseEntityExceptionHandler 
     if (!ObjectHelper.isCollectionEmptyOrNull(errors)) {
       details.errors(errors);
     }
-    return handleExceptionInternal(e, details.build(), headers, status, request);
+    HttpHeaders jsonHeaders = new HttpHeaders();
+    jsonHeaders.putAll(headers);
+    // Always return errors as JSON regardless of request Content-Type for consistent API behavior
+    jsonHeaders.setContentType(MediaType.APPLICATION_JSON);
+    return handleExceptionInternal(e, details.build(), jsonHeaders, status, request);
   }
 
   private ResponseEntity<Object> buildDetailedResponse(
