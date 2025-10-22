@@ -130,7 +130,7 @@ public class JobTemplateManager {
   /**
    * Recursively fetch templates from parent job template definitions.
    *
-   * @param jobType the job type to fetch params from
+   * @param jobType the job type to fetch its related job templates
    * @param version the version of the job template
    * @param allTemplates List to accumulate all fetched job templates
    * @param visited set to track visited job types for cycle detection
