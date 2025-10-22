@@ -494,7 +494,7 @@ public final class MaestroTask implements FlowTask {
       }
     }
 
-    runtimeSummary.mergeTags(stepRuntimeManager.getRuntimeTags(stepDefinition));
+    runtimeSummary.mergeTags(stepRuntimeManager.getRuntimeTags(workflowSummary, stepDefinition));
     runtimeSummary.markInitialized(tracingManager);
     emitStepDelayMetric(runtimeSummary);
   }

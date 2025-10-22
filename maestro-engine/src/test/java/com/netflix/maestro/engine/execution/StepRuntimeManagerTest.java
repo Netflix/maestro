@@ -118,7 +118,7 @@ public class StepRuntimeManagerTest extends MaestroEngineBaseTest {
               @Override
               public Map<String, ParamDefinition> injectRuntimeParams(
                   WorkflowSummary workflowSummary, Step step) {
-                return threeItemMap(
+                return Map.of(
                     "test-param",
                     ParamDefinition.buildParamDefinition("test-param", "from-inject"),
                     "injected-param",
@@ -129,7 +129,7 @@ public class StepRuntimeManagerTest extends MaestroEngineBaseTest {
               }
 
               @Override
-              public List<Tag> injectRuntimeTags() {
+              public List<Tag> injectRuntimeTags(WorkflowSummary workflowSummary, Step step) {
                 return Collections.singletonList(Tag.create("test"));
               }
             });

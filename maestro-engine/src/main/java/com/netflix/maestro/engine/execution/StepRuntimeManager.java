@@ -234,8 +234,9 @@ public final class StepRuntimeManager {
     }
   }
 
-  /** get runtime tags from step runtime. */
-  public List<Tag> getRuntimeTags(Step stepDefinition) {
-    return getStepRuntime(stepDefinition.getType()).injectRuntimeTags();
+  /** get runtime tags (immutable) from step runtime. */
+  public List<Tag> getRuntimeTags(WorkflowSummary workflowSummary, Step stepDefinition) {
+    return getStepRuntime(stepDefinition.getType())
+        .injectRuntimeTags(workflowSummary, stepDefinition);
   }
 }

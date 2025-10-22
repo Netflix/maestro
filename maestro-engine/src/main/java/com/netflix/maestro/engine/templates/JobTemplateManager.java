@@ -16,14 +16,19 @@ import com.netflix.maestro.engine.dao.MaestroJobTemplateDao;
 import com.netflix.maestro.engine.params.ParamsMergeHelper;
 import com.netflix.maestro.engine.properties.JobTemplateCacheProperties;
 import com.netflix.maestro.models.definition.Step;
+import com.netflix.maestro.models.definition.Tag;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.ParamSource;
 import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.models.stepruntime.JobTemplate;
 import com.netflix.maestro.utils.Checks;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -64,7 +69,44 @@ public class JobTemplateManager {
    * @param version job template version
    */
   public Map<String, ParamDefinition> loadRuntimeParams(Step step, String version) {
-    Map<String, ParamDefinition> params = new LinkedHashMap<>();
+    var allTemplates = loadAllTemplates(step, version);
+    return allTemplates.stream()
+        .map(JobTemplate.Definition::getParams)
+        .filter(Objects::nonNull)
+        .flatMap(p -> p.entrySet().stream())
+        .collect(
+            Collectors.toMap(
+                Map.Entry::getKey, Map.Entry::getValue, (u, v) -> v, LinkedHashMap::new));
+  }
+
+  /**
+   * Load runtime parameters based on the step type and its subtype.
+   *
+   * @return a collection of runtime generated parameters to inject
+   * @param step step definition
+   * @param version job template version
+   */
+  public Collection<Tag> loadTags(Step step, String version) {
+    var allTemplates = loadAllTemplates(step, version);
+    var allTags =
+        allTemplates.stream()
+            .map(JobTemplate.Definition::getTags)
+            .filter(Objects::nonNull)
+            .flatMap(Collection::stream)
+            .collect(Collectors.toMap(Tag::getName, t -> t, (u, v) -> v, LinkedHashMap::new));
+    return allTags.values();
+  }
+
+  /**
+   * Load all related (itself and ancestors) job template definitions based on its subtype and
+   * version.
+   *
+   * @return a collection of related job template definitions
+   * @param step step definition
+   * @param version job template version
+   */
+  private List<JobTemplate.Definition> loadAllTemplates(Step step, String version) {
+    List<JobTemplate.Definition> parentTemplates = new ArrayList<>();
     var jobTemplateDef = loadJobTemplateSchema(step.getSubType(), version);
     if (jobTemplateDef != null) {
       Checks.checkTrue(
@@ -76,30 +118,28 @@ public class JobTemplateManager {
       if (jobTemplateDef.getInheritFrom() != null) {
         Set<String> visited = new HashSet<>();
         for (var parent : jobTemplateDef.getInheritFrom().entrySet()) {
-          fetchParentParams(step, parent.getKey(), parent.getValue(), params, visited);
+          fetchParentTemplates(step, parent.getKey(), parent.getValue(), parentTemplates, visited);
         }
       }
 
-      if (jobTemplateDef.getParams() != null) {
-        params.putAll(jobTemplateDef.getParams());
-      }
+      parentTemplates.add(jobTemplateDef);
     }
-    return params;
+    return parentTemplates;
   }
 
   /**
-   * Recursively fetch parameters from parent job templates.
+   * Recursively fetch templates from parent job template definitions.
    *
-   * @param jobType the job type to fetch params from
+   * @param jobType the job type to fetch its related job templates
    * @param version the version of the job template
-   * @param allParams map to accumulate all fetched parameters
+   * @param allTemplates List to accumulate all fetched job templates
    * @param visited set to track visited job types for cycle detection
    */
-  private void fetchParentParams(
+  private void fetchParentTemplates(
       Step step,
       String jobType,
       String version,
-      Map<String, ParamDefinition> allParams,
+      List<JobTemplate.Definition> allTemplates,
       Set<String> visited) {
     Checks.checkTrue(
         !visited.contains(jobType),
@@ -114,13 +154,11 @@ public class JobTemplateManager {
     if (jobTemplateDef != null) {
       if (jobTemplateDef.getInheritFrom() != null) {
         for (var parent : jobTemplateDef.getInheritFrom().entrySet()) {
-          fetchParentParams(step, parent.getKey(), parent.getValue(), allParams, visited);
+          fetchParentTemplates(step, parent.getKey(), parent.getValue(), allTemplates, visited);
         }
       }
 
-      if (jobTemplateDef.getParams() != null) {
-        allParams.putAll(jobTemplateDef.getParams());
-      }
+      allTemplates.add(jobTemplateDef);
     }
 
     visited.remove(jobType);

@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.GitInfo;
 import com.netflix.maestro.models.definition.StepType;
+import com.netflix.maestro.models.definition.Tag;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.utils.Checks;
@@ -111,7 +112,7 @@ public class JobTemplate {
   @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
   @JsonInclude(JsonInclude.Include.NON_NULL)
   @JsonPropertyOrder(
-      value = {"job_type", "step_type", "version", "description", "inherit_from", "params"},
+      value = {"job_type", "step_type", "version", "description", "tags", "inherit_from", "params"},
       alphabetic = true)
   @Data
   public static class Definition {
@@ -122,6 +123,7 @@ public class JobTemplate {
     @Size(max = Constants.FIELD_SIZE_LIMIT)
     private String description;
 
+    @Valid private List<Tag> tags;
     // list of job type and its version pair to inherit params from
     @Valid private Map<String, String> inheritFrom;
 
