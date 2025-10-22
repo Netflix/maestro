@@ -1,0 +1,12 @@
+dependencies {
+    implementation project(':maestro-common')
+
+    implementation jacksonDatabindDep
+    implementation jacksonYamlDep
+    implementation jakartaValidationDep
+
+    testImplementation junitDep
+    testImplementation mockitoCoreDep
+
+    testRuntimeOnly junitEngineDep
+}

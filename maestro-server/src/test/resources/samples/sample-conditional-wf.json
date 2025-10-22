@@ -15,7 +15,7 @@
         "transition": {"successors": {"job.3": "true"}}}},
       {"step": {"id": "job.3", "type": "NoOp",
         "params": {"param1":  {"value": 15, "type":  "LONG"}, "param2":  {"value": 15, "type":  "LONG"}},
-        "transition": {"successors": {"job.4": "param2 < 0", "job.6": "1 > 0"}}}},
+        "transition": {"successors": {"job.4": "param2 < 0", "job.6": "param2 >= 0"}}}},
       {"step": {"id": "job.4", "type": "NoOp",
         "params": {"param3":  {"value": 15, "type":  "LONG"}},
         "transition": {"successors": {"job.5": "params.getFromStep('job.3', 'param2') > 0"}}}},
