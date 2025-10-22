@@ -24,6 +24,15 @@
     "step_type": "Notebook",
     "version": "v1",
     "description": "a notebook based job template to run a provided shell script",
+    "tags": [
+      {
+        "name": "notebook",
+        "namespace": "job_template",
+        "foo": "bar"
+      },
+      "shell",
+      "example"
+    ],
     "inherit_from": {},
     "params": {
       "kubernetes": {

@@ -24,6 +24,7 @@ import com.netflix.maestro.MaestroBaseTest;
 import com.netflix.maestro.engine.dao.MaestroJobTemplateDao;
 import com.netflix.maestro.engine.properties.JobTemplateCacheProperties;
 import com.netflix.maestro.models.definition.StepType;
+import com.netflix.maestro.models.definition.Tag;
 import com.netflix.maestro.models.definition.TypedStep;
 import com.netflix.maestro.models.parameter.LongParamDefinition;
 import com.netflix.maestro.models.parameter.ParamDefinition;
@@ -32,7 +33,9 @@ import com.netflix.maestro.models.parameter.StringParamDefinition;
 import com.netflix.maestro.models.stepruntime.JobTemplate;
 import java.io.IOException;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -56,25 +59,36 @@ public class JobTemplateManagerTest extends MaestroBaseTest {
   }
 
   @Test
-  public void testLoadRuntimeParamsWithNoTemplate() {
+  public void testLoadRuntimeParamsAndTagsWithNoTemplate() {
     when(jobTemplateDao.getJobTemplate(anyString(), anyString())).thenReturn(null);
     Map<String, ParamDefinition> params = jobTemplateManager.loadRuntimeParams(step, "default");
 
     assertTrue(params.isEmpty());
     verify(jobTemplateDao, times(1)).getJobTemplate("shell", "default");
+
+    var tags = jobTemplateManager.loadTags(step, "default");
+    assertTrue(tags.isEmpty());
+    verify(jobTemplateDao, times(2)).getJobTemplate("shell", "default");
   }
 
   @Test
-  public void testLoadRuntimeParamsWithTemplate() {
+  public void testLoadRuntimeParamsAndTagsWithTemplate() {
     when(jobTemplateDao.getJobTemplate("shell", "v1")).thenReturn(jobTemplate);
     Map<String, ParamDefinition> params = jobTemplateManager.loadRuntimeParams(step, "v1");
 
     assertEquals(3, params.size());
     assertEquals("echo hello world", ((StringParamDefinition) params.get("script")).getValue());
+
+    var tags = jobTemplateManager.loadTags(step, "v1");
+
+    assertEquals(3, tags.size());
+    assertEquals(
+        List.of("notebook", "shell", "example"),
+        tags.stream().map(Tag::getName).collect(Collectors.toList()));
   }
 
   @Test
-  public void testLoadRuntimeParamsWithStepTypeMismatch() {
+  public void testLoadRuntimeParamsAndTagsWithStepTypeMismatch() {
     jobTemplate.getDefinition().setStepType(StepType.KUBERNETES);
     when(jobTemplateDao.getJobTemplate("shell", "v1")).thenReturn(jobTemplate);
 
@@ -83,10 +97,16 @@ public class JobTemplateManagerTest extends MaestroBaseTest {
         IllegalArgumentException.class,
         "Job template definition step type [KUBERNETES] does not match the current step type [NOTEBOOK]",
         () -> jobTemplateManager.loadRuntimeParams(step, "v1"));
+
+    AssertHelper.assertThrows(
+        "Step type mismatch should throw exception",
+        IllegalArgumentException.class,
+        "Job template definition step type [KUBERNETES] does not match the current step type [NOTEBOOK]",
+        () -> jobTemplateManager.loadTags(step, "v1"));
   }
 
   @Test
-  public void testLoadRuntimeParamsWithParentInheritance() {
+  public void testLoadRuntimeParamsAndTagsWithParentInheritance() {
     JobTemplate parentTemplate = new JobTemplate();
     parentTemplate.setDefinition(new JobTemplate.Definition());
     parentTemplate.getDefinition().setStepType(StepType.KUBERNETES);
@@ -96,6 +116,7 @@ public class JobTemplateManagerTest extends MaestroBaseTest {
         .setParams(
             Map.of("parent_param", buildParam("parent_param", "parent_value").toDefinition()));
     parentTemplate.getDefinition().setVersion("default");
+    parentTemplate.getDefinition().setTags(List.of(Tag.create("foo")));
 
     jobTemplate.getDefinition().setInheritFrom(Map.of("parent-job-type", "default"));
     when(jobTemplateDao.getJobTemplate("parent-job-type", "default")).thenReturn(parentTemplate);
@@ -103,17 +124,22 @@ public class JobTemplateManagerTest extends MaestroBaseTest {
 
     Map<String, ParamDefinition> params = jobTemplateManager.loadRuntimeParams(step, "v1");
 
-    // Child has cpu, memory, child_param = 3 params
-    // Parent params are not added because parent doesn't have inheritFrom
     assertEquals(4, params.size());
     assertTrue(params.containsKey("kubernetes"));
     assertTrue(params.containsKey("notebook"));
     assertEquals("parent_value", ((StringParamDefinition) params.get("parent_param")).getValue());
     assertEquals("echo hello world", ((StringParamDefinition) params.get("script")).getValue());
+
+    var tags = jobTemplateManager.loadTags(step, "v1");
+
+    assertEquals(4, tags.size());
+    assertEquals(
+        List.of("foo", "notebook", "shell", "example"),
+        tags.stream().map(Tag::getName).collect(Collectors.toList()));
   }
 
   @Test
-  public void testLoadRuntimeParamsWithParentOverride() {
+  public void testLoadRuntimeParamsAndTagsWithParentOverride() {
     JobTemplate parentTemplate = new JobTemplate();
     parentTemplate.setDefinition(new JobTemplate.Definition());
     parentTemplate.getDefinition().setStepType(StepType.KUBERNETES);
@@ -121,6 +147,7 @@ public class JobTemplateManagerTest extends MaestroBaseTest {
     parentTemplate
         .getDefinition()
         .setParams(Map.of("script", buildParam("script", "parent_value").toDefinition()));
+    parentTemplate.getDefinition().setTags(List.of(Tag.create("notebook")));
 
     jobTemplate.getDefinition().setInheritFrom(Map.of("parent-job-type", "default"));
     when(jobTemplateDao.getJobTemplate("parent-job-type", "default")).thenReturn(parentTemplate);
@@ -132,10 +159,18 @@ public class JobTemplateManagerTest extends MaestroBaseTest {
     assertTrue(params.containsKey("kubernetes"));
     assertTrue(params.containsKey("notebook"));
     assertEquals("echo hello world", ((StringParamDefinition) params.get("script")).getValue());
+
+    var tags = jobTemplateManager.loadTags(step, "v1");
+    assertEquals(3, tags.size());
+    assertEquals(
+        List.of("notebook", "shell", "example"),
+        tags.stream().map(Tag::getName).collect(Collectors.toList()));
+    assertEquals(Tag.Namespace.JOB_TEMPLATE, tags.iterator().next().getNamespace());
+    assertEquals(Map.of("foo", "bar"), tags.iterator().next().getAttributes());
   }
 
   @Test
-  public void testLoadRuntimeParamsWithCyclicDependency() {
+  public void testLoadRuntimeParamsAndTagsWithCyclicDependency() {
     JobTemplate parentTemplate = new JobTemplate();
     parentTemplate.setDefinition(new JobTemplate.Definition());
     parentTemplate.getDefinition().setStepType(StepType.KUBERNETES);
@@ -151,6 +186,12 @@ public class JobTemplateManagerTest extends MaestroBaseTest {
         IllegalArgumentException.class,
         "Cyclic dependency detected for step [test-step][NOTEBOOK][shell] when inheriting job type [parent-job-type]",
         () -> jobTemplateManager.loadRuntimeParams(step, "v1"));
+
+    AssertHelper.assertThrows(
+        "Cyclic dependency should throw exception",
+        IllegalArgumentException.class,
+        "Cyclic dependency detected for step [test-step][NOTEBOOK][shell] when inheriting job type [parent-job-type]",
+        () -> jobTemplateManager.loadTags(step, "v1"));
   }
 
   @Test

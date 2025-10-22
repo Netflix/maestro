@@ -17,6 +17,12 @@ definition:
   step_type: Notebook
   version: v1
   description: A notebook based job template to run a provided shell script. Expect users to provide a param called script in the job definition.
+  tags:
+    - name: notebook
+      namespace: job_template
+      foo: bar
+    - shell
+    - example
   inherit_from: {}
   params:
     kubernetes:

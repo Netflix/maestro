@@ -67,6 +67,8 @@ public class Tag {
     SYSTEM,
     /** RUNTIME defined tag or parameter, e.g. workflowInstanceId. */
     RUNTIME,
+    /** job template defined tag or parameter. */
+    JOB_TEMPLATE,
     /** notebook template defined tag or parameter. */
     NOTEBOOK_TEMPLATE,
     /** USER defined tag or parameter. */

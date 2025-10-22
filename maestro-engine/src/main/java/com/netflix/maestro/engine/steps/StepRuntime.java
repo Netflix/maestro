@@ -182,9 +182,9 @@ public interface StepRuntime {
   /**
    * Inject runtime parameters based on the step definition data.
    *
-   * @return a collection of runtime generated parameters to inject
    * @param workflowSummary workflow summary
    * @param step step definition
+   * @return an immutable map of runtime generated parameters to inject
    */
   default Map<String, ParamDefinition> injectRuntimeParams(
       WorkflowSummary workflowSummary, Step step) {
@@ -194,9 +194,11 @@ public interface StepRuntime {
   /**
    * Inject runtime tags from the step runtime.
    *
-   * @return a collections of runtime generated tags to inject
+   * @param workflowSummary workflow summary
+   * @param step step definition
+   * @return an immutable list of runtime generated tags to inject
    */
-  default List<Tag> injectRuntimeTags() {
+  default List<Tag> injectRuntimeTags(WorkflowSummary workflowSummary, Step step) {
     return Collections.emptyList();
   }
 }
