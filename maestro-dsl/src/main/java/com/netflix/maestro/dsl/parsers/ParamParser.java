@@ -246,11 +246,8 @@ final class ParamParser {
       }
       case String[] ignored -> ParamType.STRING_ARRAY;
       case long[] ignored -> ParamType.LONG_ARRAY;
-      case Long[] ignored -> ParamType.LONG_ARRAY;
       case double[] ignored -> ParamType.DOUBLE_ARRAY;
-      case Double[] ignored -> ParamType.DOUBLE_ARRAY;
       case boolean[] ignored -> ParamType.BOOLEAN_ARRAY;
-      case Boolean[] ignored -> ParamType.BOOLEAN_ARRAY;
       default -> throw new MaestroValidationException("Invalid type for param value: [%s]", value);
     };
   }
