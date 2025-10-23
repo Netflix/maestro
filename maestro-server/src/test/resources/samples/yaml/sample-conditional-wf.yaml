@@ -2,6 +2,7 @@ Workflow:
   id: "sample-conditional-wf"
   name: "Test conditional workflow"
   description: "Long description about this workflow"
+  owner: tester
   run_strategy: parallel
   param0: 15
   jobs:

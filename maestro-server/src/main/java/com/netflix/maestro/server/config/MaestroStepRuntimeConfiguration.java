@@ -13,6 +13,7 @@
 package com.netflix.maestro.server.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.maestro.dsl.parsers.WorkflowParser;
 import com.netflix.maestro.engine.concurrency.InstanceStepConcurrencyHandler;
 import com.netflix.maestro.engine.dao.MaestroJobTemplateDao;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceActionDao;
@@ -266,6 +267,12 @@ public class MaestroStepRuntimeConfiguration {
       @Qualifier(STEP_RUNTIME_QUALIFIER) Map<StepType, StepRuntime> stepRuntimeMap) {
     LOG.info("Creating WorkflowEnrichmentHelper within Spring boot...");
     return new WorkflowEnrichmentHelper(paramsManager, stepRuntimeMap);
+  }
+
+  @Bean
+  public WorkflowParser workflowParser(JobTemplateManager jobTemplateManager) {
+    LOG.info("Creating workflowParser within Spring boot...");
+    return new WorkflowParser(jobTemplateManager::loadStepType);
   }
 
   @Bean

@@ -116,6 +116,21 @@ public class WorkflowController {
     return WorkflowCreateResponse.builder().workflowDefinition(workflowDef).build();
   }
 
+  /**
+   * Add a workflow in DSL yaml format. The YAML will be converted by
+   * DslToWorkflowCreateRequestConverter to WorkflowCreateRequest.
+   */
+  @PostMapping(value = "/yaml", consumes = MediaType.APPLICATION_YAML_VALUE)
+  @Operation(summary = "Create or update a workflow definition")
+  public WorkflowCreateResponse addWorkflowYaml(
+      @Valid
+          @NotNull
+          @RequestBody
+          @JsonSizeConstraint(Constants.WORKFLOW_CREATE_REQUEST_DATA_SIZE_LIMIT)
+          WorkflowCreateRequest request) {
+    return addWorkflow(request);
+  }
+
   // put owner auth info into properties
   private void updateOwnerIfNeeded(Properties properties) {
     if (properties != null && properties.getOwner() != null) {

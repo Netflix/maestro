@@ -46,6 +46,7 @@ import com.netflix.maestro.models.timeline.WorkflowTimeline;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentMatchers;
@@ -79,6 +80,10 @@ public class WorkflowControllerTest extends MaestroBaseTest {
 
   @Test
   public void testAddWorkflow() {
+    testAddWorkflow(workflowController::addWorkflow);
+  }
+
+  private void testAddWorkflow(Consumer<WorkflowCreateRequest> consumer) {
     WorkflowDefinition definition = mock(WorkflowDefinition.class);
     Properties properties = mock(Properties.class);
     Workflow mockWF = mock(Workflow.class);
@@ -90,10 +95,15 @@ public class WorkflowControllerTest extends MaestroBaseTest {
     when(request.getExtraInfo()).thenReturn(Collections.emptyMap());
     when(properties.getOwner()).thenReturn(User.create("tester"));
     when(mockWorkflowDao.addWorkflowDefinition(any(), any())).thenReturn(definition);
-    workflowController.addWorkflow(request);
+    consumer.accept(request);
     verify(properties, times(1)).setOwner(any());
     verify(mockWorkflowDao, times(1)).addWorkflowDefinition(any(), any());
     verify(mockDryRunValidator, times(1)).validate(any(), any());
+  }
+
+  @Test
+  public void testAddWorkflowYaml() {
+    testAddWorkflow(workflowController::addWorkflowYaml);
   }
 
   @Test(expected = IllegalArgumentException.class)
