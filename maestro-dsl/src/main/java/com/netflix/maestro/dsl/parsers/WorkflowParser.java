@@ -100,7 +100,9 @@ public class WorkflowParser {
   private Properties buildProperties(DslWorkflow dslWorkflow) {
     Properties properties = new Properties();
 
-    properties.setOwner(User.create(dslWorkflow.getOwner()));
+    if (dslWorkflow.getOwner() != null) {
+      properties.setOwner(User.create(dslWorkflow.getOwner()));
+    }
     if (dslWorkflow.getRunStrategy() != null) {
       RunStrategy.Rule rule = RunStrategy.Rule.create(dslWorkflow.getRunStrategy());
       properties.setRunStrategy(new RunStrategy(rule, dslWorkflow.getWorkflowConcurrency()));
