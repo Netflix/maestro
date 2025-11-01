@@ -106,6 +106,21 @@ public class WorkflowActionController {
         .build();
   }
 
+  /**
+   * Validate a workflow in DSL yaml format. The YAML will be converted by
+   * DslToWorkflowCreateRequestConverter to WorkflowCreateRequest.
+   */
+  @PutMapping(value = "/actions/validate/yaml", consumes = MediaType.APPLICATION_YAML_VALUE)
+  @Operation(summary = "Validate the given workflow definition")
+  public TimelineEvent validateWorkflowYaml(
+      @Valid
+          @NotNull
+          @RequestBody
+          @JsonSizeConstraint(Constants.WORKFLOW_CREATE_REQUEST_DATA_SIZE_LIMIT)
+          WorkflowCreateRequest request) {
+    return validateWorkflow(request);
+  }
+
   @PutMapping(value = "/{workflowId}/actions/deactivate", consumes = MediaType.ALL_VALUE)
   @Operation(summary = "Deactivate a workflow based on the given workflow id")
   public WorkflowActionResponse deactivateWorkflow(
