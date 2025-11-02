@@ -22,6 +22,8 @@ import com.netflix.maestro.exceptions.MaestroBadRequestException;
 import com.netflix.maestro.exceptions.MaestroResourceConflictException;
 import com.netflix.maestro.exceptions.MaestroValidationException;
 import com.netflix.maestro.models.Constants;
+import com.netflix.maestro.models.api.PaginationDirection;
+import com.netflix.maestro.models.api.PaginationResult;
 import com.netflix.maestro.models.api.WorkflowCreateRequest;
 import com.netflix.maestro.models.api.WorkflowCreateResponse;
 import com.netflix.maestro.models.api.WorkflowOverviewResponse;
@@ -35,12 +37,18 @@ import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.definition.WorkflowDefinition;
 import com.netflix.maestro.models.timeline.TimelineEvent;
 import com.netflix.maestro.models.timeline.WorkflowTimeline;
+import com.netflix.maestro.server.utils.PaginationHelper;
+import com.netflix.maestro.utils.ObjectHelper;
 import com.netflix.maestro.validations.JsonSizeConstraint;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,6 +75,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class WorkflowController {
   private static final Set<Type> VALID_UPDATE_PROPERTY_TAGS_TYPES =
       Set.of(Type.ADD_WORKFLOW_TAG, Type.DELETE_WORKFLOW_TAG);
+  private static final int WORKFLOW_MAX_BATCH_LIMIT = 200;
+  private static final int WORKFLOW_MIN_BATCH_LIMIT = 1;
 
   private final MaestroWorkflowDao workflowDao;
   private final MaestroWorkflowDeletionDao workflowDeletionDao;
@@ -306,5 +316,65 @@ public class WorkflowController {
   public WorkflowTimeline getWorkflowTimeline(
       @Valid @NotNull @PathVariable("workflowId") String workflowId) {
     return workflowDao.getWorkflowTimeline(workflowId);
+  }
+
+  @Operation(
+      summary =
+          "Get the workflow definition including all versions for a given workflow id with pagination support. "
+              + "Returned response is sorted in descending order on version number.")
+  @GetMapping(value = "/{workflowId}/versions/pagination", consumes = MediaType.ALL_VALUE)
+  public PaginationResult<WorkflowDefinition> getPaginatedWorkflowVersions(
+      @Parameter(description = "workflow id") @NotEmpty @PathVariable("workflowId")
+          String workflowId,
+      @Parameter(
+              description =
+                  "Number of results to return for the page, while paginating forward. Required and must"
+                      + " be between 1 and 200 inclusive.")
+          @RequestParam(name = "first", required = false)
+          @Max(WORKFLOW_MAX_BATCH_LIMIT)
+          @Min(WORKFLOW_MIN_BATCH_LIMIT)
+          Integer first,
+      @Parameter(
+              description =
+                  "Number of results to return for the page, while paginating backwards. Required and must"
+                      + " be between 1 and 200 inclusive.")
+          @RequestParam(name = "last", required = false)
+          @Max(WORKFLOW_MAX_BATCH_LIMIT)
+          @Min(WORKFLOW_MIN_BATCH_LIMIT)
+          Integer last,
+      @Parameter(
+              description =
+                  "Cursor identifying the workflow version for forward or backward pagination. "
+                      + "If cursor is not provided or empty we return the first or last page")
+          @RequestParam(name = "cursor", required = false)
+          String cursor) {
+    PaginationDirection direction = PaginationHelper.validateParamAndDeriveDirection(first, last);
+    List<WorkflowDefinition> latestVersionDef =
+        workflowDao.scanWorkflowDefinition(workflowId, 0, 1);
+    if (latestVersionDef == null || latestVersionDef.isEmpty()) {
+      return PaginationHelper.buildEmptyPaginationResult();
+    }
+    long latestVersion = latestVersionDef.getFirst().getMetadata().getWorkflowVersionId();
+    List<WorkflowDefinition> toReturn;
+    if (direction == PaginationDirection.NEXT) {
+      long offset = ObjectHelper.isNullOrEmpty(cursor) ? latestVersion + 1 : Long.parseLong(cursor);
+      toReturn = workflowDao.scanWorkflowDefinition(workflowId, offset, first);
+    } else {
+      long offset = ObjectHelper.isNullOrEmpty(cursor) ? 0 : Long.parseLong(cursor);
+      toReturn = workflowDao.scanWorkflowDefinition(workflowId, offset + last + 1, last);
+    }
+    return PaginationHelper.buildPaginationResult(
+        toReturn,
+        latestVersion,
+        Constants.INACTIVE_VERSION_ID + 1,
+        (versions) -> {
+          long workflowVersionHigh = 0;
+          long workflowVersionLow = 0;
+          if (versions != null && !versions.isEmpty()) {
+            workflowVersionHigh = versions.getFirst().getMetadata().getWorkflowVersionId();
+            workflowVersionLow = versions.getLast().getMetadata().getWorkflowVersionId();
+          }
+          return new long[] {workflowVersionHigh, workflowVersionLow};
+        });
   }
 }
