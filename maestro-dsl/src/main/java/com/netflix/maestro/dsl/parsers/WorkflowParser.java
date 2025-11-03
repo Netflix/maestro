@@ -111,8 +111,6 @@ public class WorkflowParser {
     }
 
     properties.setStepConcurrency(Defaults.DEFAULT_STEP_CONCURRENCY);
-    properties.setDescription(dslWorkflow.getDescription());
-    properties.setTags(convertToTagList(dslWorkflow.getTags()));
 
     return properties;
   }
