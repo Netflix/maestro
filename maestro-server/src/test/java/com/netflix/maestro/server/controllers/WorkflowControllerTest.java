@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.server.controllers;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -32,9 +33,11 @@ import com.netflix.maestro.exceptions.InvalidWorkflowVersionException;
 import com.netflix.maestro.exceptions.MaestroBadRequestException;
 import com.netflix.maestro.exceptions.MaestroResourceConflictException;
 import com.netflix.maestro.exceptions.MaestroValidationException;
+import com.netflix.maestro.models.api.PaginationResult;
 import com.netflix.maestro.models.api.WorkflowCreateRequest;
 import com.netflix.maestro.models.api.WorkflowOverviewResponse;
 import com.netflix.maestro.models.api.WorkflowPropertiesUpdateRequest;
+import com.netflix.maestro.models.definition.Metadata;
 import com.netflix.maestro.models.definition.Properties;
 import com.netflix.maestro.models.definition.PropertiesSnapshot;
 import com.netflix.maestro.models.definition.Tag;
@@ -46,6 +49,7 @@ import com.netflix.maestro.models.timeline.WorkflowTimeline;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.Test;
@@ -309,5 +313,101 @@ public class WorkflowControllerTest extends MaestroBaseTest {
         .thenReturn(mock(WorkflowTimeline.class));
     workflowController.getWorkflowTimeline("test-workflow");
     verify(mockWorkflowDao, times(1)).getWorkflowTimeline("test-workflow");
+  }
+
+  @Test
+  public void testGetPaginatedWorkflowVersionsWithExceptions() {
+    AssertHelper.assertThrows(
+        "first and last should not be provided at same time",
+        MaestroValidationException.class,
+        "Either first or last need to be provided, but not both",
+        () -> workflowController.getPaginatedWorkflowVersions("test-workflow", 20, 20, ""));
+    AssertHelper.assertThrows(
+        "first or last should be provided, cannot be null for both",
+        MaestroValidationException.class,
+        "Either first or last need to be provided, both cannot be null",
+        () -> workflowController.getPaginatedWorkflowVersions("test-workflow", null, null, ""));
+  }
+
+  @Test
+  public void testGetPaginatedWorkflowVersions() {
+    String workflowId = "test-workflow";
+    List<WorkflowDefinition> workflowDefinitions = new ArrayList<>();
+    long latestVersion = 6;
+    for (int i = 1; i <= latestVersion; ++i) {
+      WorkflowDefinition def = new WorkflowDefinition();
+      Metadata metadata = new Metadata();
+      metadata.setWorkflowVersionId((long) i);
+      def.setMetadata(metadata);
+      workflowDefinitions.add(def);
+    }
+    Collections.reverse(workflowDefinitions);
+    WorkflowDefinition latestWorkflowDefinition = workflowDefinitions.getFirst();
+    // Case 1: page forward without cursor.
+    when(mockWorkflowDao.scanWorkflowDefinition(workflowId, 0, 1))
+        .thenReturn(Collections.singletonList(latestWorkflowDefinition));
+    when(mockWorkflowDao.scanWorkflowDefinition(workflowId, latestVersion + 1, 20))
+        .thenReturn(workflowDefinitions);
+    // actual call
+    PaginationResult<WorkflowDefinition> result =
+        workflowController.getPaginatedWorkflowVersions(workflowId, 20, null, "");
+    // verify the pageInfo is correct
+    verifyPageInfo(result.getPageInfo(), false, false, "6", "1", 1L);
+    // verify the elements are correct
+    verifyWorkflowVersions(new int[] {6, 5, 4, 3, 2, 1}, result.getElements());
+
+    // Case 2: page backward without cursor
+    when(mockWorkflowDao.scanWorkflowDefinition(workflowId, 0, 1))
+        .thenReturn(Collections.singletonList(latestWorkflowDefinition));
+    when(mockWorkflowDao.scanWorkflowDefinition(workflowId, 21, 20))
+        .thenReturn(workflowDefinitions);
+    // actual call
+    result = workflowController.getPaginatedWorkflowVersions(workflowId, null, 20, "");
+    verifyPageInfo(result.getPageInfo(), false, false, "6", "1", 1L);
+    verifyWorkflowVersions(new int[] {6, 5, 4, 3, 2, 1}, result.getElements());
+
+    // Case 3: page forward with cursor
+    List<WorkflowDefinition> workflowDefinitions3 = new ArrayList<>();
+    for (int i = 3; i < 6; ++i) {
+      workflowDefinitions3.add(workflowDefinitions.get(i));
+    }
+    when(mockWorkflowDao.scanWorkflowDefinition(workflowId, 4, 3)).thenReturn(workflowDefinitions3);
+    result = workflowController.getPaginatedWorkflowVersions(workflowId, 3, null, "4");
+    verifyPageInfo(result.getPageInfo(), false, true, "3", "1", 4);
+    verifyWorkflowVersions(new int[] {3, 2, 1}, result.getElements());
+
+    // Case 4: page backward with cursor
+    List<WorkflowDefinition> workflowDefinitions4 = new ArrayList<>();
+    for (int i = 0; i < 3; ++i) {
+      workflowDefinitions4.add(workflowDefinitions.get(i));
+    }
+    when(mockWorkflowDao.scanWorkflowDefinition(workflowId, 7, 3)).thenReturn(workflowDefinitions4);
+    result = workflowController.getPaginatedWorkflowVersions(workflowId, null, 3, "3");
+    verifyPageInfo(result.getPageInfo(), true, false, "6", "4", 1);
+    verifyWorkflowVersions(new int[] {6, 5, 4}, result.getElements());
+  }
+
+  private void verifyPageInfo(
+      PaginationResult.PageInfo pageInfo,
+      boolean expectedHasNextPage,
+      boolean expectedHasPrevPage,
+      String expectedStartCursor,
+      String expectedEndCursor,
+      long expectedStartIndex) {
+    assertEquals("mismatch in has next page", expectedHasNextPage, pageInfo.isHasNextPage());
+    assertEquals(
+        "mismatch in has previous page", expectedHasPrevPage, pageInfo.isHasPreviousPage());
+    assertEquals("mismatch in start cursor", expectedStartCursor, pageInfo.getStartCursor());
+    assertEquals("mismatch in end cursor", expectedEndCursor, pageInfo.getEndCursor());
+    assertEquals("mismatch in start index", expectedStartIndex, (long) pageInfo.getStartIndex());
+  }
+
+  private void verifyWorkflowVersions(
+      int[] expectedVersions, List<WorkflowDefinition> definitions) {
+    for (int i = 0; i < expectedVersions.length; ++i) {
+      assertEquals(
+          expectedVersions[i], (long) definitions.get(i).getMetadata().getWorkflowVersionId());
+    }
+    assertEquals(expectedVersions.length, definitions.size());
   }
 }
