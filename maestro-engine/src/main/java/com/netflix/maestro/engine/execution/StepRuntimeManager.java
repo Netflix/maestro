@@ -216,8 +216,8 @@ public final class StepRuntimeManager {
               .terminate(workflowSummary, cloneSummary(runtimeSummary));
       Checks.checkTrue(
           result.state() == StepRuntime.State.STOPPED,
-          "terminate call should return a STOPPED state in result: %s",
-          result);
+          "terminate call should return a STOPPED state in resul but actually is: %s",
+          result.state());
       runtimeSummary.mergeRuntimeUpdate(result.timeline(), result.artifacts());
       runtimeSummary.markTerminated(status, tracingManager);
     } catch (RuntimeException e) {
