@@ -18,6 +18,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -53,7 +54,7 @@ import lombok.ToString;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public final class WhileStep extends AbstractStep {
-  private String condition; // SEL expression to be evaluated before each iteration
+  @NotNull private String condition; // SEL expression to be evaluated before each iteration
   @Valid private List<Step> steps;
 
   @JsonIgnore
