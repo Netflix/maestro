@@ -2,12 +2,12 @@
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
 com.fasterxml.jackson.core:jackson-annotations:2.20=compileClasspath
-com.fasterxml.jackson.core:jackson-core:2.20.0=compileClasspath
-com.fasterxml.jackson.core:jackson-databind:2.20.0=compileClasspath
-com.fasterxml.jackson.dataformat:jackson-dataformat-toml:2.20.0=compileClasspath
-com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.0=compileClasspath
-com.fasterxml.jackson:jackson-bom:2.20.0=compileClasspath
-com.netflix.spectator:spectator-api:1.9.0=compileClasspath
+com.fasterxml.jackson.core:jackson-core:2.20.1=compileClasspath
+com.fasterxml.jackson.core:jackson-databind:2.20.1=compileClasspath
+com.fasterxml.jackson.dataformat:jackson-dataformat-toml:2.20.1=compileClasspath
+com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.1=compileClasspath
+com.fasterxml.jackson:jackson-bom:2.20.1=compileClasspath
+com.netflix.spectator:spectator-api:1.9.1=compileClasspath
 com.zaxxer:HikariCP:6.3.3=compileClasspath
 org.flywaydb:flyway-core:10.22.0=compileClasspath
 org.flywaydb:flyway-database-postgresql:10.22.0=compileClasspath
