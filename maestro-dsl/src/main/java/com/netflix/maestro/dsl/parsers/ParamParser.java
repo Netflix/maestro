@@ -157,9 +157,13 @@ final class ParamParser {
       if (type == null) { // derive implied type from value object
         type = impliedType;
       } else if (impliedType != null && type != impliedType) {
-        throw new MaestroValidationException(
-            "Type mismatch for param [%s]: specified type [%s] does not match implied type [%s] from its value: [%s]",
-            name, type, impliedType, value);
+        if (type == ParamType.MAP && impliedType == ParamType.STRING_MAP) {
+          // allow string map to be treated as param map
+        } else {
+          throw new MaestroValidationException(
+              "Type mismatch for param [%s]: specified type [%s] does not match implied type [%s] from its value: [%s]",
+              name, type, impliedType, value);
+        }
       }
     } else {
       if (type == null) { // For SEL expressions, if no type is specified, default to STRING

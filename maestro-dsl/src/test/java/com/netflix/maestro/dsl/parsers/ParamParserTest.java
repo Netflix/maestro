@@ -44,9 +44,10 @@ public class ParamParserTest {
     dslParams.put("string_map", Map.of("k1", "v1", "k2", "v2"));
     dslParams.put("empty_map", Map.of());
     dslParams.put("map", Map.of("foo", Map.of("bar", 123L, "baz", "bat")));
+    dslParams.put("pmap<pmap>", Map.of("k1", "v1", "k2", "v2")); // with type hint
 
     Map<String, ParamDefinition> result = ParamParser.parse(dslParams);
-    assertEquals(22, result.size());
+    assertEquals(23, result.size());
 
     assertEquals("foo", result.get("plain_str").asStringParamDef().getValue());
     assertEquals("1 + 1", result.get("expr_str").asStringParamDef().getExpression());
@@ -108,6 +109,13 @@ public class ParamParserTest {
             .get("baz")
             .asStringParamDef()
             .getValue());
+    assertEquals(2, result.get("pmap").asMapParamDef().getValue().size());
+    assertEquals(
+        "v1",
+        result.get("pmap").asMapParamDef().getValue().get("k1").asStringParamDef().getValue());
+    assertEquals(
+        "v2",
+        result.get("pmap").asMapParamDef().getValue().get("k2").asStringParamDef().getValue());
   }
 
   @Test

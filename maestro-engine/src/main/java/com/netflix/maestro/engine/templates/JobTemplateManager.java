@@ -14,12 +14,14 @@ package com.netflix.maestro.engine.templates;
 
 import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.engine.dao.MaestroJobTemplateDao;
+import com.netflix.maestro.engine.execution.WorkflowSummary;
 import com.netflix.maestro.engine.params.ParamsMergeHelper;
 import com.netflix.maestro.engine.properties.JobTemplateCacheProperties;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.Tag;
+import com.netflix.maestro.models.definition.TypedStep;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.ParamSource;
 import com.netflix.maestro.models.parameter.Parameter;
@@ -68,28 +70,53 @@ public class JobTemplateManager {
    * Load runtime parameters based on the step type and its subtype.
    *
    * @return a collection of runtime generated parameters to inject
+   * @param workflowSummary workflow summary
    * @param step step definition
-   * @param version job template version
    */
-  public Map<String, ParamDefinition> loadRuntimeParams(Step step, String version) {
+  public Map<String, ParamDefinition> loadRuntimeParams(
+      WorkflowSummary workflowSummary, Step step) {
+    String version = getJobTemplateVersion(workflowSummary, step);
     var allTemplates = loadAllTemplates(step, version);
-    return allTemplates.stream()
-        .map(JobTemplate.Definition::getParams)
-        .filter(Objects::nonNull)
-        .flatMap(p -> p.entrySet().stream())
-        .collect(
-            Collectors.toMap(
-                Map.Entry::getKey, Map.Entry::getValue, (u, v) -> v, LinkedHashMap::new));
+    Map<String, ParamDefinition> allParams =
+        allTemplates.stream()
+            .map(JobTemplate.Definition::getParams)
+            .filter(Objects::nonNull)
+            .flatMap(p -> p.entrySet().stream())
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey, Map.Entry::getValue, (u, v) -> v, LinkedHashMap::new));
+    // merge workflow level params into template schema introduced params.
+    mergeWorkflowParamsIntoSchemaParams(allParams, workflowSummary.getParams());
+    return Map.copyOf(allParams);
+  }
+
+  private String getJobTemplateVersion(WorkflowSummary workflowSummary, Step step) {
+    // subtype version is used for job template versioning if present.
+    String version = ((TypedStep) step).getSubTypeVersion();
+    if (version == null
+        && workflowSummary.getParams() != null
+        && workflowSummary.getParams().containsKey(Constants.JOB_TEMPLATE_VERSION_PARAM)) {
+      version =
+          workflowSummary
+              .getParams()
+              .get(Constants.JOB_TEMPLATE_VERSION_PARAM)
+              .getEvaluatedResultString();
+    }
+    if (version == null || version.isEmpty()) {
+      version = Constants.DEFAULT_JOB_TEMPLATE_VERSION;
+    }
+    return version;
   }
 
   /**
    * Load runtime parameters based on the step type and its subtype.
    *
    * @return a collection of runtime generated parameters to inject
+   * @param workflowSummary workflow summary
    * @param step step definition
-   * @param version job template version
    */
-  public Collection<Tag> loadTags(Step step, String version) {
+  public List<Tag> loadTags(WorkflowSummary workflowSummary, Step step) {
+    String version = getJobTemplateVersion(workflowSummary, step);
     var allTemplates = loadAllTemplates(step, version);
     var allTags =
         allTemplates.stream()
@@ -97,7 +124,7 @@ public class JobTemplateManager {
             .filter(Objects::nonNull)
             .flatMap(Collection::stream)
             .collect(Collectors.toMap(Tag::getName, t -> t, (u, v) -> v, LinkedHashMap::new));
-    return allTags.values();
+    return List.copyOf(allTags.values());
   }
 
   /**
@@ -224,7 +251,7 @@ public class JobTemplateManager {
    * @param schemaParams the job template schema parameters to merge into
    * @param workflowParams the workflow parameters to merge from
    */
-  public void mergeWorkflowParamsIntoSchemaParams(
+  private void mergeWorkflowParamsIntoSchemaParams(
       Map<String, ParamDefinition> schemaParams, Map<String, Parameter> workflowParams) {
     if (workflowParams == null || workflowParams.isEmpty()) {
       return;

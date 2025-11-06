@@ -18,6 +18,7 @@ import static org.mockito.Mockito.verify;
 import com.netflix.maestro.MaestroBaseTest;
 import com.netflix.maestro.engine.dao.MaestroOutputDataDao;
 import com.netflix.maestro.engine.dto.OutputData;
+import com.netflix.maestro.engine.params.OutputDataManager;
 import com.netflix.maestro.models.api.StepOutputDataRequest;
 import com.netflix.maestro.models.parameter.StringArrayParameter;
 import org.junit.Assert;
@@ -33,7 +34,8 @@ public class OutputDataControllerTest extends MaestroBaseTest {
 
   @Before
   public void before() {
-    this.outputDataController = new OutputDataController(mockOutputDataDao);
+    OutputDataManager outputDataManager = new OutputDataManager(mockOutputDataDao);
+    this.outputDataController = new OutputDataController(outputDataManager);
   }
 
   @Test

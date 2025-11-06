@@ -28,12 +28,10 @@ import com.netflix.maestro.exceptions.MaestroBadRequestException;
 import com.netflix.maestro.exceptions.MaestroRetryableError;
 import com.netflix.maestro.exceptions.MaestroUnprocessableEntityException;
 import com.netflix.maestro.metrics.MaestroMetrics;
-import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.artifact.KubernetesArtifact;
 import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.definition.Tag;
-import com.netflix.maestro.models.definition.TypedStep;
 import com.netflix.maestro.models.error.Details;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.timeline.TimelineDetailsEvent;
@@ -253,34 +251,11 @@ public class KubernetesStepRuntime implements StepRuntime {
   @Override
   public Map<String, ParamDefinition> injectRuntimeParams(
       WorkflowSummary workflowSummary, Step step) {
-    String version = getJobTemplateVersion(workflowSummary, step);
-    Map<String, ParamDefinition> allParams = jobTemplateManager.loadRuntimeParams(step, version);
-    // merge workflow level params into template schema introduced params.
-    jobTemplateManager.mergeWorkflowParamsIntoSchemaParams(allParams, workflowSummary.getParams());
-    return Map.copyOf(allParams);
-  }
-
-  private String getJobTemplateVersion(WorkflowSummary workflowSummary, Step step) {
-    // subtype version is used for job template versioning if present.
-    String version = ((TypedStep) step).getSubTypeVersion();
-    if (version == null
-        && workflowSummary.getParams() != null
-        && workflowSummary.getParams().containsKey(Constants.JOB_TEMPLATE_VERSION_PARAM)) {
-      version =
-          workflowSummary
-              .getParams()
-              .get(Constants.JOB_TEMPLATE_VERSION_PARAM)
-              .getEvaluatedResultString();
-    }
-    if (version == null || version.isEmpty()) {
-      version = Constants.DEFAULT_JOB_TEMPLATE_VERSION;
-    }
-    return version;
+    return jobTemplateManager.loadRuntimeParams(workflowSummary, step);
   }
 
   @Override
   public List<Tag> injectRuntimeTags(WorkflowSummary workflowSummary, Step step) {
-    String version = getJobTemplateVersion(workflowSummary, step);
-    return List.copyOf(jobTemplateManager.loadTags(step, version));
+    return jobTemplateManager.loadTags(workflowSummary, step);
   }
 }
