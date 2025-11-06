@@ -22,11 +22,11 @@ import static org.mockito.Mockito.when;
 import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.MaestroBaseTest;
 import com.netflix.maestro.engine.dao.MaestroJobTemplateDao;
+import com.netflix.maestro.engine.execution.WorkflowSummary;
 import com.netflix.maestro.engine.properties.JobTemplateCacheProperties;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.Tag;
 import com.netflix.maestro.models.definition.TypedStep;
-import com.netflix.maestro.models.parameter.LongParamDefinition;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.models.parameter.StringParamDefinition;
@@ -44,6 +44,7 @@ public class JobTemplateManagerTest extends MaestroBaseTest {
   @Mock private MaestroJobTemplateDao jobTemplateDao;
   private JobTemplateManager jobTemplateManager;
   private JobTemplate jobTemplate;
+  private WorkflowSummary workflowSummary;
   private TypedStep step;
 
   @Before
@@ -52,6 +53,9 @@ public class JobTemplateManagerTest extends MaestroBaseTest {
     cacheProperties.setCacheTtl(60000); // 60 seconds
     jobTemplateManager = new JobTemplateManager(jobTemplateDao, cacheProperties);
     jobTemplate = loadObject("fixtures/stepruntime/job_template.json", JobTemplate.class);
+    workflowSummary = new WorkflowSummary();
+    workflowSummary.setParams(
+        Map.of("job_template_version", buildParam("job_template_version", "v1")));
     step = new TypedStep();
     step.setId("test-step");
     step.setType(StepType.NOTEBOOK);
@@ -61,12 +65,14 @@ public class JobTemplateManagerTest extends MaestroBaseTest {
   @Test
   public void testLoadRuntimeParamsAndTagsWithNoTemplate() {
     when(jobTemplateDao.getJobTemplate(anyString(), anyString())).thenReturn(null);
-    Map<String, ParamDefinition> params = jobTemplateManager.loadRuntimeParams(step, "default");
+    workflowSummary.setParams(Map.of());
+    Map<String, ParamDefinition> params =
+        jobTemplateManager.loadRuntimeParams(workflowSummary, step);
 
     assertTrue(params.isEmpty());
     verify(jobTemplateDao, times(1)).getJobTemplate("shell", "default");
 
-    var tags = jobTemplateManager.loadTags(step, "default");
+    var tags = jobTemplateManager.loadTags(workflowSummary, step);
     assertTrue(tags.isEmpty());
     verify(jobTemplateDao, times(2)).getJobTemplate("shell", "default");
   }
@@ -74,12 +80,13 @@ public class JobTemplateManagerTest extends MaestroBaseTest {
   @Test
   public void testLoadRuntimeParamsAndTagsWithTemplate() {
     when(jobTemplateDao.getJobTemplate("shell", "v1")).thenReturn(jobTemplate);
-    Map<String, ParamDefinition> params = jobTemplateManager.loadRuntimeParams(step, "v1");
+    Map<String, ParamDefinition> params =
+        jobTemplateManager.loadRuntimeParams(workflowSummary, step);
 
     assertEquals(3, params.size());
     assertEquals("echo hello world", ((StringParamDefinition) params.get("script")).getValue());
 
-    var tags = jobTemplateManager.loadTags(step, "v1");
+    var tags = jobTemplateManager.loadTags(workflowSummary, step);
 
     assertEquals(3, tags.size());
     assertEquals(
@@ -96,13 +103,13 @@ public class JobTemplateManagerTest extends MaestroBaseTest {
         "Step type mismatch should throw exception",
         IllegalArgumentException.class,
         "Job template definition step type [KUBERNETES] does not match the current step type [NOTEBOOK]",
-        () -> jobTemplateManager.loadRuntimeParams(step, "v1"));
+        () -> jobTemplateManager.loadRuntimeParams(workflowSummary, step));
 
     AssertHelper.assertThrows(
         "Step type mismatch should throw exception",
         IllegalArgumentException.class,
         "Job template definition step type [KUBERNETES] does not match the current step type [NOTEBOOK]",
-        () -> jobTemplateManager.loadTags(step, "v1"));
+        () -> jobTemplateManager.loadTags(workflowSummary, step));
   }
 
   @Test
@@ -122,7 +129,8 @@ public class JobTemplateManagerTest extends MaestroBaseTest {
     when(jobTemplateDao.getJobTemplate("parent-job-type", "default")).thenReturn(parentTemplate);
     when(jobTemplateDao.getJobTemplate("shell", "v1")).thenReturn(jobTemplate);
 
-    Map<String, ParamDefinition> params = jobTemplateManager.loadRuntimeParams(step, "v1");
+    Map<String, ParamDefinition> params =
+        jobTemplateManager.loadRuntimeParams(workflowSummary, step);
 
     assertEquals(4, params.size());
     assertTrue(params.containsKey("kubernetes"));
@@ -130,7 +138,7 @@ public class JobTemplateManagerTest extends MaestroBaseTest {
     assertEquals("parent_value", ((StringParamDefinition) params.get("parent_param")).getValue());
     assertEquals("echo hello world", ((StringParamDefinition) params.get("script")).getValue());
 
-    var tags = jobTemplateManager.loadTags(step, "v1");
+    var tags = jobTemplateManager.loadTags(workflowSummary, step);
 
     assertEquals(4, tags.size());
     assertEquals(
@@ -153,14 +161,15 @@ public class JobTemplateManagerTest extends MaestroBaseTest {
     when(jobTemplateDao.getJobTemplate("parent-job-type", "default")).thenReturn(parentTemplate);
     when(jobTemplateDao.getJobTemplate("shell", "v1")).thenReturn(jobTemplate);
 
-    Map<String, ParamDefinition> params = jobTemplateManager.loadRuntimeParams(step, "v1");
+    Map<String, ParamDefinition> params =
+        jobTemplateManager.loadRuntimeParams(workflowSummary, step);
 
     assertEquals(3, params.size());
     assertTrue(params.containsKey("kubernetes"));
     assertTrue(params.containsKey("notebook"));
     assertEquals("echo hello world", ((StringParamDefinition) params.get("script")).getValue());
 
-    var tags = jobTemplateManager.loadTags(step, "v1");
+    var tags = jobTemplateManager.loadTags(workflowSummary, step);
     assertEquals(3, tags.size());
     assertEquals(
         List.of("notebook", "shell", "example"),
@@ -185,22 +194,22 @@ public class JobTemplateManagerTest extends MaestroBaseTest {
         "Cyclic dependency should throw exception",
         IllegalArgumentException.class,
         "Cyclic dependency detected for step [test-step][NOTEBOOK][shell] when inheriting job type [parent-job-type]",
-        () -> jobTemplateManager.loadRuntimeParams(step, "v1"));
+        () -> jobTemplateManager.loadRuntimeParams(workflowSummary, step));
 
     AssertHelper.assertThrows(
         "Cyclic dependency should throw exception",
         IllegalArgumentException.class,
         "Cyclic dependency detected for step [test-step][NOTEBOOK][shell] when inheriting job type [parent-job-type]",
-        () -> jobTemplateManager.loadTags(step, "v1"));
+        () -> jobTemplateManager.loadTags(workflowSummary, step));
   }
 
   @Test
   public void testCaching() {
     when(jobTemplateDao.getJobTemplate("shell", "v1")).thenReturn(jobTemplate);
 
-    jobTemplateManager.loadRuntimeParams(step, "v1");
-    jobTemplateManager.loadRuntimeParams(step, "v1");
-    jobTemplateManager.loadRuntimeParams(step, "v1");
+    jobTemplateManager.loadRuntimeParams(workflowSummary, step);
+    jobTemplateManager.loadRuntimeParams(workflowSummary, step);
+    jobTemplateManager.loadRuntimeParams(workflowSummary, step);
 
     verify(jobTemplateDao, times(1)).getJobTemplate("shell", "v1");
   }
@@ -216,10 +225,14 @@ public class JobTemplateManagerTest extends MaestroBaseTest {
     when(jobTemplateDao.getJobTemplate("shell", "v1")).thenReturn(jobTemplate);
     when(jobTemplateDao.getJobTemplate("shell", "v2")).thenReturn(jobTemplateV2);
 
-    jobTemplateManager.loadRuntimeParams(step, "v1");
-    jobTemplateManager.loadRuntimeParams(step, "v2");
-    jobTemplateManager.loadRuntimeParams(step, "v1");
-    jobTemplateManager.loadRuntimeParams(step, "v2");
+    WorkflowSummary workflowSummaryV2 = new WorkflowSummary();
+    workflowSummaryV2.setParams(
+        Map.of("job_template_version", buildParam("job_template_version", "v2")));
+
+    jobTemplateManager.loadRuntimeParams(workflowSummary, step);
+    jobTemplateManager.loadRuntimeParams(workflowSummaryV2, step);
+    jobTemplateManager.loadRuntimeParams(workflowSummary, step);
+    jobTemplateManager.loadRuntimeParams(workflowSummaryV2, step);
 
     verify(jobTemplateDao, times(1)).getJobTemplate("shell", "v1");
     verify(jobTemplateDao, times(1)).getJobTemplate("shell", "v2");
@@ -227,18 +240,20 @@ public class JobTemplateManagerTest extends MaestroBaseTest {
 
   @Test
   public void testMergeWorkflowParamsIntoSchemaParams() {
-    Map<String, ParamDefinition> schemaParams = new LinkedHashMap<>();
-    schemaParams.put("cpu", StringParamDefinition.builder().name("cpu").value("1").build());
-    schemaParams.put("memory", LongParamDefinition.builder().name("memory").value(1024L).build());
+    when(jobTemplateDao.getJobTemplate("shell", "v1")).thenReturn(jobTemplate);
 
     Map<String, Parameter> workflowParams = new LinkedHashMap<>();
-    workflowParams.put("cpu", buildParam("cpu", "2")); // Override cpu
-    workflowParams.put("disk", buildParam("disk", "10G")); // New param not in schema
+    workflowParams.put("job_template_version", buildParam("job_template_version", "v1"));
+    workflowParams.put("script", buildParam("script", "overridden script"));
+    workflowParams.put("foo", buildParam("foo", "bar"));
+    workflowSummary.setParams(workflowParams);
 
-    jobTemplateManager.mergeWorkflowParamsIntoSchemaParams(schemaParams, workflowParams);
+    Map<String, ParamDefinition> params =
+        jobTemplateManager.loadRuntimeParams(workflowSummary, step);
 
-    assertEquals("2", ((StringParamDefinition) schemaParams.get("cpu")).getValue());
-    assertEquals(1024L, ((LongParamDefinition) schemaParams.get("memory")).getValue().longValue());
-    assertEquals(2, schemaParams.size());
+    assertEquals(3, params.size());
+    assertEquals("overridden script", params.get("script").asStringParamDef().getValue());
+    assertTrue(params.containsKey("kubernetes"));
+    assertTrue(params.containsKey("notebook"));
   }
 }
