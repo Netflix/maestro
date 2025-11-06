@@ -158,7 +158,7 @@ final class ParamParser {
         type = impliedType;
       } else if (impliedType != null && type != impliedType) {
         if (type == ParamType.MAP && impliedType == ParamType.STRING_MAP) {
-          // allow string map to be treated as param map
+          // allow string map to be treated as param map if users specify pmap type hint
         } else {
           throw new MaestroValidationException(
               "Type mismatch for param [%s]: specified type [%s] does not match implied type [%s] from its value: [%s]",

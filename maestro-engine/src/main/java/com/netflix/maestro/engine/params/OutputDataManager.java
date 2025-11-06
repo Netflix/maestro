@@ -36,8 +36,16 @@ public class OutputDataManager {
 
   private MaestroOutputDataDao outputDataDao;
 
+  /**
+   * Save output data to database. It also replaces values with placeholders in following cases:
+   * <li>- replace values with placeholders when identical to evaluated results for string array
+   *     params
+   * <li>- replace values longer than 1K threshold with placeholders when identical to evaluated
+   *     results for string params
+   *
+   * @param outputData output data to save
+   */
   public void saveOutputData(OutputData outputData) {
-    // removing value in the output string array param if it is identical to evaluated result
     if (outputData.getParams() != null) {
       outputData
           .getParams()
