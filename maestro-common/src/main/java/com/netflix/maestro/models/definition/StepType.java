@@ -18,6 +18,8 @@ public enum StepType {
   NOTEBOOK("Notebook", true),
   /** Kubernetes step. */
   KUBERNETES("Kubernetes", true),
+  /** HTTP/HTTPS step. */
+  HTTP("Http", true),
   /** Join step. */
   JOIN("Join", false),
   /** foreach loop step. */

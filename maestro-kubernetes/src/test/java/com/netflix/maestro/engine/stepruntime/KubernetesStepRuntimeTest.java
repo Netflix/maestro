@@ -49,11 +49,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 
-/** Tests for {@link KubernetesStepRuntime}. */
 public class KubernetesStepRuntimeTest extends MaestroBaseTest {
   @Mock private KubernetesRuntimeExecutor runtimeExecutor;
-  @Mock private OutputDataManager outputDataManager;
   @Mock private JobTemplateManager jobTemplateManager;
+  @Mock private OutputDataManager outputDataManager;
   private MaestroMetricRepo metricRepo;
   private KubernetesStepRuntime stepRuntime;
   private StepRuntimeSummary runtimeSummary;
