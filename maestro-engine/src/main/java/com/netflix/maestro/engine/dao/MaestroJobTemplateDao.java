@@ -155,7 +155,7 @@ public class MaestroJobTemplateDao extends AbstractDatabaseDao {
                   return jobTemplates;
                 }),
         "getJobTemplates",
-        "Failed get all the job templates for version [{}]",
+        "Failed to get all the job templates for version [{}]",
         version);
   }
 }
