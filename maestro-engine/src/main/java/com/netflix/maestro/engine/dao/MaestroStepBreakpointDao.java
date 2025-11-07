@@ -482,7 +482,6 @@ public class MaestroStepBreakpointDao extends AbstractDatabaseDao {
       long runId,
       String stepId,
       long stepAttemptId) {
-    List<PausedStepAttempt> toReturn = new ArrayList<>();
     final String revisedWorkflowId = getRevisedWorkflowId(workflowId, stepId, false);
     final boolean isInlineWorkflow = IdHelper.isInlineWorkflowId(revisedWorkflowId);
     final String query =
@@ -510,6 +509,7 @@ public class MaestroStepBreakpointDao extends AbstractDatabaseDao {
                           null,
                           query)) {
                     ResultSet result = stmt.executeQuery();
+                    List<PausedStepAttempt> toReturn = new ArrayList<>();
                     while (result.next()) {
                       toReturn.add(pausedStepAttemptFromResultSet(result));
                     }

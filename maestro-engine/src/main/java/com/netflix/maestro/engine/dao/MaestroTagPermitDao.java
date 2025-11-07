@@ -254,7 +254,6 @@ public class MaestroTagPermitDao extends AbstractDatabaseDao {
    * @return list of tag permits
    */
   public List<TagPermit> getSyncedTagPermits(String cursor, int limit) {
-    List<TagPermit> res = new ArrayList<>();
     return withMetricLogError(
         () ->
             withRetryableQuery(
@@ -264,6 +263,7 @@ public class MaestroTagPermitDao extends AbstractDatabaseDao {
                   stmt.setInt(2, limit);
                 },
                 rs -> {
+                  List<TagPermit> res = new ArrayList<>();
                   while (rs.next()) {
                     int idx = 0;
                     res.add(new TagPermit(rs.getString(++idx), rs.getInt(++idx), null));
@@ -283,13 +283,13 @@ public class MaestroTagPermitDao extends AbstractDatabaseDao {
    * @return the tags of deleted tag permits
    */
   public List<String> removeTagPermits(int limit) {
-    List<String> res = new ArrayList<>();
     return withMetricLogError(
         () ->
             withRetryableQuery(
                 REMOVE_MARKED_TAG_PERMITS_QUERY,
                 stmt -> stmt.setInt(1, limit),
                 rs -> {
+                  List<String> res = new ArrayList<>();
                   while (rs.next()) {
                     res.add(rs.getString(1));
                   }
@@ -307,13 +307,13 @@ public class MaestroTagPermitDao extends AbstractDatabaseDao {
    * @return list of tag permits
    */
   public List<TagPermit> markAndLoadTagPermits(int limit) {
-    List<TagPermit> res = new ArrayList<>();
     return withMetricLogError(
         () ->
             withRetryableQuery(
                 MARK_TAG_PERMITS_SYNCED_QUERY,
                 stmt -> stmt.setInt(1, limit),
                 rs -> {
+                  List<TagPermit> res = new ArrayList<>();
                   while (rs.next()) {
                     res.add(new TagPermit(rs.getString(1), rs.getInt(2), null));
                   }
@@ -332,7 +332,6 @@ public class MaestroTagPermitDao extends AbstractDatabaseDao {
    * @return list of step tag permits
    */
   public List<StepTagPermit> loadStepTagPermits(UUID cursor, int limit) {
-    List<StepTagPermit> res = new ArrayList<>();
     return withMetricLogError(
         () ->
             withRetryableQuery(
@@ -345,6 +344,7 @@ public class MaestroTagPermitDao extends AbstractDatabaseDao {
                   stmt.setInt(++idx, limit);
                 },
                 rs -> {
+                  List<StepTagPermit> res = new ArrayList<>();
                   stepTagPermitsFromResult(rs, res);
                   return res;
                 }),
@@ -360,13 +360,13 @@ public class MaestroTagPermitDao extends AbstractDatabaseDao {
    * @return the uuids of deleted records.
    */
   public List<StepUuidSeq> removeReleasedStepTagPermits(int limit) {
-    List<StepUuidSeq> res = new ArrayList<>();
     return withMetricLogError(
         () ->
             withRetryableQuery(
                 REMOVE_RELEASED_STEP_TAG_PERMITS_QUERY,
                 stmt -> stmt.setInt(1, limit),
                 rs -> {
+                  List<StepUuidSeq> res = new ArrayList<>();
                   while (rs.next()) {
                     res.add(new StepUuidSeq(rs.getObject(1, UUID.class), rs.getLong(2)));
                   }
@@ -385,7 +385,6 @@ public class MaestroTagPermitDao extends AbstractDatabaseDao {
    * @return list of step tag permits
    */
   public List<StepTagPermit> markAndLoadStepTagPermits(long maxSeqNum, int limit) {
-    List<StepTagPermit> res = new ArrayList<>();
     return withMetricLogError(
         () ->
             withRetryableQuery(
@@ -395,6 +394,7 @@ public class MaestroTagPermitDao extends AbstractDatabaseDao {
                   stmt.setInt(2, limit);
                 },
                 rs -> {
+                  List<StepTagPermit> res = new ArrayList<>();
                   stepTagPermitsFromResult(rs, res);
                   return res;
                 }),
