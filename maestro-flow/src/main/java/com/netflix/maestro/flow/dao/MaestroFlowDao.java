@@ -124,7 +124,6 @@ public class MaestroFlowDao extends AbstractDatabaseDao {
    * @return the list of flows
    */
   public List<Flow> getFlows(FlowGroup group, long limit, String idCursor) {
-    List<Flow> flows = new ArrayList<>();
     return withMetricLogError(
         () ->
             withRetryableQuery(
@@ -139,6 +138,7 @@ public class MaestroFlowDao extends AbstractDatabaseDao {
                   stmt.setLong(++idx, limit);
                 },
                 result -> {
+                  List<Flow> flows = new ArrayList<>();
                   while (result.next()) {
                     int idx = 0;
                     flows.add(

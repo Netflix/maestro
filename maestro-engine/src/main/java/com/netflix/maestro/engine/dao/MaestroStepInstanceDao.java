@@ -895,7 +895,6 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
    */
   public Map<String, SignalDependencies> getAllStepDependencies(
       String workflowId, long workflowInstanceId, long workflowRunId) {
-    Map<String, SignalDependencies> allStepDependencies = new HashMap<>();
     return withMetricLogError(
         () ->
             withRetryableQuery(
@@ -907,6 +906,7 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
                   stmt.setLong(++idx, workflowRunId);
                 },
                 result -> {
+                  Map<String, SignalDependencies> allStepDependencies = new HashMap<>();
                   while (result.next()) {
                     String stepId = result.getString(StepInstanceField.STEP_ID.field);
                     SignalDependencies dependencies = getDependencies(result);
@@ -935,7 +935,6 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
    */
   public Map<String, StepInstance.Status> getAllLatestStepStatusFromRuns(
       String workflowId, long workflowInstanceId) {
-    Map<String, StepInstance.Status> stepStatus = new HashMap<>();
     return withMetricLogError(
         () ->
             withRetryableQuery(
@@ -945,6 +944,7 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
                   stmt.setLong(2, workflowInstanceId);
                 },
                 result -> {
+                  Map<String, StepInstance.Status> stepStatus = new HashMap<>();
                   while (result.next()) {
                     stepStatus.put(
                         result.getString(ID_COLUMN),
@@ -1174,7 +1174,6 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
    */
   public Map<Long, String> getEvaluatedResultsFromForeach(
       String foreachInlineWorkflowId, String stepId, String paramName) {
-    Map<Long, String> idParams = new HashMap<>();
     return withMetricLogError(
         () ->
             withRetryableQuery(
@@ -1186,6 +1185,7 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
                   stmt.setString(++idx, stepId);
                 },
                 result -> {
+                  Map<Long, String> idParams = new HashMap<>();
                   while (result.next()) {
                     String val = result.getString(PAYLOAD_COLUMN);
                     if (val != null) {
@@ -1229,7 +1229,6 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
    */
   public List<StepInstance> getStepInstanceViews(
       String workflowId, long workflowInstanceId, long workflowRunId) {
-    List<StepInstance> instances = new ArrayList<>();
     return withMetricLogError(
         () ->
             withRetryableQuery(
@@ -1241,6 +1240,7 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
                   stmt.setLong(++idx, workflowRunId);
                 },
                 result -> {
+                  List<StepInstance> instances = new ArrayList<>();
                   while (result.next()) {
                     instances.add(maestroStepFromResult(result));
                   }

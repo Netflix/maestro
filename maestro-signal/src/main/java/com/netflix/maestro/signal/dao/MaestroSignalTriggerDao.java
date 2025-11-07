@@ -80,13 +80,13 @@ public class MaestroSignalTriggerDao extends AbstractDatabaseDao {
    * @return a list of triggers matched.
    */
   List<SignalTriggerMatch> getSubscribedTriggers(String signalName) {
-    List<SignalTriggerMatch> refs = new ArrayList<>();
     return withMetricLogError(
         () ->
             withRetryableQuery(
                 GET_SIGNAL_TRIGGER_QUERY,
                 stmt -> stmt.setString(1, signalName),
                 rs -> {
+                  List<SignalTriggerMatch> refs = new ArrayList<>();
                   while (rs.next()) {
                     refs.add(fromResult(rs));
                   }

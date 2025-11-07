@@ -375,13 +375,13 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
     TimelineEvent timelineEvent =
         TimelineLogEvent.warn(TERMINATION_MESSAGE_TEMPLATE, status.name(), reason);
     String timelineEventStr = toJson(timelineEvent);
-    List<WorkflowInstance> stoppedInstances = new ArrayList<>();
     MessageDto[] message = new MessageDto[1];
     int ret =
         withMetricLogError(
             () ->
                 withRetryableTransaction(
                     conn -> {
+                      List<WorkflowInstance> stoppedInstances = new ArrayList<>();
                       try (PreparedStatement stmt =
                           conn.prepareStatement(TERMINATE_QUEUED_INSTANCES_QUERY)) {
                         int idx = 0;
@@ -1056,7 +1056,6 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
   @SuppressWarnings({"PMD.AvoidInstantiatingObjectsInLoops"})
   public List<ForeachIterationOverview> getForeachIterationOverviewWithCheckpoint(
       String workflowId, long runId, long checkpoint, boolean isRestarting) {
-    List<ForeachIterationOverview> overviews = new ArrayList<>();
     return withMetricLogError(
         () ->
             withRetryableQuery(
@@ -1070,6 +1069,7 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
                   stmt.setLong(++idx, checkpoint);
                 },
                 result -> {
+                  List<ForeachIterationOverview> overviews = new ArrayList<>();
                   while (result.next()) {
                     long instanceId = result.getLong(ID_COLUMN);
                     WorkflowInstance.Status status =
@@ -1106,8 +1106,6 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
    */
   public List<WorkflowRollupOverview> getBatchForeachLatestRunRollupForIterations(
       String workflowId, List<Long> instanceIds) {
-    List<WorkflowRollupOverview> rollups = new ArrayList<>();
-
     return withMetricLogError(
         () ->
             withRetryableTransaction(
@@ -1117,7 +1115,7 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
                     stmt.setString(1, workflowId);
                     stmt.setArray(2, conn.createArrayOf("INT8", instanceIds.toArray(new Long[0])));
                     try (ResultSet result = stmt.executeQuery()) {
-                      return getWorkflowRollupOverviews(rollups, result);
+                      return getWorkflowRollupOverviews(result);
                     }
                   }
                 }),
@@ -1174,7 +1172,6 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
    */
   public List<WorkflowRollupOverview> getBatchWhileLatestRunRollupForIterations(
       String workflowId, long startId, long endId) {
-    List<WorkflowRollupOverview> rollups = new ArrayList<>();
     return withMetricLogError(
         () ->
             withRetryableQuery(
@@ -1185,14 +1182,15 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
                   stmt.setLong(++idx, startId);
                   stmt.setLong(++idx, endId);
                 },
-                result -> getWorkflowRollupOverviews(rollups, result)),
+                this::getWorkflowRollupOverviews),
         "getBatchWhileLatestRunRollupForIterations",
         "Failed to get rollups of the latest while inline instances for inline workflow id [{}]",
         workflowId);
   }
 
-  private List<WorkflowRollupOverview> getWorkflowRollupOverviews(
-      List<WorkflowRollupOverview> rollups, ResultSet result) throws SQLException {
+  private List<WorkflowRollupOverview> getWorkflowRollupOverviews(ResultSet result)
+      throws SQLException {
+    List<WorkflowRollupOverview> rollups = new ArrayList<>();
     while (result.next()) {
       String payload = result.getString(PAYLOAD_COLUMN);
       if (payload != null) {

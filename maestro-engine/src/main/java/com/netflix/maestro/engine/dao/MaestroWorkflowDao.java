@@ -1395,7 +1395,6 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
    */
   public Map<String, ParamDefinition> getParamFromWorkflows(
       String workflowIdPrefix, String paramName) {
-    Map<String, ParamDefinition> workflowParams = new HashMap<>();
     return withMetricLogError(
         () ->
             withRetryableQuery(
@@ -1405,6 +1404,7 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
                   stmt.setString(2, workflowIdPrefix + "%");
                 },
                 result -> {
+                  Map<String, ParamDefinition> workflowParams = new HashMap<>();
                   while (result.next()) {
                     String val = result.getString(PAYLOAD_COLUMN);
                     if (val != null) {
@@ -1461,20 +1461,21 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
     List<WorkflowDefinition> toRet = new ArrayList<>();
     List<MaestroWorkflowVersion> workflowVersions =
         scanWorkflowVersions(workflowId, versionId, limit);
-    Map<String, MaestroWorkflow> idToWorkflow = new HashMap<>();
     // pick the first and last workflow version to limit the scanner on workflow's.
     if (!workflowVersions.isEmpty()) {
       String firstWorkflowId = workflowVersions.getFirst().getMetadata().getWorkflowId();
-      withRetryableQuery(
-          GET_MAESTRO_WORKFLOW,
-          stmt -> stmt.setString(1, firstWorkflowId),
-          rs -> {
-            while (rs.next()) {
-              MaestroWorkflow wf = maestroWorkflowFromResult(rs);
-              idToWorkflow.put(wf.getWorkflowId(), wf);
-            }
-            return idToWorkflow;
-          });
+      Map<String, MaestroWorkflow> idToWorkflow =
+          withRetryableQuery(
+              GET_MAESTRO_WORKFLOW,
+              stmt -> stmt.setString(1, firstWorkflowId),
+              rs -> {
+                Map<String, MaestroWorkflow> map = new HashMap<>();
+                while (rs.next()) {
+                  MaestroWorkflow wf = maestroWorkflowFromResult(rs);
+                  map.put(wf.getWorkflowId(), wf);
+                }
+                return map;
+              });
 
       for (MaestroWorkflowVersion mwv : workflowVersions) {
         MaestroWorkflow mw = idToWorkflow.get(mwv.getMetadata().getWorkflowId());
@@ -1510,9 +1511,8 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
       String workflowId, long versionId, int limit) {
     Checks.checkTrue(
         workflowId != null, "workflowId can not be null while scanning workflow versions");
-    List<MaestroWorkflowVersion> toReturn = new ArrayList<>();
     if (versionId > 1) {
-      withRetryableQuery(
+      return withRetryableQuery(
           WORKFLOW_VERSION_SCAN_WITH_WORKFLOW_VERSION_FILTER_QUERY,
           stmt -> {
             int idx = 0;
@@ -1520,11 +1520,10 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
             stmt.setLong(++idx, versionId);
             stmt.setInt(++idx, limit);
           },
-          result -> processWorkflowVersionResultSet(result, toReturn));
-      return toReturn;
+          this::processWorkflowVersionResultSet);
     } else {
       if (versionId == 1) {
-        return toReturn; // no need to scan further as consumer has already got the last record.
+        return List.of(); // no need to scan further as consumer has already got the last record.
       }
       return withRetryableQuery(
           WORKFLOW_VERSION_SCAN_WITH_WORKFLOW_FILTER_QUERY,
@@ -1533,12 +1532,13 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
             stmt.setString(++idx, workflowId);
             stmt.setInt(++idx, limit);
           },
-          result -> processWorkflowVersionResultSet(result, toReturn));
+          this::processWorkflowVersionResultSet);
     }
   }
 
-  private List<MaestroWorkflowVersion> processWorkflowVersionResultSet(
-      ResultSet rs, List<MaestroWorkflowVersion> appendTo) throws SQLException {
+  private List<MaestroWorkflowVersion> processWorkflowVersionResultSet(ResultSet rs)
+      throws SQLException {
+    List<MaestroWorkflowVersion> appendTo = new ArrayList<>();
     while (rs.next()) {
       try {
         MaestroWorkflowVersion.MaestroWorkflowVersionBuilder builder =
