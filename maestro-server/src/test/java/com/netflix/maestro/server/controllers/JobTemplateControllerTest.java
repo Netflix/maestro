@@ -28,6 +28,7 @@ import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.stepruntime.JobTemplate;
 import java.io.IOException;
+import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -126,5 +127,14 @@ public class JobTemplateControllerTest extends MaestroBaseTest {
         response.getBody().toString());
 
     verify(jobTemplateDao, times(1)).removeJobTemplate("test-job", null);
+  }
+
+  @Test
+  public void testGetJobTemplates() {
+    when(jobTemplateDao.getJobTemplates("v1")).thenReturn(List.of(Mockito.mock(JobTemplate.class)));
+
+    assertEquals(1, jobTemplateController.getJobTemplates("v1").size());
+
+    verify(jobTemplateDao, times(1)).getJobTemplates("v1");
   }
 }

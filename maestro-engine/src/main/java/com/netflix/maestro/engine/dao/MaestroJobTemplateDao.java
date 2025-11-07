@@ -18,6 +18,8 @@ import com.netflix.maestro.database.AbstractDatabaseDao;
 import com.netflix.maestro.database.DatabaseConfiguration;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.stepruntime.JobTemplate;
+import java.util.ArrayList;
+import java.util.List;
 import javax.sql.DataSource;
 
 /** DAO for saving and retrieving maestro job template schema data. */
@@ -33,6 +35,9 @@ public class MaestroJobTemplateDao extends AbstractDatabaseDao {
       "INSERT INTO maestro_job_template (job_type,version,metadata,definition) "
           + "VALUES (?, ?, ?::json, ?::json) ON CONFLICT (job_type, version) "
           + "DO UPDATE SET metadata = EXCLUDED.metadata, definition = EXCLUDED.definition";
+
+  private static final String GET_ALL_JOB_TEMPLATE_DEFINITIONS_QUERY =
+      "SELECT metadata, definition from maestro_job_template WHERE version=?";
 
   /** Constructor for MaestroJobTemplateDao. */
   public MaestroJobTemplateDao(
@@ -124,5 +129,33 @@ public class MaestroJobTemplateDao extends AbstractDatabaseDao {
         "Failed to upsert job template for [{}][{}]",
         def.getJobType(),
         def.getVersion());
+  }
+
+  /**
+   * Return all job template schemas {@link JobTemplate} for a version.
+   *
+   * @param version job template version value, e.g. "default"
+   * @return all job templates for a given version
+   */
+  @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+  public List<JobTemplate> getJobTemplates(String version) {
+    return withMetricLogError(
+        () ->
+            withRetryableQuery(
+                GET_ALL_JOB_TEMPLATE_DEFINITIONS_QUERY,
+                stmt -> stmt.setString(1, version),
+                result -> {
+                  List<JobTemplate> jobTemplates = new ArrayList<>();
+                  while (result.next()) {
+                    var res = new JobTemplate();
+                    res.setMetadata(fromJson(result.getString(1), JobTemplate.Metadata.class));
+                    res.setDefinition(fromJson(result.getString(2), JobTemplate.Definition.class));
+                    jobTemplates.add(res);
+                  }
+                  return jobTemplates;
+                }),
+        "getJobTemplates",
+        "Failed to get all the job templates for version [{}]",
+        version);
   }
 }
