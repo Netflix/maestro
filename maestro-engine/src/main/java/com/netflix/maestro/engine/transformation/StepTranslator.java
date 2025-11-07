@@ -38,6 +38,7 @@ public class StepTranslator implements Translator<Step, TaskDef> {
       case TITUS:
       case NOTEBOOK:
       case KUBERNETES:
+      case HTTP:
         return createMaestroTask((AbstractStep) step);
       default:
         throw new UnsupportedOperationException(

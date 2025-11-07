@@ -40,6 +40,7 @@ dependencies {
     implementation project(':netflix-sel')
     implementation project(':maestro-aws')
     implementation project(':maestro-kubernetes')
+    implementation project(':maestro-http')
 
     implementation('io.fabric8:kubernetes-client:7.+'){
         exclude group: 'org.slf4j'

@@ -13,3 +13,4 @@ include 'maestro-signal'
 
 include 'maestro-aws'
 include 'maestro-kubernetes'
+include 'maestro-http'

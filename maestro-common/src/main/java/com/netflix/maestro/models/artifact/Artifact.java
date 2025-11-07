@@ -32,6 +32,7 @@ import com.netflix.maestro.models.Constants;
   @JsonSubTypes.Type(name = "NOTEBOOK", value = NotebookArtifact.class),
   @JsonSubTypes.Type(name = "DYNAMIC_OUTPUT", value = DynamicOutputArtifact.class),
   @JsonSubTypes.Type(name = "KUBERNETES", value = KubernetesArtifact.class),
+  @JsonSubTypes.Type(name = "HTTP", value = HttpArtifact.class),
 })
 @SuppressWarnings("PMD.ImplicitFunctionalInterface")
 public interface Artifact {
@@ -55,7 +56,9 @@ public interface Artifact {
     /** dynamic output (e.g. output signal) artifact. */
     DYNAMIC_OUTPUT(Constants.MAESTRO_PREFIX + "dynamic_output"),
     /** kubernetes artifact. */
-    KUBERNETES(Constants.MAESTRO_PREFIX + "kubernetes");
+    KUBERNETES(Constants.MAESTRO_PREFIX + "kubernetes"),
+    /** http artifact. */
+    HTTP(Constants.MAESTRO_PREFIX + "http");
 
     private final String key;
 
@@ -139,5 +142,14 @@ public interface Artifact {
    */
   default KubernetesArtifact asKubernetes() {
     throw new MaestroInternalError("Artifact type [%s] cannot be used as KUBERNETES", getType());
+  }
+
+  /**
+   * Get http type artifact.
+   *
+   * @return concrete artifact object.
+   */
+  default HttpArtifact asHttp() {
+    throw new MaestroInternalError("Artifact type [%s] cannot be used as HTTP", getType());
   }
 }

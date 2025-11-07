@@ -14,6 +14,7 @@ package com.netflix.maestro.server.properties;
 
 import com.netflix.maestro.engine.properties.CallbackDelayConfig;
 import com.netflix.maestro.engine.properties.ForeachStepRuntimeProperties;
+import com.netflix.maestro.engine.properties.HttpStepProperties;
 import com.netflix.maestro.engine.properties.JobTemplateCacheProperties;
 import com.netflix.maestro.engine.properties.SubworkflowStepRuntimeProperties;
 import com.netflix.maestro.engine.properties.TagPermitTaskProperties;
@@ -30,6 +31,7 @@ public class StepRuntimeProperties {
 
   private final ForeachStepRuntimeProperties foreach;
   private final SubworkflowStepRuntimeProperties subworkflow;
+  private final HttpStepProperties http;
 
   private final JobTemplateCacheProperties jobTemplateCache;
 

@@ -81,6 +81,9 @@ stepruntime:
     get-rollup-batch-limit: 100
   subworkflow:
     always-pass-down-param-names: []
+  http:
+    connection-timeout: 30000
+    send-timeout: 30000
   job-template-cache:
     cache-ttl: 60000  # in millis
   # callback delay interval setting based on step instance status and step type.

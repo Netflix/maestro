@@ -98,6 +98,8 @@ public class OutputDataManager {
       jobId = artifacts.get(Artifact.Type.KUBERNETES.key()).asKubernetes().getJobId();
     } else if (artifacts.containsKey(Artifact.Type.TITUS.key())) {
       jobId = artifacts.get(Artifact.Type.TITUS.key()).asTitus().getTitusTaskId();
+    } else if (artifacts.containsKey(Artifact.Type.HTTP.key())) {
+      jobId = runtimeSummary.getStepInstanceUuid();
     }
     if (jobId != null && !jobId.isEmpty()) {
       return Optional.of(jobId);

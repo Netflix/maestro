@@ -25,6 +25,8 @@ import com.netflix.maestro.engine.execution.StepRuntimeFixedCallbackDelayPolicy;
 import com.netflix.maestro.engine.execution.StepRuntimeManager;
 import com.netflix.maestro.engine.handlers.WorkflowActionHandler;
 import com.netflix.maestro.engine.handlers.WorkflowInstanceActionHandler;
+import com.netflix.maestro.engine.http.HttpRuntimeExecutor;
+import com.netflix.maestro.engine.http.JdkHttpRuntimeExecutor;
 import com.netflix.maestro.engine.kubernetes.KubernetesCommandGenerator;
 import com.netflix.maestro.engine.kubernetes.KubernetesRuntimeExecutor;
 import com.netflix.maestro.engine.notebook.NotebookParamsBuilder;
@@ -32,6 +34,7 @@ import com.netflix.maestro.engine.notebook.PapermillEntrypointBuilder;
 import com.netflix.maestro.engine.params.DefaultParamManager;
 import com.netflix.maestro.engine.params.OutputDataManager;
 import com.netflix.maestro.engine.params.ParamsManager;
+import com.netflix.maestro.engine.stepruntime.HttpStepRuntime;
 import com.netflix.maestro.engine.stepruntime.KubernetesStepRuntime;
 import com.netflix.maestro.engine.stepruntime.NotebookStepRuntime;
 import com.netflix.maestro.engine.steps.ForeachStepRuntime;
@@ -54,6 +57,8 @@ import com.netflix.maestro.server.runtime.Fabric8RuntimeExecutor;
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
+import java.net.http.HttpClient;
+import java.time.Duration;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
@@ -157,6 +162,34 @@ public class MaestroStepRuntimeConfiguration {
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper) {
     LOG.info("Creating notebookParamsBuilder within Spring boot...");
     return new NotebookParamsBuilder(objectMapper);
+  }
+
+  @Bean
+  public HttpStepRuntime http(
+      @Qualifier(STEP_RUNTIME_QUALIFIER) Map<StepType, StepRuntime> stepRuntimeMap,
+      HttpRuntimeExecutor runtimeExecutor,
+      JobTemplateManager jobTemplateManager,
+      OutputDataManager outputDataManager,
+      ParamEvaluator paramEvaluator,
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper) {
+    LOG.info("Creating Http step within Spring boot...");
+    HttpStepRuntime step =
+        new HttpStepRuntime(
+            runtimeExecutor, jobTemplateManager, outputDataManager, paramEvaluator, objectMapper);
+    stepRuntimeMap.put(StepType.HTTP, step);
+    return step;
+  }
+
+  @Bean
+  public HttpRuntimeExecutor httpRuntimeExecutor(StepRuntimeProperties stepRuntimeProperties) {
+    LOG.info("Creating HttpRuntimeExecutor within Spring boot...");
+    var props = stepRuntimeProperties.getHttp();
+    var client =
+        HttpClient.newBuilder()
+            .connectTimeout(Duration.ofMillis(props.getConnectionTimeout()))
+            .followRedirects(HttpClient.Redirect.NORMAL)
+            .build();
+    return new JdkHttpRuntimeExecutor(client, props);
   }
 
   @Bean

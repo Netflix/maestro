@@ -1,0 +1,43 @@
+http:
+  type: MAP
+  value:
+    url:
+      type: STRING
+      internal_mode: REQUIRED
+    method:
+      type: STRING
+      value: GET
+      internal_mode: PROVIDED
+    headers:
+      type: STRING_MAP
+      value:
+        Content-Type: application/json
+        Accept: application/json
+      internal_mode: PROVIDED
+    body:
+      type: STRING
+      internal_mode: OPTIONAL
+  internal_mode: REQUIRED
+  tags:
+    - http
+status_code:
+  type: LONG
+  value: 200
+  internal_mode: OPTIONAL
+  tags:
+    - http
+response_body:
+  type: STRING
+  value: ""
+  internal_mode: OPTIONAL
+  tags:
+    - http
+state_expr:
+  type: STRING
+  value: |
+    if (status_code >= 200 && status_code < 300) return "DONE"; 
+    else if (status_code >= 400 && status_code < 500) return "FATAL_ERROR"; 
+    else return "USER_ERROR";
+  internal_mode: PROVIDED
+  tags:
+    - http

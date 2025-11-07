@@ -1,0 +1,62 @@
+Workflow:
+  id: "sample-http-wf"
+  name: "Test http workflow"
+  description: "Long description about this workflow"
+  owner: tester
+  run_strategy: parallel
+  param0: 15
+  wf_body: |
+    Workflow:
+      id: "sample-wf-2"
+      owner: tester
+      jobs:
+        - job:
+            id: "job.1"
+            type: "NoOp"
+  dag: sequential
+  jobs:
+    - job:
+        id: "job.1"
+        type: "http"
+        'http<pmap>':
+          url: "http://localhost:8080/api/v3/workflows/actions/validate/yaml"
+          method: "PUT"
+          headers:
+            Content-Type: application/yaml
+            Accept: application/json
+            user: tester
+          body: ${wf_body}
+    - job:
+        id: "job.2"
+        type: "http"
+        'http<pmap>':
+          url: "http://localhost:8080/api/v3/workflows/yaml"
+          method: "POST"
+          headers:
+            Content-Type: application/yaml
+            Accept: application/json
+            user: tester
+          body: ${wf_body}
+    - job:
+        id: "job.3"
+        type: "http"
+        'http<pmap>':
+          url: "http://localhost:8080/api/v3/workflows/sample-wf-2/versions/latest"
+          method: "GET"
+    - job:
+        id: "job.4"
+        type: "http"
+        'http<pmap>':
+          url: "http://localhost:8080/api/v3/workflows/sample-wf-2"
+          method: "DELETE"
+          headers:
+            user: tester
+    - job:
+        id: "job.5"
+        type: "http"
+        'http<pmap>':
+          url: "http://localhost:8080/api/v3/workflows/sample-wf-2/versions/latest"
+          method: "GET"
+        state_expr: |
+          if (status_code == 404) return "DONE";
+          else return "FATAL_ERROR";
