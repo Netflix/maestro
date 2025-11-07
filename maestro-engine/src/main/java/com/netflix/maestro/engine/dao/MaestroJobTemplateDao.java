@@ -139,13 +139,13 @@ public class MaestroJobTemplateDao extends AbstractDatabaseDao {
    */
   @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
   public List<JobTemplate> getJobTemplates(String version) {
-    List<JobTemplate> jobTemplates = new ArrayList<>();
     return withMetricLogError(
         () ->
             withRetryableQuery(
                 GET_ALL_JOB_TEMPLATE_DEFINITIONS_QUERY,
                 stmt -> stmt.setString(1, version),
                 result -> {
+                  List<JobTemplate> jobTemplates = new ArrayList<>();
                   while (result.next()) {
                     var res = new JobTemplate();
                     res.setMetadata(fromJson(result.getString(1), JobTemplate.Metadata.class));

@@ -141,17 +141,18 @@ public class MaestroJobTemplateDaoTest extends MaestroDaoBaseTest {
   }
 
   @Test
-  public void testGetJobTemplates() {
+  public void testGetJobTemplates() throws Exception {
     jobTemplateDao.upsertJobTemplate(jobTemplate);
-    jobTemplate.getDefinition().setJobType(TEST_JOB_TYPE2);
-    jobTemplateDao.upsertJobTemplate(jobTemplate);
+    var jobTemplate2 = loadObject("fixtures/stepruntime/job_template.json", JobTemplate.class);
+    jobTemplate2.getDefinition().setJobType(TEST_JOB_TYPE2);
+    jobTemplateDao.upsertJobTemplate(jobTemplate2);
 
     List<JobTemplate> res = jobTemplateDao.getJobTemplates(TEST_VERSION_DEFAULT);
     assertTrue(res.isEmpty());
 
     res = jobTemplateDao.getJobTemplates(TEST_VERSION_V1);
     assertEquals(2, res.size());
-    assertEquals(jobTemplate, res.getLast());
+    assertTrue(res.containsAll(List.of(jobTemplate, jobTemplate2)));
 
     MaestroTestHelper.removeJobTemplate(DATA_SOURCE, TEST_JOB_TYPE2, null);
   }
