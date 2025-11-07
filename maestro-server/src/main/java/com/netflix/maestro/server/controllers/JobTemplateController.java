@@ -21,6 +21,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -126,5 +127,19 @@ public class JobTemplateController {
             String.format(
                 "Removed [%s] job template versions for job type: [%s][%s]",
                 cnt, jobType, version));
+  }
+
+  /**
+   * Fetch all existing job template definitions for a specific version. If needed (e.g. there are
+   * tens of thousands of job templates), we should add pagination support instead of returning all.
+   *
+   * @param version version value, e.g. "default"
+   * @return all the job templates for a given version
+   */
+  @GetMapping(value = "", consumes = MediaType.ALL_VALUE)
+  @Operation(summary = "Fetches all existing job templates for a given version.")
+  public List<JobTemplate> getJobTemplates(
+      @RequestParam(value = "version", defaultValue = "default") String version) {
+    return jobTemplateDao.getJobTemplates(version);
   }
 }

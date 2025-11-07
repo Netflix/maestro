@@ -15,6 +15,7 @@ package com.netflix.maestro.engine.dao;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.engine.MaestroTestHelper;
@@ -22,12 +23,14 @@ import com.netflix.maestro.exceptions.MaestroDatabaseError;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.stepruntime.JobTemplate;
 import java.io.IOException;
+import java.util.List;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 public class MaestroJobTemplateDaoTest extends MaestroDaoBaseTest {
   private static final String TEST_JOB_TYPE1 = "shell";
+  private static final String TEST_JOB_TYPE2 = "python";
   private static final String TEST_VERSION_DEFAULT = Constants.DEFAULT_JOB_TEMPLATE_VERSION;
   private static final String TEST_VERSION_V1 = "v1";
   private static final String TEST_VERSION_V2 = "v2";
@@ -135,5 +138,21 @@ public class MaestroJobTemplateDaoTest extends MaestroDaoBaseTest {
   public void testRemoveNonExistentTemplate() {
     int removed = jobTemplateDao.removeJobTemplate("non-existent", TEST_VERSION_DEFAULT);
     assertEquals(0, removed);
+  }
+
+  @Test
+  public void testGetJobTemplates() {
+    jobTemplateDao.upsertJobTemplate(jobTemplate);
+    jobTemplate.getDefinition().setJobType(TEST_JOB_TYPE2);
+    jobTemplateDao.upsertJobTemplate(jobTemplate);
+
+    List<JobTemplate> res = jobTemplateDao.getJobTemplates(TEST_VERSION_DEFAULT);
+    assertTrue(res.isEmpty());
+
+    res = jobTemplateDao.getJobTemplates(TEST_VERSION_V1);
+    assertEquals(2, res.size());
+    assertEquals(jobTemplate, res.getLast());
+
+    MaestroTestHelper.removeJobTemplate(DATA_SOURCE, TEST_JOB_TYPE2, null);
   }
 }
