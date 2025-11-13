@@ -16,13 +16,16 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 
+import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.MaestroBaseTest;
 import com.netflix.maestro.engine.properties.HttpStepProperties;
+import com.netflix.maestro.exceptions.MaestroValidationException;
 import com.netflix.maestro.models.stepruntime.HttpStepRequest;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Map;
+import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -38,7 +41,9 @@ public class JdkHttpRuntimeExecutorTest extends MaestroBaseTest {
   public void setUp() {
     HttpStepProperties properties = new HttpStepProperties();
     properties.setSendTimeout(60000L);
-    executor = new JdkHttpRuntimeExecutor(httpClient, properties);
+    properties.setAllowList(Set.of("test.example"));
+    UrlValidator urlValidator = new UrlValidator(properties);
+    executor = new JdkHttpRuntimeExecutor(httpClient, properties, urlValidator);
   }
 
   @Test
@@ -80,5 +85,30 @@ public class JdkHttpRuntimeExecutorTest extends MaestroBaseTest {
     assertEquals("POST", capturedRequest.method());
     assertEquals("https://test.example/api/test", capturedRequest.uri().toString());
     assertEquals(13, capturedRequest.bodyPublisher().get().contentLength());
+  }
+
+  @Test
+  public void testExecuteRejectsHostNotInAllowlist() {
+    AssertHelper.assertThrows(
+        "Invalid host",
+        MaestroValidationException.class,
+        "URL host [not.allowed.com] is not allowed. Please contact the administrator.",
+        () ->
+            executor.execute(
+                HttpStepRequest.builder()
+                    .url("http://not.allowed.com/admin")
+                    .method("GET")
+                    .build()));
+  }
+
+  @Test
+  public void testExecuteRejectsInvalidScheme() {
+    AssertHelper.assertThrows(
+        "Invalid scheme",
+        MaestroValidationException.class,
+        "URL scheme [file] is not allowed.",
+        () ->
+            executor.execute(
+                HttpStepRequest.builder().url("file:///etc/passwd").method("GET").build()));
   }
 }
