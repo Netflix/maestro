@@ -66,7 +66,7 @@ public class UrlValidatorTest {
             "http://not.allowed.com/admin",
             "http://other.example.com",
             "http://localhost:8080",
-            "http://user:pass@disalowed.com/path",
+            "http://user:pass@disallowed.com/path",
             "http://subdomain.example.com",
             "http://example.com.evil.com",
             "http://example%2Ecom.evil.com",

@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
  * URL validator to prevent Server-Side Request Forgery (SSRF) attacks by validating URLs before
  * making HTTP requests.
  *
- * <p>This validator uses a allow-list approach for maximum security:
+ * <p>This validator uses an allow-list approach for maximum security:
  *
  * <ul>
  *   <li>Only allows HTTP/HTTPS protocols
