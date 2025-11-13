@@ -31,22 +31,27 @@ import lombok.extern.slf4j.Slf4j;
 public class JdkHttpRuntimeExecutor implements HttpRuntimeExecutor {
   private final HttpClient httpClient;
   private final Duration sendTimeout;
+  private final UrlValidator urlValidator;
 
   /**
    * Constructor.
    *
    * @param httpClient the HttpClient to use
+   * @param properties the HttpStepProperties to use
+   * @param urlValidator the UrlValidator for validating URLs
    */
-  public JdkHttpRuntimeExecutor(HttpClient httpClient, HttpStepProperties properties) {
+  public JdkHttpRuntimeExecutor(
+      HttpClient httpClient, HttpStepProperties properties, UrlValidator urlValidator) {
     this.httpClient = httpClient;
     this.sendTimeout = Duration.ofMillis(properties.getSendTimeout());
+    this.urlValidator = urlValidator;
   }
 
   @Override
   public HttpResponse<String> execute(HttpStepRequest request)
       throws IOException, InterruptedException {
-    HttpRequest.Builder requestBuilder =
-        HttpRequest.newBuilder().uri(URI.create(request.getUrl())).timeout(sendTimeout);
+    URI uri = urlValidator.validateAndParseUri(request.getUrl());
+    HttpRequest.Builder requestBuilder = HttpRequest.newBuilder().uri(uri).timeout(sendTimeout);
     if (request.getHeaders() != null) {
       request.getHeaders().forEach(requestBuilder::header);
     }

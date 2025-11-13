@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.engine.properties;
 
+import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -24,4 +25,7 @@ import lombok.Setter;
 public class HttpStepProperties {
   private long connectionTimeout; // in milliseconds
   private long sendTimeout; // in milliseconds
+
+  /** List of allowed hostnames for SSRF protection. HTTP step only allows these hostnames. */
+  private Set<String> allowList;
 }

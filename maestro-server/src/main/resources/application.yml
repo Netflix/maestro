@@ -84,6 +84,8 @@ stepruntime:
   http:
     connection-timeout: 30000
     send-timeout: 30000
+    # Empty list blocks all HTTP requests.
+    allow-list: []
   job-template-cache:
     cache-ttl: 60000  # in millis
   # callback delay interval setting based on step instance status and step type.

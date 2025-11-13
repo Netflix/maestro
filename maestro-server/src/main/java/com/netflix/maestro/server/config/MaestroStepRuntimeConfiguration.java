@@ -27,6 +27,7 @@ import com.netflix.maestro.engine.handlers.WorkflowActionHandler;
 import com.netflix.maestro.engine.handlers.WorkflowInstanceActionHandler;
 import com.netflix.maestro.engine.http.HttpRuntimeExecutor;
 import com.netflix.maestro.engine.http.JdkHttpRuntimeExecutor;
+import com.netflix.maestro.engine.http.UrlValidator;
 import com.netflix.maestro.engine.kubernetes.KubernetesCommandGenerator;
 import com.netflix.maestro.engine.kubernetes.KubernetesRuntimeExecutor;
 import com.netflix.maestro.engine.notebook.NotebookParamsBuilder;
@@ -181,15 +182,22 @@ public class MaestroStepRuntimeConfiguration {
   }
 
   @Bean
-  public HttpRuntimeExecutor httpRuntimeExecutor(StepRuntimeProperties stepRuntimeProperties) {
-    LOG.info("Creating HttpRuntimeExecutor within Spring boot...");
+  public UrlValidator urlValidator(StepRuntimeProperties stepRuntimeProperties) {
+    LOG.info("Creating urlValidator within Spring boot...");
+    return new UrlValidator(stepRuntimeProperties.getHttp());
+  }
+
+  @Bean
+  public HttpRuntimeExecutor httpRuntimeExecutor(
+      StepRuntimeProperties stepRuntimeProperties, UrlValidator urlValidator) {
+    LOG.info("Creating httpRuntimeExecutor within Spring boot...");
     var props = stepRuntimeProperties.getHttp();
     var client =
         HttpClient.newBuilder()
             .connectTimeout(Duration.ofMillis(props.getConnectionTimeout()))
             .followRedirects(HttpClient.Redirect.NORMAL)
             .build();
-    return new JdkHttpRuntimeExecutor(client, props);
+    return new JdkHttpRuntimeExecutor(client, props, urlValidator);
   }
 
   @Bean

@@ -1,3 +1,4 @@
+# To run this example, please add localhost to the allow-list of the http step in your application.yml.
 Workflow:
   id: "sample-http-wf"
   name: "Test http workflow"
