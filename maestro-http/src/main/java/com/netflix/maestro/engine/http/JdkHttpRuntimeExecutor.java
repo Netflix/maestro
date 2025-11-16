@@ -32,6 +32,7 @@ public class JdkHttpRuntimeExecutor implements HttpRuntimeExecutor {
   private final HttpClient httpClient;
   private final Duration sendTimeout;
   private final UrlValidator urlValidator;
+  private final HttpResponse.BodyHandler<String> bodyHandler;
 
   /**
    * Constructor.
@@ -39,12 +40,17 @@ public class JdkHttpRuntimeExecutor implements HttpRuntimeExecutor {
    * @param httpClient the HttpClient to use
    * @param properties the HttpStepProperties to use
    * @param urlValidator the UrlValidator for validating URLs
+   * @param bodyHandler the body handler for processing responses
    */
   public JdkHttpRuntimeExecutor(
-      HttpClient httpClient, HttpStepProperties properties, UrlValidator urlValidator) {
+      HttpClient httpClient,
+      HttpStepProperties properties,
+      UrlValidator urlValidator,
+      HttpResponse.BodyHandler<String> bodyHandler) {
     this.httpClient = httpClient;
     this.sendTimeout = Duration.ofMillis(properties.getSendTimeout());
     this.urlValidator = urlValidator;
+    this.bodyHandler = bodyHandler;
   }
 
   @Override
@@ -61,6 +67,6 @@ public class JdkHttpRuntimeExecutor implements HttpRuntimeExecutor {
             : HttpRequest.BodyPublishers.ofString(request.getBody());
     requestBuilder.method(request.getMethod(), bodyPublisher);
 
-    return httpClient.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofString());
+    return httpClient.send(requestBuilder.build(), bodyHandler);
   }
 }

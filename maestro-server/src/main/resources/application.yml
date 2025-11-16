@@ -84,6 +84,7 @@ stepruntime:
   http:
     connection-timeout: 30000
     send-timeout: 30000
+    max-response-size: 1048576 # 1 MB in bytes
     # Empty list blocks all HTTP requests.
     allow-list: []
   job-template-cache:

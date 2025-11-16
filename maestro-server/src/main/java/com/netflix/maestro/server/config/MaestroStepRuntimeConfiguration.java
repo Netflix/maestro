@@ -27,6 +27,7 @@ import com.netflix.maestro.engine.handlers.WorkflowActionHandler;
 import com.netflix.maestro.engine.handlers.WorkflowInstanceActionHandler;
 import com.netflix.maestro.engine.http.HttpRuntimeExecutor;
 import com.netflix.maestro.engine.http.JdkHttpRuntimeExecutor;
+import com.netflix.maestro.engine.http.SizeBoundedBodyHandler;
 import com.netflix.maestro.engine.http.UrlValidator;
 import com.netflix.maestro.engine.kubernetes.KubernetesCommandGenerator;
 import com.netflix.maestro.engine.kubernetes.KubernetesRuntimeExecutor;
@@ -59,6 +60,7 @@ import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import java.net.http.HttpClient;
+import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.EnumMap;
 import java.util.Map;
@@ -188,16 +190,29 @@ public class MaestroStepRuntimeConfiguration {
   }
 
   @Bean
-  public HttpRuntimeExecutor httpRuntimeExecutor(
-      StepRuntimeProperties stepRuntimeProperties, UrlValidator urlValidator) {
-    LOG.info("Creating httpRuntimeExecutor within Spring boot...");
+  public HttpResponse.BodyHandler<String> bodyHandler(StepRuntimeProperties stepRuntimeProperties) {
+    LOG.info("Creating SizeBoundedBodyHandler within Spring boot...");
+    return new SizeBoundedBodyHandler(stepRuntimeProperties.getHttp().getMaxResponseSize());
+  }
+
+  @Bean
+  public HttpClient httpClient(StepRuntimeProperties stepRuntimeProperties) {
+    LOG.info("Creating httpClient within Spring boot...");
     var props = stepRuntimeProperties.getHttp();
-    var client =
-        HttpClient.newBuilder()
-            .connectTimeout(Duration.ofMillis(props.getConnectionTimeout()))
-            .followRedirects(HttpClient.Redirect.NORMAL)
-            .build();
-    return new JdkHttpRuntimeExecutor(client, props, urlValidator);
+    return HttpClient.newBuilder()
+        .connectTimeout(Duration.ofMillis(props.getConnectionTimeout()))
+        .build();
+  }
+
+  @Bean
+  public HttpRuntimeExecutor httpRuntimeExecutor(
+      StepRuntimeProperties stepRuntimeProperties,
+      HttpClient httpClient,
+      UrlValidator urlValidator,
+      HttpResponse.BodyHandler<String> bodyHandler) {
+    LOG.info("Creating httpRuntimeExecutor within Spring boot...");
+    return new JdkHttpRuntimeExecutor(
+        httpClient, stepRuntimeProperties.getHttp(), urlValidator, bodyHandler);
   }
 
   @Bean

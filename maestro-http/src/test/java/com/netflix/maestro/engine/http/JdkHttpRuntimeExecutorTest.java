@@ -23,7 +23,6 @@ import com.netflix.maestro.exceptions.MaestroValidationException;
 import com.netflix.maestro.models.stepruntime.HttpStepRequest;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.util.Map;
 import java.util.Set;
 import org.junit.Before;
@@ -33,7 +32,7 @@ import org.mockito.Mock;
 
 public class JdkHttpRuntimeExecutorTest extends MaestroBaseTest {
   @Mock private HttpClient httpClient;
-  @Mock private HttpResponse<String> httpResponse;
+  @Mock private SizeBoundedBodyHandler bodyHandler;
 
   private JdkHttpRuntimeExecutor executor;
 
@@ -43,7 +42,7 @@ public class JdkHttpRuntimeExecutorTest extends MaestroBaseTest {
     properties.setSendTimeout(60000L);
     properties.setAllowList(Set.of("test.example"));
     UrlValidator urlValidator = new UrlValidator(properties);
-    executor = new JdkHttpRuntimeExecutor(httpClient, properties, urlValidator);
+    executor = new JdkHttpRuntimeExecutor(httpClient, properties, urlValidator, bodyHandler);
   }
 
   @Test
