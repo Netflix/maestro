@@ -11,6 +11,7 @@ This module enables workflows to make HTTP/HTTPS calls as step executions and sa
 - **HttpRuntimeExecutor**: Interface for executing HTTP requests
 - **JdkHttpRuntimeExecutor**: Default implementation using JDK 11+ HttpClient
 - **UrlValidator**: Validates URLs against allow-list to prevent SSRF attacks
+- **SizeBoundedBodyHandler**: HTTP response body handler that enforces size limits to prevent OOM and DoS attacks
 - **HttpStepRuntime**: Step runtime that implements HTTP request execution and state management
 
 ## Step Parameters
@@ -45,15 +46,30 @@ This module implements comprehensive Server-Side Request Forgery (SSRF) protecti
 - **Scheme validation**: Only HTTP and HTTPS protocols are allowed
 - **Case-insensitive matching**: Hostnames are normalized to lowercase for consistent validation
 
+### Response Size Limiting
+
+To prevent Out-of-Memory (OOM) errors and Denial-of-Service (DoS) attacks, the module enforces a configurable maximum response size:
+
+- **Content-Length header validation**: Rejects responses if Content-Length exceeds the limit
+- **Stream-based enforcement**: The response body is limited during streaming
+
 ### Configuration
 
-Configure the allow-list in your `application.yml`:
+Configure HTTP security settings in your `application.yml`:
 
-**Important**: By default, the allow-list is empty, which blocks all HTTP requests. 
+```yaml
+stepruntime:
+  http:
+    connection-timeout: 30000      # Connection timeout in milliseconds
+    send-timeout: 30000            # Send timeout in milliseconds
+    max-response-size: 1048576     # Maximum response size in bytes (1 MB)
+    allow-list: []                 # List of allowed hostnames
+```
+
+**Important**: By default, the allow-list is empty, which blocks all HTTP requests.
 You must configure allowed hostnames before HTTP steps can execute.
 
 ## Pending Features
 
-- Add response size limits
 - Add response content-type handling
 - Add metrics

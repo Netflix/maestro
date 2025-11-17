@@ -25,6 +25,7 @@ import lombok.Setter;
 public class HttpStepProperties {
   private long connectionTimeout; // in milliseconds
   private long sendTimeout; // in milliseconds
+  private long maxResponseSize; // in bytes
 
   /** List of allowed hostnames for SSRF protection. HTTP step only allows these hostnames. */
   private Set<String> allowList;
