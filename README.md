@@ -10,7 +10,11 @@ It schedules hundreds of thousands of workflows, millions of jobs every day
 and operates with a strict SLO even when there are spikes in the traffic.
 Maestro is highly scalable and extensible to support existing and new use cases and offers enhanced usability to end users.
 
-You can read more details about it in our latest [blog post](https://netflixtechblog.com/maestro-netflixs-workflow-orchestrator-ee13a06f9c78).
+You can read more details about it in our series of blog posts
+- [Maestro: Data/ML Workflow Orchestrator at Netflix](https://netflixtechblog.com/maestro-netflixs-workflow-orchestrator-ee13a06f9c78)
+- [Orchestrating Data/ML Workflows at Scale With Netflix Maestro](https://netflixtechblog.com/orchestrating-data-ml-workflows-at-scale-with-netflix-maestro-aaa2b41b800c)
+- [100X Faster: How We Supercharged Netflix Maestro's Workflow Engine](https://netflixtechblog.com/100x-faster-how-we-supercharged-netflix-maestros-workflow-engine-028e9637f041)
+- [Incremental Processing using Netflix Maestro and Apache Iceberg](https://netflixtechblog.com/incremental-processing-using-netflix-maestro-and-apache-iceberg-b8ba072ddeeb)
 
 # Get started
 ## Prerequisite
@@ -51,8 +55,55 @@ You can read more details about it in our latest [blog post](https://netflixtech
 - `curl --header "user: tester" -X POST 'http://127.0.0.1:8080/api/v3/workflows' -H "Content-Type: application/json" -d @maestro-server/src/test/resources/samples/sample-kubernetes-wf.json`
 - `curl --header "user: tester" -X POST 'http://127.0.0.1:8080/api/v3/workflows/sample-kubernetes-wf/versions/latest/actions/start' -H "Content-Type: application/json" -d '{"initiator": {"type": "manual"}}'`
 
+## Python SDK client
+ 
+### Installation
+
+```bash
+pip install maestro-sdk
+```
+
+### Creating a workflow
+
+```python
+from maestro import Workflow, Job
+
+wf = Workflow(id="test-wf")
+wf.owner("tester").tags("test")
+wf.job(Job(id="job1", type='NoOp'))
+wf_yaml = wf.to_yaml()
+```
+
+### Pushing a workflow to Maestro server
+
+```python
+from maestro import Workflow, Job, MaestroClient
+
+wf = Workflow(id="test-wf")
+wf.owner("tester").tags("test")
+wf.job(Job(id="job1", type='NoOp'))
+wf_yaml = wf.to_yaml()
+
+client = MaestroClient(base_url="http://127.0.0.1:8080", user="tester")
+response = client.push_yaml(wf_yaml)
+print(response)
+```
+
+### Starting a workflow
+
+```python
+from maestro import MaestroClient
+
+client = MaestroClient(base_url="http://127.0.0.1:8080", user="tester")
+response = client.start(workflow_id="test-wf", run_params={"foo": {"value": "bar", "type": "STRING"}})
+print(response)
+```
+
+Please check [Maestro python](https://github.com/jun-he/maestro-python) project for more details.
+
+
 ## Get in touch
-Join our community [Slack workspace](https://join.slack.com/t/maestro-oss/shared_invite/zt-3gg2g6dfm-uFmeK7wq0s~vD78UBvCN0g) for discussions!
+Join our community [Slack workspace](https://join.slack.com/t/maestro-oss/shared_invite/zt-3is5iwz9e-Px3UqLfzG8lEoWhTk5D4yA) for discussions!
 
 # License
 Copyright 2024 Netflix, Inc.
