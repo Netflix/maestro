@@ -55,15 +55,23 @@ public class DeleteWorkflowJobEventProcessor
       notification = NotificationJobEvent.create(deletionEvent);
     } catch (MaestroNotFoundException e) {
       LOG.error(
-          "Cannot retry as this is a non-retryable error and the deletion job is removed.", e);
+          "Cannot retry as this is a non-retryable error and the deletion job for [{}] is removed.",
+          deletionEvent.getWorkflowId(),
+          e);
       // then the deletion job is treated as processed and removed.
     } catch (MaestroRetryableError e) {
-      LOG.error("Retry to delete it as getting a retryable error", e);
+      LOG.error(
+          "Retry to delete [{}] as getting a retryable error", deletionEvent.getWorkflowId(), e);
       throw e;
     } catch (RuntimeException e) {
-      LOG.error("Retry to delete it as getting a runtime error", e);
+      LOG.error(
+          "Retry to delete workflow [{}] as getting a runtime error",
+          deletionEvent.getWorkflowId(),
+          e);
       throw new MaestroRetryableError(
-          e, "Failed to delete a workflow and will retry the deletion.");
+          e,
+          "Failed to delete workflow [%s] and will retry the deletion.",
+          deletionEvent.getWorkflowId());
     }
     return Optional.ofNullable(notification);
   }

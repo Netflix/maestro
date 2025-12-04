@@ -81,7 +81,7 @@ public class DeleteWorkflowJobEventProcessorTest extends MaestroEngineBaseTest {
     AssertHelper.assertThrows(
         "Will retry unexpected error",
         MaestroRetryableError.class,
-        "Failed to delete a workflow and will retry the deletion",
+        "Failed to delete workflow [sample-minimal-wf] and will retry the deletion",
         () -> processor.process(jobEvent));
   }
 }
