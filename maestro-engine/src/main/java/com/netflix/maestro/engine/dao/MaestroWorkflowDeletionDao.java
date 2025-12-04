@@ -183,11 +183,6 @@ public class MaestroWorkflowDeletionDao extends AbstractDatabaseDao {
         EXIST_IN_PROGRESS_DELETION_QUERY, stmt -> stmt.setString(1, workflowId), ResultSet::next);
   }
 
-  /** Check if the current deletion stage is the initial stage. */
-  public boolean isDeletionInitialized(String workflowId, long internalId) {
-    return getWorkflowDeletionStage(workflowId, internalId) == Stage.DELETING_VERSIONS;
-  }
-
   /**
    * Delete all workflow data for a given workflow id or unique internal id with a timeout in nanos.
    *

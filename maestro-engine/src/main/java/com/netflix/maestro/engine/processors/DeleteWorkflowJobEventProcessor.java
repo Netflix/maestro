@@ -45,27 +45,33 @@ public class DeleteWorkflowJobEventProcessor
   public Optional<MaestroJobEvent> process(DeleteWorkflowJobEvent deletionEvent) {
     NotificationJobEvent notification = null;
     try {
-      if (deletionDao.isDeletionInitialized(
-          deletionEvent.getWorkflowId(), deletionEvent.getInternalId())) {
-        MaestroEvent event = deletionEvent.toMaestroEvent(clusterName);
-        LOG.info(
-            "Will send out external deletion event [{}] to downstream services after deletion",
-            event);
-        notification = NotificationJobEvent.create(deletionEvent);
-      }
       deletionDao.deleteWorkflowData(
           deletionEvent.getWorkflowId(), deletionEvent.getInternalId(), TIME_OUT_IN_NANOS);
+      // workflow deletion is done
+      MaestroEvent event = deletionEvent.toMaestroEvent(clusterName);
+      LOG.info(
+          "Will send out external deletion event [{}] to downstream services after deletion",
+          event);
+      notification = NotificationJobEvent.create(deletionEvent);
     } catch (MaestroNotFoundException e) {
       LOG.error(
-          "Cannot retry as this is a non-retryable error and the deletion job is removed.", e);
+          "Cannot retry as this is a non-retryable error and the deletion job for [{}] is removed.",
+          deletionEvent.getWorkflowId(),
+          e);
       // then the deletion job is treated as processed and removed.
     } catch (MaestroRetryableError e) {
-      LOG.error("Retry to delete it as getting a retryable error", e);
+      LOG.error(
+          "Retry to delete [{}] as getting a retryable error", deletionEvent.getWorkflowId(), e);
       throw e;
     } catch (RuntimeException e) {
-      LOG.error("Retry to delete it as getting a runtime error", e);
+      LOG.error(
+          "Retry to delete workflow [{}] as getting a runtime error",
+          deletionEvent.getWorkflowId(),
+          e);
       throw new MaestroRetryableError(
-          e, "Failed to delete a workflow and will retry the deletion.");
+          e,
+          "Failed to delete workflow [%s] and will retry the deletion.",
+          deletionEvent.getWorkflowId());
     }
     return Optional.ofNullable(notification);
   }
