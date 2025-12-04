@@ -14,9 +14,9 @@ package com.netflix.maestro.engine.processors;
 
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.engine.MaestroEngineBaseTest;
@@ -47,7 +47,6 @@ public class DeleteWorkflowJobEventProcessorTest extends MaestroEngineBaseTest {
 
   @Test
   public void testStartDeleteWorkflow() {
-    when(deletionDao.isDeletionInitialized(workflowId, 12345L)).thenReturn(true);
     var actual = processor.process(jobEvent);
     Assert.assertTrue(actual.isPresent());
     Assert.assertEquals(jobEvent, ((NotificationJobEvent) actual.get()).getEvent());
@@ -55,16 +54,10 @@ public class DeleteWorkflowJobEventProcessorTest extends MaestroEngineBaseTest {
   }
 
   @Test
-  public void testDeleteWorkflowInLateStage() {
-    when(deletionDao.isDeletionInitialized(workflowId, 12345)).thenReturn(false);
-    Assert.assertTrue(processor.process(jobEvent).isEmpty());
-    verify(deletionDao, times(1)).deleteWorkflowData(eq(workflowId), eq(12345L), anyLong());
-  }
-
-  @Test
   public void testRetryableError() {
-    when(deletionDao.isDeletionInitialized(workflowId, 12345L))
-        .thenThrow(new MaestroRetryableError("test"));
+    doThrow(new MaestroRetryableError("test"))
+        .when(deletionDao)
+        .deleteWorkflowData(eq(workflowId), eq(12345L), anyLong());
     AssertHelper.assertThrows(
         "Will retry MaestroRetryableError",
         MaestroRetryableError.class,
@@ -74,15 +67,17 @@ public class DeleteWorkflowJobEventProcessorTest extends MaestroEngineBaseTest {
 
   @Test
   public void testNonRetryableError() {
-    when(deletionDao.isDeletionInitialized(workflowId, 12345L))
-        .thenThrow(new MaestroNotFoundException("test"));
+    doThrow(new MaestroNotFoundException("test"))
+        .when(deletionDao)
+        .deleteWorkflowData(eq(workflowId), eq(12345L), anyLong());
     Assert.assertTrue(processor.process(jobEvent).isEmpty()); // no error
   }
 
   @Test
   public void testUnexpectedError() {
-    when(deletionDao.isDeletionInitialized(workflowId, 12345L))
-        .thenThrow(new IllegalArgumentException("test"));
+    doThrow(new IllegalArgumentException("test"))
+        .when(deletionDao)
+        .deleteWorkflowData(eq(workflowId), eq(12345L), anyLong());
     AssertHelper.assertThrows(
         "Will retry unexpected error",
         MaestroRetryableError.class,

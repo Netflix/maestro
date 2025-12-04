@@ -45,16 +45,14 @@ public class DeleteWorkflowJobEventProcessor
   public Optional<MaestroJobEvent> process(DeleteWorkflowJobEvent deletionEvent) {
     NotificationJobEvent notification = null;
     try {
-      if (deletionDao.isDeletionInitialized(
-          deletionEvent.getWorkflowId(), deletionEvent.getInternalId())) {
-        MaestroEvent event = deletionEvent.toMaestroEvent(clusterName);
-        LOG.info(
-            "Will send out external deletion event [{}] to downstream services after deletion",
-            event);
-        notification = NotificationJobEvent.create(deletionEvent);
-      }
       deletionDao.deleteWorkflowData(
           deletionEvent.getWorkflowId(), deletionEvent.getInternalId(), TIME_OUT_IN_NANOS);
+      // workflow deletion is done
+      MaestroEvent event = deletionEvent.toMaestroEvent(clusterName);
+      LOG.info(
+          "Will send out external deletion event [{}] to downstream services after deletion",
+          event);
+      notification = NotificationJobEvent.create(deletionEvent);
     } catch (MaestroNotFoundException e) {
       LOG.error(
           "Cannot retry as this is a non-retryable error and the deletion job is removed.", e);
