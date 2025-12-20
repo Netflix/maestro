@@ -15,8 +15,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Nebula needs full git history for versioning
 
       - name: Setup JDK
         uses: actions/setup-java@v4
@@ -44,8 +42,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Nebula needs full git history
 
       - name: Setup JDK
         uses: actions/setup-java@v4
@@ -70,8 +66,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Nebula needs full git history
 
       - name: Setup JDK
         uses: actions/setup-java@v4
