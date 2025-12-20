@@ -8,7 +8,6 @@ buildscript {
     dependencies {
         classpath 'com.diffplug.spotless:spotless-plugin-gradle:6.+'
         classpath "com.github.spotbugs.snom:spotbugs-gradle-plugin:6.+"
-        classpath "io.franzbecker:gradle-lombok:3.3.0"
     }
 }
 
@@ -70,17 +69,10 @@ configure(allprojects - project(':maestro-server')) {
 
     group = 'com.netflix.maestro'
 
+    // Configure javadoc to be lenient with Lombok-annotated code
     tasks.withType(Javadoc).configureEach {
         options.addStringOption('Xdoclint:none', '-quiet')
         failOnError = false
-    }
-}
-
-configure(allprojects - project(':netflix-sel') - project(':maestro-server')) {
-    apply plugin: 'io.franzbecker.gradle-lombok'
-
-    lombok {
-        version = '1.18.38'
     }
 }
 
