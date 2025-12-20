@@ -52,7 +52,7 @@ dependencies {
 
 ## Published Modules
 
-All 13 modules are published:
+All 12 library modules are published (maestro-server is excluded as it's an application):
 - netflix-sel
 - maestro-common
 - maestro-dsl
@@ -65,7 +65,6 @@ All 13 modules are published:
 - maestro-aws
 - maestro-kubernetes
 - maestro-http
-- maestro-server
 
 ## Prerequisites
 
