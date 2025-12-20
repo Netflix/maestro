@@ -67,8 +67,6 @@ allprojects {
 configure(allprojects - project(':maestro-server')) {
     apply plugin: 'com.netflix.nebula.netflixoss'
 
-    group = 'com.netflix.maestro'
-
     // Configure javadoc to be lenient with Lombok-annotated code
     tasks.withType(Javadoc).configureEach {
         options.addStringOption('Xdoclint:none', '-quiet')
@@ -80,6 +78,8 @@ configure(allprojects - project(':netflix-sel')) {
     apply plugin: 'checkstyle'
     apply plugin: 'pmd'
     apply plugin: 'com.github.spotbugs'
+
+    group = 'com.netflix.maestro'
 
     checkstyle {
         checkstyleMain.enabled = true
