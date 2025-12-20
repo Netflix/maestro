@@ -57,7 +57,7 @@ jobs:
         uses: gradle/gradle-build-action@v3
 
       - name: Publish Snapshot
-        run: ./gradlew snapshot publish -x test
+        run: ./gradlew build snapshot
         env:
           NETFLIX_OSS_SONATYPE_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           NETFLIX_OSS_SONATYPE_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
@@ -83,14 +83,9 @@ jobs:
         uses: gradle/gradle-build-action@v3
 
       - name: Publish Release
-        run: ./gradlew final publish -x test
+        run: ./gradlew -Prelease.useLastTag=true final
         env:
           NETFLIX_OSS_SONATYPE_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           NETFLIX_OSS_SONATYPE_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
           NETFLIX_OSS_SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           NETFLIX_OSS_SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          generate_release_notes: true
