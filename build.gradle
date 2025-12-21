@@ -98,7 +98,6 @@ configure(allprojects - project(':netflix-sel')) {
         ignoreFailures = true
     }
 
-
     group = 'com.netflix.maestro'
 
     // Print out full stack traces when our tests fail to assist debugging (e.g., when scanning Jenkins console output)
