@@ -78,14 +78,15 @@ configure(allprojects - project(':netflix-sel')) {
     apply plugin: 'checkstyle'
     apply plugin: 'pmd'
     apply plugin: 'com.github.spotbugs'
-
-    group = 'com.netflix.maestro'
-
+ 
     checkstyle {
         checkstyleMain.enabled = true
         checkstyleMain.source = fileTree("src/main/java")
         checkstyleTest.enabled = false
     }
+
+    group = 'com.netflix.maestro'
+
 
     pmd {
         toolVersion = "7.16.0"
