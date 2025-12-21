@@ -85,9 +85,6 @@ configure(allprojects - project(':netflix-sel')) {
         checkstyleTest.enabled = false
     }
 
-    group = 'com.netflix.maestro'
-
-
     pmd {
         toolVersion = "7.16.0"
         pmdTest.enabled = false
@@ -100,6 +97,9 @@ configure(allprojects - project(':netflix-sel')) {
     spotbugs {
         ignoreFailures = true
     }
+
+
+    group = 'com.netflix.maestro'
 
     // Print out full stack traces when our tests fail to assist debugging (e.g., when scanning Jenkins console output)
     tasks.withType(Test).configureEach {
