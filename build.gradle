@@ -78,7 +78,7 @@ configure(allprojects - project(':netflix-sel')) {
     apply plugin: 'checkstyle'
     apply plugin: 'pmd'
     apply plugin: 'com.github.spotbugs'
- 
+
     checkstyle {
         checkstyleMain.enabled = true
         checkstyleMain.source = fileTree("src/main/java")
