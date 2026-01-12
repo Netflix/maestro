@@ -7,14 +7,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -91,26 +89,26 @@ public class StepInstanceController {
   }
 
   @GetMapping(
-          value = "/{workflowId}/instances/{workflowInstanceId}/runs/{workflowRunId}/steps",
-          consumes = MediaType.ALL_VALUE)
+      value = "/{workflowId}/instances/{workflowInstanceId}/runs/{workflowRunId}/steps",
+      consumes = MediaType.ALL_VALUE)
   @Operation(summary = "Get all step instance views in a given workflow instance run")
   public List<StepInstance> getStepInstanceViews(
-          @PathVariable("workflowId") String workflowId,
-          @PathVariable("workflowInstanceId") long workflowInstanceId,
-          @PathVariable("workflowRunId") long workflowRunId) {
+      @PathVariable("workflowId") String workflowId,
+      @PathVariable("workflowInstanceId") long workflowInstanceId,
+      @PathVariable("workflowRunId") long workflowRunId) {
     // no need pagination as the list size is at most Constants.STEP_LIST_SIZE_LIMIT (300)
     List<StepInstance> stepInstances =
-            stepInstanceDao.getAllStepInstances(workflowId, workflowInstanceId, workflowRunId);
+        stepInstanceDao.getAllStepInstances(workflowId, workflowInstanceId, workflowRunId);
     // todo optimize the query if needed for performance concerns
     List<StepInstance> stepInstanceViews =
-            new ArrayList<>(
-                    stepInstances.stream()
-                            .collect(
-                                    Collectors.toMap(
-                                            StepInstance::getStepInstanceId,
-                                            Function.identity(),
-                                            (s1, s2) -> s1.getStepAttemptId() > s2.getStepAttemptId() ? s1 : s2))
-                            .values());
+        new ArrayList<>(
+            stepInstances.stream()
+                .collect(
+                    Collectors.toMap(
+                        StepInstance::getStepInstanceId,
+                        Function.identity(),
+                        (s1, s2) -> s1.getStepAttemptId() > s2.getStepAttemptId() ? s1 : s2))
+                .values());
     stepInstanceViews.sort(Comparator.comparingLong(StepInstance::getStepInstanceId));
     return stepInstanceViews;
   }
