@@ -99,7 +99,6 @@ public class StepInstanceController {
     // no need pagination as the list size is at most Constants.STEP_LIST_SIZE_LIMIT (300)
     List<StepInstance> stepInstances =
         stepInstanceDao.getAllStepInstances(workflowId, workflowInstanceId, workflowRunId);
-    // todo optimize the query if needed for performance concerns
     List<StepInstance> stepInstanceViews =
         new ArrayList<>(
             stepInstances.stream()
