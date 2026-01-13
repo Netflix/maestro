@@ -11,6 +11,14 @@ buildscript {
     }
 }
 
+plugins {
+    id "com.netflix.nebula.netflixoss" version "11.6.0" apply false
+    // The apply false pattern prevents the Spring Boot plugin's buildscript dependencies from polluting
+    // the root buildscript classpath, avoiding ASM version conflicts with the Nebula plugin.
+    // Subprojects that need Spring Boot (like maestro-server) inherit this declaration without a version.
+    id "org.springframework.boot" version "3.+" apply false
+}
+
 apply from: "${rootDir}/dependencies.gradle"
 
 allprojects {
@@ -57,6 +65,16 @@ allprojects {
         annotationProcessor {
             resolutionStrategy.activateDependencyLocking()
         }
+    }
+}
+
+configure(allprojects - project(':maestro-server')) {
+    apply plugin: 'com.netflix.nebula.netflixoss'
+
+    // Configure javadoc to be lenient with Lombok-annotated code
+    tasks.withType(Javadoc).configureEach {
+        options.addStringOption('Xdoclint:none', '-quiet')
+        failOnError = false
     }
 }
 
