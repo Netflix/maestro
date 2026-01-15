@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Maestro</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+    <meta http-equiv="Pragma" content="no-cache"/>
+    <meta http-equiv="Expires" content="0"/>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1 id="pageTitle">Workflow Instances</h1>
+        <button id="startButton">Start New Instance</button>
+    </div>
+    <div id="errorsContainer" class="errors-container"></div>
+
+    <!-- Instance details container (hidden by default) -->
+    <div id="instanceDetailsContainer" class="instance-details">
+        <h2>Workflow Instance: <span id="instanceIdDisplay"></span></h2>
+
+        <!-- Run selector -->
+        <div class="run-selector">
+            <label for="runSelector">Select Run: </label>
+            <select id="runSelector" class="dropdown"></select>
+        </div>
+
+        <!-- DAG visualization -->
+        <h3>Workflow Steps</h3>
+        <div id="dagContainer" class="dag-container"></div>
+
+        <!-- Step details -->
+        <div id="stepDetailsContainer" class="step-details" style="display: none;">
+            <h3>Step Details: <span id="stepIdDisplay"></span></h3>
+
+            <!-- Attempt selector -->
+            <div class="attempt-selector">
+                <label for="attemptSelector">Select Attempt: </label>
+                <select id="attemptSelector" class="dropdown"></select>
+            </div>
+
+            <!-- Step information -->
+            <div id="stepInfo" class="step-info"></div>
+        </div>
+    </div>
+
+    <table id="workflowTable">
+        <thead>
+            <tr>
+                <th>Instance ID</th>
+                <th>Status</th>
+                <th>Create Time</th>
+                <th>Start Time</th>
+                <th>End Time</th>
+                <th>UUID</th>
+            </tr>
+        </thead>
+        <tbody id="result"></tbody>
+    </table>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
