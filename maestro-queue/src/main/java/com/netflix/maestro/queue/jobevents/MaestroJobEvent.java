@@ -67,6 +67,8 @@ public interface MaestroJobEvent {
     WORKFLOW_VERSION_UPDATE(3),
     /** Internal job event to send notifications. */
     NOTIFICATION(4),
+    /** Internal job event for signal related messages (instance, match, execution). */
+    SIGNAL(4),
     /** Internal job event to DELETE all related workflow data for a workflow id. */
     DELETE_WORKFLOW(5);
 
