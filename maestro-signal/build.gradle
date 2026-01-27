@@ -2,6 +2,7 @@ dependencies {
     implementation project(':maestro-database')
     implementation project(':maestro-common')
     implementation project(':maestro-engine')
+    implementation project(':maestro-queue')
     implementation spectatorApiDep
     implementation jacksonDatabindDep
     api slf4jApiDep

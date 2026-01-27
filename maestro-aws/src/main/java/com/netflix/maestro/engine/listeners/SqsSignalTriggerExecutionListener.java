@@ -14,8 +14,8 @@ package com.netflix.maestro.engine.listeners;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.exceptions.MaestroInternalError;
+import com.netflix.maestro.models.signal.SignalTriggerExecution;
 import com.netflix.maestro.signal.messageprocessors.SignalTriggerExecutionProcessor;
-import com.netflix.maestro.signal.models.SignalTriggerExecution;
 import io.awspring.cloud.sqs.annotation.SqsListener;
 import java.io.IOException;
 import lombok.AllArgsConstructor;

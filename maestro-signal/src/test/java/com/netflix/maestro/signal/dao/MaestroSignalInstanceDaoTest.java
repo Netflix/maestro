@@ -2,8 +2,8 @@ package com.netflix.maestro.signal.dao;
 
 import static org.junit.Assert.*;
 
-import com.netflix.maestro.signal.models.SignalInstanceRef;
-import com.netflix.maestro.signal.models.SignalMatchDto;
+import com.netflix.maestro.models.signal.SignalInstanceRef;
+import com.netflix.maestro.models.signal.SignalMatchDto;
 import java.sql.Connection;
 import org.junit.After;
 import org.junit.Before;
