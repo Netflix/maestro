@@ -1,4 +1,4 @@
-package com.netflix.maestro.signal.models;
+package com.netflix.maestro.models.signal;
 
 /**
  * Dto object to pass around signal param info. Won't be persisted.

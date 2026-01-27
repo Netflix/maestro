@@ -2,9 +2,9 @@ package com.netflix.maestro.signal.messageprocessors;
 
 import com.netflix.maestro.exceptions.MaestroRetryableError;
 import com.netflix.maestro.metrics.MaestroMetrics;
+import com.netflix.maestro.models.signal.SignalTriggerMatch;
 import com.netflix.maestro.signal.dao.MaestroSignalBrokerDao;
 import com.netflix.maestro.signal.metrics.MetricConstants;
-import com.netflix.maestro.signal.models.SignalTriggerMatch;
 import java.util.function.Supplier;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

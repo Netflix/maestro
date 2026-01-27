@@ -3,10 +3,10 @@ package com.netflix.maestro.signal.dao;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
+import com.netflix.maestro.models.signal.SignalMatchDto;
 import com.netflix.maestro.models.signal.SignalOperator;
+import com.netflix.maestro.models.signal.SignalParamDto;
 import com.netflix.maestro.models.signal.SignalParamValue;
-import com.netflix.maestro.signal.models.SignalMatchDto;
-import com.netflix.maestro.signal.models.SignalParamDto;
 import java.sql.Connection;
 import java.util.List;
 import org.junit.After;

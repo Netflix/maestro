@@ -1,7 +1,5 @@
-package com.netflix.maestro.signal.models;
+package com.netflix.maestro.models.signal;
 
-import com.netflix.maestro.models.signal.SignalOperator;
-import com.netflix.maestro.models.signal.SignalParamValue;
 import java.util.List;
 
 /**

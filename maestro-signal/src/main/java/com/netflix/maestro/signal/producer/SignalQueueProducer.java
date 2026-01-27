@@ -1,8 +1,8 @@
 package com.netflix.maestro.signal.producer;
 
 import com.netflix.maestro.models.signal.SignalInstance;
-import com.netflix.maestro.signal.models.SignalTriggerExecution;
-import com.netflix.maestro.signal.models.SignalTriggerMatch;
+import com.netflix.maestro.models.signal.SignalTriggerExecution;
+import com.netflix.maestro.models.signal.SignalTriggerMatch;
 import java.sql.Connection;
 import java.sql.SQLException;
 
@@ -40,7 +40,10 @@ public interface SignalQueueProducer {
    * @param signalInstance the signal instance to push
    * @throws SQLException if the database operation fails
    */
-  void pushInTransaction(Connection conn, SignalInstance signalInstance) throws SQLException;
+  default void pushInTransaction(Connection conn, SignalInstance signalInstance)
+      throws SQLException {
+    throw new UnsupportedOperationException("pushInTransaction is not implemented");
+  }
 
   /**
    * Push a signal trigger match in the same database transaction (transactional).
@@ -49,7 +52,10 @@ public interface SignalQueueProducer {
    * @param triggerMatch the signal trigger match to push
    * @throws SQLException if the database operation fails
    */
-  void pushInTransaction(Connection conn, SignalTriggerMatch triggerMatch) throws SQLException;
+  default void pushInTransaction(Connection conn, SignalTriggerMatch triggerMatch)
+      throws SQLException {
+    throw new UnsupportedOperationException("pushInTransaction is not implemented");
+  }
 
   /**
    * Push a signal trigger execution in the same database transaction (transactional).
@@ -58,6 +64,8 @@ public interface SignalQueueProducer {
    * @param triggerExecution the signal trigger execution to push
    * @throws SQLException if the database operation fails
    */
-  void pushInTransaction(Connection conn, SignalTriggerExecution triggerExecution)
-      throws SQLException;
+  default void pushInTransaction(Connection conn, SignalTriggerExecution triggerExecution)
+      throws SQLException {
+    throw new UnsupportedOperationException("pushInTransaction is not implemented");
+  }
 }

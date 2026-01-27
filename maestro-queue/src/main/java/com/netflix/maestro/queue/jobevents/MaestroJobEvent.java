@@ -40,6 +40,11 @@ import lombok.Getter;
       value = WorkflowInstanceUpdateJobEvent.class),
   @JsonSubTypes.Type(name = "WORKFLOW_VERSION_UPDATE", value = WorkflowVersionUpdateJobEvent.class),
   @JsonSubTypes.Type(name = "NOTIFICATION", value = NotificationJobEvent.class),
+  @JsonSubTypes.Type(name = "SIGNAL_INSTANCE", value = SignalInstanceJobEvent.class),
+  @JsonSubTypes.Type(name = "SIGNAL_TRIGGER_MATCH", value = SignalTriggerMatchJobEvent.class),
+  @JsonSubTypes.Type(
+      name = "SIGNAL_TRIGGER_EXECUTION",
+      value = SignalTriggerExecutionJobEvent.class),
   @JsonSubTypes.Type(name = "DELETE_WORKFLOW", value = DeleteWorkflowJobEvent.class),
 })
 @SuppressWarnings("PMD.ImplicitFunctionalInterface")
@@ -67,8 +72,12 @@ public interface MaestroJobEvent {
     WORKFLOW_VERSION_UPDATE(3),
     /** Internal job event to send notifications. */
     NOTIFICATION(4),
-    /** Internal job event for signal related messages (instance, match, execution). */
-    SIGNAL(4),
+    /** Internal job event to process a signal instance. */
+    SIGNAL_INSTANCE(4),
+    /** Internal job event to process a signal trigger match. */
+    SIGNAL_TRIGGER_MATCH(4),
+    /** Internal job event to process a signal trigger execution. */
+    SIGNAL_TRIGGER_EXECUTION(4),
     /** Internal job event to DELETE all related workflow data for a workflow id. */
     DELETE_WORKFLOW(5);
 
