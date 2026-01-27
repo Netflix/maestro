@@ -2,9 +2,9 @@ package com.netflix.maestro.signal.messageprocessors;
 
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.signal.SignalInstance;
+import com.netflix.maestro.models.signal.SignalTriggerMatch;
 import com.netflix.maestro.signal.dao.MaestroSignalBrokerDao;
 import com.netflix.maestro.signal.metrics.MetricConstants;
-import com.netflix.maestro.signal.models.SignalTriggerMatch;
 import com.netflix.maestro.signal.producer.SignalQueueProducer;
 import com.netflix.maestro.utils.Checks;
 import java.util.List;

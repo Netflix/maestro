@@ -13,12 +13,12 @@
 package com.netflix.maestro.signal.producer;
 
 import com.netflix.maestro.models.signal.SignalInstance;
+import com.netflix.maestro.models.signal.SignalTriggerExecution;
+import com.netflix.maestro.models.signal.SignalTriggerMatch;
 import com.netflix.maestro.queue.MaestroQueueSystem;
-import com.netflix.maestro.signal.models.SignalTriggerExecution;
-import com.netflix.maestro.signal.models.SignalTriggerMatch;
-import com.netflix.maestro.signal.queue.jobevents.SignalInstanceJobEvent;
-import com.netflix.maestro.signal.queue.jobevents.SignalTriggerExecutionJobEvent;
-import com.netflix.maestro.signal.queue.jobevents.SignalTriggerMatchJobEvent;
+import com.netflix.maestro.queue.jobevents.SignalInstanceJobEvent;
+import com.netflix.maestro.queue.jobevents.SignalTriggerExecutionJobEvent;
+import com.netflix.maestro.queue.jobevents.SignalTriggerMatchJobEvent;
 import java.sql.Connection;
 import java.sql.SQLException;
 import lombok.AllArgsConstructor;

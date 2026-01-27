@@ -13,22 +13,23 @@
 package com.netflix.maestro.signal.producer;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.MaestroBaseTest;
 import com.netflix.maestro.models.signal.SignalInstance;
+import com.netflix.maestro.models.signal.SignalTriggerExecution;
+import com.netflix.maestro.models.signal.SignalTriggerMatch;
 import com.netflix.maestro.queue.MaestroQueueSystem;
 import com.netflix.maestro.queue.jobevents.MaestroJobEvent;
 import com.netflix.maestro.queue.models.MessageDto;
-import com.netflix.maestro.signal.models.SignalTriggerExecution;
-import com.netflix.maestro.signal.models.SignalTriggerMatch;
 import java.sql.Connection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
@@ -68,11 +69,11 @@ public class SignalQueueProducerTest extends MaestroBaseTest {
     // Assert
     verify(queueSystem, times(1)).enqueueOrThrow(any(MaestroJobEvent.class));
 
-    // Verify the job event passed is of type SIGNAL
+    // Verify the job event passed is of type SIGNAL_INSTANCE
     ArgumentCaptor<MaestroJobEvent> eventCaptor = ArgumentCaptor.forClass(MaestroJobEvent.class);
     verify(queueSystem).enqueueOrThrow(eventCaptor.capture());
     MaestroJobEvent capturedEvent = eventCaptor.getValue();
-    assertEquals(MaestroJobEvent.Type.SIGNAL, capturedEvent.getType());
+    assertEquals(MaestroJobEvent.Type.SIGNAL_INSTANCE, capturedEvent.getType());
   }
 
   /**
@@ -93,7 +94,7 @@ public class SignalQueueProducerTest extends MaestroBaseTest {
     ArgumentCaptor<MaestroJobEvent> eventCaptor = ArgumentCaptor.forClass(MaestroJobEvent.class);
     verify(queueSystem).enqueueOrThrow(eventCaptor.capture());
     MaestroJobEvent capturedEvent = eventCaptor.getValue();
-    assertEquals(MaestroJobEvent.Type.SIGNAL, capturedEvent.getType());
+    assertEquals(MaestroJobEvent.Type.SIGNAL_TRIGGER_MATCH, capturedEvent.getType());
   }
 
   /**
@@ -115,7 +116,7 @@ public class SignalQueueProducerTest extends MaestroBaseTest {
     ArgumentCaptor<MaestroJobEvent> eventCaptor = ArgumentCaptor.forClass(MaestroJobEvent.class);
     verify(queueSystem).enqueueOrThrow(eventCaptor.capture());
     MaestroJobEvent capturedEvent = eventCaptor.getValue();
-    assertEquals(MaestroJobEvent.Type.SIGNAL, capturedEvent.getType());
+    assertEquals(MaestroJobEvent.Type.SIGNAL_TRIGGER_EXECUTION, capturedEvent.getType());
   }
 
   /** Test that async push succeeds (no exception thrown). */
@@ -143,12 +144,11 @@ public class SignalQueueProducerTest extends MaestroBaseTest {
     doThrow(testException).when(queueSystem).enqueueOrThrow(any(MaestroJobEvent.class));
 
     // Act & Assert
-    try {
-      signalQueueProducer.push(signalInstance);
-      assertTrue("Expected RuntimeException to be thrown", false);
-    } catch (RuntimeException e) {
-      assertEquals("Queue system error", e.getMessage());
-    }
+    AssertHelper.assertThrows(
+        "Expected RuntimeException to be thrown",
+        RuntimeException.class,
+        "Queue system error",
+        () -> signalQueueProducer.push(signalInstance));
   }
 
   /**
@@ -171,7 +171,7 @@ public class SignalQueueProducerTest extends MaestroBaseTest {
     ArgumentCaptor<MaestroJobEvent> eventCaptor = ArgumentCaptor.forClass(MaestroJobEvent.class);
     verify(queueSystem).enqueue(any(Connection.class), eventCaptor.capture());
     MaestroJobEvent capturedEvent = eventCaptor.getValue();
-    assertEquals(MaestroJobEvent.Type.SIGNAL, capturedEvent.getType());
+    assertEquals(MaestroJobEvent.Type.SIGNAL_INSTANCE, capturedEvent.getType());
   }
 
   /** Test transactional push of SignalTriggerMatch with connection. */
@@ -191,7 +191,7 @@ public class SignalQueueProducerTest extends MaestroBaseTest {
     ArgumentCaptor<MaestroJobEvent> eventCaptor = ArgumentCaptor.forClass(MaestroJobEvent.class);
     verify(queueSystem).enqueue(any(Connection.class), eventCaptor.capture());
     MaestroJobEvent capturedEvent = eventCaptor.getValue();
-    assertEquals(MaestroJobEvent.Type.SIGNAL, capturedEvent.getType());
+    assertEquals(MaestroJobEvent.Type.SIGNAL_TRIGGER_MATCH, capturedEvent.getType());
   }
 
   /** Test transactional push of SignalTriggerExecution with connection. */
@@ -212,7 +212,33 @@ public class SignalQueueProducerTest extends MaestroBaseTest {
     ArgumentCaptor<MaestroJobEvent> eventCaptor = ArgumentCaptor.forClass(MaestroJobEvent.class);
     verify(queueSystem).enqueue(any(Connection.class), eventCaptor.capture());
     MaestroJobEvent capturedEvent = eventCaptor.getValue();
-    assertEquals(MaestroJobEvent.Type.SIGNAL, capturedEvent.getType());
+    assertEquals(MaestroJobEvent.Type.SIGNAL_TRIGGER_EXECUTION, capturedEvent.getType());
+  }
+
+  /**
+   * Test that transactional push throws exception if pushInTransaction fails. This tests the error
+   * handling path for transactional pushes.
+   */
+  @Test
+  public void testPushSignalInstanceTransactionalThrowsOnError() throws Exception {
+    // Arrange
+    SignalInstance signalInstance = createTestSignalInstance("signal-4", "name4");
+    RuntimeException testException = new RuntimeException("Transaction error");
+
+    // Mock call throws error
+    doThrow(testException)
+        .when(queueSystem)
+        .enqueue(any(Connection.class), any(MaestroJobEvent.class));
+
+    // Act & Assert
+    AssertHelper.assertThrows(
+        "Expected RuntimeException to be thrown",
+        RuntimeException.class,
+        "Transaction error",
+        () -> {
+          signalQueueProducer.pushInTransaction(connection, signalInstance);
+          return null;
+        });
   }
 
   /** Test that all three types of signals can be pushed in sequence. */
@@ -231,6 +257,13 @@ public class SignalQueueProducerTest extends MaestroBaseTest {
 
     // Assert - verify all three were enqueued
     verify(queueSystem, times(3)).enqueueOrThrow(any(MaestroJobEvent.class));
+
+    ArgumentCaptor<MaestroJobEvent> eventCaptor = ArgumentCaptor.forClass(MaestroJobEvent.class);
+    verify(queueSystem, times(3)).enqueueOrThrow(eventCaptor.capture());
+    List<MaestroJobEvent> capturedEvents = eventCaptor.getAllValues();
+    assertEquals(MaestroJobEvent.Type.SIGNAL_INSTANCE, capturedEvents.get(0).getType());
+    assertEquals(MaestroJobEvent.Type.SIGNAL_TRIGGER_MATCH, capturedEvents.get(1).getType());
+    assertEquals(MaestroJobEvent.Type.SIGNAL_TRIGGER_EXECUTION, capturedEvents.get(2).getType());
   }
 
   // ============= Helper methods to create test data =============
