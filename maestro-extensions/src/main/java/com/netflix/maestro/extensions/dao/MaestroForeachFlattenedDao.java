@@ -245,7 +245,7 @@ public class MaestroForeachFlattenedDao extends AbstractDatabaseDao {
 
     return withMetricLogError(
         () ->
-            withReadOnlyQuery(
+            withRetryableQuery(
                 STEP_ITERATION_QUERY,
                 stmt -> {
                   int idx = 0;

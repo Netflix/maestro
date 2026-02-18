@@ -211,12 +211,6 @@ public abstract class AbstractDatabaseDao {
         });
   }
 
-  /** A read-only version of withRetryableQuery. Delegates to withRetryableQuery. */
-  protected <T> T withReadOnlyQuery(
-      String stmt, StatementPreparer preparer, ResultProcessor<T> processor) {
-    return withRetryableQuery(stmt, preparer, processor);
-  }
-
   /**
    * Initialize a new transactional {@link Connection} PreparedStatement {@link PreparedStatement}
    * from {@link #dataSource} and pass it to {@literal statement preparer}. Then it updates the DB
