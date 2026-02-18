@@ -31,8 +31,9 @@ create_queue "maestro-event-dlq"
 
 # Queue for maestro-extensions to consume maestro events (subscribed to SNS topic)
 # Redrive policy sends messages to DLQ after 5 failed processing attempts
+create_queue "maestro-event"
 DLQ_ARN="arn:aws:sqs:${AWS_REGION}:000000000000:maestro-event-dlq"
-awslocal --endpoint-url=http://${LOCALSTACK_HOST}:4566 sqs create-queue \
-    --queue-name maestro-event \
+awslocal --endpoint-url=http://${LOCALSTACK_HOST}:4566 sqs set-queue-attributes \
+    --queue-url http://${LOCALSTACK_HOST}:4566/000000000000/maestro-event \
     --region ${AWS_REGION} \
-    --attributes VisibilityTimeout=30,RedrivePolicy="{\"deadLetterTargetArn\":\"${DLQ_ARN}\",\"maxReceiveCount\":\"5\"}"
+    --attributes "{\"RedrivePolicy\":\"{\\\"deadLetterTargetArn\\\":\\\"${DLQ_ARN}\\\",\\\"maxReceiveCount\\\":\\\"5\\\"}\"}"
