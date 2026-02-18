@@ -18,7 +18,7 @@ import com.netflix.maestro.extensions.dao.MaestroForeachFlattenedDao;
 import com.netflix.maestro.extensions.dao.models.ForeachFlattenedInstance;
 import com.netflix.maestro.extensions.dao.models.ForeachFlattenedModel;
 import com.netflix.maestro.extensions.models.StepEventHandlerInput;
-import com.netflix.maestro.extensions.provider.MaestroDataProvider;
+import com.netflix.maestro.extensions.provider.MaestroClient;
 import com.netflix.maestro.extensions.utils.ForeachFlatteningHelper;
 import com.netflix.maestro.extensions.utils.StepInstanceStatusEncoder;
 import com.netflix.maestro.models.definition.WorkflowDefinition;
@@ -33,14 +33,14 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressFBWarnings("EI_EXPOSE_REP2")
 public class ForeachFlatteningHandler {
   private final MaestroForeachFlattenedDao maestroForeachFlattenedDao;
-  private final MaestroDataProvider maestroDataProvider;
+  private final MaestroClient maestroClient;
   private final ForeachFlatteningHelper foreachFlatteningHelper;
 
   public ForeachFlatteningHandler(
-      MaestroDataProvider maestroDataProvider,
+      MaestroClient maestroClient,
       MaestroForeachFlattenedDao maestroForeachFlattenedDao,
       ForeachFlatteningHelper foreachFlatteningHelper) {
-    this.maestroDataProvider = maestroDataProvider;
+    this.maestroClient = maestroClient;
     this.maestroForeachFlattenedDao = maestroForeachFlattenedDao;
     this.foreachFlatteningHelper = foreachFlatteningHelper;
   }
@@ -52,10 +52,10 @@ public class ForeachFlatteningHandler {
       if (initiator instanceof UpstreamInitiator && initiator.getType().isInline()) {
         String workflowId = ((UpstreamInitiator) initiator).getNonInlineParent().getWorkflowId();
         WorkflowDefinition workflowDefinition =
-            maestroDataProvider.getWorkflowDefinition(
+            maestroClient.getWorkflowDefinition(
                 workflowId, String.valueOf(workflowInstance.getWorkflowVersionId()));
         StepInstance stepInstance =
-            maestroDataProvider.getStepInstance(
+            maestroClient.getWorkflowStepInstance(
                 workflowInstance.getWorkflowId(),
                 workflowInstance.getWorkflowInstanceId(),
                 workflowInstance.getWorkflowRunId(),

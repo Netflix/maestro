@@ -24,7 +24,7 @@ import com.netflix.maestro.extensions.dao.MaestroForeachFlattenedDao;
 import com.netflix.maestro.extensions.dao.models.ForeachFlattenedInstance;
 import com.netflix.maestro.extensions.dao.models.ForeachFlattenedModel;
 import com.netflix.maestro.extensions.models.StepEventHandlerInput;
-import com.netflix.maestro.extensions.provider.MaestroDataProvider;
+import com.netflix.maestro.extensions.provider.MaestroClient;
 import com.netflix.maestro.extensions.utils.ForeachFlatteningHelper;
 import com.netflix.maestro.extensions.utils.StepInstanceStatusEncoder;
 import com.netflix.maestro.models.definition.WorkflowDefinition;
@@ -48,7 +48,7 @@ public class ForeachFlatteningHandlerTest extends ExtensionsBaseTest {
   @Mock private WorkflowInstance inlineWorkflowInstance;
   @Mock private WorkflowDefinition workflowDefinition;
   @Mock private StepInstance stepInstance;
-  @Mock private MaestroDataProvider maestroDataProvider;
+  @Mock private MaestroClient maestroClient;
   @Mock private MaestroForeachFlattenedDao foreachFlattenedDao;
   @Mock private ForeachFlatteningHelper foreachFlatteningHelper;
 
@@ -88,7 +88,7 @@ public class ForeachFlatteningHandlerTest extends ExtensionsBaseTest {
     when(inlineWorkflowInstance.getInitiator()).thenReturn(initiator);
     long workflowVersionId = 21L;
     when(inlineWorkflowInstance.getWorkflowVersionId()).thenReturn(workflowVersionId);
-    when(maestroDataProvider.getStepInstance(
+    when(maestroClient.getWorkflowStepInstance(
             workflowId, workflowInstanceId, workflowRunId, leafStepId, stepAttemptId))
         .thenReturn(stepInstance);
     when(stepInstance.getRuntimeState()).thenReturn(runtimeState);
@@ -96,8 +96,7 @@ public class ForeachFlatteningHandlerTest extends ExtensionsBaseTest {
     when(stepInstance.getWorkflowRunId()).thenReturn(immediateInlineWorkflowRunId);
     long leafStepAttemptId = 1L;
     when(stepInstance.getStepAttemptId()).thenReturn(leafStepAttemptId);
-    when(maestroDataProvider.getWorkflowDefinition(
-            rootWorkflowId, String.valueOf(workflowVersionId)))
+    when(maestroClient.getWorkflowDefinition(rootWorkflowId, String.valueOf(workflowVersionId)))
         .thenReturn(workflowDefinition);
     when(foreachFlatteningHelper.getLoopParams(
             workflowDefinition, initiator, inlineWorkflowInstance))
@@ -108,8 +107,7 @@ public class ForeachFlatteningHandlerTest extends ExtensionsBaseTest {
 
     // Calling service to insert event in DAO after processing
     ForeachFlatteningHandler service =
-        new ForeachFlatteningHandler(
-            maestroDataProvider, foreachFlattenedDao, foreachFlatteningHelper);
+        new ForeachFlatteningHandler(maestroClient, foreachFlattenedDao, foreachFlatteningHelper);
     service.process(new StepEventHandlerInput(inlineWorkflowInstance, leafStepId, stepAttemptId));
 
     // Asserting ForeachFlattenedModel used to insert in DAO
@@ -142,11 +140,10 @@ public class ForeachFlatteningHandlerTest extends ExtensionsBaseTest {
     when(inlineWorkflowInstance.getInitiator()).thenReturn(initiator);
     long workflowVersionId = 21L;
     when(inlineWorkflowInstance.getWorkflowVersionId()).thenReturn(workflowVersionId);
-    when(maestroDataProvider.getWorkflowDefinition(anyString(), anyString()))
+    when(maestroClient.getWorkflowDefinition(anyString(), anyString()))
         .thenThrow(new MaestroNotFoundException("workflow not found"));
     ForeachFlatteningHandler service =
-        new ForeachFlatteningHandler(
-            maestroDataProvider, foreachFlattenedDao, foreachFlatteningHelper);
+        new ForeachFlatteningHandler(maestroClient, foreachFlattenedDao, foreachFlatteningHelper);
     service.process(new StepEventHandlerInput(inlineWorkflowInstance, leafStepId, stepAttemptId));
     verify(foreachFlattenedDao, never()).insertOrUpdateForeachFlattenedModel(any());
   }

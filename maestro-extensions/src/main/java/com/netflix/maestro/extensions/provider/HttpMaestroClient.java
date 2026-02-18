@@ -27,12 +27,12 @@ import java.net.http.HttpResponse;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Implementation of {@link MaestroDataProvider} that makes HTTP calls to maestro-server REST API.
- * This mirrors internal Maestro's MaestroClient which calls maestro-server over HTTP.
+ * Implementation of {@link MaestroClient} that makes HTTP calls to maestro-server REST API. This
+ * mirrors internal Maestro's MaestroClient which calls maestro-server over HTTP.
  */
 @Slf4j
 @SuppressFBWarnings("EI_EXPOSE_REP2")
-public class HttpMaestroDataProvider implements MaestroDataProvider {
+public class HttpMaestroClient implements MaestroClient {
   private static final int HTTP_NOT_FOUND = 404;
   private static final int HTTP_OK = 200;
   private static final String GET_WORKFLOW_INSTANCE_URL = "/workflows/%s/instances/%s/runs/%s";
@@ -44,7 +44,7 @@ public class HttpMaestroDataProvider implements MaestroDataProvider {
   private final ObjectMapper objectMapper;
   private final HttpClient httpClient;
 
-  public HttpMaestroDataProvider(String baseUrl, ObjectMapper objectMapper, HttpClient httpClient) {
+  public HttpMaestroClient(String baseUrl, ObjectMapper objectMapper, HttpClient httpClient) {
     this.baseUrl = baseUrl;
     this.objectMapper = objectMapper;
     this.httpClient = httpClient;
@@ -63,7 +63,7 @@ public class HttpMaestroDataProvider implements MaestroDataProvider {
   }
 
   @Override
-  public StepInstance getStepInstance(
+  public StepInstance getWorkflowStepInstance(
       String workflowId, long instanceId, long runId, String stepId, long attemptId) {
     String path =
         String.format(GET_STEP_INSTANCE_URL, workflowId, instanceId, runId, stepId, attemptId);

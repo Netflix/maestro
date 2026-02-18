@@ -16,7 +16,7 @@ import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.exceptions.MaestroNotFoundException;
 import com.netflix.maestro.extensions.models.StepEventHandlerInput;
-import com.netflix.maestro.extensions.provider.MaestroDataProvider;
+import com.netflix.maestro.extensions.provider.MaestroClient;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.events.StepInstanceStatusChangeEvent;
 import com.netflix.maestro.models.instance.WorkflowInstance;
@@ -32,11 +32,11 @@ public class StepEventPreprocessor {
   private static final String METRIC_INSTANCE_NOT_FOUND =
       "maestroevent.preprocessor.instance.not.found";
 
-  private final MaestroDataProvider maestroDataProvider;
+  private final MaestroClient maestroClient;
   private final MaestroMetrics metrics;
 
-  public StepEventPreprocessor(MaestroDataProvider maestroDataProvider, MaestroMetrics metrics) {
-    this.maestroDataProvider = maestroDataProvider;
+  public StepEventPreprocessor(MaestroClient maestroClient, MaestroMetrics metrics) {
+    this.maestroClient = maestroClient;
     this.metrics = metrics;
   }
 
@@ -46,7 +46,7 @@ public class StepEventPreprocessor {
     StepEventHandlerInput stepEventHandlerInput = null;
     try {
       WorkflowInstance workflowInstance =
-          maestroDataProvider.getWorkflowInstance(
+          maestroClient.getWorkflowInstance(
               stepEvent.getWorkflowId(),
               stepEvent.getWorkflowInstanceId(),
               stepEvent.getWorkflowRunId());

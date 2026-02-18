@@ -34,20 +34,20 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-public class HttpMaestroDataProviderTest extends ExtensionsBaseTest {
+public class HttpMaestroClientTest extends ExtensionsBaseTest {
   private static final String BASE_URL = "http://localhost:8080/api/v3";
 
   @Mock private HttpClient httpClient;
   @Mock private HttpResponse<String> httpResponse;
 
   private ObjectMapper objectMapper;
-  private HttpMaestroDataProvider provider;
+  private HttpMaestroClient client;
 
   @Before
   public void setup() {
     MockitoAnnotations.openMocks(this);
     objectMapper = MAPPER;
-    provider = new HttpMaestroDataProvider(BASE_URL, objectMapper, httpClient);
+    client = new HttpMaestroClient(BASE_URL, objectMapper, httpClient);
   }
 
   @SuppressWarnings("unchecked")
@@ -64,7 +64,7 @@ public class HttpMaestroDataProviderTest extends ExtensionsBaseTest {
     when(httpClient.send(any(HttpRequest.class), eq(HttpResponse.BodyHandlers.ofString())))
         .thenReturn(httpResponse);
 
-    WorkflowInstance result = provider.getWorkflowInstance("test-wf", 1L, 1L);
+    WorkflowInstance result = client.getWorkflowInstance("test-wf", 1L, 1L);
     assertThat(result.getWorkflowId()).isEqualTo("test-wf");
   }
 
@@ -79,7 +79,7 @@ public class HttpMaestroDataProviderTest extends ExtensionsBaseTest {
     when(httpClient.send(any(HttpRequest.class), eq(HttpResponse.BodyHandlers.ofString())))
         .thenReturn(httpResponse);
 
-    WorkflowDefinition result = provider.getWorkflowDefinition("test-wf", "1");
+    WorkflowDefinition result = client.getWorkflowDefinition("test-wf", "1");
     assertThat(result).isNotNull();
   }
 
@@ -90,7 +90,7 @@ public class HttpMaestroDataProviderTest extends ExtensionsBaseTest {
     when(httpClient.send(any(HttpRequest.class), eq(HttpResponse.BodyHandlers.ofString())))
         .thenReturn(httpResponse);
 
-    assertThatThrownBy(() -> provider.getWorkflowInstance("test-wf", 1L, 1L))
+    assertThatThrownBy(() -> client.getWorkflowInstance("test-wf", 1L, 1L))
         .isInstanceOf(MaestroNotFoundException.class);
   }
 
@@ -101,7 +101,7 @@ public class HttpMaestroDataProviderTest extends ExtensionsBaseTest {
     when(httpClient.send(any(HttpRequest.class), eq(HttpResponse.BodyHandlers.ofString())))
         .thenReturn(httpResponse);
 
-    assertThatThrownBy(() -> provider.getWorkflowInstance("test-wf", 1L, 1L))
+    assertThatThrownBy(() -> client.getWorkflowInstance("test-wf", 1L, 1L))
         .isInstanceOf(MaestroRuntimeException.class)
         .hasMessageContaining("failed with status 500");
   }
@@ -112,14 +112,14 @@ public class HttpMaestroDataProviderTest extends ExtensionsBaseTest {
     when(httpClient.send(any(HttpRequest.class), eq(HttpResponse.BodyHandlers.ofString())))
         .thenThrow(new IOException("connection refused"));
 
-    assertThatThrownBy(() -> provider.getWorkflowInstance("test-wf", 1L, 1L))
+    assertThatThrownBy(() -> client.getWorkflowInstance("test-wf", 1L, 1L))
         .isInstanceOf(MaestroRuntimeException.class)
         .hasMessageContaining("connection refused");
   }
 
   @SuppressWarnings("unchecked")
   @Test
-  public void testGetStepInstance() throws Exception {
+  public void testGetWorkflowStepInstance() throws Exception {
     var stepInstance = new StepInstance();
     String json = objectMapper.writeValueAsString(stepInstance);
 
@@ -128,7 +128,7 @@ public class HttpMaestroDataProviderTest extends ExtensionsBaseTest {
     when(httpClient.send(any(HttpRequest.class), eq(HttpResponse.BodyHandlers.ofString())))
         .thenReturn(httpResponse);
 
-    StepInstance result = provider.getStepInstance("test-wf", 1L, 1L, "step1", 1L);
+    StepInstance result = client.getWorkflowStepInstance("test-wf", 1L, 1L, "step1", 1L);
     assertThat(result).isNotNull();
   }
 }

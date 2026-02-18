@@ -18,7 +18,7 @@ import static org.mockito.Mockito.when;
 import com.netflix.maestro.exceptions.MaestroNotFoundException;
 import com.netflix.maestro.extensions.ExtensionsBaseTest;
 import com.netflix.maestro.extensions.models.StepEventHandlerInput;
-import com.netflix.maestro.extensions.provider.MaestroDataProvider;
+import com.netflix.maestro.extensions.provider.MaestroClient;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.events.StepInstanceStatusChangeEvent;
 import com.netflix.maestro.models.instance.WorkflowInstance;
@@ -28,7 +28,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 public class StepEventPreprocessorTest extends ExtensionsBaseTest {
-  @Mock private MaestroDataProvider maestroDataProvider;
+  @Mock private MaestroClient maestroClient;
   @Mock private MaestroMetrics metrics;
   @Mock private WorkflowInstance workflowInstance;
 
@@ -37,7 +37,7 @@ public class StepEventPreprocessorTest extends ExtensionsBaseTest {
   @Before
   public void setup() {
     MockitoAnnotations.openMocks(this);
-    preprocessor = new StepEventPreprocessor(maestroDataProvider, metrics);
+    preprocessor = new StepEventPreprocessor(maestroClient, metrics);
   }
 
   @Test
@@ -58,7 +58,7 @@ public class StepEventPreprocessorTest extends ExtensionsBaseTest {
             .sendTime(System.currentTimeMillis())
             .statusChangeRecords(java.util.List.of())
             .build();
-    when(maestroDataProvider.getWorkflowInstance("test-wf", 1L, 1L)).thenReturn(workflowInstance);
+    when(maestroClient.getWorkflowInstance("test-wf", 1L, 1L)).thenReturn(workflowInstance);
 
     StepEventHandlerInput result = preprocessor.preprocess(event);
 
@@ -86,7 +86,7 @@ public class StepEventPreprocessorTest extends ExtensionsBaseTest {
             .sendTime(System.currentTimeMillis())
             .statusChangeRecords(java.util.List.of())
             .build();
-    when(maestroDataProvider.getWorkflowInstance("missing-wf", 1L, 1L))
+    when(maestroClient.getWorkflowInstance("missing-wf", 1L, 1L))
         .thenThrow(new MaestroNotFoundException("not found"));
 
     StepEventHandlerInput result = preprocessor.preprocess(event);

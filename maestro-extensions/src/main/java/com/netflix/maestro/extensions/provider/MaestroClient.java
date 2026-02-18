@@ -17,11 +17,11 @@ import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 
 /**
- * Interface for providing Maestro data to the extensions module. The default implementation ({@link
- * HttpMaestroDataProvider}) makes HTTP calls to maestro-server's REST API, mirroring internal
- * Maestro's MaestroClient pattern where the extensions service runs as a separate process.
+ * Client interface for fetching Maestro data from maestro-server. Mirrors internal Maestro's {@code
+ * MaestroClient} API surface. The default implementation ({@link HttpMaestroClient}) makes HTTP
+ * calls to maestro-server's REST API.
  */
-public interface MaestroDataProvider {
+public interface MaestroClient {
   /**
    * Get a workflow instance for a specific run.
    *
@@ -51,6 +51,6 @@ public interface MaestroDataProvider {
    * @param attemptId attempt id
    * @return the step instance
    */
-  StepInstance getStepInstance(
+  StepInstance getWorkflowStepInstance(
       String workflowId, long instanceId, long runId, String stepId, long attemptId);
 }

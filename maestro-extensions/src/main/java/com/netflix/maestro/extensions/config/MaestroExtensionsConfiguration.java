@@ -24,8 +24,8 @@ import com.netflix.maestro.extensions.metrics.SpectatorMaestroMetrics;
 import com.netflix.maestro.extensions.processors.MaestroEventProcessor;
 import com.netflix.maestro.extensions.processors.StepEventPreprocessor;
 import com.netflix.maestro.extensions.properties.MaestroExtensionsProperties;
-import com.netflix.maestro.extensions.provider.HttpMaestroDataProvider;
-import com.netflix.maestro.extensions.provider.MaestroDataProvider;
+import com.netflix.maestro.extensions.provider.HttpMaestroClient;
+import com.netflix.maestro.extensions.provider.MaestroClient;
 import com.netflix.maestro.extensions.utils.ForeachFlatteningHelper;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.utils.JsonHelper;
@@ -94,10 +94,10 @@ public class MaestroExtensionsConfiguration {
   }
 
   @Bean
-  public MaestroDataProvider maestroDataProvider(
+  public MaestroClient maestroClient(
       MaestroExtensionsProperties properties, ObjectMapper objectMapper, HttpClient httpClient) {
-    LOG.info("Creating HttpMaestroDataProvider within Spring boot...");
-    return new HttpMaestroDataProvider(properties.getMaestroBaseUrl(), objectMapper, httpClient);
+    LOG.info("Creating HttpMaestroClient within Spring boot...");
+    return new HttpMaestroClient(properties.getMaestroBaseUrl(), objectMapper, httpClient);
   }
 
   @Bean
@@ -117,18 +117,16 @@ public class MaestroExtensionsConfiguration {
 
   @Bean
   public ForeachFlatteningHandler foreachFlatteningHandler(
-      MaestroDataProvider dataProvider,
-      MaestroForeachFlattenedDao dao,
-      ForeachFlatteningHelper helper) {
+      MaestroClient maestroClient, MaestroForeachFlattenedDao dao, ForeachFlatteningHelper helper) {
     LOG.info("Creating ForeachFlatteningHandler within Spring boot...");
-    return new ForeachFlatteningHandler(dataProvider, dao, helper);
+    return new ForeachFlatteningHandler(maestroClient, dao, helper);
   }
 
   @Bean
   public StepEventPreprocessor stepEventPreprocessor(
-      MaestroDataProvider dataProvider, MaestroMetrics metrics) {
+      MaestroClient maestroClient, MaestroMetrics metrics) {
     LOG.info("Creating StepEventPreprocessor within Spring boot...");
-    return new StepEventPreprocessor(dataProvider, metrics);
+    return new StepEventPreprocessor(maestroClient, metrics);
   }
 
   @Bean
