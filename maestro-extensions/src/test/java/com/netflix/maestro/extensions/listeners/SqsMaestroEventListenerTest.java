@@ -47,7 +47,7 @@ public class SqsMaestroEventListenerTest extends ExtensionsBaseTest {
   }
 
   @Test
-  public void testProcessRawPayload() throws Exception {
+  public void testProcessSuccessAcknowledges() throws Exception {
     var event = buildStepEvent("test-wf", "step1");
     String payload = objectMapper.writeValueAsString(event);
 
@@ -62,32 +62,7 @@ public class SqsMaestroEventListenerTest extends ExtensionsBaseTest {
   }
 
   @Test
-  public void testProcessSnsWrappedPayload() throws Exception {
-    var event = buildStepEvent("test-wf", "step1");
-    String innerPayload = objectMapper.writeValueAsString(event);
-
-    // Simulate SNS envelope wrapping the message
-    String snsEnvelope =
-        objectMapper.writeValueAsString(
-            java.util.Map.of(
-                "Type", "Notification",
-                "MessageId", "msg-123",
-                "TopicArn", "arn:aws:sns:us-east-1:000000000000:maestro-test",
-                "Message", innerPayload,
-                "Timestamp", "2024-01-01T00:00:00.000Z"));
-
-    listener.process(snsEnvelope, acknowledgement, visibility, 1);
-
-    ArgumentCaptor<MaestroEvent> captor = ArgumentCaptor.forClass(MaestroEvent.class);
-    verify(processor).process(captor.capture());
-    MaestroEvent captured = captor.getValue();
-    assertThat(captured.getType()).isEqualTo(MaestroEvent.Type.STEP_INSTANCE_STATUS_CHANGE_EVENT);
-    assertThat(captured.getWorkflowId()).isEqualTo("test-wf");
-    verify(acknowledgement).acknowledge();
-  }
-
-  @Test
-  public void testProcessInvalidPayloadDeletesMessage() {
+  public void testProcessNonRetryableExceptionDeletesMessage() {
     // Non-retryable: deserialization failure should ack (delete) the message
     listener.process("invalid json{", acknowledgement, visibility, 1);
 

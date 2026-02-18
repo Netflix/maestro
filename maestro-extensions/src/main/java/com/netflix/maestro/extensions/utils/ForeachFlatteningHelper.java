@@ -123,9 +123,9 @@ public class ForeachFlatteningHelper {
    * Gets the iteration rank indicating the sequence of iteration1-iteration2... from the first
    * inline workflow to the last inline workflow. For example, if the first inline workflow instance
    * id (iteration id) is 344 and the nested inline workflow iteration id is 3 and the final nested
-   * inline workflow iteration id is 23 then the iteration rank will be 3344-13-223. The format is
-   * of [iterationId1]-[iterationId2]-...-[leafIterationId]. Each of these id in [id] is encoded
-   * using length encoding, the length of digits is prepended to the encoded id. So the 3344 is the
+   * inline workflow iteration id is 23 then the iteration rank will be 3344-13-23. The format is of
+   * [iterationId1]-[iterationId2]-...-[leafIterationId]. Each of these id in [id] is encoded using
+   * length encoding, the length of digits is prepended to the encoded id. So the 3344 is the
    * encoding for iteration id 344, as the length of digits is 3.
    *
    * @param upstreamInitiator the upstream initiator

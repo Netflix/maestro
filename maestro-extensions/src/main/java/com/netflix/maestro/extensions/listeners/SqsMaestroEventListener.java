@@ -12,7 +12,6 @@
  */
 package com.netflix.maestro.extensions.listeners;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.extensions.processors.MaestroEventProcessor;
@@ -30,13 +29,12 @@ import org.springframework.messaging.handler.annotation.Header;
 /**
  * Listener class for consuming MaestroEvent messages from SQS. Matches internal's {@code
  * SqsMaestroEventListener} pattern with manual acknowledgment, visibility extension on failure, and
- * receive count tracking.
+ * receive count tracking. Inlines the logic from internal's {@code SqsProcessorFinalizer}.
  */
 @AllArgsConstructor
 @Slf4j
 @SuppressFBWarnings("EI_EXPOSE_REP2")
 public class SqsMaestroEventListener {
-  private static final String SNS_MESSAGE_FIELD = "Message";
   private static final int RECEIVE_COUNT_THRESHOLD_FOR_ADDITIONAL_MONITORING = 100;
   private static final int VISIBILITY_TIMEOUT_ON_FAILURE_SECS = 0;
 
@@ -57,8 +55,7 @@ public class SqsMaestroEventListener {
       Visibility visibility,
       @Header(SqsHeaders.MessageSystemAttributes.SQS_APPROXIMATE_RECEIVE_COUNT) int receiveCount) {
     try {
-      String eventPayload = unwrapSnsEnvelope(payload);
-      MaestroEvent event = objectMapper.readValue(eventPayload, MaestroEvent.class);
+      MaestroEvent event = objectMapper.readValue(payload, MaestroEvent.class);
       processor.process(event);
       acknowledgement.acknowledge();
     } catch (IOException ex) {
@@ -82,17 +79,5 @@ public class SqsMaestroEventListener {
           ex);
       visibility.changeTo(VISIBILITY_TIMEOUT_ON_FAILURE_SECS);
     }
-  }
-
-  /**
-   * If the payload is an SNS notification envelope (contains "Type" and "Message" fields), extract
-   * the inner message payload. Otherwise return the payload as-is.
-   */
-  private String unwrapSnsEnvelope(String payload) throws IOException {
-    JsonNode root = objectMapper.readTree(payload);
-    if (root.has("Type") && root.has(SNS_MESSAGE_FIELD)) {
-      return root.get(SNS_MESSAGE_FIELD).asText();
-    }
-    return payload;
   }
 }
