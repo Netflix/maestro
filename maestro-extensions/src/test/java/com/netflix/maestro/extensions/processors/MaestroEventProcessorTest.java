@@ -121,7 +121,7 @@ public class MaestroEventProcessorTest extends ExtensionsBaseTest {
   }
 
   @Test
-  public void testProcessRethrowsExceptionAsRetryable() {
+  public void testProcessRethrowsExceptionAsRetryableAndIncrementsMetric() {
     var event =
         StepInstanceStatusChangeEvent.builder()
             .workflowId("test-wf")
@@ -140,8 +140,9 @@ public class MaestroEventProcessorTest extends ExtensionsBaseTest {
             .build();
     when(stepEventPreprocessor.preprocess(event)).thenThrow(new RuntimeException("test error"));
 
-    // Should re-throw as MaestroRetryableError so SQS listener can retry
+    // Should re-throw as MaestroRetryableError and increment failure metric
     org.assertj.core.api.Assertions.assertThatThrownBy(() -> processor.process(event))
         .isInstanceOf(com.netflix.maestro.exceptions.MaestroRetryableError.class);
+    verify(metrics).counter("maestroevent.processor.failure", MaestroEventProcessor.class);
   }
 }
