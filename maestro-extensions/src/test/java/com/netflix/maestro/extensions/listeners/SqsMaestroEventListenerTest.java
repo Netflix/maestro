@@ -12,16 +12,18 @@
  */
 package com.netflix.maestro.extensions.listeners;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.extensions.ExtensionsBaseTest;
 import com.netflix.maestro.extensions.processors.MaestroEventProcessor;
 import com.netflix.maestro.models.events.MaestroEvent;
 import com.netflix.maestro.models.events.StepInstanceStatusChangeEvent;
+import io.awspring.cloud.sqs.listener.Visibility;
+import io.awspring.cloud.sqs.listener.acknowledgement.Acknowledgement;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,6 +33,8 @@ import org.mockito.MockitoAnnotations;
 
 public class SqsMaestroEventListenerTest extends ExtensionsBaseTest {
   @Mock private MaestroEventProcessor processor;
+  @Mock private Acknowledgement acknowledgement;
+  @Mock private Visibility visibility;
 
   private ObjectMapper objectMapper;
   private SqsMaestroEventListener listener;
@@ -44,51 +48,22 @@ public class SqsMaestroEventListenerTest extends ExtensionsBaseTest {
 
   @Test
   public void testProcessRawPayload() throws Exception {
-    var event =
-        StepInstanceStatusChangeEvent.builder()
-            .workflowId("test-wf")
-            .workflowInstanceId(1L)
-            .workflowRunId(1L)
-            .stepId("step1")
-            .stepAttemptId(1L)
-            .workflowUuid("uuid1")
-            .stepUuid("suuid1")
-            .correlationId("corr1")
-            .stepInstanceId(1L)
-            .clusterName("test-cluster")
-            .syncTime(123456789L)
-            .sendTime(123456789L)
-            .statusChangeRecords(List.of())
-            .build();
+    var event = buildStepEvent("test-wf", "step1");
     String payload = objectMapper.writeValueAsString(event);
 
-    listener.process(payload);
+    listener.process(payload, acknowledgement, visibility, 1);
 
     ArgumentCaptor<MaestroEvent> captor = ArgumentCaptor.forClass(MaestroEvent.class);
     verify(processor).process(captor.capture());
     MaestroEvent captured = captor.getValue();
     assertThat(captured.getType()).isEqualTo(MaestroEvent.Type.STEP_INSTANCE_STATUS_CHANGE_EVENT);
     assertThat(captured.getWorkflowId()).isEqualTo("test-wf");
+    verify(acknowledgement).acknowledge();
   }
 
   @Test
   public void testProcessSnsWrappedPayload() throws Exception {
-    var event =
-        StepInstanceStatusChangeEvent.builder()
-            .workflowId("test-wf")
-            .workflowInstanceId(1L)
-            .workflowRunId(1L)
-            .stepId("step1")
-            .stepAttemptId(1L)
-            .workflowUuid("uuid1")
-            .stepUuid("suuid1")
-            .correlationId("corr1")
-            .stepInstanceId(1L)
-            .clusterName("test-cluster")
-            .syncTime(123456789L)
-            .sendTime(123456789L)
-            .statusChangeRecords(List.of())
-            .build();
+    var event = buildStepEvent("test-wf", "step1");
     String innerPayload = objectMapper.writeValueAsString(event);
 
     // Simulate SNS envelope wrapping the message
@@ -101,44 +76,76 @@ public class SqsMaestroEventListenerTest extends ExtensionsBaseTest {
                 "Message", innerPayload,
                 "Timestamp", "2024-01-01T00:00:00.000Z"));
 
-    listener.process(snsEnvelope);
+    listener.process(snsEnvelope, acknowledgement, visibility, 1);
 
     ArgumentCaptor<MaestroEvent> captor = ArgumentCaptor.forClass(MaestroEvent.class);
     verify(processor).process(captor.capture());
     MaestroEvent captured = captor.getValue();
     assertThat(captured.getType()).isEqualTo(MaestroEvent.Type.STEP_INSTANCE_STATUS_CHANGE_EVENT);
     assertThat(captured.getWorkflowId()).isEqualTo("test-wf");
+    verify(acknowledgement).acknowledge();
   }
 
   @Test
-  public void testProcessInvalidPayload() {
-    assertThatThrownBy(() -> listener.process("invalid json{"))
-        .isInstanceOf(MaestroInternalError.class);
+  public void testProcessInvalidPayloadDeletesMessage() {
+    // Non-retryable: deserialization failure should ack (delete) the message
+    listener.process("invalid json{", acknowledgement, visibility, 1);
+
+    verify(acknowledgement).acknowledge();
+    verify(visibility, never()).changeTo(0);
+  }
+
+  @Test
+  public void testProcessRetryableExceptionExtendsVisibility() throws Exception {
+    var event = buildStepEvent("test-wf", "step1");
+    String payload = objectMapper.writeValueAsString(event);
+    doThrow(new RuntimeException("transient error")).when(processor).process(any());
+
+    listener.process(payload, acknowledgement, visibility, 1);
+
+    verify(acknowledgement, never()).acknowledge();
+    verify(visibility).changeTo(0);
+  }
+
+  @Test
+  public void testProcessHighReceiveCountRetryableException() throws Exception {
+    var event = buildStepEvent("test-wf", "step1");
+    String payload = objectMapper.writeValueAsString(event);
+    doThrow(new RuntimeException("persistent error")).when(processor).process(any());
+
+    listener.process(payload, acknowledgement, visibility, 100);
+
+    verify(acknowledgement, never()).acknowledge();
+    verify(visibility).changeTo(0);
   }
 
   @Test
   public void testProcessPassesDeserializedEventToProcessor() throws Exception {
-    var event =
-        StepInstanceStatusChangeEvent.builder()
-            .workflowId("workflow-abc")
-            .workflowInstanceId(42L)
-            .workflowRunId(7L)
-            .stepId("my-step")
-            .stepAttemptId(3L)
-            .workflowUuid("wf-uuid")
-            .stepUuid("step-uuid")
-            .correlationId("corr-id")
-            .stepInstanceId(99L)
-            .clusterName("cluster-1")
-            .syncTime(100L)
-            .sendTime(200L)
-            .statusChangeRecords(List.of())
-            .build();
+    var event = buildStepEvent("workflow-abc", "my-step");
     String payload = objectMapper.writeValueAsString(event);
 
-    listener.process(payload);
+    listener.process(payload, acknowledgement, visibility, 1);
 
     verify(processor).process(any(MaestroEvent.class));
+    verify(acknowledgement).acknowledge();
+  }
+
+  private StepInstanceStatusChangeEvent buildStepEvent(String workflowId, String stepId) {
+    return StepInstanceStatusChangeEvent.builder()
+        .workflowId(workflowId)
+        .workflowInstanceId(1L)
+        .workflowRunId(1L)
+        .stepId(stepId)
+        .stepAttemptId(1L)
+        .workflowUuid("uuid1")
+        .stepUuid("suuid1")
+        .correlationId("corr1")
+        .stepInstanceId(1L)
+        .clusterName("test-cluster")
+        .syncTime(123456789L)
+        .sendTime(123456789L)
+        .statusChangeRecords(List.of())
+        .build();
   }
 
   private static org.assertj.core.api.AbstractObjectAssert<?, ?> assertThat(Object actual) {

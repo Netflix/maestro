@@ -13,6 +13,7 @@
 package com.netflix.maestro.extensions.processors;
 
 import com.netflix.maestro.annotations.SuppressFBWarnings;
+import com.netflix.maestro.exceptions.MaestroRetryableError;
 import com.netflix.maestro.extensions.handlers.ForeachFlatteningHandler;
 import com.netflix.maestro.extensions.models.StepEventHandlerInput;
 import com.netflix.maestro.metrics.MaestroMetrics;
@@ -66,6 +67,7 @@ public class MaestroEventProcessor {
     } catch (Exception ex) {
       LOG.error("error during processing MaestroEvent {}", maestroEvent, ex);
       metrics.counter(METRIC_PROCESSOR_FAILURE, getClass());
+      throw new MaestroRetryableError(ex, "unknown error during maestroEvent processing");
     } finally {
       String metricTag = getMaestroEventMetricTag(type);
       metrics.timer(

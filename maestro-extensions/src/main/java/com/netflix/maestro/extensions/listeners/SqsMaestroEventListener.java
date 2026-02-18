@@ -15,37 +15,72 @@ package com.netflix.maestro.extensions.listeners;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.annotations.SuppressFBWarnings;
-import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.extensions.processors.MaestroEventProcessor;
 import com.netflix.maestro.models.events.MaestroEvent;
 import io.awspring.cloud.sqs.annotation.SqsListener;
+import io.awspring.cloud.sqs.annotation.SqsListenerAcknowledgementMode;
+import io.awspring.cloud.sqs.listener.SqsHeaders;
+import io.awspring.cloud.sqs.listener.Visibility;
+import io.awspring.cloud.sqs.listener.acknowledgement.Acknowledgement;
 import java.io.IOException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.handler.annotation.Header;
 
-/** Listener class for consuming MaestroEvent messages from SQS. */
+/**
+ * Listener class for consuming MaestroEvent messages from SQS. Matches internal's {@code
+ * SqsMaestroEventListener} pattern with manual acknowledgment, visibility extension on failure, and
+ * receive count tracking.
+ */
 @AllArgsConstructor
 @Slf4j
 @SuppressFBWarnings("EI_EXPOSE_REP2")
 public class SqsMaestroEventListener {
   private static final String SNS_MESSAGE_FIELD = "Message";
+  private static final int RECEIVE_COUNT_THRESHOLD_FOR_ADDITIONAL_MONITORING = 100;
+  private static final int VISIBILITY_TIMEOUT_ON_FAILURE_SECS = 0;
 
   private final MaestroEventProcessor processor;
   private final ObjectMapper objectMapper;
 
   /**
-   * Listener for SQS MaestroEvent messages. Handles both raw messages and SNS-wrapped messages
-   * (where the actual payload is in the "Message" field of the SNS envelope).
+   * Listener for SQS MaestroEvent messages. Uses manual acknowledgment matching internal's {@code
+   * SqsProcessorFinalizer} pattern: acknowledge on success, extend visibility on retryable failure,
+   * acknowledge (delete) on non-retryable failure (e.g., deserialization errors).
    */
-  @SqsListener(value = "${extensions.maestro-event-queue-url}", acknowledgementMode = "ON_SUCCESS")
-  public void process(String payload) {
-    LOG.info("SqsMaestroEventListener got message: [{}]", payload);
+  @SqsListener(
+      value = "${extensions.maestro-event-queue-url}",
+      acknowledgementMode = SqsListenerAcknowledgementMode.MANUAL)
+  public void process(
+      String payload,
+      Acknowledgement acknowledgement,
+      Visibility visibility,
+      @Header(SqsHeaders.MessageSystemAttributes.SQS_APPROXIMATE_RECEIVE_COUNT) int receiveCount) {
     try {
       String eventPayload = unwrapSnsEnvelope(payload);
       MaestroEvent event = objectMapper.readValue(eventPayload, MaestroEvent.class);
       processor.process(event);
+      acknowledgement.acknowledge();
     } catch (IOException ex) {
-      throw new MaestroInternalError(ex, "exception during json parsing");
+      // Non-retryable: deserialization will always fail for this message, so delete it
+      LOG.warn(
+          "Deleting non-retryable message from queue. Exception {} when processing payload {}",
+          ex.getClass().getSimpleName(),
+          payload,
+          ex);
+      acknowledgement.acknowledge();
+    } catch (Exception ex) {
+      if (receiveCount >= RECEIVE_COUNT_THRESHOLD_FOR_ADDITIONAL_MONITORING) {
+        LOG.warn(
+            "SQS payload has been retrying {} times, check if there are any problems: {}",
+            receiveCount,
+            payload);
+      }
+      LOG.warn(
+          "Exception {} when processing MaestroEvent, to be retried later",
+          ex.getClass().getSimpleName(),
+          ex);
+      visibility.changeTo(VISIBILITY_TIMEOUT_ON_FAILURE_SECS);
     }
   }
 
