@@ -19,12 +19,14 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web:3.+'
     implementation 'io.awspring.cloud:spring-cloud-aws-starter-sqs:3.+'
     implementation 'io.swagger.core.v3:swagger-annotations:2.+'
+    implementation bvalJsrDep
+
+    runtimeOnly testcontainerDep
+    runtimeOnly postgresqlDep
 
     testImplementation junitDep
     testImplementation mockitoCoreDep
     testImplementation assertJCoreDep
-    testImplementation testcontainerDep
-    testImplementation postgresqlDep
     testImplementation hikaricpDep
     testImplementation flywayDep
     testImplementation(testFixtures(project(':maestro-common')))
