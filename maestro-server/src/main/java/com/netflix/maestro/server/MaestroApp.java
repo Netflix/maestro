@@ -18,7 +18,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /** Maestro Springboot app for a demo purpose. */
 @Slf4j
-@SpringBootApplication
+@SpringBootApplication(
+    scanBasePackages = {"com.netflix.maestro.server", "com.netflix.maestro.extensions"})
 public class MaestroApp {
 
   /** Constructor. */

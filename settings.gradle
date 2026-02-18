@@ -11,6 +11,8 @@ include 'maestro-queue'
 include 'maestro-timetrigger'
 include 'maestro-signal'
 
+include 'maestro-extensions'
+
 include 'maestro-aws'
 include 'maestro-kubernetes'
 include 'maestro-http'
