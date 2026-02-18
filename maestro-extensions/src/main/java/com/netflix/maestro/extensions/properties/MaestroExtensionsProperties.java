@@ -10,27 +10,20 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.maestro.server;
+package com.netflix.maestro.extensions.properties;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
-/** Maestro Springboot app for a demo purpose. */
-@Slf4j
-@SpringBootApplication
-public class MaestroApp {
+/** Configuration properties for the Maestro Extensions service. */
+@Getter
+@Setter
+@ConfigurationProperties(prefix = "extensions")
+public class MaestroExtensionsProperties {
+  /** Base URL for calling maestro-server REST API (e.g. http://localhost:8080/api/v3). */
+  private String maestroBaseUrl;
 
-  /** Constructor. */
-  protected MaestroApp() {}
-
-  /**
-   * Spring app main class.
-   *
-   * @param args input arguments
-   */
-  public static void main(String[] args) {
-    SpringApplication.run(MaestroApp.class, args);
-    LOG.info("========== Maestro app started. ==========");
-  }
+  /** SQS queue URL for consuming maestro events. */
+  private String maestroEventQueueUrl;
 }

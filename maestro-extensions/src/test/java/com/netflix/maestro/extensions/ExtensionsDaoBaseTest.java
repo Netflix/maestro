@@ -15,7 +15,7 @@ package com.netflix.maestro.extensions;
 import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.database.DatabaseConfiguration;
 import com.netflix.maestro.database.MaestroDatabaseHelper;
-import com.netflix.maestro.engine.metrics.MaestroMetricRepo;
+import com.netflix.maestro.extensions.metrics.SpectatorMaestroMetrics;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.spectator.api.DefaultRegistry;
 import javax.sql.DataSource;
@@ -34,7 +34,7 @@ public class ExtensionsDaoBaseTest extends ExtensionsBaseTest {
     ExtensionsBaseTest.init();
     config = MaestroDatabaseHelper.getConfig();
     dataSource = MaestroDatabaseHelper.getDataSource();
-    metrics = new MaestroMetricRepo(new DefaultRegistry());
+    metrics = new SpectatorMaestroMetrics(new DefaultRegistry());
   }
 
   @AfterClass

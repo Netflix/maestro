@@ -25,3 +25,6 @@ awslocal --endpoint-url=http://${LOCALSTACK_HOST}:4566 sqs create-queue --queue-
 create_fifo_queue "maestro-signal-instance.fifo"
 create_fifo_queue "maestro-signal-trigger-match.fifo"
 create_fifo_queue "maestro-signal-trigger-execution.fifo"
+
+# Queue for maestro-extensions to consume maestro events (subscribed to SNS topic)
+create_queue "maestro-event"

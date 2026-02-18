@@ -1,7 +1,10 @@
+plugins {
+    id 'org.springframework.boot' version '3.+'
+}
+
 dependencies {
     implementation project(':maestro-database')
     implementation project(':maestro-common')
-    implementation project(':maestro-engine')
     implementation spectatorApiDep
     implementation jacksonDatabindDep
     implementation jacksonAnnotationsDep
@@ -13,8 +16,8 @@ dependencies {
     testCompileOnly lombokDep
     testAnnotationProcessor lombokDep
 
-    implementation 'org.springframework:spring-context:6.+'
-    implementation 'org.springframework:spring-web:6.+'
+    implementation 'org.springframework.boot:spring-boot-starter-web:3.+'
+    implementation 'io.awspring.cloud:spring-cloud-aws-starter-sqs:3.+'
     implementation 'io.swagger.core.v3:swagger-annotations:2.+'
 
     testImplementation junitDep
@@ -26,4 +29,8 @@ dependencies {
     testImplementation flywayDep
     testImplementation(testFixtures(project(':maestro-common')))
     testImplementation(testFixtures(project(':maestro-database')))
+}
+
+bootRun {
+    jvmArgs += ["-Djava.security.manager=allow"]
 }

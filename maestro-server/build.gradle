@@ -29,7 +29,6 @@ dependencies {
     implementation bvalJsrDep
     runtimeOnly testcontainerDep
 
-    implementation project(':maestro-extensions')
     implementation project(':maestro-engine')
     implementation project(':maestro-common')
     implementation project(':maestro-dsl')

@@ -17,9 +17,9 @@ import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 
 /**
- * Interface for providing Maestro data to the extensions module. This replaces the HTTP-based
- * MaestroClient used in internal Maestro, since in OSS everything runs in the same JVM and we can
- * access DAOs directly.
+ * Interface for providing Maestro data to the extensions module. The default implementation ({@link
+ * HttpMaestroDataProvider}) makes HTTP calls to maestro-server's REST API, mirroring internal
+ * Maestro's MaestroClient pattern where the extensions service runs as a separate process.
  */
 public interface MaestroDataProvider {
   /**
