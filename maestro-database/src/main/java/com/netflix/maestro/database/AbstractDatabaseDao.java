@@ -132,21 +132,6 @@ public abstract class AbstractDatabaseDao {
   }
 
   /**
-   * Mark the current transaction as SERIALIZABLE isolation level with optional read-only mode.
-   *
-   * @param conn the connection
-   * @param readOnly whether to set the transaction as read-only
-   * @throws SQLException sql exception
-   */
-  protected void markTransactionSerializable(Connection conn, boolean readOnly)
-      throws SQLException {
-    String sql = readOnly ? SERIALIZABLE_ISOLATION_SQL + " READ ONLY" : SERIALIZABLE_ISOLATION_SQL;
-    try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-      stmt.execute();
-    }
-  }
-
-  /**
    * Sanitize a string by replacing null bytes with [NULL]. PostgreSQL does not allow null bytes in
    * text-based columns.
    *
