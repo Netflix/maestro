@@ -352,19 +352,27 @@ public abstract class AbstractDatabaseDao {
   }
 
   /**
-   * Set the transaction isolation level to SERIALIZABLE.
+   * Mark the current transaction as SERIALIZABLE isolation level.
    *
-   * @param conn the database connection
-   * @param readOnly whether the transaction should be read-only
+   * @param conn the connection
    * @throws SQLException sql exception
    */
-  protected void markTransactionSerializable(Connection conn, boolean readOnly)
-      throws SQLException {
-    String sql =
-        readOnly
-            ? "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE READ ONLY"
-            : "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE";
-    try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+  protected void markTransactionSerializable(Connection conn) throws SQLException {
+    try (PreparedStatement stmt =
+        conn.prepareStatement("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")) {
+      stmt.execute();
+    }
+  }
+
+  /**
+   * Mark the current transaction as SERIALIZABLE READ ONLY isolation level.
+   *
+   * @param conn the connection
+   * @throws SQLException sql exception
+   */
+  protected void markTransactionSerializableReadOnly(Connection conn) throws SQLException {
+    try (PreparedStatement stmt =
+        conn.prepareStatement("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE READ ONLY")) {
       stmt.execute();
     }
   }

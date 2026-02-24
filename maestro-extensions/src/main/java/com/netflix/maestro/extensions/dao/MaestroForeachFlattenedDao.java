@@ -150,7 +150,7 @@ public class MaestroForeachFlattenedDao extends AbstractDatabaseDao {
         () ->
             withRetryableTransaction(
                 conn -> {
-                  markTransactionSerializable(conn, false);
+                  markTransactionSerializable(conn);
                   try (PreparedStatement stmt = conn.prepareStatement(INSERT_OR_UPDATE_QUERY)) {
                     int idx = 0;
 
@@ -377,7 +377,7 @@ public class MaestroForeachFlattenedDao extends AbstractDatabaseDao {
         () ->
             withRetryableTransaction(
                 conn -> {
-                  markTransactionSerializable(conn, true);
+                  markTransactionSerializableReadOnly(conn);
                   if (includeStatsCount) {
                     try (PreparedStatement ps = conn.prepareStatement(STEP_STATUS_QUERY)) {
                       setPreparedStatementCommon(
