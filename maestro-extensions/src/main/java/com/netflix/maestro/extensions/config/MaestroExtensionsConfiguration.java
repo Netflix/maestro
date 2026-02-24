@@ -13,14 +13,11 @@
 package com.netflix.maestro.extensions.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.database.DatabaseConfiguration;
-import com.netflix.maestro.database.DatabaseSourceProvider;
 import com.netflix.maestro.extensions.dao.MaestroForeachFlattenedDao;
 import com.netflix.maestro.extensions.handlers.ForeachFlatteningHandler;
 import com.netflix.maestro.extensions.listeners.SqsMaestroEventListener;
-import com.netflix.maestro.extensions.metrics.SpectatorMaestroMetrics;
 import com.netflix.maestro.extensions.processors.MaestroEventProcessor;
 import com.netflix.maestro.extensions.processors.StepEventPreprocessor;
 import com.netflix.maestro.extensions.properties.MaestroExtensionsProperties;
@@ -28,74 +25,35 @@ import com.netflix.maestro.extensions.provider.HttpMaestroClient;
 import com.netflix.maestro.extensions.provider.MaestroClient;
 import com.netflix.maestro.extensions.utils.ForeachFlatteningHelper;
 import com.netflix.maestro.metrics.MaestroMetrics;
-import com.netflix.maestro.utils.JsonHelper;
-import com.netflix.spectator.api.DefaultRegistry;
-import com.netflix.spectator.api.Registry;
+import com.netflix.maestro.models.Constants;
 import java.net.http.HttpClient;
-import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import javax.sql.DataSource;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
-/** Spring configuration for Maestro Extensions service beans. */
+/**
+ * Auto-configuration for the Maestro Extensions module. Activates when {@code extensions.enabled}
+ * is set to {@code true}. Injects shared beans (DataSource, ObjectMapper, MaestroMetrics,
+ * DatabaseConfiguration) from the hosting application.
+ */
 @Configuration
+@ComponentScan(basePackages = "com.netflix.maestro.extensions")
 @EnableConfigurationProperties(MaestroExtensionsProperties.class)
+@ConditionalOnProperty(value = "extensions.enabled", havingValue = "true")
 @SuppressFBWarnings("EI_EXPOSE_REP2")
 @Slf4j
 public class MaestroExtensionsConfiguration {
 
   @Bean
-  public ObjectMapper objectMapper() {
-    LOG.info("Creating maestro objectMapper within Spring boot...");
-    ObjectMapper mapper = JsonHelper.objectMapper();
-    mapper.registerModule(new JavaTimeModule());
-    return mapper;
-  }
-
-  /**
-   * Creates a {@link DatabaseConfiguration} backed by Spring-bound properties. The YAML properties
-   * under {@code extensions.database} are bound into a flat {@code Map<String, String>} and looked
-   * up by converting the {@link DatabaseConfiguration} property keys (dot-separated) to kebab-case
-   * keys. This follows the same pattern as {@code MaestroEngineProperties} in maestro-server.
-   */
-  @Bean
-  @ConfigurationProperties(prefix = "extensions.database")
-  public ExtensionsDatabaseProperties databaseConfiguration() {
-    LOG.info("Creating DatabaseConfiguration within Spring boot...");
-    return new ExtensionsDatabaseProperties();
-  }
-
-  @Bean(destroyMethod = "close")
-  public DataSource dataSource(DatabaseConfiguration config) {
-    LOG.info("Creating DataSource via DatabaseSourceProvider within Spring boot...");
-    return new DatabaseSourceProvider(config).get();
-  }
-
-  @Bean
-  public Registry registry() {
-    return new DefaultRegistry();
-  }
-
-  @Bean
-  public MaestroMetrics maestroMetrics(Registry registry) {
-    LOG.info("Creating MaestroMetrics within Spring boot...");
-    return new SpectatorMaestroMetrics(registry);
-  }
-
-  @Bean
-  public HttpClient httpClient() {
-    return HttpClient.newHttpClient();
-  }
-
-  @Bean
   public MaestroClient maestroClient(
-      MaestroExtensionsProperties properties, ObjectMapper objectMapper, HttpClient httpClient) {
+      MaestroExtensionsProperties properties,
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
+      HttpClient httpClient) {
     LOG.info("Creating HttpMaestroClient within Spring boot...");
     return new HttpMaestroClient(properties.getMaestroBaseUrl(), objectMapper, httpClient);
   }
@@ -107,12 +65,12 @@ public class MaestroExtensionsConfiguration {
 
   @Bean
   public MaestroForeachFlattenedDao maestroForeachFlattenedDao(
-      DataSource dataSource,
-      ObjectMapper objectMapper,
+      DataSource maestroDataSource,
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
       DatabaseConfiguration config,
       MaestroMetrics metrics) {
     LOG.info("Creating MaestroForeachFlattenedDao within Spring boot...");
-    return new MaestroForeachFlattenedDao(dataSource, objectMapper, config, metrics);
+    return new MaestroForeachFlattenedDao(maestroDataSource, objectMapper, config, metrics);
   }
 
   @Bean
@@ -140,49 +98,9 @@ public class MaestroExtensionsConfiguration {
 
   @Bean
   public SqsMaestroEventListener sqsMaestroEventListener(
-      MaestroEventProcessor processor, ObjectMapper objectMapper) {
+      MaestroEventProcessor processor,
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper) {
     LOG.info("Creating SqsMaestroEventListener within Spring boot...");
     return new SqsMaestroEventListener(processor, objectMapper);
-  }
-
-  // ---------------------------------------------------------------------------
-  // Inner class: DatabaseConfiguration impl
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Concrete {@link DatabaseConfiguration} implementation backed by a Spring-bound {@code
-   * Map<String, String>}. Spring Boot binds YAML properties under {@code extensions.database} into
-   * the {@code configs} map using relaxed binding (kebab-case keys). The {@link #getProperty}
-   * method converts dot-separated keys from {@link DatabaseConfiguration} constants to kebab-case
-   * for lookup.
-   *
-   * <p>This follows the same pattern as {@code MaestroEngineProperties} in maestro-server.
-   */
-  @AllArgsConstructor
-  static class ExtensionsDatabaseProperties implements DatabaseConfiguration {
-    private Map<String, String> configs;
-
-    /** Default constructor for Spring Boot binding. */
-    ExtensionsDatabaseProperties() {
-      this.configs = new ConcurrentHashMap<>();
-    }
-
-    /** Setter used by Spring Boot's {@code @ConfigurationProperties} binding. */
-    @SuppressWarnings("unused")
-    public Map<String, String> getConfigs() {
-      return configs;
-    }
-
-    /** Setter used by Spring Boot's {@code @ConfigurationProperties} binding. */
-    @SuppressWarnings("unused")
-    public void setConfigs(Map<String, String> configs) {
-      this.configs = configs;
-    }
-
-    @Override
-    public String getProperty(String name, String defaultValue) {
-      String key = name.replace('.', '-').toLowerCase(Locale.US);
-      return configs.getOrDefault(key, defaultValue);
-    }
   }
 }

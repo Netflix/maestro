@@ -1,7 +1,3 @@
-plugins {
-    id 'org.springframework.boot' version '3.+'
-}
-
 dependencies {
     implementation project(':maestro-database')
     implementation project(':maestro-common')
@@ -31,8 +27,4 @@ dependencies {
     testImplementation flywayDep
     testImplementation(testFixtures(project(':maestro-common')))
     testImplementation(testFixtures(project(':maestro-database')))
-}
-
-bootRun {
-    jvmArgs += ["-Djava.security.manager=allow"]
 }

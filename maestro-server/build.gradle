@@ -39,6 +39,7 @@ dependencies {
     implementation project(':maestro-signal')
     implementation project(':netflix-sel')
     implementation project(':maestro-aws')
+    implementation project(':maestro-extensions')
     implementation project(':maestro-kubernetes')
     implementation project(':maestro-http')
 

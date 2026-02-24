@@ -135,6 +135,11 @@ aws:
   redis:
     redis-server-address: "redis://127.0.0.1:6379"
 
+extensions:
+  enabled: true
+  maestro-base-url: "http://localhost:${server.port}/api/v3"
+  maestro-event-queue-url: http://localhost:4566/000000000000/maestro-event
+
 logging:
   level:
     com:
