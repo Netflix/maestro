@@ -1,0 +1,183 @@
+{
+  "workflow_id": "sample-dag-test-3",
+  "workflow_instance_id": 1,
+  "workflow_run_id": 2,
+  "step_id": "job1",
+  "step_attempt_id": 1,
+  "workflow_uuid": "9d989d63-b854-41c8-b406-df19b5b7374d",
+  "step_uuid": "ff4ccce2-0fda-4882-9cd8-12ff90cb5f01",
+  "correlation_id": "sample-dag-test-3-1-1",
+  "step_instance_id": 1,
+  "workflow_version_id": 1,
+  "owner": "tester",
+  "definition": {
+    "step": {
+      "id": "job1",
+      "transition": {
+        "successors": {
+          "job.2": "true",
+          "job3": "true"
+        }
+      },
+      "type": "Sleep",
+      "failure_mode": "IGNORE_FAILURE",
+      "retry_policy": {
+        "error_retry_limit": 2,
+        "platform_retry_limit": 10,
+        "backoff": {
+          "error_retry_backoff_in_secs": 1,
+          "platform_retry_backoff_in_secs": 1,
+          "type": "FIXED_BACKOFF"
+        }
+      },
+      "timeout": "10 minutes",
+      "signal_dependencies": [
+        {
+          "name": "db/test/table1",
+          "match_params": {
+            "vtts_utc_dateint": {
+              "param": {
+                "expression": "\nDateTimeFormatter tz_dateint_hour_formatter = DateTimeFormat\n    .forPattern(\"yyyyMMddHH\")\n    .withZone(DateTimeZone.forID(\"UTC\"));\n\nDateTime dt = tz_dateint_hour_formatter\n    .parseDateTime(RUN_DATEINT + \"00\")\n    .minusDays(0)\n    .minusHours(0);\n\ndt.withZone(DateTimeZone.forID(\"UTC\")).toString(\"yyyyMMdd\");\n",
+                "type": "STRING",
+                "mode": "MUTABLE"
+              },
+              "operator": "="
+            },
+            "vtts_utc_hour": {
+              "param": {
+                "expression": "\nDateTimeFormatter tz_dateint_hour_formatter = DateTimeFormat\n    .forPattern(\"yyyyMMddHH\")\n    .withZone(DateTimeZone.forID(\"UTC\"));\n\nDateTime dt = tz_dateint_hour_formatter\n    .parseDateTime(RUN_DATEINT + \"00\")\n    .minusDays(0)\n    .minusHours(0);\n\ndt.withZone(DateTimeZone.forID(\"UTC\")).toString(\"HH\");\n",
+                "type": "STRING",
+                "mode": "MUTABLE"
+              },
+              "operator": "="
+            }
+          }
+        }
+      ],
+      "signal_outputs": [
+        {
+          "name": "dummy/test/signal1",
+          "params": {
+            "key1": {
+              "value": "v1",
+              "type": "STRING"
+            },
+            "key2": {
+              "value": 1,
+              "type": "LONG"
+            }
+          }
+        }
+      ],
+      "params": {
+        "sleep_seconds": {
+          "value": 15,
+          "type": "LONG"
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "job1"
+    }
+  ],
+  "params": {
+    "maestro_step_satisfied": {
+      "value": true,
+      "type": "BOOLEAN",
+      "evaluated_result": true,
+      "evaluated_time": 1608749932077,
+      "source": "system"
+    },
+    "sleep_seconds": {
+      "value": 15,
+      "type": "LONG",
+      "evaluated_result": 15,
+      "evaluated_time": 1608749932078,
+      "source": "step default"
+    }
+  },
+  "transition": {
+    "successors": {
+      "job.2": {
+        "expression": "return maestro_step_satisfied && (true);",
+        "type": "BOOLEAN"
+      },
+      "job3": {
+        "expression": "return maestro_step_satisfied && (true);",
+        "type": "BOOLEAN"
+      }
+    }
+  },
+  "step_retry": {
+    "error_retries": 0,
+    "error_retry_limit": 2,
+    "platform_retries": 0,
+    "platform_retry_limit": 10,
+    "manual_retries": 0,
+    "retryable": true
+  },
+  "timeout_in_millis": 600000,
+  "runtime_state": {
+    "status": "FATALLY_FAILED",
+    "create_time": 1608749932076,
+    "initialize_time": 1608749932078,
+    "wait_signal_time": 1608749934142,
+    "wait_permit_time": 1608749934142,
+    "start_time": 1608749934142,
+    "execute_time": 1608749934147,
+    "finish_time": 1608749950263,
+    "end_time": 1608749950263,
+    "modify_time": 1608749950263
+  },
+  "timeline": [
+    {
+      "timestamp": 1609272999666,
+      "type": "LOG",
+      "level": "INFO",
+      "message": "hello world"
+    },
+    {
+      "timestamp": 1609272999666,
+      "type": "DETAILS",
+      "status": "INTERNAL_ERROR",
+      "message": "sample error details foo\u0000bar"
+    }
+  ],
+  "signal_dependencies": {
+    "dependencies": [
+      {
+        "name": "db/test/table1",
+        "status": "PENDING",
+        "match_params": {
+          "_step_dependency_sub_type": {
+            "value": "input_signal",
+            "operator": "="
+          },
+          "vtts_utc_dateint": {
+            "value": "20210628",
+            "operator": "="
+          },
+          "vtts_utc_hour": {
+            "value": "00",
+            "operator": "="
+          }
+        }
+      }
+    ]
+  },
+  "signal_outputs": {
+    "outputs": [
+      {
+        "name": "dummy/test/signal1",
+        "params": {
+          "p1": 1,
+          "p2": 2
+        },
+        "signal_id": 7463771,
+        "announce_time": 1667197463771
+      }
+    ]
+  }
+}

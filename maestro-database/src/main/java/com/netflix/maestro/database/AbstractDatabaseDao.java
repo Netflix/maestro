@@ -63,6 +63,10 @@ public abstract class AbstractDatabaseDao {
   protected static final String STATUS_COLUMN = "status";
   protected static final int SUCCESS_WRITE_SIZE = 1;
   protected static final String ARRAY_TYPE_NAME = "TEXT";
+  protected static final String NULL_BYTE_PLACEHOLDER = "[NULL]";
+
+  private static final String SERIALIZABLE_ISOLATION_SQL =
+      "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE";
 
   private final ObjectMapper objectMapper;
   private final DataSource dataSource;
@@ -116,6 +120,59 @@ public abstract class AbstractDatabaseDao {
   }
 
   /**
+   * Mark the current transaction as SERIALIZABLE isolation level.
+   *
+   * @param conn the connection
+   * @throws SQLException sql exception
+   */
+  protected void markTransactionSerializable(Connection conn) throws SQLException {
+    try (PreparedStatement stmt = conn.prepareStatement(SERIALIZABLE_ISOLATION_SQL)) {
+      stmt.execute();
+    }
+  }
+
+  /**
+   * Mark the current transaction as SERIALIZABLE isolation level with optional read-only mode.
+   *
+   * @param conn the connection
+   * @param readOnly whether to set the transaction as read-only
+   * @throws SQLException sql exception
+   */
+  protected void markTransactionSerializable(Connection conn, boolean readOnly)
+      throws SQLException {
+    String sql = readOnly ? SERIALIZABLE_ISOLATION_SQL + " READ ONLY" : SERIALIZABLE_ISOLATION_SQL;
+    try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+      stmt.execute();
+    }
+  }
+
+  /**
+   * Sanitize a string by replacing null bytes with [NULL]. PostgreSQL does not allow null bytes in
+   * text-based columns.
+   *
+   * @param input the input string
+   * @return sanitized string with null bytes replaced, or null if input is null
+   */
+  protected String sanitizeString(String input) {
+    if (input == null) {
+      return null;
+    }
+
+    // Remove all null bytes or escaped null bytes
+    String sanitized =
+        input.replace("\u0000", NULL_BYTE_PLACEHOLDER).replace("\\u0000", NULL_BYTE_PLACEHOLDER);
+
+    if (!sanitized.equals(input)) {
+      LOG.info(
+          "Detected null byte(s) in string data, replacing with placeholder. "
+              + "Original: [{}], Sanitized: [{}]",
+          input,
+          sanitized);
+    }
+    return sanitized;
+  }
+
+  /**
    * Convert the object to the JSON string.
    *
    * @param value the object value
@@ -128,6 +185,19 @@ public abstract class AbstractDatabaseDao {
       throw new MaestroUnprocessableEntityException(
           "cannot write an object to json string due to [%s]", e.getMessage());
     }
+  }
+
+  /**
+   * Convert the object to JSON string with option to sanitize it from null bytes. Postgres does not
+   * support insertion of data with null bytes for TEXT or JSONB columns. In addition, it does not
+   * support reading null bytes from JSON columns using Postgres functions.
+   *
+   * @param value the object value
+   * @param sanitize whether to sanitize the JSON string from null bytes
+   * @return serialized string
+   */
+  protected String toJson(Object value, boolean sanitize) {
+    return sanitize ? sanitizeString(toJson(value)) : toJson(value);
   }
 
   /**

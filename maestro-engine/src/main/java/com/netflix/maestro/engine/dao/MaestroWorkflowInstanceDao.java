@@ -73,18 +73,19 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressWarnings("PMD.ReplaceJavaUtilDate")
 @Slf4j
 public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
-  private static final String SINGLE_PLACE_HOLDER = "?,";
-  private static final String DOUBLE_PLACE_HOLDER = "?::json,?,";
-  private static final String QUAD_PLACE_HOLDER = "?,?,?::json,?,";
-  private static final String VALUE_PLACE_HOLDER = "(?::json,?)";
+  private static final int PARAMS_PER_INSTANCE = 11;
+  private static final String VALUE_PLACE_HOLDER = "(?,?,?,?,?,?::jsonb,?,?,?,?::json,?)";
 
   private static final String CREATE_WORKFLOW_INSTANCE_QUERY_TEMPLATE =
-      "INSERT INTO maestro_workflow_instance (instance,status) VALUES %s "
-          + "ON CONFLICT (workflow_id,instance_id,run_id) DO NOTHING RETURNING instance_id";
+      "INSERT INTO maestro_workflow_instance "
+          + "(workflow_id,instance_id,run_id,uuid,correlation_id,initiator,"
+          + "root_depth,initiator_type,create_ts,instance,status) VALUES %s "
+          + "ON CONFLICT (workflow_id,instance_id,run_id) DO NOTHING "
+          + "RETURNING instance_id";
 
   private static final String TERMINATE_QUEUED_WORKFLOW_PREFIX =
-      "UPDATE maestro_workflow_instance SET (status,end_ts,modify_ts,timeline) "
-          + "= (?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,array_append(timeline,?)) WHERE workflow_id=? ";
+      "UPDATE maestro_workflow_instance SET status = ?, end_ts = CURRENT_TIMESTAMP, "
+          + "modify_ts = CURRENT_TIMESTAMP, timeline = array_append(timeline, ?) WHERE workflow_id=? ";
 
   private static final String TERMINATE_QUEUED_INSTANCE_QUERY =
       TERMINATE_QUEUED_WORKFLOW_PREFIX
@@ -112,29 +113,25 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
           + "WHERE workflow_id=? AND status='IN_PROGRESS' AND instance_id>? ORDER BY instance_id ASC LIMIT ?";
 
   private static final String UPDATE_WORKFLOW_INSTANCE_QUERY_TEMPLATE =
-      "UPDATE maestro_workflow_instance SET (%s modify_ts) = (%s CURRENT_TIMESTAMP) "
+      "UPDATE maestro_workflow_instance SET %s modify_ts = CURRENT_TIMESTAMP "
           + "WHERE workflow_id=? AND instance_id=? AND run_id=? ";
 
   private static final String UPDATE_WORKFLOW_INSTANCE_START_QUERY =
       String.format(
           UPDATE_WORKFLOW_INSTANCE_QUERY_TEMPLATE,
-          "status,start_ts,runtime_overview,timeline,",
-          QUAD_PLACE_HOLDER);
+          "status = ?, start_ts = ?, runtime_overview = ?::jsonb, timeline = ?,");
 
   private static final String UPDATE_WORKFLOW_INSTANCE_END_QUERY =
       String.format(
           UPDATE_WORKFLOW_INSTANCE_QUERY_TEMPLATE,
-          "status,end_ts,runtime_overview,timeline,",
-          QUAD_PLACE_HOLDER);
+          "status = ?, end_ts = ?, runtime_overview = ?::jsonb, timeline = ?,");
 
   private static final String UPDATE_WORKFLOW_INSTANCE_TIMELINE_QUERY =
       String.format(
-          UPDATE_WORKFLOW_INSTANCE_QUERY_TEMPLATE,
-          "runtime_overview,timeline,",
-          DOUBLE_PLACE_HOLDER);
+          UPDATE_WORKFLOW_INSTANCE_QUERY_TEMPLATE, "runtime_overview = ?::jsonb, timeline = ?,");
 
   private static final String UPDATE_WORKFLOW_INSTANCE_EXECUTION_QUERY =
-      String.format(UPDATE_WORKFLOW_INSTANCE_QUERY_TEMPLATE, "execution_id,", SINGLE_PLACE_HOLDER)
+      String.format(UPDATE_WORKFLOW_INSTANCE_QUERY_TEMPLATE, "execution_id = ?,")
           + " AND status='CREATED' AND execution_id IS NULL";
 
   private static final String GET_WORKFLOW_INSTANCE_FIELDS_TEMPLATE =
@@ -167,13 +164,13 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
           + "WHERE workflow_id=? AND status='FAILED' AND instance_id>=? AND instance_id<=?";
 
   private static final String UNBLOCK_INSTANCE_FAILED_STATUS =
-      "UPDATE maestro_workflow_instance SET (status,modify_ts,timeline) "
-          + "=('FAILED_1',CURRENT_TIMESTAMP,array_append(timeline,?)) "
+      "UPDATE maestro_workflow_instance SET status = 'FAILED_1', modify_ts = CURRENT_TIMESTAMP, "
+          + "timeline = array_append(timeline, ?) "
           + "WHERE workflow_id=? AND instance_id=? AND run_id=? AND status='FAILED'";
 
   private static final String UNBLOCK_INSTANCES_FAILED_STATUS =
       "UPDATE maestro_workflow_instance SET "
-          + "(status,modify_ts,timeline)=('FAILED_1',CURRENT_TIMESTAMP,array_append(timeline,?)) "
+          + "status = 'FAILED_1', modify_ts = CURRENT_TIMESTAMP, timeline = array_append(timeline, ?) "
           + "WHERE workflow_id=? AND status='FAILED' AND "
           + INSTANCE_IN_SUBQUERY
           + "AND status='FAILED' order by instance_id ASC LIMIT ?)";
@@ -271,7 +268,7 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
    *
    * <p>It explicitly builds a batch query because executeBatch won't work in some cases
    */
-  @SuppressWarnings("PMD.UseVarargs")
+  @SuppressWarnings({"PMD.UseVarargs", "PMD.AvoidInstantiatingObjectsInLoops"})
   private Set<Long> insertMaestroWorkflowInstances(
       Connection conn,
       List<WorkflowInstance> instances,
@@ -285,8 +282,19 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
             String.join(",", Collections.nCopies(instances.size(), VALUE_PLACE_HOLDER)));
     try (PreparedStatement wfiStmt = conn.prepareStatement(sql)) {
       for (int i = 0; i < instances.size(); ++i) {
-        wfiStmt.setString(1 + 2 * i, instanceStrs.get(i));
-        wfiStmt.setString(2 + 2 * i, instances.get(i).getStatus().name());
+        int baseIdx = i * PARAMS_PER_INSTANCE;
+        int pos = 0;
+        wfiStmt.setString(++pos + baseIdx, instances.get(i).getWorkflowId());
+        wfiStmt.setLong(++pos + baseIdx, instances.get(i).getWorkflowInstanceId());
+        wfiStmt.setLong(++pos + baseIdx, instances.get(i).getWorkflowRunId());
+        wfiStmt.setString(++pos + baseIdx, instances.get(i).getWorkflowUuid());
+        wfiStmt.setString(++pos + baseIdx, instances.get(i).getCorrelationId());
+        wfiStmt.setString(++pos + baseIdx, toJson(instances.get(i).getInitiator()));
+        wfiStmt.setLong(++pos + baseIdx, instances.get(i).getInitiator().getDepth());
+        wfiStmt.setString(++pos + baseIdx, instances.get(i).getInitiator().getType().name());
+        wfiStmt.setTimestamp(++pos + baseIdx, new Timestamp(instances.get(i).getCreateTime()));
+        wfiStmt.setString(++pos + baseIdx, instanceStrs.get(i));
+        wfiStmt.setString(++pos + baseIdx, instances.get(i).getStatus().name());
       }
       try (ResultSet result = wfiStmt.executeQuery()) {
         Set<Long> res = new HashSet<>(instances.size());

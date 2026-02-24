@@ -1,8 +1,8 @@
 
 -- --------------------------------------------------------------------------------------------------------------
--- SCHEMA FOR MAESTRO WORKFLOW RELATED TABLES
+-- SCHEMA FOR MAESTRO WORKFLOW RELATED DAOs
 -- --------------------------------------------------------------------------------------------------------------
-CREATE SEQUENCE IF NOT EXISTS workflow_id_seq START 10000 INCREMENT 1;          -- starting from 10K
+CREATE SEQUENCE IF NOT EXISTS workflow_id_seq START 10000 INCREMENT 1;                         -- starting from 10K
 
 CREATE TABLE IF NOT EXISTS maestro_workflow (   -- table to lock and store mutable workflow definition and instance info
   workflow_id           TEXT NOT NULL COLLATE "C",
@@ -20,16 +20,16 @@ CREATE TABLE IF NOT EXISTS maestro_workflow (   -- table to lock and store mutab
 CREATE TABLE IF NOT EXISTS maestro_workflow_timeline (  -- table to store the workflow changes
   workflow_id   TEXT NOT NULL COLLATE "C",
   change_event  JSONB NOT NULL,
-  hash_id       INT8 NOT NULL,                          -- hash of the change_event, used for deduplication
+  hash_id       INT8 NOT NULL,
   create_ts     TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
   PRIMARY KEY (workflow_id, create_ts, hash_id)
 );
 
 CREATE TABLE IF NOT EXISTS maestro_workflow_version (   -- table of workflow version history, immutable
-  workflow_id   TEXT GENERATED ALWAYS AS (definition->>'id') STORED NOT NULL COLLATE "C",
-  version_id    INT8 GENERATED ALWAYS AS ((metadata->>'workflow_version_id')::INT8) STORED NOT NULL CHECK (version_id > 0),
+  workflow_id   TEXT NOT NULL COLLATE "C",
+  version_id    INT8 NOT NULL CHECK (version_id > 0),
   metadata      JSONB NOT NULL,
-  definition    JSON NOT NULL,  -- use JSON to preserve the original definition, e.g. param map order
+  definition    JSON NOT NULL,
   trigger_uuids JSONB,
   create_ts     TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL, -- processing delay is the time diff between it and metadata create_time
   PRIMARY KEY (workflow_id, version_id)
@@ -45,12 +45,12 @@ CREATE TABLE IF NOT EXISTS maestro_workflow_properties (    -- table of properti
 );
 
 CREATE TABLE IF NOT EXISTS maestro_workflow_deleted (   -- table to store the deleted workflow basic info for auditing
-  workflow_id   TEXT GENERATED ALWAYS AS (workflow->>'workflow_id') STORED NOT NULL COLLATE "C", -- workflow id can be re-used
-  internal_id   INT8 GENERATED ALWAYS AS ((workflow->>'internal_id')::INT8) STORED NOT NULL,     -- make the record unique
+  workflow_id   TEXT NOT NULL COLLATE "C",       -- workflow id can be re-used
+  internal_id   INT8 NOT NULL,     -- make the record unique
   workflow      JSONB NOT NULL,                                         -- a copy of data deleted from maestro_workflow
   create_ts     TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,         -- the moment the row is inserted
-  stage         TEXT DEFAULT 'DELETING_VERSIONS' NOT NULL,              -- stage enum name
-  timeline      TEXT[] NOT NULL,                                        -- delete timeline info, e.g. who deletes it, etc.
+  stage         TEXT DEFAULT 'DELETING_VERSIONS' NOT NULL,            -- stage enum name
+  timeline      TEXT[] NOT NULL,                                      -- delete timeline info, e.g. who deletes it, etc.
   modify_ts     TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,         -- last modified timestamp
   PRIMARY KEY (workflow_id, internal_id)
 );

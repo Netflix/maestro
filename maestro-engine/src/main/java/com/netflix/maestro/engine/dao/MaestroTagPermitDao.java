@@ -60,7 +60,7 @@ public class MaestroTagPermitDao extends AbstractDatabaseDao {
   private static final String GET_STEP_TAG_PERMIT_QUERY =
       "SELECT status from maestro_step_tag_permit WHERE uuid=?";
   private static final String ADD_STEP_TAG_PERMIT_QUERY =
-      "INSERT INTO maestro_step_tag_permit (uuid,tags,limits,timeline) VALUES (?,?,?,ARRAY[?]) ON CONFLICT DO NOTHING";
+      "INSERT INTO maestro_step_tag_permit (uuid,tags,limits,timeline) VALUES (?::uuid,?,?,ARRAY[?]) ON CONFLICT DO NOTHING";
   private static final String RELEASE_STEP_TAG_PERMIT_QUERY =
       "UPDATE maestro_step_tag_permit SET status=1 WHERE uuid=?";
 

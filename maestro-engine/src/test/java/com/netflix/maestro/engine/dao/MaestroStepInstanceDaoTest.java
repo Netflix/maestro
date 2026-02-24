@@ -48,6 +48,7 @@ import com.netflix.maestro.models.signal.SignalOutputs;
 import com.netflix.maestro.models.signal.SignalOutputsDefinition;
 import com.netflix.maestro.models.signal.SignalTransformer;
 import com.netflix.maestro.models.timeline.Timeline;
+import com.netflix.maestro.models.timeline.TimelineLogEvent;
 import com.netflix.maestro.queue.MaestroQueueSystem;
 import com.netflix.maestro.queue.jobevents.MaestroJobEvent;
 import java.io.IOException;
@@ -107,6 +108,22 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
     instance.setArtifacts(null);
     instance.setTimeline(null);
     Assertions.assertThat(instance).usingRecursiveComparison().isEqualTo(si);
+  }
+
+  @Test
+  public void testInsertStepInstanceSanitization() throws Exception {
+    tearDown();
+    StepInstance si =
+        loadObject(
+            "fixtures/instances/sample-step-instance-failed-with-null-byte.json",
+            StepInstance.class);
+    stepDao.insertOrUpsertStepInstance(si, false, Mockito.mock(MaestroJobEvent.class));
+    verify(queueSystem, times(1)).enqueue(any(), any());
+    verify(queueSystem, times(1)).notify(any());
+    StepInstance instance = stepDao.getStepInstance(TEST_WORKFLOW_ID, 1, 2, "job1", "1");
+    assertEquals(
+        "sample error details foo[NULL]bar",
+        instance.getTimeline().getTimelineEvents().getLast().getMessage());
   }
 
   @Test
@@ -176,6 +193,39 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
     StepInstance instance = stepDao.getStepInstance(TEST_WORKFLOW_ID, 1, 1, "job1", "1");
     assertEquals(StepInstance.Status.SUCCEEDED, instance.getRuntimeState().getStatus());
     Assertions.assertThat(instance).usingRecursiveComparison().isEqualTo(si);
+  }
+
+  @Test
+  public void testUpdateStepInstanceSanitization() throws Exception {
+    tearDown();
+    StepInstance si =
+        loadObject(
+            "fixtures/instances/sample-step-instance-failed-with-null-byte.json",
+            StepInstance.class);
+    stepDao.insertOrUpsertStepInstance(si, false, Mockito.mock(MaestroJobEvent.class));
+
+    si.getTimeline()
+        .add(TimelineLogEvent.builder().message("New message with foo\u0000bar").build());
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+    workflowSummary.setWorkflowId(TEST_WORKFLOW_ID);
+    workflowSummary.setWorkflowInstanceId(1);
+    workflowSummary.setWorkflowRunId(2);
+    StepRuntimeSummary summary =
+        StepRuntimeSummary.builder()
+            .stepId("job1")
+            .stepAttemptId(1)
+            .stepInstanceId(1)
+            .runtimeState(si.getRuntimeState())
+            .artifacts(si.getArtifacts())
+            .signalDependencies(si.getSignalDependencies())
+            .signalOutputs(si.getSignalOutputs())
+            .timeline(si.getTimeline())
+            .build();
+    stepDao.updateStepInstance(workflowSummary, summary, Mockito.mock(MaestroJobEvent.class));
+    StepInstance instance = stepDao.getStepInstance(TEST_WORKFLOW_ID, 1, 2, "job1", "1");
+    assertEquals(
+        "New message with foo[NULL]bar",
+        instance.getTimeline().getTimelineEvents().getLast().getMessage());
   }
 
   @Test

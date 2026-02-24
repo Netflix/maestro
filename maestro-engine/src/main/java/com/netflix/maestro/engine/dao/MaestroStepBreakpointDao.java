@@ -124,7 +124,7 @@ public class MaestroStepBreakpointDao extends AbstractDatabaseDao {
 
   private static final String ADD_STEP_BREAKPOINT =
       "INSERT INTO maestro_step_breakpoint (workflow_id,version,instance_id,run_id,step_id,step_attempt_id,"
-          + "created_by,create_ts,system_generated) VALUES (?,?,?,?,?,?,?::json,CURRENT_TIMESTAMP,false) "
+          + "created_by,create_ts,system_generated) VALUES (?,?,?,?,?,?,?::jsonb,CURRENT_TIMESTAMP,false) "
           + "ON CONFLICT (workflow_id, step_id, system_generated, version, instance_id, run_id, step_attempt_id) "
           + "DO UPDATE SET workflow_id=EXCLUDED.workflow_id,version=EXCLUDED.version,instance_id=EXCLUDED.instance_id,"
           + "run_id=EXCLUDED.run_id,step_id=EXCLUDED.step_id,step_attempt_id=EXCLUDED.step_attempt_id,"
