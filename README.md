@@ -16,6 +16,9 @@ You can read more details about it in our series of blog posts
 - [100X Faster: How We Supercharged Netflix Maestro's Workflow Engine](https://netflixtechblog.com/100x-faster-how-we-supercharged-netflix-maestros-workflow-engine-028e9637f041)
 - [Incremental Processing using Netflix Maestro and Apache Iceberg](https://netflixtechblog.com/incremental-processing-using-netflix-maestro-and-apache-iceberg-b8ba072ddeeb)
 
+## Architecture
+- High-level architecture diagram: [`docs/architecture.md`](docs/architecture.md)
+
 # Get started
 ## Prerequisite
 - Git
@@ -119,3 +122,6 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+## Contributing this change upstream
+For step-by-step instructions to open a PR against `Netflix/maestro`, see [`docs/raise-pr.md`](docs/raise-pr.md).
