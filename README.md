@@ -58,6 +58,44 @@ You can read more details about it in our series of blog posts
 - `curl --header "user: tester" -X POST 'http://127.0.0.1:8080/api/v3/workflows' -H "Content-Type: application/json" -d @maestro-server/src/test/resources/samples/sample-kubernetes-wf.json`
 - `curl --header "user: tester" -X POST 'http://127.0.0.1:8080/api/v3/workflows/sample-kubernetes-wf/versions/latest/actions/start' -H "Content-Type: application/json" -d '{"initiator": {"type": "manual"}}'`
 
+
+## Local debugging tips (macOS / VS Code)
+- Ensure Java 21 is selected in your IDE/workspace runtime.
+- If debug startup fails with security-manager errors, add VM arg: `-Djava.security.manager=allow`.
+- If startup fails with `Port 8080 was already in use`, stop the existing process: `lsof -nP -iTCP:8080 -sTCP:LISTEN`.
+- Verify server health before API calls: `curl -v http://127.0.0.1:8080/actuator/health` (expect `{"status":"UP"}`).
+
+## Minimal one-step workflow example
+Create `tiny-wf.json`:
+
+```json
+{
+  "properties": {
+    "owner": "tester",
+    "run_strategy": "sequential"
+  },
+  "workflow": {
+    "id": "tiny-wf-1",
+    "name": "Tiny Workflow",
+    "description": "One-step NoOp workflow",
+    "steps": [
+      {
+        "step": {
+          "id": "job.1",
+          "type": "NoOp",
+          "transition": {}
+        }
+      }
+    ]
+  }
+}
+```
+
+Create and run it:
+- `curl --header "user: tester" -X POST 'http://127.0.0.1:8080/api/v3/workflows' -H "Content-Type: application/json" -d @tiny-wf.json`
+- `curl --header "user: tester" -X POST 'http://127.0.0.1:8080/api/v3/workflows/tiny-wf-1/versions/latest/actions/start' -H "Content-Type: application/json" -d '{"initiator":{"type":"manual"}}'`
+- `curl -X GET 'http://127.0.0.1:8080/api/v3/workflows/tiny-wf-1/instances/1/runs/1'`
+
 ## Python SDK client
  
 ### Installation
