@@ -16,6 +16,9 @@ You can read more details about it in our series of blog posts
 - [100X Faster: How We Supercharged Netflix Maestro's Workflow Engine](https://netflixtechblog.com/100x-faster-how-we-supercharged-netflix-maestros-workflow-engine-028e9637f041)
 - [Incremental Processing using Netflix Maestro and Apache Iceberg](https://netflixtechblog.com/incremental-processing-using-netflix-maestro-and-apache-iceberg-b8ba072ddeeb)
 
+## Architecture
+- High-level architecture diagram: [`docs/architecture.md`](docs/architecture.md)
+
 # Get started
 ## Prerequisite
 - Git
