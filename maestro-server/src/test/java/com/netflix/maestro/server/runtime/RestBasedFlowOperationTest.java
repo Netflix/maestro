@@ -14,10 +14,13 @@ package com.netflix.maestro.server.runtime;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -25,10 +28,12 @@ import static org.mockito.Mockito.when;
 import com.netflix.maestro.MaestroBaseTest;
 import com.netflix.maestro.flow.dao.MaestroFlowDao;
 import com.netflix.maestro.flow.engine.FlowExecutor;
+import com.netflix.maestro.flow.models.FlowGroup;
 import com.netflix.maestro.flow.properties.FlowEngineProperties;
 import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.springframework.web.client.RestTemplate;
 
@@ -77,5 +82,93 @@ public class RestBasedFlowOperationTest extends MaestroBaseTest {
     result = flowOperation.wakeUp(groupId, flowReferences, actionCode);
     assertFalse(result);
     verify(flowExecutor, times(3)).wakeUp(eq(groupId), anyString(), isNull(), eq(actionCode));
+  }
+
+  @Test
+  public void testWakeUpSingleTaskRoutesToRemotePod() {
+    String remoteAddress = "http://remote-pod:8080";
+    FlowGroup remoteGroup = new FlowGroup(groupId, 1L, remoteAddress, System.currentTimeMillis());
+    when(flowDao.getGroup(groupId)).thenReturn(remoteGroup);
+    when(restTemplate.postForObject(
+            anyString(), isNull(), eq(Boolean.class), any(), any(), any(), any()))
+        .thenReturn(Boolean.TRUE);
+
+    boolean result = flowOperation.wakeUp(groupId, flowReference, taskReference, actionCode);
+
+    assertTrue(result);
+    verify(flowExecutor, never()).wakeUp(anyLong(), anyString(), any(), anyInt());
+    ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+    verify(restTemplate)
+        .postForObject(
+            urlCaptor.capture(), isNull(), eq(Boolean.class), any(), any(), any(), any());
+    assertTrue(urlCaptor.getValue().startsWith(remoteAddress));
+    assertTrue(urlCaptor.getValue().contains("/tasks/"));
+    assertTrue(urlCaptor.getValue().contains("/notify/"));
+  }
+
+  @Test
+  public void testWakeUpMultipleFlowsRoutesToRemotePod() {
+    String remoteAddress = "http://remote-pod:8080";
+    FlowGroup remoteGroup = new FlowGroup(groupId, 1L, remoteAddress, System.currentTimeMillis());
+    Set<String> flowReferences = Set.of("flow1", "flow2");
+    when(flowDao.getGroup(groupId)).thenReturn(remoteGroup);
+    when(restTemplate.postForObject(
+            anyString(), eq(flowReferences), eq(Boolean.class), any(), any()))
+        .thenReturn(Boolean.TRUE);
+
+    boolean result = flowOperation.wakeUp(groupId, flowReferences, actionCode);
+
+    assertTrue(result);
+    verify(flowExecutor, never()).wakeUp(anyLong(), anyString(), any(), anyInt());
+    ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+    verify(restTemplate)
+        .postForObject(urlCaptor.capture(), eq(flowReferences), eq(Boolean.class), any(), any());
+    String capturedUrl = urlCaptor.getValue();
+    assertTrue(capturedUrl.startsWith(remoteAddress));
+    assertTrue(capturedUrl.contains("/flows/notify/"));
+  }
+
+  @Test
+  public void testWakeUpSingleTaskReturnsFalseWhenRemoteFails() {
+    String remoteAddress = "http://remote-pod:8080";
+    FlowGroup remoteGroup = new FlowGroup(groupId, 1L, remoteAddress, System.currentTimeMillis());
+    when(flowDao.getGroup(groupId)).thenReturn(remoteGroup);
+    when(restTemplate.postForObject(
+            anyString(), isNull(), eq(Boolean.class), any(), any(), any(), any()))
+        .thenReturn(null);
+
+    boolean result = flowOperation.wakeUp(groupId, flowReference, taskReference, actionCode);
+
+    assertFalse(result);
+    verify(flowExecutor, never()).wakeUp(anyLong(), anyString(), any(), anyInt());
+  }
+
+  @Test
+  public void testWakeUpMultipleFlowsReturnsFalseWhenRemoteFails() {
+    String remoteAddress = "http://remote-pod:8080";
+    FlowGroup remoteGroup = new FlowGroup(groupId, 1L, remoteAddress, System.currentTimeMillis());
+    Set<String> flowReferences = Set.of("flow1", "flow2");
+    when(flowDao.getGroup(groupId)).thenReturn(remoteGroup);
+    when(restTemplate.postForObject(
+            anyString(), eq(flowReferences), eq(Boolean.class), any(), any()))
+        .thenReturn(null);
+
+    boolean result = flowOperation.wakeUp(groupId, flowReferences, actionCode);
+
+    assertFalse(result);
+    verify(flowExecutor, never()).wakeUp(anyLong(), anyString(), any(), anyInt());
+  }
+
+  @Test
+  public void testWakeUpLocalWhenGroupAddressMatchesLocal() {
+    FlowGroup localGroup = new FlowGroup(groupId, 1L, "localhost:8080", System.currentTimeMillis());
+    when(flowDao.getGroup(groupId)).thenReturn(localGroup);
+
+    boolean result = flowOperation.wakeUp(groupId, flowReference, taskReference, actionCode);
+
+    assertTrue(result);
+    verify(flowExecutor, times(1)).wakeUp(groupId, flowReference, taskReference, actionCode);
+    verify(restTemplate, never())
+        .postForObject(anyString(), any(), eq(Boolean.class), (Object[]) any());
   }
 }

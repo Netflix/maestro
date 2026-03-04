@@ -12,8 +12,8 @@
  */
 package com.netflix.maestro.server.controllers;
 
-import com.netflix.maestro.flow.engine.FlowExecutor;
 import com.netflix.maestro.flow.models.FlowDef;
+import com.netflix.maestro.flow.runtime.FlowOperation;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -41,11 +41,11 @@ import org.springframework.web.bind.annotation.RestController;
     consumes = MediaType.APPLICATION_JSON_VALUE)
 public class FlowEngineController {
 
-  private final FlowExecutor flowExecutor;
+  private final FlowOperation flowOperation;
 
   @Autowired
-  public FlowEngineController(FlowExecutor flowExecutor) {
-    this.flowExecutor = flowExecutor;
+  public FlowEngineController(FlowOperation flowOperation) {
+    this.flowOperation = flowOperation;
   }
 
   public record StartFlowRequest(String flowId, FlowDef flowDef, Map<String, Object> flowInput) {}
@@ -58,7 +58,7 @@ public class FlowEngineController {
       @PathVariable("groupId") long groupId,
       @Valid @NotNull @PathVariable("flowReference") String flowReference,
       @Valid @NotNull @RequestBody StartFlowRequest request) {
-    return flowExecutor.startFlow(
+    return flowOperation.startFlow(
         groupId, request.flowId(), flowReference, request.flowDef(), request.flowInput());
   }
 
@@ -71,7 +71,7 @@ public class FlowEngineController {
       @Valid @NotNull @PathVariable("flowReference") String flowReference,
       @Valid @NotNull @PathVariable("taskReference") String taskReference,
       @PathVariable("code") int code) {
-    return flowExecutor.wakeUp(groupId, flowReference, taskReference, code);
+    return flowOperation.wakeUp(groupId, flowReference, taskReference, code);
   }
 
   @PostMapping(
@@ -82,6 +82,6 @@ public class FlowEngineController {
       @PathVariable("groupId") long groupId,
       @PathVariable("code") int code,
       @Valid @NotNull @RequestBody Set<String> refs) {
-    return refs.stream().allMatch(ref -> flowExecutor.wakeUp(groupId, ref, null, code));
+    return flowOperation.wakeUp(groupId, refs, code);
   }
 }
