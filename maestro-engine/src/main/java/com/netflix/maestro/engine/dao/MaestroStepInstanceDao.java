@@ -63,23 +63,25 @@ import javax.sql.DataSource;
  *
  * <p>In the data model, we use `null` to indicate `unset`.
  */
+@SuppressWarnings("checkstyle:MultipleStringLiterals")
 @SuppressFBWarnings("OBL_UNSATISFIED_OBLIGATION")
 public class MaestroStepInstanceDao extends AbstractDatabaseDao {
   private static final TypeReference<Map<String, Artifact>> ARTIFACTS_REFERENCE =
       new TypeReference<>() {};
 
   private static final String ADD_STEP_INSTANCE_POSTFIX =
-      "INTO maestro_step_instance (instance,runtime_state,dependencies,outputs,artifacts,timeline) "
-          + "VALUES (?::json,?::jsonb,?::json,?::json,?::jsonb,?)";
+      "INTO maestro_step_instance "
+          + "(workflow_id,workflow_instance_id,workflow_run_id,step_id,step_attempt_id,"
+          + "workflow_uuid,step_uuid,correlation_id,"
+          + "instance,runtime_state,dependencies,outputs,artifacts,timeline) "
+          + "VALUES (?,?,?,?,?,?,?,?,?::json,?::jsonb,?::jsonb,?::jsonb,?::jsonb,?)";
 
   private static final String CREATE_STEP_INSTANCE_QUERY = "INSERT " + ADD_STEP_INSTANCE_POSTFIX;
 
   private static final String UPSERT_STEP_INSTANCE_QUERY =
-      CREATE_STEP_INSTANCE_QUERY
-          + " ON CONFLICT (workflow_id, workflow_instance_id, step_id, workflow_run_id, step_attempt_id)"
-          + "DO UPDATE SET instance=EXCLUDED.instance,runtime_state=EXCLUDED.runtime_state,"
-          + "dependencies=EXCLUDED.dependencies,outputs=EXCLUDED.outputs,"
-          + "artifacts=EXCLUDED.artifacts,timeline=EXCLUDED.timeline";
+      "INSERT "
+          + ADD_STEP_INSTANCE_POSTFIX
+          + " ON CONFLICT(workflow_id,workflow_instance_id,workflow_run_id,step_id,step_attempt_id) DO UPDATE SET workflow_uuid=EXCLUDED.workflow_uuid,step_uuid=EXCLUDED.step_uuid,correlation_id=EXCLUDED.correlation_id,instance=EXCLUDED.instance,runtime_state=EXCLUDED.runtime_state,dependencies=EXCLUDED.dependencies,outputs=EXCLUDED.outputs,artifacts=EXCLUDED.artifacts,timeline=EXCLUDED.timeline";
 
   private static final String WHERE_CONDITION_BY_WORKFLOW_IDS =
       "WHERE workflow_id=? AND workflow_instance_id=? AND workflow_run_id=?";
@@ -88,8 +90,7 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
       WHERE_CONDITION_BY_WORKFLOW_IDS + " AND step_id=? AND step_attempt_id=?";
 
   private static final String UPDATE_STEP_INSTANCE_QUERY =
-      "UPDATE maestro_step_instance SET (runtime_state,dependencies,outputs,artifacts,timeline) "
-          + "= (?::jsonb,?::json,?::json,?::jsonb,?) "
+      "UPDATE maestro_step_instance SET (runtime_state,dependencies,outputs,artifacts,timeline) = (?::jsonb,?::jsonb,?::jsonb,?::jsonb,?) "
           + WHERE_CONDITION_BY_IDS;
 
   private static final String SELECT_STEP_FIELDS = "SELECT %s FROM maestro_step_instance ";
@@ -229,7 +230,9 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
       final String[] timelineArray =
           timeline == null
               ? null
-              : timeline.getTimelineEvents().stream().map(this::toJson).toArray(String[]::new);
+              : timeline.getTimelineEvents().stream()
+                  .map(event -> toJson(event, true))
+                  .toArray(String[]::new);
       MessageDto message =
           withMetricLogError(
               () ->
@@ -241,6 +244,14 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
                                     ? UPSERT_STEP_INSTANCE_QUERY
                                     : CREATE_STEP_INSTANCE_QUERY)) {
                           int idx = 0;
+                          stmt.setString(++idx, instance.getWorkflowId());
+                          stmt.setLong(++idx, instance.getWorkflowInstanceId());
+                          stmt.setLong(++idx, instance.getWorkflowRunId());
+                          stmt.setString(++idx, instance.getStepId());
+                          stmt.setLong(++idx, instance.getStepAttemptId());
+                          stmt.setString(++idx, instance.getWorkflowUuid());
+                          stmt.setString(++idx, instance.getStepUuid());
+                          stmt.setString(++idx, instance.getCorrelationId());
                           stmt.setString(++idx, stepInstanceStr);
                           stmt.setString(++idx, runtimeStateStr);
                           stmt.setString(++idx, stepDependenciesSummariesStr);
@@ -288,7 +299,7 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
         stepSummary.getTimeline() == null
             ? null
             : stepSummary.getTimeline().getTimelineEvents().stream()
-                .map(this::toJson)
+                .map(event -> toJson(event, true))
                 .toArray(String[]::new);
     MessageDto message =
         withMetricLogError(

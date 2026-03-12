@@ -28,10 +28,11 @@ import javax.sql.DataSource;
 /** DAO for saving and retrieving output data. */
 public class MaestroOutputDataDao extends AbstractDatabaseDao {
   private static final String GET_OUTPUT_DATA_JOB_QUERY =
-      "SELECT payload, create_ts, modify_ts from maestro_output_data "
+      "SELECT payload, create_ts, modify_ts from output_data "
           + "WHERE external_job_id = ? AND external_job_type = ? LIMIT 1";
   private static final String UPSERT_OUTPUT_DATA_QUERY =
-      "INSERT INTO maestro_output_data (payload, modify_ts) VALUES (?::json, CURRENT_TIMESTAMP) "
+      "INSERT INTO output_data (external_job_id,external_job_type,workflow_id,payload,modify_ts) "
+          + "VALUES (?,?,?,?::json,CURRENT_TIMESTAMP) "
           + "ON CONFLICT (external_job_type,external_job_id) DO UPDATE SET "
           + "payload=EXCLUDED.payload,modify_ts=CURRENT_TIMESTAMP";
 
@@ -70,7 +71,15 @@ public class MaestroOutputDataDao extends AbstractDatabaseDao {
     final String outputDataStr = validateAndToJson(outputData);
     withMetricLogError(
         () ->
-            withRetryableUpdate(UPSERT_OUTPUT_DATA_QUERY, stmt -> stmt.setString(1, outputDataStr)),
+            withRetryableUpdate(
+                UPSERT_OUTPUT_DATA_QUERY,
+                stmt -> {
+                  int idx = 0;
+                  stmt.setString(++idx, outputData.getExternalJobId());
+                  stmt.setString(++idx, outputData.getExternalJobType().getType());
+                  stmt.setString(++idx, outputData.getWorkflowId());
+                  stmt.setString(++idx, outputDataStr);
+                }),
         "insertOrUpdateOutputData",
         "Failed updating output data: [{}]",
         outputDataStr);

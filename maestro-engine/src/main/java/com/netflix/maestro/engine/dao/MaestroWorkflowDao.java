@@ -105,17 +105,20 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
   private static final int MORE_THAN_ONE_CONDITION = 2;
 
   private static final String CREATE_WORKFLOW_VERSION_QUERY =
-      "INSERT INTO maestro_workflow_version (metadata,definition,trigger_uuids) VALUES (?::jsonb,?::json,?::jsonb) ";
+      "INSERT INTO maestro_workflow_version (workflow_id,version_id,metadata,definition,trigger_uuids) "
+          + "VALUES (?,?,?::jsonb,?::json,?::jsonb) ";
   private static final String CREATE_WORKFLOW_PROPS_QUERY =
       "INSERT INTO maestro_workflow_properties "
           + "(workflow_id,create_time,author,properties_changes,previous_snapshot) VALUES (?,?,?::jsonb,?::jsonb,?::jsonb)";
 
   private static final String UPSERT_WORKFLOW_QUERY_TEMPLATE =
-      "INSERT INTO maestro_workflow (%s,modify_ts) VALUES (%s,CURRENT_TIMESTAMP) ON CONFLICT (workflow_id) "
-          + "DO UPDATE SET %s,modify_ts=CURRENT_TIMESTAMP RETURNING modify_ts, internal_id";
+      "INSERT INTO maestro_workflow (%s,modify_ts) VALUES (%s,CURRENT_TIMESTAMP) "
+          + "ON CONFLICT(workflow_id) DO UPDATE SET %s,modify_ts=CURRENT_TIMESTAMP "
+          + "RETURNING modify_ts, internal_id";
 
   private static final String INSERT_TIMELINE_QUERY =
-      "INSERT INTO maestro_workflow_timeline (workflow_id,change_event,hash_id) VALUES (?,?::json,?) ON CONFLICT DO NOTHING";
+      "INSERT INTO maestro_workflow_timeline (workflow_id,change_event,hash_id) "
+          + "VALUES (?,?::jsonb,?) ON CONFLICT DO NOTHING";
 
   private static final String GET_CURRENT_WORKFLOW_INFO_FOR_UPDATE =
       "SELECT active_version_id,latest_version_id,properties_snapshot "
@@ -139,18 +142,18 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
       "WITH deleted_wf AS ("
           + "DELETE FROM maestro_workflow WHERE workflow_id=? AND NOT EXISTS "
           + "(SELECT workflow_id FROM maestro_workflow_instance "
-          + "WHERE workflow_id=? AND status=ANY('{CREATED,IN_PROGRESS}') LIMIT 1) RETURNING *)"
-          + "INSERT INTO maestro_workflow_deleted (workflow, timeline) "
-          + "SELECT row_to_json(deleted_wf), ARRAY[?] FROM deleted_wf RETURNING internal_id";
+          + "WHERE workflow_id=? AND status=ANY(ARRAY['CREATED','IN_PROGRESS']) LIMIT 1) RETURNING *)"
+          + "INSERT INTO maestro_workflow_deleted (workflow_id, internal_id, workflow, timeline) "
+          + "SELECT deleted_wf.workflow_id, deleted_wf.internal_id, row_to_json(deleted_wf), ARRAY[?] FROM deleted_wf RETURNING internal_id";
 
   private static final String DEACTIVATE_WORKFLOW_QUERY =
       "UPDATE maestro_workflow SET (active_version_id,activate_ts,modify_ts,activated_by)=(0,"
-          + "CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?::json) WHERE workflow_id=? RETURNING "
+          + "CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?::jsonb) WHERE workflow_id=? RETURNING "
           + "(SELECT active_version_id FROM maestro_workflow WHERE workflow_id=?)";
 
   private static final String ACTIVATE_WORKFLOW_VERSION_QUERY =
       "UPDATE maestro_workflow SET (active_version_id,activate_ts,modify_ts,activated_by)=(?,"
-          + "CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?::json) WHERE workflow_id=?";
+          + "CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?::jsonb) WHERE workflow_id=?";
 
   private static final String GET_WORKFLOW_OVERVIEW_QUERY =
       "SELECT active_version_id,latest_version_id,latest_instance_id,properties_snapshot,"
@@ -166,10 +169,10 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
       "SELECT status, count(*) as cnt FROM maestro_workflow_instance WHERE workflow_id=? ";
   private static final String GET_NONTERMINAL_INSTANCE_COUNT_QUERY =
       GET_INSTANCE_COUNT_BY_STATUS_QUERY_PREFIX
-          + "AND status=ANY('{CREATED,IN_PROGRESS}') GROUP BY status";
+          + "AND status=ANY(ARRAY['CREATED','IN_PROGRESS']) GROUP BY status";
   private static final String GET_NONTERMINAL_FAILED_INSTANCE_COUNT_QUERY =
       GET_INSTANCE_COUNT_BY_STATUS_QUERY_PREFIX
-          + "AND status=ANY('{CREATED,IN_PROGRESS,FAILED}') GROUP BY status";
+          + "AND status=ANY(ARRAY['CREATED','IN_PROGRESS','FAILED']) GROUP BY status";
 
   private static final String GET_WORKFLOW_PARAM_FOR_PREFIX_QUERY =
       "SELECT mwv.workflow_id as id, definition->'params'->>? as payload FROM maestro_workflow_version mwv "
@@ -627,6 +630,7 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
     Long res =
         withRetryableTransaction(
             conn -> {
+              markTransactionSerializable(conn);
               try (PreparedStatement stmt = conn.prepareStatement(DELETE_MAESTRO_WORKFLOW_QUERY)) {
                 int idx = 0;
                 stmt.setString(++idx, workflowId);
@@ -918,6 +922,8 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
     final String triggerUuidsJson = toJson(triggerUuids);
     try (PreparedStatement stmt = conn.prepareStatement(CREATE_WORKFLOW_VERSION_QUERY)) {
       int idx = 0;
+      stmt.setString(++idx, workflow.getId());
+      stmt.setLong(++idx, metadata.getWorkflowVersionId());
       stmt.setString(++idx, metadataJson);
       stmt.setString(++idx, workflowJson);
       stmt.setString(++idx, triggerUuidsJson);
@@ -1015,7 +1021,7 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
   private void updateTimeline(Connection conn, String workflowId, MaestroJobEvent jobEvent)
       throws SQLException {
     String json = toJson(jobEvent);
-    long hashId = json.hashCode();
+    long hashId = computeFnv1aHash(json);
     int idx = 0;
     try (PreparedStatement stmt = conn.prepareStatement(INSERT_TIMELINE_QUERY)) {
       stmt.setString(++idx, workflowId);
@@ -1023,6 +1029,22 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
       stmt.setLong(++idx, hashId);
       stmt.executeUpdate();
     }
+  }
+
+  private static final long FNV1A_OFFSET_BASIS = 2166136261L;
+  private static final long FNV1A_PRIME = 16777619L;
+  private static final long FNV1A_MASK = 0xFFFFFFFFL;
+  private static final int BYTE_UNSIGNED_MASK = 0xff;
+
+  /** Compute FNV-1a 32-bit hash for timeline deduplication. */
+  private long computeFnv1aHash(String input) {
+    long hash = FNV1A_OFFSET_BASIS;
+    byte[] bytes = input.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    for (byte b : bytes) {
+      hash = (hash ^ (b & BYTE_UNSIGNED_MASK)) * FNV1A_PRIME;
+      hash &= FNV1A_MASK;
+    }
+    return hash;
   }
 
   private MaestroJobEvent logToTimeline(

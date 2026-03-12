@@ -71,15 +71,17 @@ import lombok.extern.slf4j.Slf4j;
  * data.
  */
 @Slf4j
+@SuppressWarnings("checkstyle:MultipleStringLiterals")
 public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
   private static final String INSERT_ACTION_QUERY =
-      "INSERT INTO maestro_step_instance_action (payload) VALUES (?::json) ON CONFLICT DO NOTHING";
-  private static final String UPSERT_SUFFIX =
-      "ON CONFLICT (workflow_id, workflow_instance_id, workflow_run_id, step_id) "
-          + "DO UPDATE SET payload=EXCLUDED.payload,create_ts=CURRENT_TIMESTAMP";
+      "INSERT INTO maestro_step_instance_action (workflow_id,workflow_instance_id,workflow_run_id,step_id,payload) "
+          + "VALUES (?,?,?,?,?::json) ON CONFLICT DO NOTHING";
   private static final String UPSERT_ACTION_QUERY =
-      "INSERT INTO maestro_step_instance_action (payload,create_ts) VALUES (?::json,CURRENT_TIMESTAMP) "
-          + UPSERT_SUFFIX;
+      "INSERT INTO maestro_step_instance_action "
+          + "(workflow_id,workflow_instance_id,workflow_run_id,step_id,payload,create_ts) "
+          + "VALUES (?,?,?,?,?::json,CURRENT_TIMESTAMP) "
+          + "ON CONFLICT (workflow_id,workflow_instance_id,workflow_run_id,step_id) "
+          + "DO UPDATE SET payload=EXCLUDED.payload,create_ts=CURRENT_TIMESTAMP";
   private static final String INSTANCE_CONDITION =
       "workflow_id=? AND workflow_instance_id=? AND workflow_run_id=?";
   private static final String CONDITION_POSTFIX = "(" + INSTANCE_CONDITION + " AND step_id=?)";
@@ -89,8 +91,12 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
   private static final String GET_ACTION_QUERY =
       "SELECT payload, create_ts FROM maestro_step_instance_action WHERE " + CONDITION_POSTFIX;
   private static final String UPSERT_ACTIONS_QUERY_TEMPLATE =
-      "INSERT INTO maestro_step_instance_action (payload,create_ts) VALUES %s" + UPSERT_SUFFIX;
-  private static final String VALUE_PLACE_HOLDER = "(?::json,CURRENT_TIMESTAMP)";
+      "INSERT INTO maestro_step_instance_action "
+          + "(workflow_id,workflow_instance_id,workflow_run_id,step_id,payload,create_ts) "
+          + "VALUES %s "
+          + "ON CONFLICT (workflow_id,workflow_instance_id,workflow_run_id,step_id) "
+          + "DO UPDATE SET payload=EXCLUDED.payload,create_ts=CURRENT_TIMESTAMP";
+  private static final String VALUE_PLACE_HOLDER = "(?,?,?,?,?::json,CURRENT_TIMESTAMP)";
   private static final String DELETE_ACTIONS_QUERY = DELETE_ACTION_PREFIX + INSTANCE_CONDITION;
 
   private final MaestroStepInstanceDao stepInstanceDao;
@@ -302,7 +308,12 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
                 withRetryableTransaction(
                     conn -> {
                       try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                        stmt.setString(1, payload);
+                        int idx = 0;
+                        stmt.setString(++idx, stepInstance.getWorkflowId());
+                        stmt.setLong(++idx, stepInstance.getWorkflowInstanceId());
+                        stmt.setLong(++idx, stepInstance.getWorkflowRunId());
+                        stmt.setString(++idx, stepInstance.getStepId());
+                        stmt.setString(++idx, payload);
                         int res = stmt.executeUpdate();
                         if (res == SUCCESS_WRITE_SIZE) {
                           message[0] = queueSystem.enqueue(conn, jobEvent);
@@ -715,8 +726,8 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
     stepInstance.setWorkflowInstanceId(instance.getWorkflowInstanceId());
     stepInstance.setWorkflowRunId(instance.getWorkflowRunId());
 
-    // prepare all action strings.
-    List<String> payloads =
+    // prepare all step actions.
+    List<StepAction> stepActions =
         instance.getRuntimeDag().keySet().stream()
             .filter(stepId -> incomplete(stepStates, stepId))
             .map(
@@ -725,13 +736,13 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
                   StepAction stepAction =
                       StepAction.createTerminate(
                           stepInstanceAction, stepInstance, user, reason, true);
-                  return toJson(stepAction);
+                  return stepAction;
                 })
             .toList();
 
     // batch upsert them into DB.
     String workflowIdentity = instance.getIdentity();
-    var partitions = ObjectHelper.partitionList(payloads, Constants.TERMINATE_BATCH_LIMIT);
+    var partitions = ObjectHelper.partitionList(stepActions, Constants.TERMINATE_BATCH_LIMIT);
     MessageDto[] message = new MessageDto[1];
     int upsert = 0;
     // There is a chance of inconsistency if batches fail in the middle for manual
@@ -754,32 +765,36 @@ public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
     queueSystem.notify(message[0]);
     LOG.debug(
         "Found [{}] incomplete steps and upsert [{}] step actions for workflow {} to the step action table.",
-        payloads.size(),
+        stepActions.size(),
         upsert,
         workflowIdentity);
     return upsert;
   }
 
-  /** Batch upsert step actions, payloads must fit into a single batch. */
+  /** Batch upsert step actions, actions must fit into a single batch. */
   @SuppressWarnings("PMD.UseVarargs")
   private int upsertActions(
       String identity,
       int upserted,
-      List<String> payloads,
+      List<StepAction> stepActions,
       @Nullable MaestroJobEvent jobEvent,
       MessageDto[] message) {
     String sql =
         String.format(
             UPSERT_ACTIONS_QUERY_TEMPLATE,
-            String.join(",", Collections.nCopies(payloads.size(), VALUE_PLACE_HOLDER)));
+            String.join(",", Collections.nCopies(stepActions.size(), VALUE_PLACE_HOLDER)));
     return withMetricLogError(
         () ->
             withRetryableTransaction(
                 conn -> {
                   try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                     int idx = 0;
-                    for (String payload : payloads) {
-                      stmt.setString(++idx, payload);
+                    for (StepAction stepAction : stepActions) {
+                      stmt.setString(++idx, stepAction.getWorkflowId());
+                      stmt.setLong(++idx, stepAction.getWorkflowInstanceId());
+                      stmt.setLong(++idx, stepAction.getWorkflowRunId());
+                      stmt.setString(++idx, stepAction.getStepId());
+                      stmt.setString(++idx, toJson(stepAction));
                     }
                     int res = stmt.executeUpdate();
                     if (upserted + res > 0 && jobEvent != null) {

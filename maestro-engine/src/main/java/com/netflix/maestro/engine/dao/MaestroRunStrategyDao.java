@@ -69,7 +69,11 @@ import lombok.extern.slf4j.Slf4j;
  * because a new run might unexpectedly stop all previously queued or running instances.
  */
 @SuppressFBWarnings("OBL_UNSATISFIED_OBLIGATION")
-@SuppressWarnings({"PMD.ExhaustiveSwitchHasDefault", "PMD.ReplaceJavaUtilDate"})
+@SuppressWarnings({
+  "PMD.ExhaustiveSwitchHasDefault",
+  "PMD.ReplaceJavaUtilDate",
+  "checkstyle:MultipleStringLiterals"
+})
 @Slf4j
 public class MaestroRunStrategyDao extends AbstractDatabaseDao {
   private static final String ONE_STRING = "1";
@@ -80,22 +84,31 @@ public class MaestroRunStrategyDao extends AbstractDatabaseDao {
       "SELECT latest_instance_id AS id FROM maestro_workflow WHERE workflow_id=? FOR UPDATE";
 
   private static final String UPDATE_LATEST_WORKFLOW_INSTANCE_ID_QUERY =
-      "UPDATE maestro_workflow set (latest_instance_id,modify_ts)=(?,CURRENT_TIMESTAMP) WHERE workflow_id=?";
+      "UPDATE maestro_workflow SET latest_instance_id = ?, modify_ts = CURRENT_TIMESTAMP WHERE workflow_id=?";
 
   private static final String GET_LATEST_WORKFLOW_INSTANCE_RUN_ID_QUERY =
       "SELECT run_id AS id, status FROM maestro_workflow_instance "
           + "WHERE workflow_id=? AND instance_id=? ORDER BY run_id DESC LIMIT 1";
 
-  // modify_ts is set to CURRENT_TIMESTAMP by default
   private static final String INSERT_WORKFLOW_INSTANCE_QUERY =
-      "INSERT INTO maestro_workflow_instance (instance,status) VALUES (?::json,?)";
+      "INSERT INTO maestro_workflow_instance "
+          + "(workflow_id,instance_id,run_id,uuid,correlation_id,initiator,"
+          + "root_depth,initiator_type,create_ts,instance,status) "
+          + "VALUES (?,?,?,?,?,?::jsonb,?,?,?,?::json,?)";
 
-  // start_ts and end_ts can be CURRENT_TIMESTAMP if needed
   private static final String INSERT_STOPPED_WORKFLOW_INSTANCE_QUERY =
-      "INSERT INTO maestro_workflow_instance (instance,status,start_ts,end_ts,timeline) VALUES (?::json,?,?,?,ARRAY[?])";
+      "INSERT INTO maestro_workflow_instance "
+          + "(workflow_id,instance_id,run_id,uuid,correlation_id,initiator,"
+          + "root_depth,initiator_type,create_ts,instance,status,"
+          + "start_ts,end_ts,timeline) "
+          + "VALUES (?,?,?,?,?,?::jsonb,?,?,?,?::json,?,?,?,ARRAY[?])";
 
   private static final String INSERT_TERMINATED_WORKFLOW_INSTANCE_QUERY =
-      "INSERT INTO maestro_workflow_instance (instance,status,end_ts,timeline) VALUES (?::json,?,?,?)";
+      "INSERT INTO maestro_workflow_instance "
+          + "(workflow_id,instance_id,run_id,uuid,correlation_id,initiator,"
+          + "root_depth,initiator_type,create_ts,instance,status,"
+          + "end_ts,timeline) "
+          + "VALUES (?,?,?,?,?,?::jsonb,?,?,?,?::json,?,?,?)";
 
   // if an instance is restarted, it inherits the original instance id.
   private static final String RUN_STRATEGY_QUERY_TEMPLATE =
@@ -128,8 +141,8 @@ public class MaestroRunStrategyDao extends AbstractDatabaseDao {
       "[\"With LAST_ONLY run strategy, this run is stopped due to starting a new run.\"]";
 
   private static final String STOP_QUEUED_INSTANCES_QUERY =
-      "UPDATE maestro_workflow_instance SET (status,start_ts,end_ts,modify_ts,timeline) "
-          + "= ('STOPPED',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,array_append(timeline,?)) "
+      "UPDATE maestro_workflow_instance SET status = 'STOPPED', start_ts = CURRENT_TIMESTAMP, "
+          + "end_ts = CURRENT_TIMESTAMP, modify_ts = CURRENT_TIMESTAMP, timeline = array_append(timeline, ?) "
           + "WHERE (workflow_id, instance_id, run_id) IN ("
           + "SELECT workflow_id, instance_id, run_id FROM maestro_workflow_instance "
           + "WHERE workflow_id=? AND status='CREATED' AND execution_id IS NULL LIMIT 2) RETURNING instance";
@@ -141,8 +154,11 @@ public class MaestroRunStrategyDao extends AbstractDatabaseDao {
       "SELECT uuid AS id FROM maestro_workflow_instance WHERE workflow_id=? AND uuid = ANY (?)";
 
   private static final String UPDATE_WORKFLOW_INSTANCE_FAILED_STATUS =
-      "UPDATE maestro_workflow_instance SET status='FAILED_2' "
+      "UPDATE maestro_workflow_instance SET status = 'FAILED_2' "
           + "WHERE workflow_id=? AND instance_id=? AND run_id<? AND status='FAILED'";
+
+  private static final Set<RunStrategy.Rule> SERIALIZABLE_RUN_STRATEGIES =
+      Set.of(RunStrategy.Rule.FIRST_ONLY, RunStrategy.Rule.LAST_ONLY);
 
   private static final String RUN_STRATEGY_TAG = "run_strategy";
   private static final User RUN_STRATEGY_USER =
@@ -279,8 +295,18 @@ public class MaestroRunStrategyDao extends AbstractDatabaseDao {
 
   private void prepareCreateInstanceStatement(PreparedStatement wfiStmt, WorkflowInstance instance)
       throws SQLException {
-    wfiStmt.setString(1, toJson(instance));
-    wfiStmt.setString(2, WorkflowInstance.Status.CREATED.name());
+    int idx = 0;
+    wfiStmt.setString(++idx, instance.getWorkflowId());
+    wfiStmt.setLong(++idx, instance.getWorkflowInstanceId());
+    wfiStmt.setLong(++idx, instance.getWorkflowRunId());
+    wfiStmt.setString(++idx, instance.getWorkflowUuid());
+    wfiStmt.setString(++idx, instance.getCorrelationId());
+    wfiStmt.setString(++idx, toJson(instance.getInitiator()));
+    wfiStmt.setLong(++idx, instance.getInitiator().getDepth());
+    wfiStmt.setString(++idx, instance.getInitiator().getType().name());
+    wfiStmt.setTimestamp(++idx, new Timestamp(instance.getCreateTime()));
+    wfiStmt.setString(++idx, toJson(instance));
+    wfiStmt.setString(++idx, WorkflowInstance.Status.CREATED.name());
   }
 
   private int insertInstance(
@@ -308,6 +334,15 @@ public class MaestroRunStrategyDao extends AbstractDatabaseDao {
       PreparedStatement wfiStmt, WorkflowInstance instance, TimelineEvent timelineEvent)
       throws SQLException {
     int idx = 0;
+    wfiStmt.setString(++idx, instance.getWorkflowId());
+    wfiStmt.setLong(++idx, instance.getWorkflowInstanceId());
+    wfiStmt.setLong(++idx, instance.getWorkflowRunId());
+    wfiStmt.setString(++idx, instance.getWorkflowUuid());
+    wfiStmt.setString(++idx, instance.getCorrelationId());
+    wfiStmt.setString(++idx, toJson(instance.getInitiator()));
+    wfiStmt.setLong(++idx, instance.getInitiator().getDepth());
+    wfiStmt.setString(++idx, instance.getInitiator().getType().name());
+    wfiStmt.setTimestamp(++idx, new Timestamp(instance.getCreateTime()));
     wfiStmt.setString(++idx, toJson(instance));
     wfiStmt.setString(++idx, WorkflowInstance.Status.STOPPED.name());
     wfiStmt.setTimestamp(++idx, new Timestamp(instance.getCreateTime()));
@@ -355,6 +390,15 @@ public class MaestroRunStrategyDao extends AbstractDatabaseDao {
     try (PreparedStatement wfiStmt =
         conn.prepareStatement(INSERT_TERMINATED_WORKFLOW_INSTANCE_QUERY)) {
       int idx = 0;
+      wfiStmt.setString(++idx, instance.getWorkflowId());
+      wfiStmt.setLong(++idx, instance.getWorkflowInstanceId());
+      wfiStmt.setLong(++idx, instance.getWorkflowRunId());
+      wfiStmt.setString(++idx, instance.getWorkflowUuid());
+      wfiStmt.setString(++idx, instance.getCorrelationId());
+      wfiStmt.setString(++idx, toJson(instance.getInitiator()));
+      wfiStmt.setLong(++idx, instance.getInitiator().getDepth());
+      wfiStmt.setString(++idx, instance.getInitiator().getType().name());
+      wfiStmt.setTimestamp(++idx, new Timestamp(instance.getCreateTime()));
       wfiStmt.setString(++idx, toJson(instance));
       wfiStmt.setString(++idx, instance.getStatus().name());
       wfiStmt.setTimestamp(++idx, new Timestamp(System.currentTimeMillis()));
@@ -519,6 +563,10 @@ public class MaestroRunStrategyDao extends AbstractDatabaseDao {
                 withRetryableTransaction(
                     conn -> {
                       messages.clear(); // clear it to handle the transaction retry
+                      // Ensures run strategy is not violated
+                      if (SERIALIZABLE_RUN_STRATEGIES.contains(runStrategy.getRule())) {
+                        markTransactionSerializable(conn);
+                      }
                       final long nextInstanceId =
                           getLatestInstanceId(conn, instance.getWorkflowId()) + 1;
                       if (isDuplicated(conn, instance)) {
@@ -603,6 +651,7 @@ public class MaestroRunStrategyDao extends AbstractDatabaseDao {
       String workflowId, long concurrency, boolean strict) {
     return withRetryableTransaction(
         conn -> {
+          markTransactionSerializable(conn);
           if (strict && existLastRunFailedInstance(conn, workflowId)) {
             LOG.info(
                 "Cannot run instance for workflow [{}] as it has failed instance last runs in history.",
@@ -669,6 +718,9 @@ public class MaestroRunStrategyDao extends AbstractDatabaseDao {
               return withRetryableTransaction(
                   conn -> {
                     messages.clear(); // clear it to handle the transaction retry
+                    if (SERIALIZABLE_RUN_STRATEGIES.contains(runStrategy.getRule())) {
+                      markTransactionSerializable(conn);
+                    }
                     final long nextInstanceId = getLatestInstanceId(conn, workflowId) + 1;
                     if (dedupAndCheckIfAllDuplicated(conn, workflowId, uuids)) {
                       return new int[instances.size()];
