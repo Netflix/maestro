@@ -25,3 +25,15 @@ awslocal --endpoint-url=http://${LOCALSTACK_HOST}:4566 sqs create-queue --queue-
 create_fifo_queue "maestro-signal-instance.fifo"
 create_fifo_queue "maestro-signal-trigger-match.fifo"
 create_fifo_queue "maestro-signal-trigger-execution.fifo"
+
+# Dead-letter queue for maestro-event messages that exceed max receive count
+create_queue "maestro-event-dlq"
+
+# Queue for maestro-extensions to consume maestro events (subscribed to SNS topic)
+# Redrive policy sends messages to DLQ after 5 failed processing attempts
+create_queue "maestro-event"
+DLQ_ARN="arn:aws:sqs:${AWS_REGION}:000000000000:maestro-event-dlq"
+awslocal --endpoint-url=http://${LOCALSTACK_HOST}:4566 sqs set-queue-attributes \
+    --queue-url http://${LOCALSTACK_HOST}:4566/000000000000/maestro-event \
+    --region ${AWS_REGION} \
+    --attributes "{\"RedrivePolicy\":\"{\\\"deadLetterTargetArn\\\":\\\"${DLQ_ARN}\\\",\\\"maxReceiveCount\\\":\\\"5\\\"}\"}"

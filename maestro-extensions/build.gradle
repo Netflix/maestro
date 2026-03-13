@@ -1,0 +1,30 @@
+dependencies {
+    implementation project(':maestro-database')
+    implementation project(':maestro-common')
+    implementation spectatorApiDep
+    implementation jacksonDatabindDep
+    implementation jacksonAnnotationsDep
+    implementation jakartaValidationDep
+    api slf4jApiDep
+
+    compileOnly lombokDep
+    annotationProcessor lombokDep
+    testCompileOnly lombokDep
+    testAnnotationProcessor lombokDep
+
+    implementation 'org.springframework.boot:spring-boot-starter-web:3.+'
+    implementation 'io.awspring.cloud:spring-cloud-aws-starter-sqs:3.+'
+    implementation 'io.swagger.core.v3:swagger-annotations:2.+'
+    implementation bvalJsrDep
+
+    runtimeOnly testcontainerDep
+    runtimeOnly postgresqlDep
+
+    testImplementation junitDep
+    testImplementation mockitoCoreDep
+    testImplementation assertJCoreDep
+    testImplementation hikaricpDep
+    testImplementation flywayDep
+    testImplementation(testFixtures(project(':maestro-common')))
+    testImplementation(testFixtures(project(':maestro-database')))
+}
