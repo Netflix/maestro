@@ -16,6 +16,29 @@ You can read more details about it in our series of blog posts
 - [100X Faster: How We Supercharged Netflix Maestro's Workflow Engine](https://netflixtechblog.com/100x-faster-how-we-supercharged-netflix-maestros-workflow-engine-028e9637f041)
 - [Incremental Processing using Netflix Maestro and Apache Iceberg](https://netflixtechblog.com/incremental-processing-using-netflix-maestro-and-apache-iceberg-b8ba072ddeeb)
 
+# Using Maestro as a Library
+
+Maestro modules are published to Maven Central and can be used as dependencies in your projects.
+
+## Gradle
+```gradle
+dependencies {
+    implementation 'com.netflix.maestro:maestro-flow:1.0.0'
+    implementation 'com.netflix.maestro:maestro-engine:1.0.0'
+}
+```
+
+## Maven
+```xml
+<dependency>
+    <groupId>com.netflix.maestro</groupId>
+    <artifactId>maestro-flow</artifactId>
+    <version>1.0.0</version>
+</dependency>
+```
+
+See [PUBLISHING.md](PUBLISHING.md) for all available modules and publishing details.
+
 # Get started
 ## Prerequisite
 - Git
