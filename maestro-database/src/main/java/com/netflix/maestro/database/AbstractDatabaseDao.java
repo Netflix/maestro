@@ -407,6 +407,32 @@ public abstract class AbstractDatabaseDao {
   }
 
   /**
+   * Mark the current transaction as SERIALIZABLE isolation level.
+   *
+   * @param conn the connection
+   * @throws SQLException sql exception
+   */
+  protected void markTransactionSerializable(Connection conn) throws SQLException {
+    try (PreparedStatement stmt =
+        conn.prepareStatement("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")) {
+      stmt.execute();
+    }
+  }
+
+  /**
+   * Mark the current transaction as SERIALIZABLE READ ONLY isolation level.
+   *
+   * @param conn the connection
+   * @throws SQLException sql exception
+   */
+  protected void markTransactionSerializableReadOnly(Connection conn) throws SQLException {
+    try (PreparedStatement stmt =
+        conn.prepareStatement("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE READ ONLY")) {
+      stmt.execute();
+    }
+  }
+
+  /**
    * Initialize a new transactional {@link Connection} from {@link #dataSource}, prepare a new SQL
    * statement, and pass then it to {@literal function}. It includes a retry mechanism for client
    * side retry.

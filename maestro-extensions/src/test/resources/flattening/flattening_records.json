@@ -1,0 +1,902 @@
+[
+  {
+    "instance": {"initial_step_created_ms": 1700640661860, "iteration_rank": "225-14", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 4, "num": 25},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661860, "end_time": 1700640671309, "evaluate_param_time": 1700640663821, "execute_time": 1700640671309, "finish_time": 1700640671309, "initialize_time": 1700640662617, "modify_time": 1700640671309, "start_time": 1700640671308, "status": "SUCCEEDED", "wait_permit_time": 1700640663822, "wait_signal_time": 1700640663821},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661823, "iteration_rank": "225-13", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 3, "num": 25},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661823, "end_time": 1700640671307, "evaluate_param_time": 1700640663841, "execute_time": 1700640671307, "finish_time": 1700640671307, "initialize_time": 1700640662632, "modify_time": 1700640671307, "start_time": 1700640671307, "status": "SUCCEEDED", "wait_permit_time": 1700640663841, "wait_signal_time": 1700640663841},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661846, "iteration_rank": "225-12", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 2, "num": 25},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661846, "end_time": 1700640671301, "evaluate_param_time": 1700640663825, "execute_time": 1700640671301, "finish_time": 1700640671301, "initialize_time": 1700640662639, "modify_time": 1700640671301, "start_time": 1700640671301, "status": "SUCCEEDED", "wait_permit_time": 1700640663825, "wait_signal_time": 1700640663825},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661831, "iteration_rank": "225-11", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 1, "num": 25},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661831, "end_time": 1700640671029, "evaluate_param_time": 1700640663825, "execute_time": 1700640671029, "finish_time": 1700640671029, "initialize_time": 1700640662627, "modify_time": 1700640671029, "start_time": 1700640671028, "status": "SUCCEEDED", "wait_permit_time": 1700640663825, "wait_signal_time": 1700640663825},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661850, "iteration_rank": "224-14", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 4, "num": 24},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661850, "end_time": 1700640671311, "evaluate_param_time": 1700640663819, "execute_time": 1700640671311, "finish_time": 1700640671311, "initialize_time": 1700640662634, "modify_time": 1700640671311, "start_time": 1700640671311, "status": "SUCCEEDED", "wait_permit_time": 1700640663819, "wait_signal_time": 1700640663819},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661835, "iteration_rank": "224-13", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 3, "num": 24},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661835, "end_time": 1700640671307, "evaluate_param_time": 1700640663831, "execute_time": 1700640671307, "finish_time": 1700640671307, "initialize_time": 1700640662618, "modify_time": 1700640671307, "start_time": 1700640671306, "status": "SUCCEEDED", "wait_permit_time": 1700640663832, "wait_signal_time": 1700640663831},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661572, "iteration_rank": "224-12", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 2, "num": 24},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661572, "end_time": 1700640671013, "evaluate_param_time": 1700640663544, "execute_time": 1700640671013, "finish_time": 1700640671013, "initialize_time": 1700640662355, "modify_time": 1700640671013, "start_time": 1700640671012, "status": "SUCCEEDED", "wait_permit_time": 1700640663545, "wait_signal_time": 1700640663543},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661519, "iteration_rank": "224-11", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 1, "num": 24},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661519, "end_time": 1700640670990, "evaluate_param_time": 1700640663514, "execute_time": 1700640670990, "finish_time": 1700640670990, "initialize_time": 1700640662294, "modify_time": 1700640670990, "start_time": 1700640670990, "status": "SUCCEEDED", "wait_permit_time": 1700640663515, "wait_signal_time": 1700640663514},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661844, "iteration_rank": "223-14", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 4, "num": 23},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661844, "end_time": 1700640671312, "evaluate_param_time": 1700640663847, "execute_time": 1700640671312, "finish_time": 1700640671312, "initialize_time": 1700640662625, "modify_time": 1700640671312, "start_time": 1700640671312, "status": "SUCCEEDED", "wait_permit_time": 1700640663847, "wait_signal_time": 1700640663846},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661831, "iteration_rank": "223-13", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 3, "num": 23},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661831, "end_time": 1700640671306, "evaluate_param_time": 1700640663833, "execute_time": 1700640671305, "finish_time": 1700640671306, "initialize_time": 1700640662624, "modify_time": 1700640671306, "start_time": 1700640671305, "status": "SUCCEEDED", "wait_permit_time": 1700640663834, "wait_signal_time": 1700640663833},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661839, "iteration_rank": "223-12", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 2, "num": 23},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661839, "end_time": 1700640671024, "evaluate_param_time": 1700640663836, "execute_time": 1700640671024, "finish_time": 1700640671024, "initialize_time": 1700640662630, "modify_time": 1700640671024, "start_time": 1700640671023, "status": "SUCCEEDED", "wait_permit_time": 1700640663836, "wait_signal_time": 1700640663836},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661802, "iteration_rank": "223-11", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 1, "num": 23},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661802, "end_time": 1700640671020, "evaluate_param_time": 1700640663766, "execute_time": 1700640671019, "finish_time": 1700640671020, "initialize_time": 1700640662573, "modify_time": 1700640671020, "start_time": 1700640671019, "status": "SUCCEEDED", "wait_permit_time": 1700640663766, "wait_signal_time": 1700640663766},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661806, "iteration_rank": "222-14", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 4, "num": 22},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661806, "end_time": 1700640671001, "evaluate_param_time": 1700640663810, "execute_time": 1700640671001, "finish_time": 1700640671001, "initialize_time": 1700640662570, "modify_time": 1700640671001, "start_time": 1700640671000, "status": "SUCCEEDED", "wait_permit_time": 1700640663810, "wait_signal_time": 1700640663810},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640657757, "iteration_rank": "222-13", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 3, "num": 22},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640657757, "end_time": 1700640665928, "evaluate_param_time": 1700640659664, "execute_time": 1700640665927, "finish_time": 1700640665927, "initialize_time": 1700640658405, "modify_time": 1700640665928, "start_time": 1700640665927, "status": "SUCCEEDED", "wait_permit_time": 1700640659664, "wait_signal_time": 1700640659664},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640657756, "iteration_rank": "222-12", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 2, "num": 22},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640657756, "end_time": 1700640665934, "evaluate_param_time": 1700640659668, "execute_time": 1700640665933, "finish_time": 1700640665934, "initialize_time": 1700640658415, "modify_time": 1700640665934, "start_time": 1700640665933, "status": "SUCCEEDED", "wait_permit_time": 1700640659668, "wait_signal_time": 1700640659668},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640657751, "iteration_rank": "222-11", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 1, "num": 22},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640657751, "end_time": 1700640665935, "evaluate_param_time": 1700640659671, "execute_time": 1700640665934, "finish_time": 1700640665935, "initialize_time": 1700640658430, "modify_time": 1700640665935, "start_time": 1700640665934, "status": "SUCCEEDED", "wait_permit_time": 1700640659672, "wait_signal_time": 1700640659671},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661825, "iteration_rank": "221-14", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 4, "num": 21},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661825, "end_time": 1700640671303, "evaluate_param_time": 1700640663852, "execute_time": 1700640671302, "finish_time": 1700640671303, "initialize_time": 1700640662636, "modify_time": 1700640671303, "start_time": 1700640671302, "status": "SUCCEEDED", "wait_permit_time": 1700640663852, "wait_signal_time": 1700640663851},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661504, "iteration_rank": "221-13", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 3, "num": 21},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661504, "end_time": 1700640670991, "evaluate_param_time": 1700640663528, "execute_time": 1700640670991, "finish_time": 1700640670991, "initialize_time": 1700640662287, "modify_time": 1700640670991, "start_time": 1700640670991, "status": "SUCCEEDED", "wait_permit_time": 1700640663528, "wait_signal_time": 1700640663527},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661838, "iteration_rank": "221-12", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 2, "num": 21},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661838, "end_time": 1700640671295, "evaluate_param_time": 1700640663865, "execute_time": 1700640671294, "finish_time": 1700640671295, "initialize_time": 1700640662610, "modify_time": 1700640671295, "start_time": 1700640671294, "status": "SUCCEEDED", "wait_permit_time": 1700640663866, "wait_signal_time": 1700640663865},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661803, "iteration_rank": "221-11", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 1, "num": 21},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661803, "end_time": 1700640671010, "evaluate_param_time": 1700640663830, "execute_time": 1700640671009, "finish_time": 1700640671010, "initialize_time": 1700640662613, "modify_time": 1700640671010, "start_time": 1700640671009, "status": "SUCCEEDED", "wait_permit_time": 1700640663830, "wait_signal_time": 1700640663830},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661826, "iteration_rank": "220-14", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 4, "num": 20},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661826, "end_time": 1700640671296, "evaluate_param_time": 1700640663824, "execute_time": 1700640671296, "finish_time": 1700640671296, "initialize_time": 1700640662609, "modify_time": 1700640671296, "start_time": 1700640671296, "status": "SUCCEEDED", "wait_permit_time": 1700640663824, "wait_signal_time": 1700640663823},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661824, "iteration_rank": "220-13", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 3, "num": 20},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661824, "end_time": 1700640671031, "evaluate_param_time": 1700640663826, "execute_time": 1700640671031, "finish_time": 1700640671031, "initialize_time": 1700640662585, "modify_time": 1700640671031, "start_time": 1700640671030, "status": "SUCCEEDED", "wait_permit_time": 1700640663827, "wait_signal_time": 1700640663826},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661569, "iteration_rank": "220-12", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 2, "num": 20},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661569, "end_time": 1700640671006, "evaluate_param_time": 1700640663546, "execute_time": 1700640671006, "finish_time": 1700640671006, "initialize_time": 1700640662343, "modify_time": 1700640671006, "start_time": 1700640671005, "status": "SUCCEEDED", "wait_permit_time": 1700640663547, "wait_signal_time": 1700640663546},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661559, "iteration_rank": "220-11", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 1, "num": 20},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661559, "end_time": 1700640670988, "evaluate_param_time": 1700640663547, "execute_time": 1700640670988, "finish_time": 1700640670988, "initialize_time": 1700640662328, "modify_time": 1700640670988, "start_time": 1700640670988, "status": "SUCCEEDED", "wait_permit_time": 1700640663548, "wait_signal_time": 1700640663547},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661829, "iteration_rank": "219-14", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 4, "num": 19},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661829, "end_time": 1700640671315, "evaluate_param_time": 1700640663844, "execute_time": 1700640671315, "finish_time": 1700640671315, "initialize_time": 1700640662629, "modify_time": 1700640671315, "start_time": 1700640671315, "status": "SUCCEEDED", "wait_permit_time": 1700640663844, "wait_signal_time": 1700640663844},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661860, "iteration_rank": "219-13", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 3, "num": 19},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661860, "end_time": 1700640671302, "evaluate_param_time": 1700640663859, "execute_time": 1700640671302, "finish_time": 1700640671302, "initialize_time": 1700640662627, "modify_time": 1700640671302, "start_time": 1700640671301, "status": "SUCCEEDED", "wait_permit_time": 1700640663859, "wait_signal_time": 1700640663859},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661836, "iteration_rank": "219-12", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 2, "num": 19},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661836, "end_time": 1700640671289, "evaluate_param_time": 1700640663839, "execute_time": 1700640671288, "finish_time": 1700640671289, "initialize_time": 1700640662613, "modify_time": 1700640671289, "start_time": 1700640671288, "status": "SUCCEEDED", "wait_permit_time": 1700640663839, "wait_signal_time": 1700640663839},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661499, "iteration_rank": "219-11", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 1, "num": 19},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661499, "end_time": 1700640671285, "evaluate_param_time": 1700640663520, "execute_time": 1700640671285, "finish_time": 1700640671285, "initialize_time": 1700640662317, "modify_time": 1700640671285, "start_time": 1700640671284, "status": "SUCCEEDED", "wait_permit_time": 1700640663521, "wait_signal_time": 1700640663519},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661507, "iteration_rank": "218-14", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 4, "num": 18},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661507, "end_time": 1700640670993, "evaluate_param_time": 1700640663529, "execute_time": 1700640670992, "finish_time": 1700640670992, "initialize_time": 1700640662324, "modify_time": 1700640670993, "start_time": 1700640670992, "status": "SUCCEEDED", "wait_permit_time": 1700640663530, "wait_signal_time": 1700640663529},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661520, "iteration_rank": "218-13", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 3, "num": 18},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661520, "end_time": 1700640671015, "evaluate_param_time": 1700640663531, "execute_time": 1700640671015, "finish_time": 1700640671015, "initialize_time": 1700640662331, "modify_time": 1700640671015, "start_time": 1700640671015, "status": "SUCCEEDED", "wait_permit_time": 1700640663532, "wait_signal_time": 1700640663530},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661516, "iteration_rank": "218-12", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 2, "num": 18},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661516, "end_time": 1700640670985, "evaluate_param_time": 1700640663546, "execute_time": 1700640670985, "finish_time": 1700640670985, "initialize_time": 1700640662324, "modify_time": 1700640670985, "start_time": 1700640670985, "status": "SUCCEEDED", "wait_permit_time": 1700640663547, "wait_signal_time": 1700640663546},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661598, "iteration_rank": "218-11", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 1, "num": 18},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661598, "end_time": 1700640671283, "evaluate_param_time": 1700640663604, "execute_time": 1700640671283, "finish_time": 1700640671283, "initialize_time": 1700640662404, "modify_time": 1700640671283, "start_time": 1700640671282, "status": "SUCCEEDED", "wait_permit_time": 1700640663605, "wait_signal_time": 1700640663604},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661836, "iteration_rank": "217-14", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 4, "num": 17},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661836, "end_time": 1700640671290, "evaluate_param_time": 1700640663932, "execute_time": 1700640671289, "finish_time": 1700640671290, "initialize_time": 1700640662633, "modify_time": 1700640671290, "start_time": 1700640671289, "status": "SUCCEEDED", "wait_permit_time": 1700640663933, "wait_signal_time": 1700640663932},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640657745, "iteration_rank": "217-13", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 3, "num": 17},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640657745, "end_time": 1700640665934, "evaluate_param_time": 1700640659674, "execute_time": 1700640665934, "finish_time": 1700640665934, "initialize_time": 1700640658416, "modify_time": 1700640665934, "start_time": 1700640665933, "status": "SUCCEEDED", "wait_permit_time": 1700640659675, "wait_signal_time": 1700640659674},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640657746, "iteration_rank": "217-12", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 2, "num": 17},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640657746, "end_time": 1700640665919, "evaluate_param_time": 1700640659653, "execute_time": 1700640665919, "finish_time": 1700640665919, "initialize_time": 1700640658402, "modify_time": 1700640665919, "start_time": 1700640665918, "status": "SUCCEEDED", "wait_permit_time": 1700640659653, "wait_signal_time": 1700640659653},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640657765, "iteration_rank": "217-11", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 1, "num": 17},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640657765, "end_time": 1700640665932, "evaluate_param_time": 1700640659649, "execute_time": 1700640665932, "finish_time": 1700640665932, "initialize_time": 1700640658404, "modify_time": 1700640665932, "start_time": 1700640665931, "status": "SUCCEEDED", "wait_permit_time": 1700640659650, "wait_signal_time": 1700640659649},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661849, "iteration_rank": "216-14", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 4, "num": 16},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661849, "end_time": 1700640671323, "evaluate_param_time": 1700640663854, "execute_time": 1700640671323, "finish_time": 1700640671323, "initialize_time": 1700640662644, "modify_time": 1700640671323, "start_time": 1700640671322, "status": "SUCCEEDED", "wait_permit_time": 1700640663854, "wait_signal_time": 1700640663854},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661532, "iteration_rank": "216-13", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 3, "num": 16},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661532, "end_time": 1700640671007, "evaluate_param_time": 1700640663535, "execute_time": 1700640671007, "finish_time": 1700640671007, "initialize_time": 1700640662335, "modify_time": 1700640671007, "start_time": 1700640671007, "status": "SUCCEEDED", "wait_permit_time": 1700640663536, "wait_signal_time": 1700640663535},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661529, "iteration_rank": "216-12", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 2, "num": 16},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661529, "end_time": 1700640671008, "evaluate_param_time": 1700640663526, "execute_time": 1700640671008, "finish_time": 1700640671008, "initialize_time": 1700640662321, "modify_time": 1700640671008, "start_time": 1700640671007, "status": "SUCCEEDED", "wait_permit_time": 1700640663527, "wait_signal_time": 1700640663526},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661518, "iteration_rank": "216-11", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 1, "num": 16},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661518, "end_time": 1700640671271, "evaluate_param_time": 1700640663548, "execute_time": 1700640671271, "finish_time": 1700640671271, "initialize_time": 1700640662284, "modify_time": 1700640671271, "start_time": 1700640671271, "status": "SUCCEEDED", "wait_permit_time": 1700640663549, "wait_signal_time": 1700640663548},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661565, "iteration_rank": "215-14", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 4, "num": 15},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661565, "end_time": 1700640671024, "evaluate_param_time": 1700640663568, "execute_time": 1700640671024, "finish_time": 1700640671024, "initialize_time": 1700640662337, "modify_time": 1700640671024, "start_time": 1700640671024, "status": "SUCCEEDED", "wait_permit_time": 1700640663569, "wait_signal_time": 1700640663568},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661556, "iteration_rank": "215-13", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 3, "num": 15},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661556, "end_time": 1700640671009, "evaluate_param_time": 1700640663572, "execute_time": 1700640671009, "finish_time": 1700640671009, "initialize_time": 1700640662358, "modify_time": 1700640671009, "start_time": 1700640671009, "status": "SUCCEEDED", "wait_permit_time": 1700640663572, "wait_signal_time": 1700640663571},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661799, "iteration_rank": "215-12", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 2, "num": 15},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661799, "end_time": 1700640671285, "evaluate_param_time": 1700640663815, "execute_time": 1700640671285, "finish_time": 1700640671285, "initialize_time": 1700640662605, "modify_time": 1700640671285, "start_time": 1700640671285, "status": "SUCCEEDED", "wait_permit_time": 1700640663816, "wait_signal_time": 1700640663815},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661577, "iteration_rank": "215-11", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 1, "num": 15},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661577, "end_time": 1700640671015, "evaluate_param_time": 1700640663561, "execute_time": 1700640671015, "finish_time": 1700640671015, "initialize_time": 1700640662364, "modify_time": 1700640671015, "start_time": 1700640671015, "status": "SUCCEEDED", "wait_permit_time": 1700640663562, "wait_signal_time": 1700640663561},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661802, "iteration_rank": "214-14", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 4, "num": 14},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661802, "end_time": 1700640671013, "evaluate_param_time": 1700640663817, "execute_time": 1700640671013, "finish_time": 1700640671013, "initialize_time": 1700640662571, "modify_time": 1700640671013, "start_time": 1700640671013, "status": "SUCCEEDED", "wait_permit_time": 1700640663817, "wait_signal_time": 1700640663817},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640657774, "iteration_rank": "214-13", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 3, "num": 14},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640657774, "end_time": 1700640665939, "evaluate_param_time": 1700640659680, "execute_time": 1700640665939, "finish_time": 1700640665939, "initialize_time": 1700640658406, "modify_time": 1700640665939, "start_time": 1700640665939, "status": "SUCCEEDED", "wait_permit_time": 1700640659680, "wait_signal_time": 1700640659679},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640657748, "iteration_rank": "214-12", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 2, "num": 14},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640657748, "end_time": 1700640665922, "evaluate_param_time": 1700640659664, "execute_time": 1700640665922, "finish_time": 1700640665922, "initialize_time": 1700640658415, "modify_time": 1700640665922, "start_time": 1700640665922, "status": "SUCCEEDED", "wait_permit_time": 1700640659665, "wait_signal_time": 1700640659664},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640657773, "iteration_rank": "214-11", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 1, "num": 14},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640657773, "end_time": 1700640665924, "evaluate_param_time": 1700640659661, "execute_time": 1700640665924, "finish_time": 1700640665924, "initialize_time": 1700640658404, "modify_time": 1700640665924, "start_time": 1700640665923, "status": "SUCCEEDED", "wait_permit_time": 1700640659662, "wait_signal_time": 1700640659661},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661594, "iteration_rank": "213-14", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 4, "num": 13},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661594, "end_time": 1700640671001, "evaluate_param_time": 1700640663567, "execute_time": 1700640671001, "finish_time": 1700640671001, "initialize_time": 1700640662375, "modify_time": 1700640671001, "start_time": 1700640671000, "status": "SUCCEEDED", "wait_permit_time": 1700640663567, "wait_signal_time": 1700640663566},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661770, "iteration_rank": "213-13", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 3, "num": 13},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661770, "end_time": 1700640671278, "evaluate_param_time": 1700640663751, "execute_time": 1700640671278, "finish_time": 1700640671278, "initialize_time": 1700640662389, "modify_time": 1700640671278, "start_time": 1700640671278, "status": "SUCCEEDED", "wait_permit_time": 1700640663751, "wait_signal_time": 1700640663748},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661791, "iteration_rank": "213-12", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 2, "num": 13},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661791, "end_time": 1700640671284, "evaluate_param_time": 1700640663745, "execute_time": 1700640671284, "finish_time": 1700640671284, "initialize_time": 1700640662558, "modify_time": 1700640671284, "start_time": 1700640671284, "status": "SUCCEEDED", "wait_permit_time": 1700640663746, "wait_signal_time": 1700640663744},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661589, "iteration_rank": "213-11", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 1, "num": 13},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661589, "end_time": 1700640671289, "evaluate_param_time": 1700640663572, "execute_time": 1700640671289, "finish_time": 1700640671289, "initialize_time": 1700640662363, "modify_time": 1700640671289, "start_time": 1700640671289, "status": "SUCCEEDED", "wait_permit_time": 1700640663572, "wait_signal_time": 1700640663571},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661543, "iteration_rank": "212-14", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 4, "num": 12},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661543, "end_time": 1700640670999, "evaluate_param_time": 1700640663545, "execute_time": 1700640670999, "finish_time": 1700640670999, "initialize_time": 1700640662335, "modify_time": 1700640670999, "start_time": 1700640670999, "status": "SUCCEEDED", "wait_permit_time": 1700640663545, "wait_signal_time": 1700640663545},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640657750, "iteration_rank": "212-13", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 3, "num": 12},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640657750, "end_time": 1700640665941, "evaluate_param_time": 1700640659658, "execute_time": 1700640665941, "finish_time": 1700640665941, "initialize_time": 1700640658427, "modify_time": 1700640665941, "start_time": 1700640665941, "status": "SUCCEEDED", "wait_permit_time": 1700640659659, "wait_signal_time": 1700640659657},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640657786, "iteration_rank": "212-12", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 2, "num": 12},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640657786, "end_time": 1700640665943, "evaluate_param_time": 1700640659679, "execute_time": 1700640665942, "finish_time": 1700640665943, "initialize_time": 1700640658397, "modify_time": 1700640665943, "start_time": 1700640665941, "status": "SUCCEEDED", "wait_permit_time": 1700640659679, "wait_signal_time": 1700640659679},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640657737, "iteration_rank": "212-11", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 1, "num": 12},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640657737, "end_time": 1700640665931, "evaluate_param_time": 1700640659670, "execute_time": 1700640665930, "finish_time": 1700640665931, "initialize_time": 1700640658410, "modify_time": 1700640665931, "start_time": 1700640665930, "status": "SUCCEEDED", "wait_permit_time": 1700640659671, "wait_signal_time": 1700640659670},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661572, "iteration_rank": "211-14", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 4, "num": 11},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661572, "end_time": 1700640671274, "evaluate_param_time": 1700640663559, "execute_time": 1700640671274, "finish_time": 1700640671274, "initialize_time": 1700640662335, "modify_time": 1700640671274, "start_time": 1700640671274, "status": "SUCCEEDED", "wait_permit_time": 1700640663560, "wait_signal_time": 1700640663559},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661596, "iteration_rank": "211-13", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 3, "num": 11},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661596, "end_time": 1700640671288, "evaluate_param_time": 1700640663586, "execute_time": 1700640671288, "finish_time": 1700640671288, "initialize_time": 1700640662368, "modify_time": 1700640671288, "start_time": 1700640671288, "status": "SUCCEEDED", "wait_permit_time": 1700640663586, "wait_signal_time": 1700640663585},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661544, "iteration_rank": "211-12", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 2, "num": 11},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661544, "end_time": 1700640671005, "evaluate_param_time": 1700640663548, "execute_time": 1700640671005, "finish_time": 1700640671005, "initialize_time": 1700640662342, "modify_time": 1700640671005, "start_time": 1700640671005, "status": "SUCCEEDED", "wait_permit_time": 1700640663548, "wait_signal_time": 1700640663547},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661788, "iteration_rank": "211-11", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 1, "num": 11},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661788, "end_time": 1700640671009, "evaluate_param_time": 1700640663758, "execute_time": 1700640671009, "finish_time": 1700640671009, "initialize_time": 1700640662558, "modify_time": 1700640671009, "start_time": 1700640671009, "status": "SUCCEEDED", "wait_permit_time": 1700640663759, "wait_signal_time": 1700640663758},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661514, "iteration_rank": "210-14", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 4, "num": 10},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661514, "end_time": 1700640671263, "evaluate_param_time": 1700640663529, "execute_time": 1700640671262, "finish_time": 1700640671263, "initialize_time": 1700640662299, "modify_time": 1700640671263, "start_time": 1700640671262, "status": "SUCCEEDED", "wait_permit_time": 1700640663530, "wait_signal_time": 1700640663529},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661847, "iteration_rank": "210-13", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 3, "num": 10},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661847, "end_time": 1700640671305, "evaluate_param_time": 1700640663815, "execute_time": 1700640671305, "finish_time": 1700640671305, "initialize_time": 1700640662625, "modify_time": 1700640671305, "start_time": 1700640671302, "status": "SUCCEEDED", "wait_permit_time": 1700640663815, "wait_signal_time": 1700640663815},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661510, "iteration_rank": "210-12", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 2, "num": 10},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661510, "end_time": 1700640671287, "evaluate_param_time": 1700640663530, "execute_time": 1700640671287, "finish_time": 1700640671287, "initialize_time": 1700640662333, "modify_time": 1700640671287, "start_time": 1700640671287, "status": "SUCCEEDED", "wait_permit_time": 1700640663530, "wait_signal_time": 1700640663530},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661557, "iteration_rank": "210-11", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 1, "num": 10},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661557, "end_time": 1700640670985, "evaluate_param_time": 1700640663530, "execute_time": 1700640670985, "finish_time": 1700640670985, "initialize_time": 1700640662325, "modify_time": 1700640670985, "start_time": 1700640670984, "status": "SUCCEEDED", "wait_permit_time": 1700640663531, "wait_signal_time": 1700640663530},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661818, "iteration_rank": "19-14", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 4, "num": 9},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661818, "end_time": 1700640671029, "evaluate_param_time": 1700640663839, "execute_time": 1700640671028, "finish_time": 1700640671028, "initialize_time": 1700640662613, "modify_time": 1700640671029, "start_time": 1700640671028, "status": "SUCCEEDED", "wait_permit_time": 1700640663840, "wait_signal_time": 1700640663839},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661569, "iteration_rank": "19-13", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 3, "num": 9},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661569, "end_time": 1700640671291, "evaluate_param_time": 1700640663557, "execute_time": 1700640671291, "finish_time": 1700640671291, "initialize_time": 1700640662355, "modify_time": 1700640671291, "start_time": 1700640671290, "status": "SUCCEEDED", "wait_permit_time": 1700640663557, "wait_signal_time": 1700640663556},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661559, "iteration_rank": "19-12", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 2, "num": 9},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661559, "end_time": 1700640671049, "evaluate_param_time": 1700640663542, "execute_time": 1700640671048, "finish_time": 1700640671049, "initialize_time": 1700640662348, "modify_time": 1700640671049, "start_time": 1700640671048, "status": "SUCCEEDED", "wait_permit_time": 1700640663542, "wait_signal_time": 1700640663541},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661587, "iteration_rank": "19-11", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 1, "num": 9},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661587, "end_time": 1700640671006, "evaluate_param_time": 1700640663574, "execute_time": 1700640671006, "finish_time": 1700640671006, "initialize_time": 1700640662373, "modify_time": 1700640671006, "start_time": 1700640671004, "status": "SUCCEEDED", "wait_permit_time": 1700640663574, "wait_signal_time": 1700640663573},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661831, "iteration_rank": "18-14", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 4, "num": 8},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661831, "end_time": 1700640671301, "evaluate_param_time": 1700640663861, "execute_time": 1700640671300, "finish_time": 1700640671301, "initialize_time": 1700640662634, "modify_time": 1700640671301, "start_time": 1700640671300, "status": "SUCCEEDED", "wait_permit_time": 1700640663862, "wait_signal_time": 1700640663861},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661770, "iteration_rank": "18-13", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 3, "num": 8},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661770, "end_time": 1700640671279, "evaluate_param_time": 1700640663735, "execute_time": 1700640671279, "finish_time": 1700640671279, "initialize_time": 1700640662386, "modify_time": 1700640671279, "start_time": 1700640671279, "status": "SUCCEEDED", "wait_permit_time": 1700640663736, "wait_signal_time": 1700640663735},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661801, "iteration_rank": "18-12", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 2, "num": 8},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661801, "end_time": 1700640671298, "evaluate_param_time": 1700640663808, "execute_time": 1700640671298, "finish_time": 1700640671298, "initialize_time": 1700640662577, "modify_time": 1700640671298, "start_time": 1700640671298, "status": "SUCCEEDED", "wait_permit_time": 1700640663809, "wait_signal_time": 1700640663808},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661808, "iteration_rank": "18-11", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 1, "num": 8},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661808, "end_time": 1700640671000, "evaluate_param_time": 1700640663811, "execute_time": 1700640671000, "finish_time": 1700640671000, "initialize_time": 1700640662596, "modify_time": 1700640671000, "start_time": 1700640670997, "status": "SUCCEEDED", "wait_permit_time": 1700640663815, "wait_signal_time": 1700640663811},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661586, "iteration_rank": "17-14", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 4, "num": 7},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661586, "end_time": 1700640671015, "evaluate_param_time": 1700640663572, "execute_time": 1700640671015, "finish_time": 1700640671015, "initialize_time": 1700640662358, "modify_time": 1700640671015, "start_time": 1700640671015, "status": "SUCCEEDED", "wait_permit_time": 1700640663572, "wait_signal_time": 1700640663571},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661804, "iteration_rank": "17-13", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 3, "num": 7},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661804, "end_time": 1700640671286, "evaluate_param_time": 1700640663815, "execute_time": 1700640671286, "finish_time": 1700640671286, "initialize_time": 1700640662600, "modify_time": 1700640671286, "start_time": 1700640671286, "status": "SUCCEEDED", "wait_permit_time": 1700640663816, "wait_signal_time": 1700640663815},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661579, "iteration_rank": "17-12", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 2, "num": 7},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661579, "end_time": 1700640671038, "evaluate_param_time": 1700640663539, "execute_time": 1700640671038, "finish_time": 1700640671038, "initialize_time": 1700640662347, "modify_time": 1700640671038, "start_time": 1700640671038, "status": "SUCCEEDED", "wait_permit_time": 1700640663540, "wait_signal_time": 1700640663539},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661821, "iteration_rank": "17-11", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 1, "num": 7},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661821, "end_time": 1700640671012, "evaluate_param_time": 1700640663827, "execute_time": 1700640671012, "finish_time": 1700640671012, "initialize_time": 1700640662603, "modify_time": 1700640671012, "start_time": 1700640671012, "status": "SUCCEEDED", "wait_permit_time": 1700640663827, "wait_signal_time": 1700640663827},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661808, "iteration_rank": "16-14", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 4, "num": 6},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661808, "end_time": 1700640671006, "evaluate_param_time": 1700640663815, "execute_time": 1700640671006, "finish_time": 1700640671006, "initialize_time": 1700640662606, "modify_time": 1700640671006, "start_time": 1700640671005, "status": "SUCCEEDED", "wait_permit_time": 1700640663816, "wait_signal_time": 1700640663815},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661782, "iteration_rank": "16-13", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 3, "num": 6},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661782, "end_time": 1700640671003, "evaluate_param_time": 1700640663758, "execute_time": 1700640671003, "finish_time": 1700640671003, "initialize_time": 1700640662564, "modify_time": 1700640671003, "start_time": 1700640671003, "status": "SUCCEEDED", "wait_permit_time": 1700640663759, "wait_signal_time": 1700640663758},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661806, "iteration_rank": "16-12", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 2, "num": 6},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661806, "end_time": 1700640671298, "evaluate_param_time": 1700640663834, "execute_time": 1700640671298, "finish_time": 1700640671298, "initialize_time": 1700640662616, "modify_time": 1700640671298, "start_time": 1700640671297, "status": "SUCCEEDED", "wait_permit_time": 1700640663835, "wait_signal_time": 1700640663834},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661513, "iteration_rank": "16-11", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 1, "num": 6},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661513, "end_time": 1700640670982, "evaluate_param_time": 1700640663554, "execute_time": 1700640670982, "finish_time": 1700640670982, "initialize_time": 1700640662321, "modify_time": 1700640670982, "start_time": 1700640670982, "status": "SUCCEEDED", "wait_permit_time": 1700640663555, "wait_signal_time": 1700640663554},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661590, "iteration_rank": "15-14", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 4, "num": 5},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661590, "end_time": 1700640671277, "evaluate_param_time": 1700640663578, "execute_time": 1700640671277, "finish_time": 1700640671277, "initialize_time": 1700640662384, "modify_time": 1700640671277, "start_time": 1700640671277, "status": "SUCCEEDED", "wait_permit_time": 1700640663578, "wait_signal_time": 1700640663577},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661570, "iteration_rank": "15-13", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 3, "num": 5},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661570, "end_time": 1700640670994, "evaluate_param_time": 1700640663565, "execute_time": 1700640670994, "finish_time": 1700640670994, "initialize_time": 1700640662373, "modify_time": 1700640670994, "start_time": 1700640670994, "status": "SUCCEEDED", "wait_permit_time": 1700640663565, "wait_signal_time": 1700640663565},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661606, "iteration_rank": "15-12", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 2, "num": 5},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661606, "end_time": 1700640671310, "evaluate_param_time": 1700640663607, "execute_time": 1700640671310, "finish_time": 1700640671310, "initialize_time": 1700640662374, "modify_time": 1700640671310, "start_time": 1700640671310, "status": "SUCCEEDED", "wait_permit_time": 1700640663607, "wait_signal_time": 1700640663607},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661563, "iteration_rank": "15-11", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 1, "num": 5},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661563, "end_time": 1700640671275, "evaluate_param_time": 1700640663571, "execute_time": 1700640671275, "finish_time": 1700640671275, "initialize_time": 1700640662356, "modify_time": 1700640671275, "start_time": 1700640671274, "status": "SUCCEEDED", "wait_permit_time": 1700640663572, "wait_signal_time": 1700640663571},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661845, "iteration_rank": "14-14", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 4, "num": 4},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661845, "end_time": 1700640671294, "evaluate_param_time": 1700640663854, "execute_time": 1700640671294, "finish_time": 1700640671294, "initialize_time": 1700640662628, "modify_time": 1700640671294, "start_time": 1700640671294, "status": "SUCCEEDED", "wait_permit_time": 1700640663855, "wait_signal_time": 1700640663854},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661592, "iteration_rank": "14-13", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 3, "num": 4},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661592, "end_time": 1700640671005, "evaluate_param_time": 1700640663559, "execute_time": 1700640671005, "finish_time": 1700640671005, "initialize_time": 1700640662361, "modify_time": 1700640671005, "start_time": 1700640671005, "status": "SUCCEEDED", "wait_permit_time": 1700640663560, "wait_signal_time": 1700640663559},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661781, "iteration_rank": "14-12", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 2, "num": 4},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661781, "end_time": 1700640671003, "evaluate_param_time": 1700640663771, "execute_time": 1700640671003, "finish_time": 1700640671003, "initialize_time": 1700640662562, "modify_time": 1700640671003, "start_time": 1700640671003, "status": "SUCCEEDED", "wait_permit_time": 1700640663771, "wait_signal_time": 1700640663771},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661535, "iteration_rank": "14-11", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 1, "num": 4},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661535, "end_time": 1700640671293, "evaluate_param_time": 1700640663534, "execute_time": 1700640671293, "finish_time": 1700640671293, "initialize_time": 1700640662324, "modify_time": 1700640671293, "start_time": 1700640671293, "status": "SUCCEEDED", "wait_permit_time": 1700640663535, "wait_signal_time": 1700640663533},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661784, "iteration_rank": "13-14", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 4, "num": 3},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661784, "end_time": 1700640670998, "evaluate_param_time": 1700640663739, "execute_time": 1700640670998, "finish_time": 1700640670998, "initialize_time": 1700640662547, "modify_time": 1700640670998, "start_time": 1700640670998, "status": "SUCCEEDED", "wait_permit_time": 1700640663740, "wait_signal_time": 1700640663739},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661792, "iteration_rank": "13-13", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 3, "num": 3},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661792, "end_time": 1700640671016, "evaluate_param_time": 1700640663763, "execute_time": 1700640671016, "finish_time": 1700640671016, "initialize_time": 1700640662592, "modify_time": 1700640671016, "start_time": 1700640671016, "status": "SUCCEEDED", "wait_permit_time": 1700640663764, "wait_signal_time": 1700640663763},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661587, "iteration_rank": "13-12", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 2, "num": 3},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661587, "end_time": 1700640671000, "evaluate_param_time": 1700640663555, "execute_time": 1700640671000, "finish_time": 1700640671000, "initialize_time": 1700640662350, "modify_time": 1700640671000, "start_time": 1700640670999, "status": "SUCCEEDED", "wait_permit_time": 1700640663556, "wait_signal_time": 1700640663554},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661557, "iteration_rank": "13-11", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 1, "num": 3},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661557, "end_time": 1700640671017, "evaluate_param_time": 1700640663563, "execute_time": 1700640671017, "finish_time": 1700640671017, "initialize_time": 1700640662351, "modify_time": 1700640671017, "start_time": 1700640671017, "status": "SUCCEEDED", "wait_permit_time": 1700640663564, "wait_signal_time": 1700640663563},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661824, "iteration_rank": "12-14", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 4, "num": 2},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661824, "end_time": 1700640671298, "evaluate_param_time": 1700640663819, "execute_time": 1700640671298, "finish_time": 1700640671298, "initialize_time": 1700640662597, "modify_time": 1700640671298, "start_time": 1700640671298, "status": "SUCCEEDED", "wait_permit_time": 1700640663820, "wait_signal_time": 1700640663818},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661537, "iteration_rank": "12-13", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 3, "num": 2},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661537, "end_time": 1700640671274, "evaluate_param_time": 1700640663545, "execute_time": 1700640671274, "finish_time": 1700640671274, "initialize_time": 1700640662342, "modify_time": 1700640671274, "start_time": 1700640671274, "status": "SUCCEEDED", "wait_permit_time": 1700640663545, "wait_signal_time": 1700640663544},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661523, "iteration_rank": "12-12", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 2, "num": 2},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661523, "end_time": 1700640671267, "evaluate_param_time": 1700640663537, "execute_time": 1700640671267, "finish_time": 1700640671267, "initialize_time": 1700640662322, "modify_time": 1700640671267, "start_time": 1700640671267, "status": "SUCCEEDED", "wait_permit_time": 1700640663538, "wait_signal_time": 1700640663537},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661598, "iteration_rank": "12-11", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 1, "num": 2},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661598, "end_time": 1700640671009, "evaluate_param_time": 1700640663585, "execute_time": 1700640671009, "finish_time": 1700640671009, "initialize_time": 1700640662391, "modify_time": 1700640671009, "start_time": 1700640671009, "status": "SUCCEEDED", "wait_permit_time": 1700640663585, "wait_signal_time": 1700640663584},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661542, "iteration_rank": "11-14", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 4, "num": 1},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661542, "end_time": 1700640671270, "evaluate_param_time": 1700640663563, "execute_time": 1700640671270, "finish_time": 1700640671270, "initialize_time": 1700640662345, "modify_time": 1700640671270, "start_time": 1700640671270, "status": "SUCCEEDED", "wait_permit_time": 1700640663563, "wait_signal_time": 1700640663562},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661606, "iteration_rank": "11-13", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 3, "num": 1},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661606, "end_time": 1700640671296, "evaluate_param_time": 1700640663732, "execute_time": 1700640671296, "finish_time": 1700640671296, "initialize_time": 1700640662378, "modify_time": 1700640671296, "start_time": 1700640671296, "status": "SUCCEEDED", "wait_permit_time": 1700640663733, "wait_signal_time": 1700640663732},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640657766, "iteration_rank": "11-12", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 2, "num": 1},
+    "step_status_encoded": 107, "step_status_priority": 180,
+    "step_runtime_state": {"create_time": 1700640657766, "end_time": 1700640665917, "evaluate_param_time": 1700640659673, "execute_time": 1700640665917, "finish_time": 1700640665917, "initialize_time": 1700640658410, "modify_time": 1700640665917, "start_time": 1700640665917, "status": "FATALLY_FAILED", "wait_permit_time": 1700640659673, "wait_signal_time": 1700640659673},
+    "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640657740, "iteration_rank": "11-11", "step_id": "i_nested-step-2", "workflow_id": "foreach.flattening.test.4", "workflow_instance_id": 1, "workflow_run_id": 1},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-11",
+    "loop_parameters": {"i_range": 1, "num": 1},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640657740, "end_time": 1700640665922, "evaluate_param_time": 1700640659660, "execute_time": 1700640665922, "finish_time": 1700640665922, "initialize_time": 1700640658412, "modify_time": 1700640665922, "start_time": 1700640665921, "status": "SUCCEEDED", "wait_permit_time": 1700640659661, "wait_signal_time": 1700640659660},
+    "is_inserted_in_new_run": false
+  }
+]
