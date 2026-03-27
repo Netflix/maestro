@@ -1,4 +1,4 @@
-package com.netflix.maestro.signal.models;
+package com.netflix.maestro.models.signal;
 
 /**
  * Data model for getting a signal trigger table record. Won't be persisted.

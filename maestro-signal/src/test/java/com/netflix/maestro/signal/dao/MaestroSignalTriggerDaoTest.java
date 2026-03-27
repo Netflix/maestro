@@ -6,8 +6,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import com.netflix.maestro.models.signal.SignalTriggerDto;
 import com.netflix.maestro.models.trigger.SignalTrigger;
-import com.netflix.maestro.signal.models.SignalTriggerDto;
 import java.sql.Connection;
 import org.junit.After;
 import org.junit.Before;

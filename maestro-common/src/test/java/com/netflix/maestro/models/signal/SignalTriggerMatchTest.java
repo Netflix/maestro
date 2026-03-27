@@ -1,4 +1,4 @@
-package com.netflix.maestro.signal.models;
+package com.netflix.maestro.models.signal;
 
 import static org.junit.Assert.assertEquals;
 
