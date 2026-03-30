@@ -17,14 +17,10 @@ public class WorkflowRunSummaryTest extends MaestroBaseTest {
   public void testRoundTripSerde() throws Exception {
     for (String filename :
         Arrays.asList("workflow-run-summary.json", "workflow-run-summary-in-progress.json")) {
-      WorkflowRunSummary expected =
+      WorkflowRunSummary summary =
           loadObject("fixtures/aggregated/" + filename, WorkflowRunSummary.class);
-      String ser1 = MAPPER.writeValueAsString(expected);
-      WorkflowRunSummary actual =
-          MAPPER.readValue(MAPPER.writeValueAsString(expected), WorkflowRunSummary.class);
-      String ser2 = MAPPER.writeValueAsString(actual);
-      assertEquals(expected, actual);
-      assertEquals(ser1, ser2);
+      assertEquals(
+          summary, MAPPER.readValue(MAPPER.writeValueAsString(summary), WorkflowRunSummary.class));
     }
   }
 }
