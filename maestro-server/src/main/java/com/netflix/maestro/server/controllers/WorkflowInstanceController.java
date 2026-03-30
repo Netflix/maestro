@@ -45,6 +45,7 @@ import org.springframework.web.bind.annotation.RestController;
     value = "/api/v3/workflows",
     produces = MediaType.APPLICATION_JSON_VALUE,
     consumes = MediaType.APPLICATION_JSON_VALUE)
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class WorkflowInstanceController {
   private static final int WORKFLOW_INSTANCE_MAX_BATCH_LIMIT = 200;
   private static final int WORKFLOW_INSTANCE_MIN_BATCH_LIMIT = 1;
