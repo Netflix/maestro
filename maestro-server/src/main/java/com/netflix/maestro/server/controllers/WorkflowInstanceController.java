@@ -18,6 +18,7 @@ import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.api.PaginationDirection;
 import com.netflix.maestro.models.api.PaginationResult;
 import com.netflix.maestro.models.instance.WorkflowInstance;
+import com.netflix.maestro.models.instance.WorkflowRunSummary;
 import com.netflix.maestro.server.utils.PaginationHelper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -96,6 +97,20 @@ public class WorkflowInstanceController {
       @RequestParam(name = "enriched", defaultValue = "true") boolean enriched) {
     return getWorkflowInstance(
         workflowId, workflowInstanceId, Constants.LATEST_INSTANCE_RUN, enriched, true);
+  }
+
+  @GetMapping(
+      value = "/{workflowId}/instances/{workflowInstanceId}/runs",
+      consumes = MediaType.ALL_VALUE)
+  @Operation(
+      summary = "Get all runs for a given workflow instance",
+      description =
+          "Returns a lightweight summary (run id, status, start time, end time) for each run "
+              + "of the given workflow instance, ordered by run id ascending.")
+  public List<WorkflowRunSummary> getWorkflowInstanceRuns(
+      @Valid @NotNull @PathVariable("workflowId") String workflowId,
+      @PathVariable("workflowInstanceId") long workflowInstanceId) {
+    return workflowInstanceDao.getWorkflowInstanceRuns(workflowId, workflowInstanceId);
   }
 
   @GetMapping(value = "/{workflowId}/instances", consumes = MediaType.ALL_VALUE)

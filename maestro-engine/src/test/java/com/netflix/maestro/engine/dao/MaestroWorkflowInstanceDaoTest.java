@@ -46,6 +46,7 @@ import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.instance.WorkflowInstanceAggregatedInfo;
 import com.netflix.maestro.models.instance.WorkflowRollupOverview;
+import com.netflix.maestro.models.instance.WorkflowRunSummary;
 import com.netflix.maestro.models.instance.WorkflowRuntimeOverview;
 import com.netflix.maestro.models.instance.WorkflowStepStatusSummary;
 import com.netflix.maestro.models.timeline.Timeline;
@@ -591,6 +592,34 @@ public class MaestroWorkflowInstanceDaoTest extends MaestroDaoBaseTest {
         instanceDao.getLatestWorkflowInstanceRun(wfi.getWorkflowId(), wfi.getWorkflowInstanceId());
     instanceRun.setModifyTime(null);
     assertEquals(wfi, instanceRun);
+  }
+
+  @Test
+  public void testGetWorkflowInstanceRuns() {
+    // single run — only run 1 exists
+    List<WorkflowRunSummary> runs =
+        instanceDao.getWorkflowInstanceRuns(wfi.getWorkflowId(), wfi.getWorkflowInstanceId());
+    assertEquals(1, runs.size());
+    assertEquals(1, runs.getFirst().getWorkflowRunId());
+    assertEquals(WorkflowInstance.Status.CREATED, runs.getFirst().getStatus());
+
+    // create run 2 by failing run 1 and restarting
+    instanceDao.tryTerminateQueuedInstance(wfi, WorkflowInstance.Status.FAILED, "kill the test");
+    wfi.setWorkflowUuid("test-uuid");
+    wfi.setWorkflowRunId(0L);
+    wfi.setRunConfig(new RunConfig());
+    wfi.getRunConfig().setPolicy(RunPolicy.RESTART_FROM_INCOMPLETE);
+    int res = runStrategyDao.startWithRunStrategy(wfi, Defaults.DEFAULT_RUN_STRATEGY);
+    assertEquals(1, res);
+    assertEquals(2, wfi.getWorkflowRunId());
+
+    // two runs — ordered by run_id ascending
+    runs = instanceDao.getWorkflowInstanceRuns(wfi.getWorkflowId(), wfi.getWorkflowInstanceId());
+    assertEquals(2, runs.size());
+    assertEquals(1, runs.get(0).getWorkflowRunId());
+    assertEquals(WorkflowInstance.Status.FAILED, runs.get(0).getStatus());
+    assertEquals(2, runs.get(1).getWorkflowRunId());
+    assertEquals(WorkflowInstance.Status.CREATED, runs.get(1).getStatus());
   }
 
   @Test

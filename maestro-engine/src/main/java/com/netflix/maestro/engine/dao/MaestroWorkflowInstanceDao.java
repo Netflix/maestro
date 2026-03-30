@@ -32,6 +32,7 @@ import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.error.Details;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.instance.WorkflowRollupOverview;
+import com.netflix.maestro.models.instance.WorkflowRunSummary;
 import com.netflix.maestro.models.instance.WorkflowRuntimeOverview;
 import com.netflix.maestro.models.timeline.Timeline;
 import com.netflix.maestro.models.timeline.TimelineEvent;
@@ -158,6 +159,10 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
 
   private static final String GET_LATEST_WORKFLOW_INSTANCE_STATUS_QUERY =
       String.format(GET_WORKFLOW_INSTANCE_FIELDS_TEMPLATE, STATUS_COLUMN, LATEST_RUN_CONDITION);
+
+  private static final String GET_WORKFLOW_INSTANCE_RUNS_QUERY =
+      "SELECT run_id, status, start_ts, end_ts FROM maestro_workflow_instance "
+          + "WHERE workflow_id=? AND instance_id=? ORDER BY run_id ASC";
 
   private static final String UPDATE_INSTANCE_FAILED_STATUS =
       "UPDATE maestro_workflow_instance SET status='FAILED_2' "
@@ -859,6 +864,43 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
    */
   public WorkflowInstance getLatestWorkflowInstanceRun(String workflowId, long workflowInstanceId) {
     return getWorkflowInstanceRun(workflowId, workflowInstanceId, Constants.LATEST_ONE);
+  }
+
+  /**
+   * Get all run summaries for a specific workflow instance, ordered by run id ascending.
+   *
+   * @param workflowId workflow id
+   * @param workflowInstanceId workflow instance id
+   * @return list of workflow run summaries ordered by run id ascending
+   */
+  public List<WorkflowRunSummary> getWorkflowInstanceRuns(
+      String workflowId, long workflowInstanceId) {
+    return withMetricLogError(
+        () ->
+            withRetryableQuery(
+                GET_WORKFLOW_INSTANCE_RUNS_QUERY,
+                stmt -> {
+                  int idx = 0;
+                  stmt.setString(++idx, workflowId);
+                  stmt.setLong(++idx, workflowInstanceId);
+                },
+                result -> {
+                  List<WorkflowRunSummary> runs = new ArrayList<>();
+                  while (result.next()) {
+                    runs.add(
+                        WorkflowRunSummary.builder()
+                            .workflowRunId(result.getLong("run_id"))
+                            .status(WorkflowInstance.Status.create(result.getString(STATUS_COLUMN)))
+                            .startTime(getTimestampIfPresent(result, "start_ts"))
+                            .endTime(getTimestampIfPresent(result, "end_ts"))
+                            .build());
+                  }
+                  return runs;
+                }),
+        "getWorkflowInstanceRuns",
+        "Failed to get workflow instance runs for [{}][{}]",
+        workflowId,
+        workflowInstanceId);
   }
 
   /**
