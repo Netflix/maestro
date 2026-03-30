@@ -232,6 +232,9 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
       "SELECT 1 FROM maestro_workflow_instance WHERE workflow_id=? LIMIT 1";
 
   private static final String INSTANCE_ID_COLUMN = "instance_id";
+  private static final String RUN_ID_COLUMN = "run_id";
+  private static final String START_TS_COLUMN = "start_ts";
+  private static final String END_TS_COLUMN = "end_ts";
 
   private static final String TERMINATION_MESSAGE_TEMPLATE =
       "Workflow instance status becomes [%s] due to reason [%s]";
@@ -463,7 +466,7 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
                       while (result.next()) {
                         jobEvent.addOneRun(
                             result.getLong(INSTANCE_ID_COLUMN),
-                            result.getLong("run_id"),
+                            result.getLong(RUN_ID_COLUMN),
                             result.getString("uuid"));
                       }
                       return null;
@@ -889,10 +892,10 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
                   while (result.next()) {
                     runs.add(
                         WorkflowRunSummary.builder()
-                            .workflowRunId(result.getLong("run_id"))
+                            .workflowRunId(result.getLong(RUN_ID_COLUMN))
                             .status(WorkflowInstance.Status.create(result.getString(STATUS_COLUMN)))
-                            .startTime(getTimestampIfPresent(result, "start_ts"))
-                            .endTime(getTimestampIfPresent(result, "end_ts"))
+                            .startTime(getTimestampIfPresent(result, START_TS_COLUMN))
+                            .endTime(getTimestampIfPresent(result, END_TS_COLUMN))
                             .build());
                   }
                   return runs;
@@ -983,8 +986,8 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
             "workflow instance column cannot be null");
     instance.setStatus(WorkflowInstance.Status.create(rs.getString(STATUS_COLUMN)));
     instance.setExecutionId(rs.getString("execution_id"));
-    instance.setStartTime(getTimestampIfPresent(rs, "start_ts"));
-    instance.setEndTime(getTimestampIfPresent(rs, "end_ts"));
+    instance.setStartTime(getTimestampIfPresent(rs, START_TS_COLUMN));
+    instance.setEndTime(getTimestampIfPresent(rs, END_TS_COLUMN));
     instance.setModifyTime(getTimestampIfPresent(rs, "modify_ts"));
     instance.setRuntimeOverview(
         getJsonObjectIfPresent(rs, "runtime_overview", WorkflowRuntimeOverview.class));
