@@ -12,21 +12,21 @@
  */
 package com.netflix.maestro.server.properties;
 
-import com.netflix.maestro.engine.properties.SelProperties;
-import com.netflix.maestro.engine.properties.StepActionProperties;
 import com.netflix.maestro.models.Constants;
-import com.netflix.maestro.queue.properties.QueueProperties;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import lombok.Setter;
 
-/** Maestro engine related config properties. */
-@AllArgsConstructor
+/**
+ * Configurable validation limit properties. Bound under {@code maestro.validation.*}. Defaults
+ * match the compile-time constants in {@link Constants} so existing deployments are unaffected
+ * unless the values are explicitly overridden.
+ */
 @Getter
-@ConfigurationProperties(prefix = Constants.MAESTRO_QUALIFIER)
-public class MaestroProperties {
-  private final QueueProperties queue;
-  private final SelProperties sel;
-  private final StepActionProperties stepAction;
-  private final ValidationProperties validation;
+@Setter
+public class ValidationProperties {
+  /** Maximum allowed length for Maestro IDs (workflow id, step id, param names). Default: 128. */
+  private int idLengthLimit = Constants.ID_LENGTH_LIMIT;
+
+  /** Maximum allowed length for Maestro names (workflow name, step name). Default: 256. */
+  private int nameLengthLimit = Constants.NAME_LENGTH_LIMIT;
 }

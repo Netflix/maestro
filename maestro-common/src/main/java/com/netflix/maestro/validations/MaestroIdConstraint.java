@@ -13,6 +13,7 @@
 package com.netflix.maestro.validations;
 
 import com.netflix.maestro.models.Constants;
+import com.netflix.maestro.models.ValidationLimits;
 import jakarta.validation.Constraint;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
@@ -56,12 +57,12 @@ public @interface MaestroIdConstraint {
         return false;
       }
 
-      if (id.length() > Constants.ID_LENGTH_LIMIT) {
+      if (id.length() > ValidationLimits.getIdLengthLimit()) {
         context
             .buildConstraintViolationWithTemplate(
                 String.format(
                     "[maestro id] cannot be more than id length limit %s - rejected length is [%s] for value [%s]",
-                    Constants.ID_LENGTH_LIMIT, id.length(), id))
+                    ValidationLimits.getIdLengthLimit(), id.length(), id))
             .addConstraintViolation();
         return false;
       }

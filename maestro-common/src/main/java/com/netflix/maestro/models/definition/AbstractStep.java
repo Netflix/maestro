@@ -22,6 +22,7 @@ import com.netflix.maestro.models.Defaults;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.signal.SignalDependenciesDefinition;
 import com.netflix.maestro.models.signal.SignalOutputsDefinition;
+import com.netflix.maestro.validations.MaestroNameSizeConstraint;
 import com.netflix.maestro.validations.MaestroReferenceIdConstraint;
 import com.netflix.maestro.validations.SignalDependenciesDefinitionConstraint;
 import com.netflix.maestro.validations.SignalOutputsDefinitionConstraint;
@@ -44,7 +45,7 @@ public abstract class AbstractStep implements Step {
   private String id;
 
   @Getter(onMethod = @__({@Override}))
-  @Size(max = Constants.NAME_LENGTH_LIMIT)
+  @MaestroNameSizeConstraint
   private String name;
 
   @Getter(onMethod = @__({@Override}))

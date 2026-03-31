@@ -13,6 +13,7 @@
 package com.netflix.maestro.validations;
 
 import com.netflix.maestro.models.Constants;
+import com.netflix.maestro.models.ValidationLimits;
 import com.netflix.maestro.utils.StringUtils;
 import jakarta.validation.Constraint;
 import jakarta.validation.ConstraintValidator;
@@ -59,13 +60,13 @@ public @interface MaestroNameConstraint {
         return false;
       }
 
-      if (id.length() > Constants.NAME_LENGTH_LIMIT) {
+      if (id.length() > ValidationLimits.getNameLengthLimit()) {
         context
             .buildConstraintViolationWithTemplate(
                 String.format(
                     "[maestro name] cannot be more than name length limit %s "
                         + "- rejected length is [%s] for value [%s]",
-                    Constants.NAME_LENGTH_LIMIT, id.length(), id))
+                    ValidationLimits.getNameLengthLimit(), id.length(), id))
             .addConstraintViolation();
         return false;
       }
