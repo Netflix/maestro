@@ -74,8 +74,7 @@ public class Workflow {
    * Name of the workflow. Can be absent by user. Can be filled by workflow id if absent - use
    * helper method in WorkflowHelper.
    */
-  @MaestroNameSizeConstraint
-  private final String name;
+  @MaestroNameSizeConstraint private final String name;
 
   @Size(max = Constants.FIELD_SIZE_LIMIT)
   private final String description;

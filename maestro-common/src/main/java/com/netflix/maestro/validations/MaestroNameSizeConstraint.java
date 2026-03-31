@@ -45,8 +45,7 @@ public @interface MaestroNameSizeConstraint {
   Class<? extends Payload>[] payload() default {};
 
   /** Validates that the string length does not exceed the name length limit. */
-  class MaestroNameSizeValidator
-      implements ConstraintValidator<MaestroNameSizeConstraint, String> {
+  class MaestroNameSizeValidator implements ConstraintValidator<MaestroNameSizeConstraint, String> {
 
     @Override
     public void initialize(MaestroNameSizeConstraint constraint) {}

@@ -218,8 +218,7 @@ public class ValidationLimitsTest extends BaseConstraintTest {
   @Test
   public void nameSizeConstraintPassesForNull() {
     ValidationLimits.initialize(savedIdLimit, 50);
-    Set<ConstraintViolation<TestNameSize>> violations =
-        validator.validate(new TestNameSize(null));
+    Set<ConstraintViolation<TestNameSize>> violations = validator.validate(new TestNameSize(null));
     assertEquals(0, violations.size());
   }
 

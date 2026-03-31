@@ -88,8 +88,7 @@ public class MaestroNameConstraintTest extends BaseConstraintTest {
     assertEquals(1, violations.size());
     ConstraintViolation<TestName> violation = violations.iterator().next();
     assertEquals(
-        ValidationLimits.getNameLengthLimit() + 1,
-        ((String) violation.getInvalidValue()).length());
+        ValidationLimits.getNameLengthLimit() + 1, ((String) violation.getInvalidValue()).length());
     assertEquals(
         String.format(
             "[maestro name] cannot be more than name length limit %s "
