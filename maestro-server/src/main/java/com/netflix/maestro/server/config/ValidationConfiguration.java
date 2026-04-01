@@ -12,32 +12,17 @@
  */
 package com.netflix.maestro.server.config;
 
-import com.netflix.maestro.models.ValidationLimits;
 import com.netflix.maestro.server.properties.MaestroProperties;
-import jakarta.annotation.PostConstruct;
-import lombok.extern.slf4j.Slf4j;
+import com.netflix.maestro.utils.ValidationLimits;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/**
- * Bridges Spring-bound {@link MaestroProperties} into the Spring-free {@link ValidationLimits}
- * holder so that constraint validators in maestro-common can pick up the configured limits.
- */
+/** Exposes {@link ValidationLimits} as a Spring bean so validators can inject it. */
 @Configuration
-@Slf4j
 public class ValidationConfiguration {
 
-  private final MaestroProperties maestroProperties;
-
-  public ValidationConfiguration(MaestroProperties maestroProperties) {
-    this.maestroProperties = maestroProperties;
-  }
-
-  @PostConstruct
-  public void initValidationLimits() {
-    int idLimit = maestroProperties.getValidation().getIdLengthLimit();
-    int nameLimit = maestroProperties.getValidation().getNameLengthLimit();
-    ValidationLimits.initialize(idLimit, nameLimit);
-    LOG.info(
-        "Initialized ValidationLimits: idLengthLimit={}, nameLengthLimit={}", idLimit, nameLimit);
+  @Bean
+  public ValidationLimits validationLimits(MaestroProperties maestroProperties) {
+    return maestroProperties.getValidation();
   }
 }

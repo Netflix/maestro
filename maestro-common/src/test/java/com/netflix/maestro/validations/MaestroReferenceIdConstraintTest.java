@@ -16,7 +16,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 import com.netflix.maestro.models.Constants;
-import com.netflix.maestro.models.ValidationLimits;
 import jakarta.validation.ConstraintViolation;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -64,13 +63,13 @@ public class MaestroReferenceIdConstraintTest extends BaseConstraintTest {
     assertEquals(1, violations.size());
     ConstraintViolation<TestId> violation = violations.iterator().next();
     assertEquals(
-        ValidationLimits.getIdLengthLimit() + 1, ((String) violation.getInvalidValue()).length());
+        Constants.ID_LENGTH_LIMIT + 1, ((String) violation.getInvalidValue()).length());
     assertEquals(
         String.format(
             "[maestro id or name reference] cannot be more than id length limit %s "
                 + "- rejected length is [%s] for value [%s]",
-            ValidationLimits.getIdLengthLimit(),
-            ValidationLimits.getIdLengthLimit() + 1,
+            Constants.ID_LENGTH_LIMIT,
+            Constants.ID_LENGTH_LIMIT + 1,
             new String(new char[Constants.ID_LENGTH_LIMIT + 1]).replace("\0", "a")),
         violation.getMessage());
   }

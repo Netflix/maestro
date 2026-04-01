@@ -14,33 +14,69 @@ package com.netflix.maestro.validations;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
+import com.netflix.maestro.MaestroBaseTest;
 import com.netflix.maestro.models.Constants;
-import com.netflix.maestro.models.ValidationLimits;
+import com.netflix.maestro.utils.ValidationLimits;
+import jakarta.inject.Inject;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorFactory;
 import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import java.lang.reflect.Field;
 import java.util.Set;
-import org.junit.After;
-import org.junit.Before;
+import org.apache.bval.jsr.ApacheValidationProvider;
 import org.junit.Test;
 
-public class ValidationLimitsTest extends BaseConstraintTest {
+public class ValidationLimitsTest extends MaestroBaseTest {
 
-  private int savedIdLimit;
-  private int savedNameLimit;
+  // ---- helper: create a Validator that injects a custom ValidationLimits ----
 
-  @Before
-  public void saveDefaults() {
-    savedIdLimit = ValidationLimits.getIdLengthLimit();
-    savedNameLimit = ValidationLimits.getNameLengthLimit();
+  private static Validator buildValidatorWith(ValidationLimits limits) {
+    return Validation.byProvider(ApacheValidationProvider.class)
+        .configure()
+        .constraintValidatorFactory(
+            new ConstraintValidatorFactory() {
+              @Override
+              public <T extends ConstraintValidator<?, ?>> T getInstance(Class<T> key) {
+                try {
+                  T instance = key.getDeclaredConstructor().newInstance();
+                  for (Field field : key.getDeclaredFields()) {
+                    if (field.isAnnotationPresent(Inject.class)
+                        && field.getType().equals(ValidationLimits.class)) {
+                      field.setAccessible(true);
+                      field.set(instance, limits);
+                    }
+                  }
+                  return instance;
+                } catch (ReflectiveOperationException e) {
+                  throw new RuntimeException(e);
+                }
+              }
+
+              @Override
+              public void releaseInstance(ConstraintValidator<?, ?> instance) {}
+            })
+        .buildValidatorFactory()
+        .getValidator();
   }
 
-  @After
-  public void restoreDefaults() {
-    ValidationLimits.initialize(savedIdLimit, savedNameLimit);
+  private static ValidationLimits limitsOf(int idLimit, int nameLimit) {
+    return new ValidationLimits() {
+      @Override
+      public int getIdLengthLimit() {
+        return idLimit;
+      }
+
+      @Override
+      public int getNameLengthLimit() {
+        return nameLimit;
+      }
+    };
   }
 
-  // ---- helper classes for validator tests ----
+  // ---- helper classes ----
 
   private static class TestId {
     @MaestroIdConstraint String id;
@@ -74,90 +110,28 @@ public class ValidationLimitsTest extends BaseConstraintTest {
     }
   }
 
-  // ---- ValidationLimits defaults ----
-
-  @Test
-  public void defaultIdLimitMatchesConstants() {
-    assertEquals(Constants.ID_LENGTH_LIMIT, ValidationLimits.getIdLengthLimit());
-  }
-
-  @Test
-  public void defaultNameLimitMatchesConstants() {
-    assertEquals(Constants.NAME_LENGTH_LIMIT, ValidationLimits.getNameLengthLimit());
-  }
-
-  // ---- ValidationLimits.initialize() ----
-
-  @Test
-  public void initializeOverridesLimits() {
-    ValidationLimits.initialize(200, 300);
-    assertEquals(200, ValidationLimits.getIdLengthLimit());
-    assertEquals(300, ValidationLimits.getNameLengthLimit());
-  }
-
-  @Test
-  public void initializeThrowsOnZeroIdLimit() {
-    try {
-      ValidationLimits.initialize(0, 256);
-      fail("Expected IllegalArgumentException");
-    } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("idLengthLimit=0"));
-    }
-  }
-
-  @Test
-  public void initializeThrowsOnNegativeIdLimit() {
-    try {
-      ValidationLimits.initialize(-1, 256);
-      fail("Expected IllegalArgumentException");
-    } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("idLengthLimit=-1"));
-    }
-  }
-
-  @Test
-  public void initializeThrowsOnZeroNameLimit() {
-    try {
-      ValidationLimits.initialize(128, 0);
-      fail("Expected IllegalArgumentException");
-    } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("nameLengthLimit=0"));
-    }
-  }
-
-  @Test
-  public void initializeThrowsOnNegativeNameLimit() {
-    try {
-      ValidationLimits.initialize(128, -5);
-      fail("Expected IllegalArgumentException");
-    } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("nameLengthLimit=-5"));
-    }
-  }
-
   // ---- MaestroIdConstraint respects custom limit ----
 
   @Test
   public void idConstraintAllowsIdAtCustomLimit() {
-    ValidationLimits.initialize(200, savedNameLimit);
-    Set<ConstraintViolation<TestId>> violations = validator.validate(new TestId(repeat("a", 200)));
-    assertEquals(0, violations.size());
+    Validator v = buildValidatorWith(limitsOf(200, Constants.NAME_LENGTH_LIMIT));
+    assertEquals(0, v.validate(new TestId(repeat("a", 200))).size());
   }
 
   @Test
   public void idConstraintRejectsIdExceedingCustomLimit() {
-    ValidationLimits.initialize(200, savedNameLimit);
-    Set<ConstraintViolation<TestId>> violations = validator.validate(new TestId(repeat("a", 201)));
+    Validator v = buildValidatorWith(limitsOf(200, Constants.NAME_LENGTH_LIMIT));
+    Set<ConstraintViolation<TestId>> violations = v.validate(new TestId(repeat("a", 201)));
     assertEquals(1, violations.size());
-    ConstraintViolation<TestId> v = violations.iterator().next();
-    assertTrue(v.getMessage().contains("id length limit 200"));
-    assertTrue(v.getMessage().contains("rejected length is [201]"));
+    ConstraintViolation<TestId> cv = violations.iterator().next();
+    assertTrue(cv.getMessage().contains("id length limit 200"));
+    assertTrue(cv.getMessage().contains("rejected length is [201]"));
   }
 
   @Test
   public void idConstraintRejectsIdThatWasValidUnderDefaultButExceedsCustomLimit() {
-    ValidationLimits.initialize(40, savedNameLimit);
-    Set<ConstraintViolation<TestId>> violations = validator.validate(new TestId(repeat("a", 50)));
+    Validator v = buildValidatorWith(limitsOf(40, Constants.NAME_LENGTH_LIMIT));
+    Set<ConstraintViolation<TestId>> violations = v.validate(new TestId(repeat("a", 50)));
     assertEquals(1, violations.size());
     assertTrue(violations.iterator().next().getMessage().contains("id length limit 40"));
   }
@@ -166,28 +140,24 @@ public class ValidationLimitsTest extends BaseConstraintTest {
 
   @Test
   public void nameConstraintAllowsNameAtCustomLimit() {
-    ValidationLimits.initialize(savedIdLimit, 300);
-    Set<ConstraintViolation<TestName>> violations =
-        validator.validate(new TestName(repeat("a", 300)));
-    assertEquals(0, violations.size());
+    Validator v = buildValidatorWith(limitsOf(Constants.ID_LENGTH_LIMIT, 300));
+    assertEquals(0, v.validate(new TestName(repeat("a", 300))).size());
   }
 
   @Test
   public void nameConstraintRejectsNameExceedingCustomLimit() {
-    ValidationLimits.initialize(savedIdLimit, 300);
-    Set<ConstraintViolation<TestName>> violations =
-        validator.validate(new TestName(repeat("a", 301)));
+    Validator v = buildValidatorWith(limitsOf(Constants.ID_LENGTH_LIMIT, 300));
+    Set<ConstraintViolation<TestName>> violations = v.validate(new TestName(repeat("a", 301)));
     assertEquals(1, violations.size());
-    ConstraintViolation<TestName> v = violations.iterator().next();
-    assertTrue(v.getMessage().contains("name length limit 300"));
-    assertTrue(v.getMessage().contains("rejected length is [301]"));
+    ConstraintViolation<TestName> cv = violations.iterator().next();
+    assertTrue(cv.getMessage().contains("name length limit 300"));
+    assertTrue(cv.getMessage().contains("rejected length is [301]"));
   }
 
   @Test
   public void nameConstraintRejectsNameThatWasValidUnderDefaultButExceedsCustomLimit() {
-    ValidationLimits.initialize(savedIdLimit, 50);
-    Set<ConstraintViolation<TestName>> violations =
-        validator.validate(new TestName(repeat("a", 60)));
+    Validator v = buildValidatorWith(limitsOf(Constants.ID_LENGTH_LIMIT, 50));
+    Set<ConstraintViolation<TestName>> violations = v.validate(new TestName(repeat("a", 60)));
     assertEquals(1, violations.size());
     assertTrue(violations.iterator().next().getMessage().contains("name length limit 50"));
   }
@@ -196,56 +166,50 @@ public class ValidationLimitsTest extends BaseConstraintTest {
 
   @Test
   public void referenceIdConstraintAllowsIdAtCustomLimit() {
-    ValidationLimits.initialize(200, savedNameLimit);
-    Set<ConstraintViolation<TestRefId>> violations =
-        validator.validate(new TestRefId(repeat("a", 200)));
-    assertEquals(0, violations.size());
+    Validator v = buildValidatorWith(limitsOf(200, Constants.NAME_LENGTH_LIMIT));
+    assertEquals(0, v.validate(new TestRefId(repeat("a", 200))).size());
   }
 
   @Test
   public void referenceIdConstraintRejectsIdExceedingCustomLimit() {
-    ValidationLimits.initialize(200, savedNameLimit);
-    Set<ConstraintViolation<TestRefId>> violations =
-        validator.validate(new TestRefId(repeat("a", 201)));
+    Validator v = buildValidatorWith(limitsOf(200, Constants.NAME_LENGTH_LIMIT));
+    Set<ConstraintViolation<TestRefId>> violations = v.validate(new TestRefId(repeat("a", 201)));
     assertEquals(1, violations.size());
-    ConstraintViolation<TestRefId> v = violations.iterator().next();
-    assertTrue(v.getMessage().contains("id length limit 200"));
-    assertTrue(v.getMessage().contains("rejected length is [201]"));
+    ConstraintViolation<TestRefId> cv = violations.iterator().next();
+    assertTrue(cv.getMessage().contains("id length limit 200"));
+    assertTrue(cv.getMessage().contains("rejected length is [201]"));
   }
 
   // ---- MaestroNameSizeConstraint respects custom limit ----
 
   @Test
   public void nameSizeConstraintPassesForNull() {
-    ValidationLimits.initialize(savedIdLimit, 50);
-    Set<ConstraintViolation<TestNameSize>> violations = validator.validate(new TestNameSize(null));
-    assertEquals(0, violations.size());
+    Validator v = buildValidatorWith(limitsOf(Constants.ID_LENGTH_LIMIT, 50));
+    assertEquals(0, v.validate(new TestNameSize(null)).size());
   }
 
   @Test
   public void nameSizeConstraintAllowsNameAtCustomLimit() {
-    ValidationLimits.initialize(savedIdLimit, 100);
-    Set<ConstraintViolation<TestNameSize>> violations =
-        validator.validate(new TestNameSize(repeat("a", 100)));
-    assertEquals(0, violations.size());
+    Validator v = buildValidatorWith(limitsOf(Constants.ID_LENGTH_LIMIT, 100));
+    assertEquals(0, v.validate(new TestNameSize(repeat("a", 100))).size());
   }
 
   @Test
   public void nameSizeConstraintRejectsNameExceedingCustomLimit() {
-    ValidationLimits.initialize(savedIdLimit, 100);
+    Validator v = buildValidatorWith(limitsOf(Constants.ID_LENGTH_LIMIT, 100));
     Set<ConstraintViolation<TestNameSize>> violations =
-        validator.validate(new TestNameSize(repeat("a", 101)));
+        v.validate(new TestNameSize(repeat("a", 101)));
     assertEquals(1, violations.size());
-    ConstraintViolation<TestNameSize> v = violations.iterator().next();
-    assertTrue(v.getMessage().contains("name length limit 100"));
-    assertTrue(v.getMessage().contains("rejected length is [101]"));
+    ConstraintViolation<TestNameSize> cv = violations.iterator().next();
+    assertTrue(cv.getMessage().contains("name length limit 100"));
+    assertTrue(cv.getMessage().contains("rejected length is [101]"));
   }
 
   @Test
   public void nameSizeConstraintRejectsNameThatWasValidUnderDefaultButExceedsCustomLimit() {
-    ValidationLimits.initialize(savedIdLimit, 50);
+    Validator v = buildValidatorWith(limitsOf(Constants.ID_LENGTH_LIMIT, 50));
     Set<ConstraintViolation<TestNameSize>> violations =
-        validator.validate(new TestNameSize(repeat("a", 60)));
+        v.validate(new TestNameSize(repeat("a", 60)));
     assertEquals(1, violations.size());
     assertTrue(violations.iterator().next().getMessage().contains("name length limit 50"));
   }

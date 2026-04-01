@@ -12,7 +12,8 @@
  */
 package com.netflix.maestro.validations;
 
-import com.netflix.maestro.models.ValidationLimits;
+import com.netflix.maestro.utils.ValidationLimits;
+import jakarta.inject.Inject;
 import jakarta.validation.Constraint;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
@@ -45,7 +46,10 @@ public @interface MaestroNameSizeConstraint {
   Class<? extends Payload>[] payload() default {};
 
   /** Validates that the string length does not exceed the name length limit. */
-  class MaestroNameSizeValidator implements ConstraintValidator<MaestroNameSizeConstraint, String> {
+  class MaestroNameSizeValidator
+      implements ConstraintValidator<MaestroNameSizeConstraint, String> {
+
+    @Inject private ValidationLimits validationLimits;
 
     @Override
     public void initialize(MaestroNameSizeConstraint constraint) {}
@@ -55,7 +59,8 @@ public @interface MaestroNameSizeConstraint {
       if (value == null) {
         return true; // null means absent; use @NotNull separately if the field is required
       }
-      int limit = ValidationLimits.getNameLengthLimit();
+      ValidationLimits limits = validationLimits != null ? validationLimits : ValidationLimits.DEFAULTS;
+      int limit = limits.getNameLengthLimit();
       if (value.length() > limit) {
         context
             .buildConstraintViolationWithTemplate(

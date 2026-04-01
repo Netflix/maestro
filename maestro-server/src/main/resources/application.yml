@@ -50,11 +50,6 @@ maestro:
   step-action:
     action-timeout: 5000
     check-interval: 500
-  # configurable validation limits (defaults match compile-time Constants values)
-  validation:
-    id-length-limit: 128
-    name-length-limit: 256
-
 engine:
   configs:
     # database config
