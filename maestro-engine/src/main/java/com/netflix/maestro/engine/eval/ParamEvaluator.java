@@ -62,6 +62,7 @@ public class ParamEvaluator {
   private static final String SIGNAL_EXPRESSION_TEMPLATE =
       "return params.getFromSignal('%s', '%s');";
   private static final String PARAM_NAME_FOR_ALL = "params";
+  private static final String DEFAULT_STEP_PARAM_SEPARATOR = "__";
 
   private final ExprEvaluator exprEvaluator;
   private final ObjectMapper objectMapper;
@@ -69,7 +70,7 @@ public class ParamEvaluator {
 
   /** Convenience constructor using the default step param separator {@code __}. */
   public ParamEvaluator(ExprEvaluator exprEvaluator, ObjectMapper objectMapper) {
-    this(exprEvaluator, objectMapper, "__");
+    this(exprEvaluator, objectMapper, DEFAULT_STEP_PARAM_SEPARATOR);
   }
 
   /**
@@ -355,7 +356,11 @@ public class ParamEvaluator {
     return usedParams;
   }
 
-  /** Extract step id and param name from the reference. It handles `__`, `___`, and `____`. */
+  /**
+   * Extract step id and param name from the reference. It handles separator, separator with one
+   * extra underscore, and separator with two extra underscores (e.g. {@code __}, {@code ___}, and
+   * {@code ____} for the default separator).
+   */
   private Map.Entry<String, String> parseReferenceName(
       String refParam, Map<String, Map<String, Object>> allStepOutputData) {
     int idx1 = refParam.indexOf(stepParamSeparator);
