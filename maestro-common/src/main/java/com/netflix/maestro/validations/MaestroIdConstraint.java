@@ -60,7 +60,8 @@ public @interface MaestroIdConstraint {
         return false;
       }
 
-      ValidationLimits limits = validationLimits != null ? validationLimits : ValidationLimits.DEFAULTS;
+      ValidationLimits limits =
+          validationLimits != null ? validationLimits : ValidationLimits.DEFAULTS;
       int idLimit = limits.getIdLengthLimit();
       if (id.length() > idLimit) {
         context

@@ -62,8 +62,7 @@ public class MaestroReferenceIdConstraintTest extends BaseConstraintTest {
             new TestId(new String(new char[Constants.ID_LENGTH_LIMIT + 1]).replace("\0", "a")));
     assertEquals(1, violations.size());
     ConstraintViolation<TestId> violation = violations.iterator().next();
-    assertEquals(
-        Constants.ID_LENGTH_LIMIT + 1, ((String) violation.getInvalidValue()).length());
+    assertEquals(Constants.ID_LENGTH_LIMIT + 1, ((String) violation.getInvalidValue()).length());
     assertEquals(
         String.format(
             "[maestro id or name reference] cannot be more than id length limit %s "

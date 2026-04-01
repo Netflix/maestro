@@ -46,8 +46,7 @@ public @interface MaestroNameSizeConstraint {
   Class<? extends Payload>[] payload() default {};
 
   /** Validates that the string length does not exceed the name length limit. */
-  class MaestroNameSizeValidator
-      implements ConstraintValidator<MaestroNameSizeConstraint, String> {
+  class MaestroNameSizeValidator implements ConstraintValidator<MaestroNameSizeConstraint, String> {
 
     @Inject private ValidationLimits validationLimits;
 
@@ -59,7 +58,8 @@ public @interface MaestroNameSizeConstraint {
       if (value == null) {
         return true; // null means absent; use @NotNull separately if the field is required
       }
-      ValidationLimits limits = validationLimits != null ? validationLimits : ValidationLimits.DEFAULTS;
+      ValidationLimits limits =
+          validationLimits != null ? validationLimits : ValidationLimits.DEFAULTS;
       int limit = limits.getNameLengthLimit();
       if (value.length() > limit) {
         context

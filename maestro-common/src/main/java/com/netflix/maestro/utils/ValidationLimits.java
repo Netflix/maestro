@@ -19,8 +19,8 @@ public interface ValidationLimits {
 
   /**
    * Default instance backed by compile-time {@link Constants} values. Used by validators when no
-   * configured {@link ValidationLimits} bean is injected (e.g. in unit tests without Spring).
-   * Keeps each limit independently defaulted so id and name limits remain decoupled.
+   * configured {@link ValidationLimits} bean is injected (e.g. in unit tests without Spring). Keeps
+   * each limit independently defaulted so id and name limits remain decoupled.
    */
   ValidationLimits DEFAULTS =
       new ValidationLimits() {

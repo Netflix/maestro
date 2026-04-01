@@ -63,7 +63,8 @@ public @interface MaestroNameConstraint {
         return false;
       }
 
-      ValidationLimits limits = validationLimits != null ? validationLimits : ValidationLimits.DEFAULTS;
+      ValidationLimits limits =
+          validationLimits != null ? validationLimits : ValidationLimits.DEFAULTS;
       int nameLimit = limits.getNameLengthLimit();
       if (id.length() > nameLimit) {
         context
