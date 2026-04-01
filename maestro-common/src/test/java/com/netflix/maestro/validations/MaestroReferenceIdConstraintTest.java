@@ -16,9 +16,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 import com.netflix.maestro.models.Constants;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorFactory;
 import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import org.apache.bval.jsr.ApacheValidationProvider;
 import org.junit.Test;
 
 public class MaestroReferenceIdConstraintTest extends BaseConstraintTest {
@@ -99,8 +104,53 @@ public class MaestroReferenceIdConstraintTest extends BaseConstraintTest {
     ConstraintViolation<TestId> violation = violations.iterator().next();
     assertEquals("foo__bar", violation.getInvalidValue());
     assertEquals(
-        "[maestro id or name reference] cannot contain double underscores '__' - rejected value is [foo__bar]",
+        "[maestro id or name reference] cannot contain the step param separator '__' - rejected value is [foo__bar]",
         violation.getMessage());
+  }
+
+  @Test
+  public void isIdValidWithCustomSeparator() {
+    Set<ConstraintViolation<TestId>> violations =
+        validatorWithSeparator("___").validate(new TestId("foo__bar"));
+    assertEquals(0, violations.size());
+  }
+
+  @Test
+  public void isIdUsingCustomSeparator() {
+    Set<ConstraintViolation<TestId>> violations =
+        validatorWithSeparator("___").validate(new TestId("foo___bar"));
+    assertEquals(1, violations.size());
+    ConstraintViolation<TestId> violation = violations.iterator().next();
+    assertEquals("foo___bar", violation.getInvalidValue());
+    assertEquals(
+        "[maestro id or name reference] cannot contain the step param separator '___' - rejected value is [foo___bar]",
+        violation.getMessage());
+  }
+
+  private Validator validatorWithSeparator(String separator) {
+    return Validation.byProvider(ApacheValidationProvider.class)
+        .configure()
+        .constraintValidatorFactory(
+            new ConstraintValidatorFactory() {
+              @Override
+              public <T extends ConstraintValidator<?, ?>> T getInstance(Class<T> key) {
+                try {
+                  T instance = key.getDeclaredConstructor().newInstance();
+                  if (instance instanceof MaestroReferenceIdConstraint.MaestroIdValidator) {
+                    ((MaestroReferenceIdConstraint.MaestroIdValidator) instance)
+                        .setStepParamSeparator(() -> separator);
+                  }
+                  return instance;
+                } catch (Exception e) {
+                  throw new RuntimeException(e);
+                }
+              }
+
+              @Override
+              public void releaseInstance(ConstraintValidator<?, ?> instance) {}
+            })
+        .buildValidatorFactory()
+        .getValidator();
   }
 
   @Test

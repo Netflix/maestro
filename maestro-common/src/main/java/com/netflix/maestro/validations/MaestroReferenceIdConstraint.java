@@ -12,7 +12,10 @@
  */
 package com.netflix.maestro.validations;
 
+import com.netflix.maestro.annotations.VisibleForTesting;
 import com.netflix.maestro.models.Constants;
+import com.netflix.maestro.utils.StepParamSeparator;
+import jakarta.inject.Inject;
 import jakarta.validation.Constraint;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
@@ -45,8 +48,21 @@ public @interface MaestroReferenceIdConstraint {
     private static final Pattern ID_PATTERN = Pattern.compile("[_a-zA-Z][.\\-_a-zA-Z0-9]*+");
     private static final String REJECTED_VALUE = "- rejected value is [%s]";
 
+    @Inject private StepParamSeparator stepParamSeparator;
+
+    @VisibleForTesting
+    void setStepParamSeparator(StepParamSeparator stepParamSeparator) {
+      this.stepParamSeparator = stepParamSeparator;
+    }
+
     @Override
     public void initialize(MaestroReferenceIdConstraint constraint) {}
+
+    private String getSeparator() {
+      return stepParamSeparator != null
+          ? stepParamSeparator.getStepParamSeparator()
+          : Constants.DEFAULT_STEP_PARAM_SEPARATOR;
+    }
 
     @Override
     public boolean isValid(String id, ConstraintValidatorContext context) {
@@ -81,12 +97,13 @@ public @interface MaestroReferenceIdConstraint {
         return false;
       }
 
-      if (id.contains("__")) {
+      if (id.contains(getSeparator())) {
         context
             .buildConstraintViolationWithTemplate(
                 String.format(
-                    "[maestro id or name reference] cannot contain double underscores '__' "
+                    "[maestro id or name reference] cannot contain the step param separator '%s' "
                         + REJECTED_VALUE,
+                    getSeparator(),
                     id))
             .addConstraintViolation();
         return false;

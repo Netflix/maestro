@@ -34,6 +34,7 @@ import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.server.properties.MaestroProperties;
 import com.netflix.maestro.server.properties.StepRuntimeProperties;
 import com.netflix.maestro.utils.JsonHelper;
+import com.netflix.maestro.utils.StepParamSeparator;
 import com.netflix.spectator.api.DefaultRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -143,10 +144,18 @@ public class MaestroEngineConfiguration {
   }
 
   @Bean
+  public StepParamSeparator stepParamSeparator(MaestroProperties properties) {
+    LOG.info("Creating maestro stepParamSeparator within Spring boot...");
+    return properties.getParamEvaluator();
+  }
+
+  @Bean
   public ParamEvaluator paramEvaluatorHelper(
       ExprEvaluator exprEvaluator,
-      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper) {
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
+      MaestroProperties properties) {
     LOG.info("Creating maestro parameterHelper within Spring boot...");
-    return new ParamEvaluator(exprEvaluator, objectMapper);
+    return new ParamEvaluator(
+        exprEvaluator, objectMapper, properties.getParamEvaluator().getStepParamSeparator());
   }
 }
