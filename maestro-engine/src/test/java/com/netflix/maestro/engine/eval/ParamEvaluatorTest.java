@@ -312,6 +312,21 @@ public class ParamEvaluatorTest extends MaestroEngineBaseTest {
   }
 
   @Test
+  public void testParseStepParameterWithCustomSeparator() {
+    ParamEvaluator customEvaluator = new ParamEvaluator(evaluator, MAPPER, "___");
+    StringParameter bar =
+        StringParameter.builder().name("bar").expression("step1___foo + '-1';").build();
+    customEvaluator.parseStepParameter(
+        Collections.emptyMap(),
+        Collections.emptyMap(),
+        Collections.singletonMap(
+            "foo", StringParameter.builder().evaluatedResult("123").evaluatedTime(123L).build()),
+        bar,
+        "step1");
+    assertEquals("123-1", bar.getEvaluatedResult());
+  }
+
+  @Test
   public void testParseStepParameterUsingParamsToGetWorkflowParams() {
     StringParameter bar =
         StringParameter.builder().name("bar").expression("params.get('foo') + '-1'").build();

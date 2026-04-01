@@ -59,13 +59,18 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @AllArgsConstructor
 public class ParamEvaluator {
-  private static final String STEP_PARAM_SEPARATOR = "__";
   private static final String SIGNAL_EXPRESSION_TEMPLATE =
       "return params.getFromSignal('%s', '%s');";
   private static final String PARAM_NAME_FOR_ALL = "params";
 
   private final ExprEvaluator exprEvaluator;
   private final ObjectMapper objectMapper;
+  private final String stepParamSeparator;
+
+  /** Convenience constructor using the default step param separator {@code __}. */
+  public ParamEvaluator(ExprEvaluator exprEvaluator, ObjectMapper objectMapper) {
+    this(exprEvaluator, objectMapper, "__");
+  }
 
   /**
    * Evaluate workflow parameters.
@@ -154,7 +159,7 @@ public class ParamEvaluator {
         parseWorkflowParameter(
             workflowParams, workflowParams.get(refParamName), workflowId, visited);
         refParams.put(refParamName, workflowParams.get(refParamName));
-      } else if (refParamName.contains(STEP_PARAM_SEPARATOR)) {
+      } else if (refParamName.contains(stepParamSeparator)) {
         // here it might be from signal triggers
         Map.Entry<String, String> pair = parseReferenceName(refParamName, Collections.emptyMap());
         refParams.put(
@@ -313,7 +318,7 @@ public class ParamEvaluator {
       Set<String> visited) {
     Map<String, Parameter> usedParams = new HashMap<>();
     for (String refParam : refParamNames) {
-      if (refParam.contains(STEP_PARAM_SEPARATOR)) {
+      if (refParam.contains(stepParamSeparator)) {
         usedParams.put(
             refParam,
             getReferenceParam(
@@ -353,8 +358,8 @@ public class ParamEvaluator {
   /** Extract step id and param name from the reference. It handles `__`, `___`, and `____`. */
   private Map.Entry<String, String> parseReferenceName(
       String refParam, Map<String, Map<String, Object>> allStepOutputData) {
-    int idx1 = refParam.indexOf(STEP_PARAM_SEPARATOR);
-    int idx2 = refParam.lastIndexOf(STEP_PARAM_SEPARATOR);
+    int idx1 = refParam.indexOf(stepParamSeparator);
+    int idx2 = refParam.lastIndexOf(stepParamSeparator);
     //  ___ or ____ case
     if (idx1 != idx2) {
       String id1 = refParam.substring(0, idx1);
@@ -374,7 +379,7 @@ public class ParamEvaluator {
       }
     }
     String refStepId = refParam.substring(0, idx1);
-    String refParamName = refParam.substring(idx1 + 2);
+    String refParamName = refParam.substring(idx1 + stepParamSeparator.length());
     return new AbstractMap.SimpleEntry<>(refStepId, refParamName);
   }
 
