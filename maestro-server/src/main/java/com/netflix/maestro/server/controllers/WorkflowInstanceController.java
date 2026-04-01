@@ -18,7 +18,6 @@ import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.api.PaginationDirection;
 import com.netflix.maestro.models.api.PaginationResult;
 import com.netflix.maestro.models.instance.WorkflowInstance;
-import com.netflix.maestro.models.instance.WorkflowRunSummary;
 import com.netflix.maestro.server.utils.PaginationHelper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -104,14 +103,87 @@ public class WorkflowInstanceController {
       value = "/{workflowId}/instances/{workflowInstanceId}/runs",
       consumes = MediaType.ALL_VALUE)
   @Operation(
-      summary = "Get all runs for a given workflow instance",
+      summary = "Get all runs for a given workflow instance with pagination support",
       description =
-          "Returns a lightweight summary (run id, status, start time, end time) for each run "
-              + "of the given workflow instance, ordered by run id ascending.")
-  public List<WorkflowRunSummary> getWorkflowInstanceRuns(
+          "Retrieves all runs for a given workflow instance with cursor-based pagination. "
+              + "Use 'first' parameter for forward pagination or 'last' parameter for backward pagination, but not both. "
+              + "The cursor parameter can be used to continue pagination from a specific run id.")
+  public PaginationResult<WorkflowInstance> getWorkflowInstanceRuns(
       @Valid @NotNull @PathVariable("workflowId") String workflowId,
-      @PathVariable("workflowInstanceId") long workflowInstanceId) {
-    return workflowInstanceDao.getWorkflowInstanceRuns(workflowId, workflowInstanceId);
+      @PathVariable("workflowInstanceId") long workflowInstanceId,
+      @Parameter(
+              description =
+                  "Number of results to return for forward pagination. Must be between 1 and 200 inclusive. "
+                      + "Cannot be used together with 'last' parameter.")
+          @RequestParam(name = "first", required = false)
+          @Max(WORKFLOW_INSTANCE_MAX_BATCH_LIMIT)
+          @Min(WORKFLOW_INSTANCE_MIN_BATCH_LIMIT)
+          Long first,
+      @Parameter(
+              description =
+                  "Number of results to return for backward pagination. Must be between 1 and 200 inclusive. "
+                      + "Cannot be used together with 'first' parameter.")
+          @RequestParam(name = "last", required = false)
+          @Max(WORKFLOW_INSTANCE_MAX_BATCH_LIMIT)
+          @Min(WORKFLOW_INSTANCE_MIN_BATCH_LIMIT)
+          Long last,
+      @Parameter(
+              description =
+                  "Cursor for pagination continuation. Should be a run id. "
+                      + "If not provided, pagination starts from the beginning (first) or end (last).")
+          @RequestParam(name = "cursor", required = false)
+          String cursor) {
+    return getWorkflowInstanceRunsResult(workflowId, workflowInstanceId, first, last, cursor);
+  }
+
+  private PaginationResult<WorkflowInstance> getWorkflowInstanceRunsResult(
+      String workflowId, long workflowInstanceId, Long first, Long last, String cursor) {
+    PaginationDirection direction = PaginationHelper.validateParamAndDeriveDirection(first, last);
+    long limit = (last == null) ? first : last;
+
+    // Early return for empty results
+    long[] minMaxRunIds = workflowInstanceDao.getMinMaxRunIds(workflowId, workflowInstanceId);
+    if (minMaxRunIds == null) {
+      return PaginationHelper.buildEmptyPaginationResult();
+    }
+
+    long earliestRunId = minMaxRunIds[0];
+    long latestRunId = minMaxRunIds[1];
+
+    // Calculate pagination range
+    PaginationHelper.PaginationRange paginationRange =
+        PaginationHelper.getPaginationRange(cursor, direction, earliestRunId, latestRunId, limit);
+
+    // Fetch runs
+    List<WorkflowInstance> runs =
+        workflowInstanceDao.getWorkflowInstanceRuns(
+            workflowId, workflowInstanceId, paginationRange.start(), paginationRange.end());
+
+    // Build pagination result
+    return PaginationHelper.buildPaginationResult(
+        runs, latestRunId, earliestRunId, this::extractRunIdRange);
+  }
+
+  /** Extracts the high and low run ids from a list of workflow instance runs. */
+  private long[] extractRunIdRange(List<WorkflowInstance> runs) {
+    if (runs == null || runs.isEmpty()) {
+      return new long[] {0L, 0L};
+    }
+
+    if (runs.size() == 1) {
+      long runId = runs.getFirst().getWorkflowRunId();
+      return new long[] {runId, runId};
+    }
+
+    long min = Long.MAX_VALUE;
+    long max = Long.MIN_VALUE;
+    for (WorkflowInstance run : runs) {
+      long runId = run.getWorkflowRunId();
+      min = Math.min(min, runId);
+      max = Math.max(max, runId);
+    }
+
+    return new long[] {max, min}; // high, low
   }
 
   @GetMapping(value = "/{workflowId}/instances", consumes = MediaType.ALL_VALUE)
