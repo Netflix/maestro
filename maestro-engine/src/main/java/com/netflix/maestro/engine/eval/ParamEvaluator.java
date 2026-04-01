@@ -62,7 +62,6 @@ public class ParamEvaluator {
   private static final String SIGNAL_EXPRESSION_TEMPLATE =
       "return params.getFromSignal('%s', '%s');";
   private static final String PARAM_NAME_FOR_ALL = "params";
-  private static final String DEFAULT_STEP_PARAM_SEPARATOR = "__";
 
   private final ExprEvaluator exprEvaluator;
   private final ObjectMapper objectMapper;
@@ -70,7 +69,7 @@ public class ParamEvaluator {
 
   /** Convenience constructor using the default step param separator {@code __}. */
   public ParamEvaluator(ExprEvaluator exprEvaluator, ObjectMapper objectMapper) {
-    this(exprEvaluator, objectMapper, DEFAULT_STEP_PARAM_SEPARATOR);
+    this(exprEvaluator, objectMapper, Constants.DEFAULT_STEP_PARAM_SEPARATOR);
   }
 
   /**

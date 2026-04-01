@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.server.properties;
 
+import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.utils.StepParamSeparator;
 import lombok.Getter;
 import lombok.Setter;
@@ -23,5 +24,5 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ParamEvaluatorProperties implements StepParamSeparator {
-  private String stepParamSeparator = "__";
+  private String stepParamSeparator = Constants.DEFAULT_STEP_PARAM_SEPARATOR;
 }

@@ -47,7 +47,6 @@ public @interface MaestroReferenceIdConstraint {
   class MaestroIdValidator implements ConstraintValidator<MaestroReferenceIdConstraint, String> {
     private static final Pattern ID_PATTERN = Pattern.compile("[_a-zA-Z][.\\-_a-zA-Z0-9]*+");
     private static final String REJECTED_VALUE = "- rejected value is [%s]";
-    private static final String DEFAULT_STEP_PARAM_SEPARATOR = "__";
 
     @Inject private StepParamSeparator stepParamSeparator;
 
@@ -62,7 +61,7 @@ public @interface MaestroReferenceIdConstraint {
     private String getSeparator() {
       return stepParamSeparator != null
           ? stepParamSeparator.getStepParamSeparator()
-          : DEFAULT_STEP_PARAM_SEPARATOR;
+          : Constants.DEFAULT_STEP_PARAM_SEPARATOR;
     }
 
     @Override
