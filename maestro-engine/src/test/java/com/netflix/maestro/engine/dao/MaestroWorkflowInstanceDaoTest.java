@@ -46,7 +46,6 @@ import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.instance.WorkflowInstanceAggregatedInfo;
 import com.netflix.maestro.models.instance.WorkflowRollupOverview;
-import com.netflix.maestro.models.instance.WorkflowRunSummary;
 import com.netflix.maestro.models.instance.WorkflowRuntimeOverview;
 import com.netflix.maestro.models.instance.WorkflowStepStatusSummary;
 import com.netflix.maestro.models.timeline.Timeline;
@@ -597,8 +596,13 @@ public class MaestroWorkflowInstanceDaoTest extends MaestroDaoBaseTest {
   @Test
   public void testGetWorkflowInstanceRuns() {
     // single run — only run 1 exists
-    List<WorkflowRunSummary> runs =
-        instanceDao.getWorkflowInstanceRuns(wfi.getWorkflowId(), wfi.getWorkflowInstanceId());
+    long[] minMax = instanceDao.getMinMaxRunIds(wfi.getWorkflowId(), wfi.getWorkflowInstanceId());
+    assertNotNull(minMax);
+    assertEquals(1L, minMax[0]);
+    assertEquals(1L, minMax[1]);
+    List<WorkflowInstance> runs =
+        instanceDao.getWorkflowInstanceRuns(
+            wfi.getWorkflowId(), wfi.getWorkflowInstanceId(), minMax[0], minMax[1]);
     assertEquals(1, runs.size());
     assertEquals(1, runs.getFirst().getWorkflowRunId());
     assertEquals(WorkflowInstance.Status.CREATED, runs.getFirst().getStatus());
@@ -613,13 +617,19 @@ public class MaestroWorkflowInstanceDaoTest extends MaestroDaoBaseTest {
     assertEquals(1, res);
     assertEquals(2, wfi.getWorkflowRunId());
 
-    // two runs — ordered by run_id ascending
-    runs = instanceDao.getWorkflowInstanceRuns(wfi.getWorkflowId(), wfi.getWorkflowInstanceId());
+    // two runs — ordered by run_id descending
+    minMax = instanceDao.getMinMaxRunIds(wfi.getWorkflowId(), wfi.getWorkflowInstanceId());
+    assertNotNull(minMax);
+    assertEquals(1L, minMax[0]);
+    assertEquals(2L, minMax[1]);
+    runs =
+        instanceDao.getWorkflowInstanceRuns(
+            wfi.getWorkflowId(), wfi.getWorkflowInstanceId(), minMax[0], minMax[1]);
     assertEquals(2, runs.size());
-    assertEquals(1, runs.get(0).getWorkflowRunId());
-    assertEquals(WorkflowInstance.Status.FAILED, runs.get(0).getStatus());
-    assertEquals(2, runs.get(1).getWorkflowRunId());
-    assertEquals(WorkflowInstance.Status.CREATED, runs.get(1).getStatus());
+    assertEquals(2, runs.get(0).getWorkflowRunId());
+    assertEquals(WorkflowInstance.Status.CREATED, runs.get(0).getStatus());
+    assertEquals(1, runs.get(1).getWorkflowRunId());
+    assertEquals(WorkflowInstance.Status.FAILED, runs.get(1).getStatus());
   }
 
   @Test

@@ -32,7 +32,6 @@ import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.error.Details;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.instance.WorkflowRollupOverview;
-import com.netflix.maestro.models.instance.WorkflowRunSummary;
 import com.netflix.maestro.models.instance.WorkflowRuntimeOverview;
 import com.netflix.maestro.models.timeline.Timeline;
 import com.netflix.maestro.models.timeline.TimelineEvent;
@@ -161,8 +160,12 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
       String.format(GET_WORKFLOW_INSTANCE_FIELDS_TEMPLATE, STATUS_COLUMN, LATEST_RUN_CONDITION);
 
   private static final String GET_WORKFLOW_INSTANCE_RUNS_QUERY =
-      "SELECT run_id, status, start_ts, end_ts FROM maestro_workflow_instance "
-          + "WHERE workflow_id=? AND instance_id=? ORDER BY run_id ASC";
+      "SELECT instance, status, start_ts, end_ts FROM maestro_workflow_instance "
+          + "WHERE workflow_id=? AND instance_id=? AND run_id>=? AND run_id<=? ORDER BY run_id DESC";
+
+  private static final String GET_MIN_MAX_RUN_IDS_QUERY =
+      "SELECT min(run_id) as min_run_id, max(run_id) as max_run_id "
+          + "FROM maestro_workflow_instance WHERE workflow_id=? AND instance_id=?";
 
   private static final String UPDATE_INSTANCE_FAILED_STATUS =
       "UPDATE maestro_workflow_instance SET status='FAILED_2' "
@@ -235,6 +238,11 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
   private static final String RUN_ID_COLUMN = "run_id";
   private static final String START_TS_COLUMN = "start_ts";
   private static final String END_TS_COLUMN = "end_ts";
+  private static final String MIN_RUN_ID = "min_run_id";
+  private static final String MAX_RUN_ID = "max_run_id";
+  private static final String INSTANCE_COLUMN = "instance";
+  private static final String INSTANCE_COLUMN_NOT_NULL_ERR =
+      "workflow instance column cannot be null";
 
   private static final String TERMINATION_MESSAGE_TEMPLATE =
       "Workflow instance status becomes [%s] due to reason [%s]";
@@ -870,14 +878,16 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
   }
 
   /**
-   * Get all run summaries for a specific workflow instance, ordered by run id ascending.
+   * Get runs for a specific workflow instance within a run id range, ordered by run id ascending.
    *
    * @param workflowId workflow id
    * @param workflowInstanceId workflow instance id
-   * @return list of workflow run summaries ordered by run id ascending
+   * @param startRunId start run id (inclusive)
+   * @param endRunId end run id (inclusive)
+   * @return list of workflow instances ordered by run id descending
    */
-  public List<WorkflowRunSummary> getWorkflowInstanceRuns(
-      String workflowId, long workflowInstanceId) {
+  public List<WorkflowInstance> getWorkflowInstanceRuns(
+      String workflowId, long workflowInstanceId, long startRunId, long endRunId) {
     return withMetricLogError(
         () ->
             withRetryableQuery(
@@ -886,22 +896,62 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
                   int idx = 0;
                   stmt.setString(++idx, workflowId);
                   stmt.setLong(++idx, workflowInstanceId);
+                  stmt.setLong(++idx, startRunId);
+                  stmt.setLong(++idx, endRunId);
                 },
                 result -> {
-                  List<WorkflowRunSummary> runs = new ArrayList<>();
+                  List<WorkflowInstance> runs = new ArrayList<>();
                   while (result.next()) {
-                    runs.add(
-                        WorkflowRunSummary.builder()
-                            .workflowRunId(result.getLong(RUN_ID_COLUMN))
-                            .status(WorkflowInstance.Status.create(result.getString(STATUS_COLUMN)))
-                            .startTime(getTimestampIfPresent(result, START_TS_COLUMN))
-                            .endTime(getTimestampIfPresent(result, END_TS_COLUMN))
-                            .build());
+                    WorkflowInstance instance =
+                        Checks.notNull(
+                            getJsonObjectIfPresent(result, INSTANCE_COLUMN, WorkflowInstance.class),
+                            INSTANCE_COLUMN_NOT_NULL_ERR);
+                    instance.setStatus(
+                        WorkflowInstance.Status.create(result.getString(STATUS_COLUMN)));
+                    instance.setStartTime(getTimestampIfPresent(result, START_TS_COLUMN));
+                    instance.setEndTime(getTimestampIfPresent(result, END_TS_COLUMN));
+                    instance.setAggregatedInfo(null);
+                    runs.add(instance);
                   }
                   return runs;
                 }),
         "getWorkflowInstanceRuns",
         "Failed to get workflow instance runs for [{}][{}]",
+        workflowId,
+        workflowInstanceId);
+  }
+
+  /**
+   * Gets the min and max run id for a specific workflow instance.
+   *
+   * @param workflowId workflow id
+   * @param workflowInstanceId workflow instance id
+   * @return a long array of length 2 where the first element is the min run id and the second is
+   *     the max run id, or null if no runs exist
+   */
+  public long[] getMinMaxRunIds(String workflowId, long workflowInstanceId) {
+    return withMetricLogError(
+        () ->
+            withRetryableQuery(
+                GET_MIN_MAX_RUN_IDS_QUERY,
+                stmt -> {
+                  int idx = 0;
+                  stmt.setString(++idx, workflowId);
+                  stmt.setLong(++idx, workflowInstanceId);
+                },
+                result -> {
+                  if (result.next()) {
+                    long min = result.getLong(MIN_RUN_ID);
+                    long max = result.getLong(MAX_RUN_ID);
+                    if (min == 0 && max == 0) {
+                      return null;
+                    }
+                    return new long[] {min, max};
+                  }
+                  return null;
+                }),
+        "getMinMaxRunIds",
+        "Failed to get the min and max run ids for [{}][{}]",
         workflowId,
         workflowInstanceId);
   }
@@ -982,8 +1032,8 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
   private WorkflowInstance workflowInstanceFromResult(ResultSet rs) throws SQLException {
     WorkflowInstance instance =
         Checks.notNull(
-            getJsonObjectIfPresent(rs, "instance", WorkflowInstance.class),
-            "workflow instance column cannot be null");
+            getJsonObjectIfPresent(rs, INSTANCE_COLUMN, WorkflowInstance.class),
+            INSTANCE_COLUMN_NOT_NULL_ERR);
     instance.setStatus(WorkflowInstance.Status.create(rs.getString(STATUS_COLUMN)));
     instance.setExecutionId(rs.getString("execution_id"));
     instance.setStartTime(getTimestampIfPresent(rs, START_TS_COLUMN));
