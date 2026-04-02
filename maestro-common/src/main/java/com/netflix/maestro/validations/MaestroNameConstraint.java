@@ -14,6 +14,8 @@ package com.netflix.maestro.validations;
 
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.utils.StringUtils;
+import com.netflix.maestro.utils.ValidationLimits;
+import jakarta.inject.Inject;
 import jakarta.validation.Constraint;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
@@ -41,17 +43,40 @@ public @interface MaestroNameConstraint {
   /** input constraint payload. */
   Class<? extends Payload>[] payload() default {};
 
+  /**
+   * Whether the name field is required. When false, null or blank values are treated as absent and
+   * pass validation. Defaults to true.
+   */
+  boolean required() default true;
+
+  /**
+   * Whether to enforce the regex pattern and reserved prefix/suffix checks. When false, only the
+   * length limit is enforced. Defaults to true.
+   */
+  boolean enforcePattern() default true;
+
   /** Maestro id/name validator. */
   class MaestroNameValidator implements ConstraintValidator<MaestroNameConstraint, String> {
     private static final Pattern NAME_PATTERN =
         Pattern.compile("[\\w \\.,:@&='(){}$+\\[\\]\\-\\/\\\\]+");
 
+    @Inject private ValidationLimits validationLimits;
+
+    private boolean required;
+    private boolean enforcePattern;
+
     @Override
-    public void initialize(MaestroNameConstraint constraint) {}
+    public void initialize(MaestroNameConstraint constraint) {
+      this.required = constraint.required();
+      this.enforcePattern = constraint.enforcePattern();
+    }
 
     @Override
     public boolean isValid(String id, ConstraintValidatorContext context) {
       if (id == null || StringUtils.checkTrimEmpty(id)) {
+        if (!required) {
+          return true;
+        }
         context
             .buildConstraintViolationWithTemplate(
                 "[maestro name] cannot be null or empty or blank spaces")
@@ -59,15 +84,22 @@ public @interface MaestroNameConstraint {
         return false;
       }
 
-      if (id.length() > Constants.NAME_LENGTH_LIMIT) {
+      ValidationLimits limits =
+          validationLimits != null ? validationLimits : ValidationLimits.DEFAULTS;
+      int nameLimit = limits.getNameLengthLimit();
+      if (id.length() > nameLimit) {
         context
             .buildConstraintViolationWithTemplate(
                 String.format(
                     "[maestro name] cannot be more than name length limit %s "
                         + "- rejected length is [%s] for value [%s]",
-                    Constants.NAME_LENGTH_LIMIT, id.length(), id))
+                    nameLimit, id.length(), id))
             .addConstraintViolation();
         return false;
+      }
+
+      if (!enforcePattern) {
+        return true;
       }
 
       if (!NAME_PATTERN.matcher(id).matches()) {

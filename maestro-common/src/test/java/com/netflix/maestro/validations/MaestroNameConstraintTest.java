@@ -31,6 +31,15 @@ public class MaestroNameConstraintTest extends BaseConstraintTest {
     }
   }
 
+  private static class TestOptionalName {
+    @MaestroNameConstraint(required = false, enforcePattern = false)
+    String name;
+
+    TestOptionalName(String name) {
+      this.name = name;
+    }
+  }
+
   @Test
   public void isValidName() {
     Set<ConstraintViolation<TestName>> violations =
@@ -86,12 +95,14 @@ public class MaestroNameConstraintTest extends BaseConstraintTest {
             new TestName(new String(new char[Constants.NAME_LENGTH_LIMIT + 1]).replace("\0", "a")));
     assertEquals(1, violations.size());
     ConstraintViolation<TestName> violation = violations.iterator().next();
-    assertEquals(257, ((String) violation.getInvalidValue()).length());
+    assertEquals(Constants.NAME_LENGTH_LIMIT + 1, ((String) violation.getInvalidValue()).length());
     assertEquals(
         String.format(
-            "[maestro name] cannot be more than name length limit 256 "
+            "[maestro name] cannot be more than name length limit %s "
                 + "- rejected length is [%s] for value [%s]",
-            257, new String(new char[Constants.NAME_LENGTH_LIMIT + 1]).replace("\0", "a")),
+            Constants.NAME_LENGTH_LIMIT,
+            Constants.NAME_LENGTH_LIMIT + 1,
+            new String(new char[Constants.NAME_LENGTH_LIMIT + 1]).replace("\0", "a")),
         violation.getMessage());
   }
 
@@ -124,6 +135,41 @@ public class MaestroNameConstraintTest extends BaseConstraintTest {
     assertEquals(
         "[maestro name] cannot start with reserved prefix: maestro_ - rejected value is [maestro_foo]",
         violation.getMessage());
+  }
+
+  @Test
+  public void isOptionalNameInvalidCharsAllowed() {
+    Set<ConstraintViolation<TestOptionalName>> violations =
+        validator.validate(new TestOptionalName("~foo`bar"));
+    assertEquals(0, violations.size());
+  }
+
+  @Test
+  public void isOptionalNameReservedPrefixAllowed() {
+    Set<ConstraintViolation<TestOptionalName>> violations =
+        validator.validate(new TestOptionalName("maestro_foo"));
+    assertEquals(0, violations.size());
+  }
+
+  @Test
+  public void isOptionalNameNullAllowed() {
+    Set<ConstraintViolation<TestOptionalName>> violations =
+        validator.validate(new TestOptionalName(null));
+    assertEquals(0, violations.size());
+  }
+
+  @Test
+  public void isOptionalNameEmptyAllowed() {
+    Set<ConstraintViolation<TestOptionalName>> violations =
+        validator.validate(new TestOptionalName(""));
+    assertEquals(0, violations.size());
+  }
+
+  @Test
+  public void isOptionalNameBlankAllowed() {
+    Set<ConstraintViolation<TestOptionalName>> violations =
+        validator.validate(new TestOptionalName("     "));
+    assertEquals(0, violations.size());
   }
 
   @Test
