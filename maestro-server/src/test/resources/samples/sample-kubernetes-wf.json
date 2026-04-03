@@ -14,26 +14,19 @@
       }
     },
     "steps": [
-      {"step": {"id": "job.1", "type": "NoOp", "transition": {"successors": {"job.2":  "true"}}}},
+      {"step": {"id": "job.1", "type": "NoOp", "transition": {"successors": {"job.2": "true"}}}},
       {
         "step": {
           "id": "job.2",
           "type": "kubernetes",
           "transition": {},
-          "retry_policy": {
-            "error_retry_limit": 0
-          },
+          "retry_policy": {"error_retry_limit": 0},
           "params": {
             "kubernetes": {
               "value": {
-                "image": {
-                  "value": "busybox",
-                  "type": "STRING"
-                },
-                "entrypoint": {
-                  "value": "echo hello world",
-                  "type": "STRING"
-                }
+                "image": {"value": "busybox", "type": "STRING"},
+                "command": {"value": ["echo"], "type": "STRING_ARRAY"},
+                "args": {"value": ["hello", "world"], "type": "STRING_ARRAY"}
               },
               "type": "MAP"
             }
