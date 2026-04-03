@@ -34,6 +34,7 @@ import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.definition.Tag;
 import com.netflix.maestro.models.error.Details;
 import com.netflix.maestro.models.parameter.ParamDefinition;
+import com.netflix.maestro.models.stepruntime.KubernetesCommand;
 import com.netflix.maestro.models.timeline.TimelineDetailsEvent;
 import com.netflix.maestro.models.timeline.TimelineLogEvent;
 import java.io.IOException;
@@ -47,6 +48,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @AllArgsConstructor
 public class KubernetesStepRuntime implements StepRuntime {
+  private static final String SPACE = " ";
   private final KubernetesRuntimeExecutor runtimeExecutor;
   private final KubernetesCommandGenerator commandGenerator;
   private final JobTemplateManager jobTemplateManager;
@@ -206,7 +208,15 @@ public class KubernetesStepRuntime implements StepRuntime {
   protected void processPostLaunchArtifacts(KubernetesStepContext context) {
     KubernetesArtifact artifact = new KubernetesArtifact();
     artifact.setJobId(context.getJobResult().jobId());
-    artifact.setExecutionScript(context.getCommand().getEntrypoint());
+    KubernetesCommand cmd = context.getCommand();
+    if (cmd.getCommand() != null && cmd.getArgs() != null) {
+      artifact.setExecutionScript(
+          String.join(SPACE, cmd.getCommand()) + SPACE + String.join(SPACE, cmd.getArgs()));
+    } else if (cmd.getCommand() != null) {
+      artifact.setExecutionScript(String.join(SPACE, cmd.getCommand()));
+    } else if (cmd.getArgs() != null) {
+      artifact.setExecutionScript(String.join(SPACE, cmd.getArgs()));
+    }
     artifact.setCommand(context.getCommand());
     context.getPendingArtifacts().put(Artifact.Type.KUBERNETES.key(), artifact);
   }

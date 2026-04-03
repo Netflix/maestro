@@ -20,10 +20,13 @@ kubernetes:
     image:
       type: STRING
       internal_mode: REQUIRED
-    entrypoint:
-      type: STRING
-      value: ""
+    command:
+      type: STRING_ARRAY
+      value: ["/bin/sh", "-c"]
       internal_mode: PROVIDED
+    args:
+      type: STRING_ARRAY
+      internal_mode: OPTIONAL
     env:
       type: STRING_MAP
       value: {}

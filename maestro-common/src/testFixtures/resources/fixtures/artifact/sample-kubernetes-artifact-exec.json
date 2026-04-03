@@ -1,0 +1,15 @@
+{
+  "job_id": "job-uuid-1",
+  "execution_script": "hello world",
+  "command": {
+    "app_name": "maestro",
+    "args": ["hello", "world"],
+    "command": ["echo"],
+    "image": "test-image",
+    "cpu": "0.5",
+    "env": {},
+    "job_deduplication_key": "job-dedup-key-1"
+  },
+  "execution_output": "hello world\n",
+  "type": "KUBERNETES"
+}
