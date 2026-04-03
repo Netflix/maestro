@@ -31,6 +31,8 @@ import lombok.ToString;
 @JsonPropertyOrder(
     value = {
       "app_name",
+      "args",
+      "command",
       "cpu",
       "disk",
       "gpu",
@@ -48,12 +50,22 @@ import lombok.ToString;
 @EqualsAndHashCode
 public class KubernetesCommand {
   private final String appName;
+  private final String[] command;
+  private final String[] args;
   private final String cpu;
   private final String disk;
   private final String gpu;
   private final String memory;
   private final String image;
-  private final String entrypoint;
+
+  /**
+   * Shell-form entrypoint string.
+   *
+   * @deprecated Use {@code command} and {@code args} instead. Kept for artifact deserialization
+   *     backward compatibility.
+   */
+  @Deprecated private final String entrypoint;
+
   private final Map<String, String> env;
   private final String jobDeduplicationKey;
   private final String ownerEmail;

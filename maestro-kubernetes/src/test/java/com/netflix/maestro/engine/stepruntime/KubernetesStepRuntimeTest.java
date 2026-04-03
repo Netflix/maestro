@@ -85,7 +85,7 @@ public class KubernetesStepRuntimeTest extends MaestroBaseTest {
                         "gpu", "0",
                         "memory", "1G",
                         "image", "test-image",
-                        "entrypoint", "test-entrypoint",
+                        "args", new String[] {"test-entrypoint"},
                         "env",
                             Map.of(
                                 "key1", "value1",
@@ -125,6 +125,33 @@ public class KubernetesStepRuntimeTest extends MaestroBaseTest {
                 MetricConstants.STATUS_TAG,
                 MetricConstants.STATUS_TAG_VALUE_SUCCESS)
             .count());
+  }
+
+  @Test
+  public void testStartWithCommandAndArgs() {
+    runtimeSummary
+        .getParams()
+        .put(
+            "kubernetes",
+            MapParameter.builder()
+                .evaluatedResult(
+                    Map.of(
+                        "image",
+                        "test-image",
+                        "command",
+                        new String[] {"/bin/sh", "-c"},
+                        "args",
+                        new String[] {"echo hello"},
+                        "env",
+                        Map.of()))
+                .evaluatedTime(12345L)
+                .build());
+    when(runtimeExecutor.launchJob(Mockito.any()))
+        .thenReturn(new KubernetesJobResult("test-job", StepRuntime.State.CONTINUE));
+    StepRuntime.Result res = stepRuntime.start(new WorkflowSummary(), null, runtimeSummary);
+    assertEquals(StepRuntime.State.CONTINUE, res.state());
+    var artifact = res.artifacts().get(Artifact.Type.KUBERNETES.key()).asKubernetes();
+    assertEquals("/bin/sh -c echo hello", artifact.getExecutionScript());
   }
 
   @Test

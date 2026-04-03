@@ -12,7 +12,9 @@
  */
 package com.netflix.maestro.engine.kubernetes;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.MaestroBaseTest;
@@ -60,7 +62,8 @@ public class KubernetesCommandGeneratorTest extends MaestroBaseTest {
   }
 
   @Test
-  public void testGenerate() {
+  public void testGenerateMigratesDeprecatedEntrypoint() {
+    // Old workflow definitions with entrypoint get migrated to args automatically
     KubernetesStepContext context =
         new KubernetesStepContext(new WorkflowSummary(), runtimeSummary, new TypedStep());
     KubernetesCommand command = generator.generate(context);
@@ -70,10 +73,54 @@ public class KubernetesCommandGeneratorTest extends MaestroBaseTest {
     assertEquals("0", command.getGpu());
     assertEquals("1G", command.getMemory());
     assertEquals("test-image", command.getImage());
-    assertEquals("test-entrypoint", command.getEntrypoint());
+    assertArrayEquals(new String[] {"test-entrypoint"}, command.getArgs());
+    assertNull(command.getCommand());
     assertEquals(Map.of("key1", "value1", "key2", "value2"), command.getEnv());
     assertEquals("job_deduplication_key", command.getJobDeduplicationKey());
     assertEquals("owner_email", command.getOwnerEmail());
+  }
+
+  @Test
+  public void testGenerateWithCommandAndArgs() {
+    runtimeSummary
+        .getParams()
+        .put(
+            "kubernetes",
+            MapParameter.builder()
+                .evaluatedResult(
+                    Map.of(
+                        "image", "test-image",
+                        "command", new String[] {"echo"},
+                        "args", new String[] {"hello", "world"}))
+                .evaluatedTime(12345L)
+                .build());
+    KubernetesStepContext context =
+        new KubernetesStepContext(new WorkflowSummary(), runtimeSummary, new TypedStep());
+    KubernetesCommand command = generator.generate(context);
+    assertEquals("test-image", command.getImage());
+    assertArrayEquals(new String[] {"echo"}, command.getCommand());
+    assertArrayEquals(new String[] {"hello", "world"}, command.getArgs());
+    assertNull(command.getEntrypoint());
+  }
+
+  @Test
+  public void testGenerateWithNoCommandOrArgs() {
+    // Neither command nor args set — image defaults apply
+    runtimeSummary
+        .getParams()
+        .put(
+            "kubernetes",
+            MapParameter.builder()
+                .evaluatedResult(Map.of("image", "test-image"))
+                .evaluatedTime(12345L)
+                .build());
+    KubernetesStepContext context =
+        new KubernetesStepContext(new WorkflowSummary(), runtimeSummary, new TypedStep());
+    KubernetesCommand command = generator.generate(context);
+    assertEquals("test-image", command.getImage());
+    assertNull(command.getCommand());
+    assertNull(command.getArgs());
+    assertNull(command.getEntrypoint());
   }
 
   @Test

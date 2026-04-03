@@ -28,7 +28,6 @@ import lombok.AllArgsConstructor;
 public class KubernetesCommandGenerator {
   private static final String KUBERNETES_KEY = StepType.KUBERNETES.getType().toLowerCase(Locale.US);
   private static final String IMAGE_KEY = "image";
-  private static final String ENTRYPOINT_KEY = "entrypoint";
 
   private final ObjectMapper mapper;
 
@@ -52,6 +51,10 @@ public class KubernetesCommandGenerator {
     if (command.getEnv() == null) {
       builder.env(Collections.emptyMap());
     }
+    // Migrate deprecated entrypoint field to args for old workflow definitions
+    if (command.getEntrypoint() != null) {
+      builder.args(new String[] {command.getEntrypoint()});
+    }
     return builder.build();
   }
 
@@ -67,7 +70,6 @@ public class KubernetesCommandGenerator {
         stepSummary.getParams().get(KUBERNETES_KEY), "kubernetes params must be present");
     MapParameter mapParams = stepSummary.getParams().get(KUBERNETES_KEY).asMapParam();
     checkNotNullPrecondition(mapParams, IMAGE_KEY);
-    checkNotNullPrecondition(mapParams, ENTRYPOINT_KEY);
     return mapParams;
   }
 
