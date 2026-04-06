@@ -25,7 +25,7 @@ import com.netflix.maestro.models.trigger.SignalTrigger;
 import com.netflix.maestro.models.trigger.TimeTrigger;
 import com.netflix.maestro.utils.MapHelper;
 import com.netflix.maestro.validations.MaestroIdConstraint;
-import com.netflix.maestro.validations.MaestroNameConstraint;
+import com.netflix.maestro.validations.MaestroNameSizeConstraint;
 import com.netflix.maestro.validations.SignalTriggerConstraint;
 import com.netflix.maestro.validations.TagListConstraint;
 import com.netflix.maestro.validations.TimeTriggerConstraint;
@@ -74,8 +74,7 @@ public class Workflow {
    * Name of the workflow. Can be absent by user. Can be filled by workflow id if absent - use
    * helper method in WorkflowHelper.
    */
-  @MaestroNameConstraint(required = false, enforcePattern = false)
-  private final String name;
+  @MaestroNameSizeConstraint private final String name;
 
   @Size(max = Constants.FIELD_SIZE_LIMIT)
   private final String description;

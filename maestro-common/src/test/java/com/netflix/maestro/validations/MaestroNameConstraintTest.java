@@ -31,15 +31,6 @@ public class MaestroNameConstraintTest extends BaseConstraintTest {
     }
   }
 
-  private static class TestOptionalName {
-    @MaestroNameConstraint(required = false, enforcePattern = false)
-    String name;
-
-    TestOptionalName(String name) {
-      this.name = name;
-    }
-  }
-
   @Test
   public void isValidName() {
     Set<ConstraintViolation<TestName>> violations =
@@ -135,41 +126,6 @@ public class MaestroNameConstraintTest extends BaseConstraintTest {
     assertEquals(
         "[maestro name] cannot start with reserved prefix: maestro_ - rejected value is [maestro_foo]",
         violation.getMessage());
-  }
-
-  @Test
-  public void isOptionalNameInvalidCharsAllowed() {
-    Set<ConstraintViolation<TestOptionalName>> violations =
-        validator.validate(new TestOptionalName("~foo`bar"));
-    assertEquals(0, violations.size());
-  }
-
-  @Test
-  public void isOptionalNameReservedPrefixAllowed() {
-    Set<ConstraintViolation<TestOptionalName>> violations =
-        validator.validate(new TestOptionalName("maestro_foo"));
-    assertEquals(0, violations.size());
-  }
-
-  @Test
-  public void isOptionalNameNullAllowed() {
-    Set<ConstraintViolation<TestOptionalName>> violations =
-        validator.validate(new TestOptionalName(null));
-    assertEquals(0, violations.size());
-  }
-
-  @Test
-  public void isOptionalNameEmptyAllowed() {
-    Set<ConstraintViolation<TestOptionalName>> violations =
-        validator.validate(new TestOptionalName(""));
-    assertEquals(0, violations.size());
-  }
-
-  @Test
-  public void isOptionalNameBlankAllowed() {
-    Set<ConstraintViolation<TestOptionalName>> violations =
-        validator.validate(new TestOptionalName("     "));
-    assertEquals(0, violations.size());
   }
 
   @Test

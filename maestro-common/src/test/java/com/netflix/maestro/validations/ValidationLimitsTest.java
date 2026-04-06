@@ -102,11 +102,10 @@ public class ValidationLimitsTest extends MaestroBaseTest {
     }
   }
 
-  private static class TestOptionalName {
-    @MaestroNameConstraint(required = false, enforcePattern = false)
-    String name;
+  private static class TestNameSize {
+    @MaestroNameSizeConstraint String name;
 
-    TestOptionalName(String name) {
+    TestNameSize(String name) {
       this.name = name;
     }
   }
@@ -181,36 +180,36 @@ public class ValidationLimitsTest extends MaestroBaseTest {
     assertTrue(cv.getMessage().contains("rejected length is [201]"));
   }
 
-  // ---- MaestroNameConstraint(required = false) respects custom limit and allows null ----
+  // ---- MaestroNameSizeConstraint respects custom limit ----
 
   @Test
-  public void optionalNameConstraintPassesForNull() {
+  public void nameSizeConstraintPassesForNull() {
     Validator v = buildValidatorWith(limitsOf(Constants.ID_LENGTH_LIMIT, 50));
-    assertEquals(0, v.validate(new TestOptionalName(null)).size());
+    assertEquals(0, v.validate(new TestNameSize(null)).size());
   }
 
   @Test
-  public void optionalNameConstraintAllowsNameAtCustomLimit() {
+  public void nameSizeConstraintAllowsNameAtCustomLimit() {
     Validator v = buildValidatorWith(limitsOf(Constants.ID_LENGTH_LIMIT, 100));
-    assertEquals(0, v.validate(new TestOptionalName(repeat("a", 100))).size());
+    assertEquals(0, v.validate(new TestNameSize(repeat("a", 100))).size());
   }
 
   @Test
-  public void optionalNameConstraintRejectsNameExceedingCustomLimit() {
+  public void nameSizeConstraintRejectsNameExceedingCustomLimit() {
     Validator v = buildValidatorWith(limitsOf(Constants.ID_LENGTH_LIMIT, 100));
-    Set<ConstraintViolation<TestOptionalName>> violations =
-        v.validate(new TestOptionalName(repeat("a", 101)));
+    Set<ConstraintViolation<TestNameSize>> violations =
+        v.validate(new TestNameSize(repeat("a", 101)));
     assertEquals(1, violations.size());
-    ConstraintViolation<TestOptionalName> cv = violations.iterator().next();
+    ConstraintViolation<TestNameSize> cv = violations.iterator().next();
     assertTrue(cv.getMessage().contains("name length limit 100"));
     assertTrue(cv.getMessage().contains("rejected length is [101]"));
   }
 
   @Test
-  public void optionalNameConstraintRejectsNameThatWasValidUnderDefaultButExceedsCustomLimit() {
+  public void nameSizeConstraintRejectsNameThatWasValidUnderDefaultButExceedsCustomLimit() {
     Validator v = buildValidatorWith(limitsOf(Constants.ID_LENGTH_LIMIT, 50));
-    Set<ConstraintViolation<TestOptionalName>> violations =
-        v.validate(new TestOptionalName(repeat("a", 60)));
+    Set<ConstraintViolation<TestNameSize>> violations =
+        v.validate(new TestNameSize(repeat("a", 60)));
     assertEquals(1, violations.size());
     assertTrue(violations.iterator().next().getMessage().contains("name length limit 50"));
   }
