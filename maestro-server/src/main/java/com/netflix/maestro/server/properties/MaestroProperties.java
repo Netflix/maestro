@@ -27,5 +27,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class MaestroProperties {
   private final QueueProperties queue;
   private final SelProperties sel;
+  private final ParamEvaluatorProperties paramEvaluator;
   private final StepActionProperties stepAction;
+
+  /** Returns the param evaluator properties, defaulting to {@code __} separator if not set. */
+  public ParamEvaluatorProperties getParamEvaluator() {
+    return paramEvaluator != null ? paramEvaluator : new ParamEvaluatorProperties();
+  }
 }
