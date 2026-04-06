@@ -58,7 +58,10 @@ public class NotebookStepRuntime extends KubernetesStepRuntime {
 
     KubernetesCommand originalCommand = context.getCommand();
     context.setCommand(
-        originalCommand.toBuilder().args(new String[] {papermillCommand.entrypoint()}).build());
+        originalCommand.toBuilder()
+            .command(new String[] {"/bin/sh", "-c"})
+            .args(new String[] {papermillCommand.entrypoint()})
+            .build());
 
     NotebookArtifact notebookArtifact = new NotebookArtifact();
     notebookArtifact.setOutputPath(papermillCommand.outputPath());

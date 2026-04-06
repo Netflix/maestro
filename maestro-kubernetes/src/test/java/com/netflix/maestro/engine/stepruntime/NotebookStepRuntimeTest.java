@@ -55,6 +55,7 @@ public class NotebookStepRuntimeTest extends MaestroBaseTest {
 
     notebookStepRuntime.customizePreLaunchCommand(context);
 
+    assertArrayEquals(new String[] {"/bin/sh", "-c"}, context.getCommand().getCommand());
     assertArrayEquals(new String[] {"entrypoint"}, context.getCommand().getArgs());
     assertTrue(context.getPendingArtifacts().containsKey(Artifact.Type.NOTEBOOK.key()));
     assertEquals(

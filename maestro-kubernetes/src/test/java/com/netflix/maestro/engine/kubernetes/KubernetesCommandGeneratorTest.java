@@ -73,8 +73,8 @@ public class KubernetesCommandGeneratorTest extends MaestroBaseTest {
     assertEquals("0", command.getGpu());
     assertEquals("1G", command.getMemory());
     assertEquals("test-image", command.getImage());
+    assertArrayEquals(new String[] {"/bin/sh", "-c"}, command.getCommand());
     assertArrayEquals(new String[] {"test-entrypoint"}, command.getArgs());
-    assertNull(command.getCommand());
     assertEquals(Map.of("key1", "value1", "key2", "value2"), command.getEnv());
     assertEquals("job_deduplication_key", command.getJobDeduplicationKey());
     assertEquals("owner_email", command.getOwnerEmail());

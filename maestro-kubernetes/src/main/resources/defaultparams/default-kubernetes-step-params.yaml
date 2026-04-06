@@ -22,8 +22,7 @@ kubernetes:
       internal_mode: REQUIRED
     command:
       type: STRING_ARRAY
-      value: ["/bin/sh", "-c"]
-      internal_mode: PROVIDED
+      internal_mode: OPTIONAL
     args:
       type: STRING_ARRAY
       internal_mode: OPTIONAL

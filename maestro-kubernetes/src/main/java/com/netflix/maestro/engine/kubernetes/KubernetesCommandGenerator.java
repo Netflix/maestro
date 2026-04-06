@@ -51,9 +51,9 @@ public class KubernetesCommandGenerator {
     if (command.getEnv() == null) {
       builder.env(Collections.emptyMap());
     }
-    // Migrate deprecated entrypoint field to args for old workflow definitions
+    // Migrate deprecated entrypoint field to command/args for old workflow definitions
     if (command.getEntrypoint() != null) {
-      builder.args(new String[] {command.getEntrypoint()});
+      builder.command(new String[] {"/bin/sh", "-c"}).args(new String[] {command.getEntrypoint()});
     }
     return builder.build();
   }
