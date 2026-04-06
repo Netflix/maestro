@@ -364,7 +364,10 @@ public class ParamEvaluator {
       String refParam, Map<String, Map<String, Object>> allStepOutputData) {
     int idx1 = refParam.indexOf(stepParamSeparator);
     int idx2 = refParam.lastIndexOf(stepParamSeparator);
-    //  ___ or ____ case
+    // Overlapping separator match: occurs when the step ID ends with a character that is also
+    // the start of the separator (e.g. step ID "_step1" with separator "__" produces
+    // "_step1___foo" where the separator matches at two positions). Disambiguate by checking
+    // which candidate step ID exists in allStepOutputData.
     if (idx1 != idx2) {
       String id1 = refParam.substring(0, idx1);
       String id2 = refParam.substring(0, idx1 + 1);
