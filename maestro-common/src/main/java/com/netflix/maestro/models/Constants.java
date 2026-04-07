@@ -213,6 +213,12 @@ public final class Constants {
   /** Metadata key for internal parameter mode. */
   public static final String METADATA_INTERNAL_PARAM_MODE = "internal_mode";
 
+  /**
+   * Default step parameter separator used in cross-step parameter references (e.g. {@code
+   * step1__param}). Configurable via {@code maestro.param-evaluator.step-param-separator}.
+   */
+  public static final String DEFAULT_STEP_PARAM_SEPARATOR = "__";
+
   /** Step ID Param Key. */
   public static final String STEP_ID_PARAM = "step_id";
 
