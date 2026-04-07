@@ -160,7 +160,9 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
       String.format(GET_WORKFLOW_INSTANCE_FIELDS_TEMPLATE, STATUS_COLUMN, LATEST_RUN_CONDITION);
 
   private static final String GET_WORKFLOW_INSTANCE_RUNS_QUERY =
-      "SELECT instance, status, start_ts, end_ts FROM maestro_workflow_instance "
+      "SELECT "
+          + ALL_FIELDS
+          + "FROM maestro_workflow_instance "
           + "WHERE workflow_id=? AND instance_id=? AND run_id>=? AND run_id<=? ORDER BY run_id DESC";
 
   private static final String GET_MIN_MAX_RUN_IDS_QUERY =
@@ -902,16 +904,7 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
                 result -> {
                   List<WorkflowInstance> runs = new ArrayList<>();
                   while (result.next()) {
-                    WorkflowInstance instance =
-                        Checks.notNull(
-                            getJsonObjectIfPresent(result, INSTANCE_COLUMN, WorkflowInstance.class),
-                            INSTANCE_COLUMN_NOT_NULL_ERR);
-                    instance.setStatus(
-                        WorkflowInstance.Status.create(result.getString(STATUS_COLUMN)));
-                    instance.setStartTime(getTimestampIfPresent(result, START_TS_COLUMN));
-                    instance.setEndTime(getTimestampIfPresent(result, END_TS_COLUMN));
-                    instance.setAggregatedInfo(null);
-                    runs.add(instance);
+                    runs.add(workflowInstanceFromResult(result));
                   }
                   return runs;
                 }),
