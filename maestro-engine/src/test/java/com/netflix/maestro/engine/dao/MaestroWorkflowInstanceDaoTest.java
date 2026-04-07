@@ -594,6 +594,45 @@ public class MaestroWorkflowInstanceDaoTest extends MaestroDaoBaseTest {
   }
 
   @Test
+  public void testGetWorkflowInstanceRuns() {
+    // single run — only run 1 exists
+    long[] minMax = instanceDao.getMinMaxRunIds(wfi.getWorkflowId(), wfi.getWorkflowInstanceId());
+    assertNotNull(minMax);
+    assertEquals(1L, minMax[0]);
+    assertEquals(1L, minMax[1]);
+    List<WorkflowInstance> runs =
+        instanceDao.getWorkflowInstanceRuns(
+            wfi.getWorkflowId(), wfi.getWorkflowInstanceId(), minMax[0], minMax[1]);
+    assertEquals(1, runs.size());
+    assertEquals(1, runs.getFirst().getWorkflowRunId());
+    assertEquals(WorkflowInstance.Status.CREATED, runs.getFirst().getStatus());
+
+    // create run 2 by failing run 1 and restarting
+    instanceDao.tryTerminateQueuedInstance(wfi, WorkflowInstance.Status.FAILED, "kill the test");
+    wfi.setWorkflowUuid("test-uuid");
+    wfi.setWorkflowRunId(0L);
+    wfi.setRunConfig(new RunConfig());
+    wfi.getRunConfig().setPolicy(RunPolicy.RESTART_FROM_INCOMPLETE);
+    int res = runStrategyDao.startWithRunStrategy(wfi, Defaults.DEFAULT_RUN_STRATEGY);
+    assertEquals(1, res);
+    assertEquals(2, wfi.getWorkflowRunId());
+
+    // two runs — ordered by run_id descending
+    minMax = instanceDao.getMinMaxRunIds(wfi.getWorkflowId(), wfi.getWorkflowInstanceId());
+    assertNotNull(minMax);
+    assertEquals(1L, minMax[0]);
+    assertEquals(2L, minMax[1]);
+    runs =
+        instanceDao.getWorkflowInstanceRuns(
+            wfi.getWorkflowId(), wfi.getWorkflowInstanceId(), minMax[0], minMax[1]);
+    assertEquals(2, runs.size());
+    assertEquals(2, runs.get(0).getWorkflowRunId());
+    assertEquals(WorkflowInstance.Status.CREATED, runs.get(0).getStatus());
+    assertEquals(1, runs.get(1).getWorkflowRunId());
+    assertEquals(WorkflowInstance.Status.FAILED, runs.get(1).getStatus());
+  }
+
+  @Test
   public void testWorkflowInstanceMetadataForWorkflowInstancesLatestRun() {
     instanceDao.tryTerminateQueuedInstance(wfi, WorkflowInstance.Status.FAILED, "kill the test");
     wfi.setWorkflowUuid("test-uuid");
