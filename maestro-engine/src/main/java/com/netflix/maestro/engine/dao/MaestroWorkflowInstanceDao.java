@@ -75,6 +75,7 @@ import lombok.extern.slf4j.Slf4j;
 public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
   private static final int PARAMS_PER_INSTANCE = 11;
   private static final String VALUE_PLACE_HOLDER = "(?,?,?,?,?,?::jsonb,?,?,?,?::json,?)";
+  private static final String FROM_WORKFLOW_INSTANCE_TABLE = "FROM maestro_workflow_instance ";
 
   private static final String CREATE_WORKFLOW_INSTANCE_QUERY_TEMPLATE =
       "INSERT INTO maestro_workflow_instance "
@@ -162,12 +163,13 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
   private static final String GET_WORKFLOW_INSTANCE_RUNS_QUERY =
       "SELECT "
           + ALL_FIELDS
-          + "FROM maestro_workflow_instance "
+          + FROM_WORKFLOW_INSTANCE_TABLE
           + "WHERE workflow_id=? AND instance_id=? AND run_id>=? AND run_id<=? ORDER BY run_id DESC";
 
   private static final String GET_MIN_MAX_RUN_IDS_QUERY =
       "SELECT min(run_id) as min_run_id, max(run_id) as max_run_id "
-          + "FROM maestro_workflow_instance WHERE workflow_id=? AND instance_id=?";
+          + FROM_WORKFLOW_INSTANCE_TABLE
+          + "WHERE workflow_id=? AND instance_id=?";
 
   private static final String UPDATE_INSTANCE_FAILED_STATUS =
       "UPDATE maestro_workflow_instance SET status='FAILED_2' "
@@ -185,7 +187,6 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
           + INSTANCE_IN_SUBQUERY
           + "AND status='FAILED' order by instance_id ASC LIMIT ?)";
 
-  private static final String FROM_WORKFLOW_INSTANCE_TABLE = "FROM maestro_workflow_instance ";
   private static final String FROM_INLINE_WORKFLOW_INSTANCE_TABLE = FROM_WORKFLOW_INSTANCE_TABLE;
 
   private static final String ORDER_BY_INSTANCE_ID_RUN_ID_DESC =
