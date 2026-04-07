@@ -49,7 +49,6 @@ public @interface MaestroReferenceIdConstraint {
     private static final Pattern ID_PATTERN = Pattern.compile("[_a-zA-Z][.\\-_a-zA-Z0-9]*+");
     private static final String REJECTED_VALUE = "- rejected value is [%s]";
 
-
     @Inject private MaestroIdNameValidationLimits maestroIdNameValidationLimits;
 
     @Inject private StepParamSeparator stepParamSeparator;
