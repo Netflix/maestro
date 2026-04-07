@@ -13,7 +13,9 @@
 package com.netflix.maestro.validations;
 
 import com.netflix.maestro.models.Constants;
+import com.netflix.maestro.utils.MaestroIdNameValidationLimits;
 import com.netflix.maestro.utils.StringUtils;
+import jakarta.inject.Inject;
 import jakarta.validation.Constraint;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
@@ -46,6 +48,8 @@ public @interface MaestroNameConstraint {
     private static final Pattern NAME_PATTERN =
         Pattern.compile("[\\w \\.,:@&='(){}$+\\[\\]\\-\\/\\\\]+");
 
+    @Inject private MaestroIdNameValidationLimits maestroIdNameValidationLimits;
+
     @Override
     public void initialize(MaestroNameConstraint constraint) {}
 
@@ -59,13 +63,18 @@ public @interface MaestroNameConstraint {
         return false;
       }
 
-      if (id.length() > Constants.NAME_LENGTH_LIMIT) {
+      MaestroIdNameValidationLimits limits =
+          maestroIdNameValidationLimits != null
+              ? maestroIdNameValidationLimits
+              : MaestroIdNameValidationLimits.DEFAULTS;
+      int nameLimit = limits.getNameLengthLimit();
+      if (id.length() > nameLimit) {
         context
             .buildConstraintViolationWithTemplate(
                 String.format(
                     "[maestro name] cannot be more than name length limit %s "
                         + "- rejected length is [%s] for value [%s]",
-                    Constants.NAME_LENGTH_LIMIT, id.length(), id))
+                    nameLimit, id.length(), id))
             .addConstraintViolation();
         return false;
       }

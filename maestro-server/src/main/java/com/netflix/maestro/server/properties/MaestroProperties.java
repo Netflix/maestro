@@ -29,6 +29,7 @@ public class MaestroProperties {
   private final SelProperties sel;
   private final ParamEvaluatorProperties paramEvaluator;
   private final StepActionProperties stepAction;
+  private final MaestroIdNameValidationProperties maestroIdNameValidation;
 
   /** Returns the param evaluator properties, defaulting to {@code __} separator if not set. */
   public ParamEvaluatorProperties getParamEvaluator() {
