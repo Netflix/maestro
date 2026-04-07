@@ -28,5 +28,5 @@ public class MaestroProperties {
   private final QueueProperties queue;
   private final SelProperties sel;
   private final StepActionProperties stepAction;
-  private final ValidationProperties validation;
+  private final MaestroIdNameValidationProperties maestroIdNameValidation;
 }

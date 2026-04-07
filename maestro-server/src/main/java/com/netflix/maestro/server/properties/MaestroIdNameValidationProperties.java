@@ -13,18 +13,18 @@
 package com.netflix.maestro.server.properties;
 
 import com.netflix.maestro.models.Constants;
-import com.netflix.maestro.utils.ValidationLimits;
+import com.netflix.maestro.utils.MaestroIdNameValidationLimits;
 import lombok.Getter;
 import lombok.Setter;
 
 /**
- * Configurable validation limit properties. Bound under {@code maestro.validation.*}. Defaults
- * match the compile-time constants in {@link Constants} so existing deployments are unaffected
- * unless the values are explicitly overridden.
+ * Configurable validation limit properties. Bound under {@code
+ * maestro.maestro-id-name-validation.*}. Defaults match the compile-time constants in {@link
+ * Constants} so existing deployments are unaffected unless the values are explicitly overridden.
  */
 @Getter
 @Setter
-public class ValidationProperties implements ValidationLimits {
+public class MaestroIdNameValidationProperties implements MaestroIdNameValidationLimits {
   /** Maximum allowed length for Maestro IDs (workflow id, step id, param names). Default: 128. */
   private int idLengthLimit = Constants.ID_LENGTH_LIMIT;
 

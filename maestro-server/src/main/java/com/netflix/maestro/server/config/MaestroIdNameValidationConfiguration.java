@@ -13,16 +13,17 @@
 package com.netflix.maestro.server.config;
 
 import com.netflix.maestro.server.properties.MaestroProperties;
-import com.netflix.maestro.utils.ValidationLimits;
+import com.netflix.maestro.utils.MaestroIdNameValidationLimits;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/** Exposes {@link ValidationLimits} as a Spring bean so validators can inject it. */
+/** Exposes {@link MaestroIdNameValidationLimits} as a Spring bean so validators can inject it. */
 @Configuration
-public class ValidationConfiguration {
+public class MaestroIdNameValidationConfiguration {
 
   @Bean
-  public ValidationLimits validationLimits(MaestroProperties maestroProperties) {
-    return maestroProperties.getValidation();
+  public MaestroIdNameValidationLimits maestroIdNameValidationLimits(
+      MaestroProperties maestroProperties) {
+    return maestroProperties.getMaestroIdNameValidation();
   }
 }

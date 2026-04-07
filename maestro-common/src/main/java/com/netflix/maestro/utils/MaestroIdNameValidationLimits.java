@@ -15,15 +15,15 @@ package com.netflix.maestro.utils;
 import com.netflix.maestro.models.Constants;
 
 /** Interface exposing configurable validation limits used by constraint validators. */
-public interface ValidationLimits {
+public interface MaestroIdNameValidationLimits {
 
   /**
    * Default instance backed by compile-time {@link Constants} values. Used by validators when no
-   * configured {@link ValidationLimits} bean is injected (e.g. in unit tests without Spring). Keeps
-   * each limit independently defaulted so id and name limits remain decoupled.
+   * configured {@link MaestroIdNameValidationLimits} bean is injected (e.g. in unit tests without
+   * Spring). Keeps each limit independently defaulted so id and name limits remain decoupled.
    */
-  ValidationLimits DEFAULTS =
-      new ValidationLimits() {
+  MaestroIdNameValidationLimits DEFAULTS =
+      new MaestroIdNameValidationLimits() {
         @Override
         public int getIdLengthLimit() {
           return Constants.ID_LENGTH_LIMIT;

@@ -13,7 +13,7 @@
 package com.netflix.maestro.validations;
 
 import com.netflix.maestro.models.Constants;
-import com.netflix.maestro.utils.ValidationLimits;
+import com.netflix.maestro.utils.MaestroIdNameValidationLimits;
 import jakarta.inject.Inject;
 import jakarta.validation.Constraint;
 import jakarta.validation.ConstraintValidator;
@@ -47,7 +47,7 @@ public @interface MaestroReferenceIdConstraint {
     private static final Pattern ID_PATTERN = Pattern.compile("[_a-zA-Z][.\\-_a-zA-Z0-9]*+");
     private static final String REJECTED_VALUE = "- rejected value is [%s]";
 
-    @Inject private ValidationLimits validationLimits;
+    @Inject private MaestroIdNameValidationLimits maestroIdNameValidationLimits;
 
     @Override
     public void initialize(MaestroReferenceIdConstraint constraint) {}
@@ -62,8 +62,10 @@ public @interface MaestroReferenceIdConstraint {
         return false;
       }
 
-      ValidationLimits limits =
-          validationLimits != null ? validationLimits : ValidationLimits.DEFAULTS;
+      MaestroIdNameValidationLimits limits =
+          maestroIdNameValidationLimits != null
+              ? maestroIdNameValidationLimits
+              : MaestroIdNameValidationLimits.DEFAULTS;
       int idLimit = limits.getIdLengthLimit();
       if (id.length() > idLimit) {
         context

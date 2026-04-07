@@ -13,8 +13,8 @@
 package com.netflix.maestro.validations;
 
 import com.netflix.maestro.models.Constants;
+import com.netflix.maestro.utils.MaestroIdNameValidationLimits;
 import com.netflix.maestro.utils.StringUtils;
-import com.netflix.maestro.utils.ValidationLimits;
 import jakarta.inject.Inject;
 import jakarta.validation.Constraint;
 import jakarta.validation.ConstraintValidator;
@@ -48,7 +48,7 @@ public @interface MaestroNameConstraint {
     private static final Pattern NAME_PATTERN =
         Pattern.compile("[\\w \\.,:@&='(){}$+\\[\\]\\-\\/\\\\]+");
 
-    @Inject private ValidationLimits validationLimits;
+    @Inject private MaestroIdNameValidationLimits maestroIdNameValidationLimits;
 
     @Override
     public void initialize(MaestroNameConstraint constraint) {}
@@ -63,8 +63,10 @@ public @interface MaestroNameConstraint {
         return false;
       }
 
-      ValidationLimits limits =
-          validationLimits != null ? validationLimits : ValidationLimits.DEFAULTS;
+      MaestroIdNameValidationLimits limits =
+          maestroIdNameValidationLimits != null
+              ? maestroIdNameValidationLimits
+              : MaestroIdNameValidationLimits.DEFAULTS;
       int nameLimit = limits.getNameLengthLimit();
       if (id.length() > nameLimit) {
         context

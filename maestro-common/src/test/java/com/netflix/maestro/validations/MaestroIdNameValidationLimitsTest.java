@@ -17,7 +17,7 @@ import static org.junit.Assert.assertTrue;
 
 import com.netflix.maestro.MaestroBaseTest;
 import com.netflix.maestro.models.Constants;
-import com.netflix.maestro.utils.ValidationLimits;
+import com.netflix.maestro.utils.MaestroIdNameValidationLimits;
 import jakarta.inject.Inject;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorFactory;
@@ -29,11 +29,11 @@ import java.util.Set;
 import org.apache.bval.jsr.ApacheValidationProvider;
 import org.junit.Test;
 
-public class ValidationLimitsTest extends MaestroBaseTest {
+public class MaestroIdNameValidationLimitsTest extends MaestroBaseTest {
 
-  // ---- helper: create a Validator that injects a custom ValidationLimits ----
+  // ---- helper: create a Validator that injects a custom MaestroIdNameValidationLimits ----
 
-  private static Validator buildValidatorWith(ValidationLimits limits) {
+  private static Validator buildValidatorWith(MaestroIdNameValidationLimits limits) {
     return Validation.byProvider(ApacheValidationProvider.class)
         .configure()
         .constraintValidatorFactory(
@@ -44,7 +44,7 @@ public class ValidationLimitsTest extends MaestroBaseTest {
                   T instance = key.getDeclaredConstructor().newInstance();
                   for (Field field : key.getDeclaredFields()) {
                     if (field.isAnnotationPresent(Inject.class)
-                        && field.getType().equals(ValidationLimits.class)) {
+                        && field.getType().equals(MaestroIdNameValidationLimits.class)) {
                       field.setAccessible(true);
                       field.set(instance, limits);
                     }
@@ -62,8 +62,8 @@ public class ValidationLimitsTest extends MaestroBaseTest {
         .getValidator();
   }
 
-  private static ValidationLimits limitsOf(int idLimit, int nameLimit) {
-    return new ValidationLimits() {
+  private static MaestroIdNameValidationLimits limitsOf(int idLimit, int nameLimit) {
+    return new MaestroIdNameValidationLimits() {
       @Override
       public int getIdLengthLimit() {
         return idLimit;
