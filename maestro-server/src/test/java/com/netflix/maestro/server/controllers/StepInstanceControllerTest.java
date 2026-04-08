@@ -127,4 +127,19 @@ public class StepInstanceControllerTest extends MaestroBaseTest {
     assertEquals(1, ret.size());
     assertEquals(instance2, ret.get(0));
   }
+
+  @Test
+  public void testGetAllStepInstanceViews() {
+    StepInstance instance1 = mock(StepInstance.class);
+    StepInstance instance2 = mock(StepInstance.class);
+    when(instance1.getStepInstanceId()).thenReturn(2L);
+    when(instance2.getStepInstanceId()).thenReturn(1L);
+    when(mockInstanceDao.getAllStepInstanceViews("test-workflow", 1))
+        .thenReturn(Arrays.asList(instance1, instance2));
+    List<StepInstance> ret = stepInstanceController.getAllStepInstanceViews("test-workflow", 1);
+    verify(mockInstanceDao, times(1)).getAllStepInstanceViews("test-workflow", 1);
+    assertEquals(2, ret.size());
+    assertEquals(instance2, ret.get(0));
+    assertEquals(instance1, ret.get(1));
+  }
 }

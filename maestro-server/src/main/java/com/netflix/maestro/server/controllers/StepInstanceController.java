@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
     value = "/api/v3/workflows",
     produces = MediaType.APPLICATION_JSON_VALUE,
     consumes = MediaType.APPLICATION_JSON_VALUE)
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class StepInstanceController {
 
   private final MaestroStepInstanceDao stepInstanceDao;
@@ -86,6 +87,20 @@ public class StepInstanceController {
       instance.enrich();
     }
     return instance;
+  }
+
+  @GetMapping(
+      value = "/{workflowId}/instances/{workflowInstanceId}/steps",
+      consumes = MediaType.ALL_VALUE)
+  @Operation(
+      summary = "Get the most recent step instance across all runs for a given workflow instance")
+  public List<StepInstance> getAllStepInstanceViews(
+      @Valid @NotNull @PathVariable("workflowId") String workflowId,
+      @PathVariable("workflowInstanceId") long workflowInstanceId) {
+    List<StepInstance> instances =
+        stepInstanceDao.getAllStepInstanceViews(workflowId, workflowInstanceId);
+    instances.sort(Comparator.comparingLong(StepInstance::getStepInstanceId));
+    return instances;
   }
 
   @GetMapping(

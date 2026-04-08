@@ -54,6 +54,7 @@ import com.netflix.maestro.queue.jobevents.MaestroJobEvent;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -319,6 +320,37 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
     instance.setArtifacts(null);
     instance.setTimeline(null);
     Assertions.assertThat(instance).usingRecursiveComparison().isEqualTo(si);
+  }
+
+  @Test
+  public void testGetAllStepInstanceViews() throws Exception {
+    // run 1: job1 (RUNNING) already seeded by setUp; add job2 (RUNNING) to the same run
+    StepInstance job2Run1 = loadObject(TEST_STEP_INSTANCE, StepInstance.class);
+    job2Run1.setStepId("job2");
+    job2Run1.setStepInstanceId(2);
+    stepDao.insertOrUpsertStepInstance(job2Run1, false, null);
+
+    // run 2 (restart from failure): only job1 ran again — job2 succeeded in run 1 and was skipped
+    StepInstance job1Run2 =
+        loadObject("fixtures/instances/sample-step-instance-finishing.json", StepInstance.class);
+    stepDao.insertOrUpsertStepInstance(job1Run2, false, null);
+
+    // should return one entry per step: job1 from run 2, job2 from run 1
+    List<StepInstance> instances = stepDao.getAllStepInstanceViews(TEST_WORKFLOW_ID, 1);
+    instances.sort(Comparator.comparingLong(StepInstance::getStepInstanceId));
+    assertEquals(2, instances.size());
+
+    StepInstance job1Result = instances.get(0);
+    assertEquals("job1", job1Result.getStepId());
+    assertEquals(2, job1Result.getWorkflowRunId());
+    assertEquals(StepInstance.Status.FINISHING, job1Result.getRuntimeState().getStatus());
+    assertEquals("ff4ccce2-0fda-4882-9cd8-12ff90cb5f02", job1Result.getStepUuid());
+
+    StepInstance job2Result = instances.get(1);
+    assertEquals("job2", job2Result.getStepId());
+    assertEquals(1, job2Result.getWorkflowRunId());
+    assertEquals(StepInstance.Status.RUNNING, job2Result.getRuntimeState().getStatus());
+    assertEquals("ff4ccce2-0fda-4882-9cd8-12ff90cb5f06", job2Result.getStepUuid());
   }
 
   @Test
