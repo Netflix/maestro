@@ -20,10 +20,12 @@ kubernetes:
     image:
       type: STRING
       internal_mode: REQUIRED
-    entrypoint:
-      type: STRING
-      value: ""
-      internal_mode: PROVIDED
+    command:
+      type: STRING_ARRAY
+      internal_mode: OPTIONAL
+    args:
+      type: STRING_ARRAY
+      internal_mode: OPTIONAL
     env:
       type: STRING_MAP
       value: {}

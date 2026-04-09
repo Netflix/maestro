@@ -12,7 +12,9 @@
  */
 package com.netflix.maestro.engine.stepruntime;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -53,7 +55,8 @@ public class NotebookStepRuntimeTest extends MaestroBaseTest {
 
     notebookStepRuntime.customizePreLaunchCommand(context);
 
-    assertEquals("entrypoint", context.getCommand().getEntrypoint());
+    assertArrayEquals(new String[] {"/bin/sh", "-c"}, context.getCommand().getCommand());
+    assertArrayEquals(new String[] {"entrypoint"}, context.getCommand().getArgs());
     assertTrue(context.getPendingArtifacts().containsKey(Artifact.Type.NOTEBOOK.key()));
     assertEquals(
         "outputPath",
