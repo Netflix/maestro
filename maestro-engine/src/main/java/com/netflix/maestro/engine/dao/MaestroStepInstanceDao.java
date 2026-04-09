@@ -184,6 +184,12 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
           + GET_STEP_FIELD_QUERY_FROM
           + "AND workflow_run_id=?) SELECT * FROM inner_ranked WHERE rank=1";
 
+  private static final String GET_ALL_STEP_INSTANCE_VIEWS_QUERY =
+      INNER_RANK_QUERY_ALL_FIELD_WITH
+          + ", ROW_NUMBER() OVER (PARTITION BY step_id ORDER BY workflow_run_id DESC, step_attempt_id DESC) AS rank"
+          + GET_STEP_FIELD_QUERY_FROM
+          + ") SELECT * FROM inner_ranked WHERE rank=1";
+
   private final MaestroQueueSystem queueSystem;
 
   /**
@@ -1227,6 +1233,37 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
                 }),
         "getNextUniqueId",
         "Failed to get the next unique id");
+  }
+
+  /**
+   * Get the latest step attempts of all the steps across all runs for a given workflow instance
+   * (workflow id, instance id).
+   *
+   * @param workflowId workflow id
+   * @param workflowInstanceId workflow instance id
+   * @return latest step attempts of all the steps across all runs
+   */
+  public List<StepInstance> getAllStepInstanceViews(String workflowId, long workflowInstanceId) {
+    return withMetricLogError(
+        () ->
+            withRetryableQuery(
+                GET_ALL_STEP_INSTANCE_VIEWS_QUERY,
+                stmt -> {
+                  int idx = 0;
+                  stmt.setString(++idx, workflowId);
+                  stmt.setLong(++idx, workflowInstanceId);
+                },
+                result -> {
+                  List<StepInstance> instances = new ArrayList<>();
+                  while (result.next()) {
+                    instances.add(maestroStepFromResult(result));
+                  }
+                  return instances;
+                }),
+        "getAllStepInstanceViews",
+        "Failed to get latest step attempts across all runs for workflow instance [{}][{}]",
+        workflowId,
+        workflowInstanceId);
   }
 
   /**
