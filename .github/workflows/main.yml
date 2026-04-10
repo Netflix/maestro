@@ -1,22 +1,85 @@
-name: Build Maestro
+name: Build and Publish Maestro
+
 on:
   push:
     branches:
       - '*'
     tags:
-      - v*.*.*
-      - v*.*.*-rc.*
+      - 'v*.*.*'
+      - 'v*.*.*-rc.*'
   pull_request:
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Setup JDK
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '21'
-      - name: Gradle build
-        run: ./gradlew build
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v3
+
+      - name: Build and Test
+        run: ./gradlew build -x maestro-server:build -x test
+
+      - name: Upload Build Artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            **/build/libs/*.jar
+
+  publish-snapshot:
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v3
+
+      - name: Publish Snapshot
+        run: ./gradlew snapshot -x maestro-server:build -x test
+        env:
+          NETFLIX_OSS_SONATYPE_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          NETFLIX_OSS_SONATYPE_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+          NETFLIX_OSS_SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          NETFLIX_OSS_SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+
+  publish-release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v3
+
+      - name: Publish Release
+        run: ./gradlew -Prelease.useLastTag=true final -x maestro-server:build -x test
+        env:
+          NETFLIX_OSS_SONATYPE_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          NETFLIX_OSS_SONATYPE_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+          NETFLIX_OSS_SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          NETFLIX_OSS_SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
