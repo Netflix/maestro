@@ -36,6 +36,17 @@ kubernetes:
     owner_email:
       type: STRING
       internal_mode: OPTIONAL
+    pre_stop:
+      type: MAP
+      internal_mode: OPTIONAL
+      value:
+        exec:
+          type: MAP
+          internal_mode: OPTIONAL
+          value:
+            command:
+              type: STRING_ARRAY
+              internal_mode: OPTIONAL
   internal_mode: REQUIRED
   tags:
     - kubernetes

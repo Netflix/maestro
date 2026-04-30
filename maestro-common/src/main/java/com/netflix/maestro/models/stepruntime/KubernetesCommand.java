@@ -41,7 +41,8 @@ import lombok.ToString;
       "entrypoint",
       "env",
       "job_deduplication_key",
-      "owner_email"
+      "owner_email",
+      "pre_stop"
     },
     alphabetic = true)
 @Builder(toBuilder = true)
@@ -69,9 +70,44 @@ public class KubernetesCommand {
   private final Map<String, String> env;
   private final String jobDeduplicationKey;
   private final String ownerEmail;
+  private final PreStop preStop;
 
   /** builder class for lombok and jackson. */
   @JsonPOJOBuilder(withPrefix = "")
   @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
   public static final class KubernetesCommandBuilder {}
+
+  /** PreStop container lifecycle hook. Mirrors the shape of K8s Container.lifecycle.preStop. */
+  @JsonDeserialize(builder = PreStop.PreStopBuilder.class)
+  @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  @Builder(toBuilder = true)
+  @Getter
+  @ToString
+  @EqualsAndHashCode
+  public static class PreStop {
+    private final Exec exec;
+
+    /** builder class for lombok and jackson. */
+    @JsonPOJOBuilder(withPrefix = "")
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static final class PreStopBuilder {}
+
+    /** Exec handler for a lifecycle hook. Mirrors the shape of K8s LifecycleHandler.exec. */
+    @JsonDeserialize(builder = Exec.ExecBuilder.class)
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Builder(toBuilder = true)
+    @Getter
+    @ToString
+    @EqualsAndHashCode
+    public static class Exec {
+      private final String[] command;
+
+      /** builder class for lombok and jackson. */
+      @JsonPOJOBuilder(withPrefix = "")
+      @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+      public static final class ExecBuilder {}
+    }
+  }
 }
