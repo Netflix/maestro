@@ -39,4 +39,15 @@ public class KubernetesCommandTest extends MaestroBaseTest {
     assertEquals(expected, actual);
     assertEquals(ser1, ser2);
   }
+
+  @Test
+  public void testRoundTripSerdeWithPreStop() throws Exception {
+    KubernetesCommand expected =
+        loadObject("fixtures/stepruntime/kubernetes_command_prestop.json", KubernetesCommand.class);
+    String ser1 = MAPPER.writeValueAsString(expected);
+    KubernetesCommand actual = MAPPER.readValue(ser1, KubernetesCommand.class);
+    String ser2 = MAPPER.writeValueAsString(actual);
+    assertEquals(expected, actual);
+    assertEquals(ser1, ser2);
+  }
 }

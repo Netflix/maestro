@@ -13,6 +13,7 @@
 package com.netflix.maestro.server.runtime;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -125,6 +126,59 @@ public class Fabric8RuntimeExecutorTest extends MaestroBaseTest {
     var container = pod.getSpec().getContainers().getFirst();
     assertTrue(container.getCommand() == null || container.getCommand().isEmpty());
     assertTrue(container.getArgs() == null || container.getArgs().isEmpty());
+  }
+
+  @Test
+  public void testLaunchJobWithoutPreStop() {
+    KubernetesCommand command =
+        KubernetesCommand.builder()
+            .jobDeduplicationKey("test-job")
+            .image("test-image")
+            .command(new String[] {"echo"})
+            .args(new String[] {"hello"})
+            .env(Collections.emptyMap())
+            .build();
+    KubernetesStepContext context = buildContext(command);
+
+    ArgumentCaptor<Pod> podCaptor = ArgumentCaptor.forClass(Pod.class);
+    when(nsOp.resource(podCaptor.capture())).thenReturn(podResource);
+
+    executor.launchJob(context);
+
+    Pod pod = podCaptor.getValue();
+    var container = pod.getSpec().getContainers().getFirst();
+    assertNull(container.getLifecycle());
+  }
+
+  @Test
+  public void testLaunchJobWithPreStopExec() {
+    KubernetesCommand command =
+        KubernetesCommand.builder()
+            .jobDeduplicationKey("test-job")
+            .image("test-image")
+            .command(new String[] {"echo"})
+            .args(new String[] {"hello"})
+            .env(Collections.emptyMap())
+            .preStop(
+                KubernetesCommand.PreStop.builder()
+                    .exec(
+                        KubernetesCommand.PreStop.Exec.builder()
+                            .command(new String[] {"/bin/sh", "-c", "cleanup.sh --flag"})
+                            .build())
+                    .build())
+            .build();
+    KubernetesStepContext context = buildContext(command);
+
+    ArgumentCaptor<Pod> podCaptor = ArgumentCaptor.forClass(Pod.class);
+    when(nsOp.resource(podCaptor.capture())).thenReturn(podResource);
+
+    executor.launchJob(context);
+
+    Pod pod = podCaptor.getValue();
+    var container = pod.getSpec().getContainers().getFirst();
+    assertEquals(
+        List.of("/bin/sh", "-c", "cleanup.sh --flag"),
+        container.getLifecycle().getPreStop().getExec().getCommand());
   }
 
   private KubernetesStepContext buildContext(KubernetesCommand command) {

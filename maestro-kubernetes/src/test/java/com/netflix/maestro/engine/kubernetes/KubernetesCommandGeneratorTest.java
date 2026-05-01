@@ -89,9 +89,16 @@ public class KubernetesCommandGeneratorTest extends MaestroBaseTest {
             MapParameter.builder()
                 .evaluatedResult(
                     Map.of(
-                        "image", "test-image",
-                        "command", new String[] {"echo"},
-                        "args", new String[] {"hello", "world"}))
+                        "image",
+                        "test-image",
+                        "command",
+                        new String[] {"echo"},
+                        "args",
+                        new String[] {"hello", "world"},
+                        "pre_stop",
+                        Map.of(
+                            "exec",
+                            Map.of("command", new String[] {"/bin/sh", "-c", "cleanup.sh"}))))
                 .evaluatedTime(12345L)
                 .build());
     KubernetesStepContext context =
@@ -100,6 +107,8 @@ public class KubernetesCommandGeneratorTest extends MaestroBaseTest {
     assertEquals("test-image", command.getImage());
     assertArrayEquals(new String[] {"echo"}, command.getCommand());
     assertArrayEquals(new String[] {"hello", "world"}, command.getArgs());
+    assertArrayEquals(
+        new String[] {"/bin/sh", "-c", "cleanup.sh"}, command.getPreStop().getExec().getCommand());
     assertNull(command.getEntrypoint());
   }
 
@@ -120,6 +129,7 @@ public class KubernetesCommandGeneratorTest extends MaestroBaseTest {
     assertEquals("test-image", command.getImage());
     assertNull(command.getCommand());
     assertNull(command.getArgs());
+    assertNull(command.getPreStop());
     assertNull(command.getEntrypoint());
   }
 

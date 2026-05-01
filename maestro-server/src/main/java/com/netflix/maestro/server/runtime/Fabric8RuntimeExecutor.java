@@ -20,6 +20,8 @@ import com.netflix.maestro.exceptions.MaestroBadRequestException;
 import com.netflix.maestro.models.stepruntime.KubernetesCommand;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
+import io.fabric8.kubernetes.api.model.Lifecycle;
+import io.fabric8.kubernetes.api.model.LifecycleBuilder;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.PodBuilder;
 import io.fabric8.kubernetes.api.model.PodStatus;
@@ -27,6 +29,7 @@ import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -146,9 +149,28 @@ public class Fabric8RuntimeExecutor implements KubernetesRuntimeExecutor {
         .withCommand(command.getCommand())
         .withArgs(command.getArgs())
         .withEnv(envVars)
+        .withLifecycle(buildPreStopLifecycle(command))
         .endContainer()
         .withRestartPolicy("Never")
         .endSpec()
+        .build();
+  }
+
+  private Lifecycle buildPreStopLifecycle(KubernetesCommand command) {
+    KubernetesCommand.PreStop preStop = command.getPreStop();
+    if (preStop == null || preStop.getExec() == null) {
+      return null;
+    }
+    String[] execCommand = preStop.getExec().getCommand();
+    if (execCommand == null || execCommand.length == 0) {
+      return null;
+    }
+    return new LifecycleBuilder()
+        .withNewPreStop()
+        .withNewExec()
+        .withCommand(Arrays.asList(execCommand))
+        .endExec()
+        .endPreStop()
         .build();
   }
 
