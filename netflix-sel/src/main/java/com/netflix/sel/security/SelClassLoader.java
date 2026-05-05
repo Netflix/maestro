@@ -16,12 +16,10 @@ import java.io.File;
 import java.net.JarURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.ResourceBundle;
-import org.joda.time.DateTimeZone;
-import org.joda.time.tz.Provider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +31,7 @@ final class SelClassLoader extends ClassLoader {
 
   // hold references to avoid evicting objects during GC.
   private final List<Class<?>> preloadedClasses = new ArrayList<>();
-  private final List<DateTimeZone> preloadedTimezones = new ArrayList<>();
+  private final List<ZoneId> preloadedTimezones = new ArrayList<>();
 
   private SelClassLoader() {
     loadSelClasses();
@@ -44,11 +42,8 @@ final class SelClassLoader extends ClassLoader {
     loadClassesInPackage("com.netflix.sel.type");
     loadClassesInPackage("com.netflix.sel.visitor");
     loadClassesInPackage("com.netflix.sel.ext");
-    loadClassesInPackage("org.joda.time");
-    ResourceBundle.getBundle("org.joda.time.format.messages");
 
-    Provider provider = DateTimeZone.getProvider(); // loads all zone info
-    provider.getAvailableIDs().forEach(id -> preloadedTimezones.add(provider.getZone(id)));
+    ZoneId.getAvailableZoneIds().forEach(id -> preloadedTimezones.add(ZoneId.of(id)));
   }
 
   private void loadClassInPackage(String path, String clazzName) {

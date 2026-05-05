@@ -13,18 +13,19 @@
 package com.netflix.sel.type;
 
 import com.netflix.sel.visitor.SelOp;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
-import org.joda.time.Days;
 
-/** Wrapper class to support org.joda.time.Days. */
+/** Wrapper class to support days logic. */
 public final class SelJodaDateTimeDays extends AbstractSelType {
-  private Days val;
+  private long val;
 
-  private SelJodaDateTimeDays(Days val) {
+  private SelJodaDateTimeDays(long val) {
     this.val = val;
   }
 
-  static SelJodaDateTimeDays of(Days d) {
+  static SelJodaDateTimeDays of(long d) {
     return new SelJodaDateTimeDays(d);
   }
 
@@ -44,19 +45,18 @@ public final class SelJodaDateTimeDays extends AbstractSelType {
   }
 
   @Override
-  public Days getInternalVal() {
+  public Long getInternalVal() {
     return val;
   }
 
   @Override
   public SelType call(String methodName, SelType[] args) {
     if (args.length == 0 && "getDays".equals(methodName)) {
-      return SelLong.of((long) val.getDays());
+      return SelLong.of(val);
     } else if (args.length == 2 && "daysBetween".equals(methodName)) {
-      return new SelJodaDateTimeDays(
-          Days.daysBetween(
-              ((SelJodaDateTime) args[0]).getInternalVal(),
-              ((SelJodaDateTime) args[1]).getInternalVal()));
+      ZonedDateTime d1 = (ZonedDateTime) ((SelJodaDateTime) args[0]).getInternalVal();
+      ZonedDateTime d2 = (ZonedDateTime) ((SelJodaDateTime) args[1]).getInternalVal();
+      return new SelJodaDateTimeDays(ChronoUnit.DAYS.between(d1.toLocalDate(), d2.toLocalDate()));
     }
     throw new UnsupportedOperationException(
         type()

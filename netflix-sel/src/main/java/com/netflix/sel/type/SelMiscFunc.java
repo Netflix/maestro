@@ -13,8 +13,6 @@
 package com.netflix.sel.type;
 
 import java.util.Arrays;
-import org.joda.time.DateTimeConstants;
-import org.joda.time.DateTimeUtils;
 
 /** Util class to include static methods */
 public final class SelMiscFunc implements SelType {
@@ -36,7 +34,7 @@ public final class SelMiscFunc implements SelType {
   @Override
   public SelType call(String methodName, SelType[] args) {
     if (args.length == 0 && "currentTimeMillis".equals(methodName)) {
-      return SelLong.of(DateTimeUtils.currentTimeMillis());
+      return SelLong.of(SelJodaDateTime.CLOCK.millis());
     }
     // no-op to support Arrays.asList
     if (args.length == 1 && "asList".equals(methodName)) {
@@ -55,7 +53,7 @@ public final class SelMiscFunc implements SelType {
   public SelLong field(SelString field) {
     String fieldName = field.getInternalVal();
     if ("SUNDAY".equals(fieldName)) {
-      return SelLong.of(DateTimeConstants.SUNDAY);
+      return SelLong.of(7); // java.time.DayOfWeek.SUNDAY.getValue() is 7
     }
     throw new UnsupportedOperationException(type() + " DO NOT support accessing field: " + field);
   }

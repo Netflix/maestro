@@ -14,10 +14,12 @@ package com.netflix.sel.type;
 
 import static org.junit.Assert.*;
 
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeUtils;
-import org.joda.time.DateTimeZone;
-import org.joda.time.IllegalFieldValueException;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeParseException;
+import java.time.DateTimeException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,12 +28,12 @@ public class SelUtilFuncTest {
 
   @Before
   public void setUp() throws Exception {
-    DateTimeUtils.setCurrentMillisFixed(12345L);
+    SelJodaDateTime.CLOCK = Clock.fixed(Instant.ofEpochMilli(12345L), ZoneId.of("UTC"));
   }
 
   @After
   public void tearDown() throws Exception {
-    DateTimeUtils.setCurrentMillisSystem();
+    SelJodaDateTime.CLOCK = Clock.systemDefaultZone();
   }
 
   @Test
@@ -61,7 +63,7 @@ public class SelUtilFuncTest {
     assertEquals("LONG: 1546300800000", res.type() + ": " + res);
   }
 
-  @Test(expected = IllegalFieldValueException.class)
+  @Test(expected = DateTimeParseException.class)
   public void testCallDateIntToTsInvalid() {
     SelUtilFunc.INSTANCE.call("dateIntToTs", new SelType[] {SelLong.of(20200230)});
   }
@@ -98,7 +100,7 @@ public class SelUtilFuncTest {
         SelUtilFunc.INSTANCE.call(
             "timeoutForDateTimeDeadline",
             new SelType[] {
-              SelJodaDateTime.of(new DateTime("2019-01-01", DateTimeZone.UTC)),
+              SelJodaDateTime.of(ZonedDateTime.parse("2019-01-01T00:00:00Z")),
               SelString.of("1 day")
             });
     assertEquals("STRING: 1546387187655 milliseconds", res.type() + ": " + res);
@@ -123,7 +125,7 @@ public class SelUtilFuncTest {
     assertEquals("STRING: 1546387187655 milliseconds", res.type() + ": " + res);
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test(expected = DateTimeParseException.class)
   public void testCallTimeoutForDateIntDeadlineInvalidInput() {
     SelUtilFunc.INSTANCE.call(
         "timeoutForDateIntDeadline",
@@ -224,7 +226,7 @@ public class SelUtilFuncTest {
     SelUtilFunc.INSTANCE.call("invalidMethod", new SelType[] {SelString.of("12345")});
   }
 
-  @Test(expected = IllegalFieldValueException.class)
+  @Test(expected = DateTimeParseException.class)
   public void testInvalidCallDateIntsBetween() {
     SelUtilFunc.INSTANCE.call(
         "dateIntsBetween",

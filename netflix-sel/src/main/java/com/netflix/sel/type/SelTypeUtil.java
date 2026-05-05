@@ -13,16 +13,14 @@
 package com.netflix.sel.type;
 
 import java.lang.invoke.MethodHandle;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.joda.time.Days;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 
 /** Internal util class */
 public final class SelTypeUtil {
@@ -104,9 +102,15 @@ public final class SelTypeUtil {
       case MAP:
         return SelMap.of((Map<String, Object>) o);
       case DATETIME:
-        return SelJodaDateTime.of((DateTime) o);
+        return SelJodaDateTime.of((ZonedDateTime) o);
       case DATETIME_PROPERTY:
-        return SelJodaDateTimeProperty.of((DateTime.Property) o);
+        return (SelJodaDateTimeProperty) o;
+      case DATETIME_DAYS:
+        return (SelJodaDateTimeDays) o;
+      case DATETIME_ZONE:
+        return SelJodaDateTimeZone.of((ZoneId) o);
+      case DATETIME_FORMATTER:
+        return SelJodaDateTimeFormatter.of((DateTimeFormatter) o);
     }
     throw new UnsupportedOperationException(
         "Not support to box an object " + o + " for type " + type.name());
@@ -180,12 +184,11 @@ public final class SelTypeUtil {
     map.put(HashMap.class, SelTypes.MAP);
     map.put(LinkedHashMap.class, SelTypes.MAP);
 
-    map.put(DateTime.class, SelTypes.DATETIME);
-    map.put(DateTimeZone.class, SelTypes.DATETIME_ZONE);
+    map.put(ZonedDateTime.class, SelTypes.DATETIME);
+    map.put(ZoneId.class, SelTypes.DATETIME_ZONE);
     map.put(DateTimeFormatter.class, SelTypes.DATETIME_FORMATTER);
-    map.put(DateTimeFormat.class, SelTypes.DATETIME_FORMATTER);
-    map.put(DateTime.Property.class, SelTypes.DATETIME_PROPERTY);
-    map.put(Days.class, SelTypes.DATETIME_DAYS);
+    map.put(SelJodaDateTimeProperty.class, SelTypes.DATETIME_PROPERTY);
+    map.put(SelJodaDateTimeDays.class, SelTypes.DATETIME_DAYS);
 
     JAVA_CLAZZ_TO_SEL_TYPES = Collections.unmodifiableMap(map);
   }

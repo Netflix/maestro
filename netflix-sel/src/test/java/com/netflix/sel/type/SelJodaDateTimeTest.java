@@ -15,10 +15,11 @@ package com.netflix.sel.type;
 import static org.junit.Assert.*;
 
 import com.netflix.sel.visitor.SelOp;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeUtils;
-import org.joda.time.DateTimeZone;
-import org.joda.time.format.DateTimeFormat;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,20 +30,20 @@ public class SelJodaDateTimeTest {
 
   @Before
   public void setUp() throws Exception {
-    DateTimeUtils.setCurrentMillisFixed(12345L);
-    one = SelJodaDateTime.of(new DateTime(DateTimeZone.UTC));
-    another = SelJodaDateTime.of(new DateTime("2019-01-01", DateTimeZone.UTC));
+    SelJodaDateTime.CLOCK = Clock.fixed(Instant.ofEpochMilli(12345L), ZoneId.of("UTC"));
+    one = SelJodaDateTime.of(ZonedDateTime.ofInstant(Instant.ofEpochMilli(12345L), ZoneId.of("UTC")));
+    another = SelJodaDateTime.of(ZonedDateTime.parse("2019-01-01T00:00:00Z"));
   }
 
   @After
   public void tearDown() throws Exception {
-    DateTimeUtils.setCurrentMillisSystem();
+    SelJodaDateTime.CLOCK = Clock.systemDefaultZone();
   }
 
   @Test
   public void assignOps() {
     one.assignOps(SelOp.ASSIGN, another);
-    assertEquals("DATETIME: 2019-01-01T00:00:00.000Z", one.type() + ": " + one);
+    assertEquals("DATETIME: 2019-01-01T00:00Z", one.type() + ": " + one);
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -123,7 +124,7 @@ public class SelJodaDateTimeTest {
 
     for (int i = 0; i < methods.length; ++i) {
       SelType res = one.call(methods[i], new SelType[] {SelLong.of(1)});
-      assertEquals(results[i], res.type() + ": " + res);
+      assertEquals(results[i], res.type() + ": " + res.toString().replace("Z[UTC]", "Z")); // adjusting for formatting
     }
   }
 
@@ -138,12 +139,12 @@ public class SelJodaDateTimeTest {
                 "parse",
                 new SelType[] {
                   SelString.of("20190101"),
-                  SelJodaDateTimeFormatter.of(DateTimeFormat.forPattern("yyyyMMdd").withZoneUTC())
+                  SelJodaDateTimeFormatter.of(null).call("forPattern", new SelType[] {SelString.of("yyyyMMdd")})
                 });
-    assertEquals("DATETIME: 2019-01-01T00:00:00.000Z", res.type() + ": " + res);
+    assertEquals("DATETIME: 2019-01-01T00:00Z[UTC]", res.type() + ": " + res);
 
-    res = one.call("withZone", new SelType[] {SelJodaDateTimeZone.of(DateTimeZone.forID("UTC"))});
-    assertEquals("DATETIME: 1970-01-01T00:00:12.345Z", res.type() + ": " + res);
+    res = one.call("withZone", new SelType[] {SelJodaDateTimeZone.of(ZoneId.of("UTC"))});
+    assertEquals("DATETIME: 1970-01-01T00:00:12.345Z[UTC]", res.type() + ": " + res);
 
     res = one.call("isAfter", new SelType[] {another});
     assertEquals("BOOLEAN: false", res.type() + ": " + res);
@@ -153,10 +154,10 @@ public class SelJodaDateTimeTest {
     assertEquals("BOOLEAN: false", res.type() + ": " + res);
 
     res = one.call("withTimeAtStartOfDay", new SelType[] {});
-    assertEquals("DATETIME: 1970-01-01T00:00:00.000Z", res.type() + ": " + res);
+    assertEquals("DATETIME: 1970-01-01T00:00Z[UTC]", res.type() + ": " + res);
 
-    res = one.call("toDateTime", new SelType[] {SelJodaDateTimeZone.of(DateTimeZone.forID("UTC"))});
-    assertEquals("DATETIME: 1970-01-01T00:00:12.345Z", res.type() + ": " + res);
+    res = one.call("toDateTime", new SelType[] {SelJodaDateTimeZone.of(ZoneId.of("UTC"))});
+    assertEquals("DATETIME: 1970-01-01T00:00:12.345Z[UTC]", res.type() + ": " + res);
   }
 
   @Test
@@ -196,19 +197,19 @@ public class SelJodaDateTimeTest {
 
     String[] results =
         new String[] {
-          "DATETIME_PROPERTY: Property[monthOfYear]",
-          "DATETIME_PROPERTY: Property[weekyear]",
-          "DATETIME_PROPERTY: Property[weekOfWeekyear]",
-          "DATETIME_PROPERTY: Property[dayOfYear]",
-          "DATETIME_PROPERTY: Property[dayOfMonth]",
-          "DATETIME_PROPERTY: Property[dayOfWeek]",
-          "DATETIME_PROPERTY: Property[hourOfDay]",
-          "DATETIME_PROPERTY: Property[minuteOfDay]",
-          "DATETIME_PROPERTY: Property[minuteOfHour]",
-          "DATETIME_PROPERTY: Property[secondOfDay]",
-          "DATETIME_PROPERTY: Property[secondOfMinute]",
-          "DATETIME_PROPERTY: Property[millisOfDay]",
-          "DATETIME_PROPERTY: Property[millisOfSecond]",
+          "DATETIME_PROPERTY: Property[MonthOfYear]",
+          "DATETIME_PROPERTY: Property[WeekBasedYear]",
+          "DATETIME_PROPERTY: Property[WeekOfWeekBasedYear]",
+          "DATETIME_PROPERTY: Property[DayOfYear]",
+          "DATETIME_PROPERTY: Property[DayOfMonth]",
+          "DATETIME_PROPERTY: Property[DayOfWeek]",
+          "DATETIME_PROPERTY: Property[HourOfDay]",
+          "DATETIME_PROPERTY: Property[MinuteOfDay]",
+          "DATETIME_PROPERTY: Property[MinuteOfHour]",
+          "DATETIME_PROPERTY: Property[SecondOfDay]",
+          "DATETIME_PROPERTY: Property[SecondOfMinute]",
+          "DATETIME_PROPERTY: Property[MilliOfDay]",
+          "DATETIME_PROPERTY: Property[MilliOfSecond]",
           "LONG: 12345",
           "LONG: 1970",
           "LONG: 0",
@@ -224,7 +225,7 @@ public class SelJodaDateTimeTest {
           "LONG: 12",
           "LONG: 1",
           "LONG: 12",
-          "STRING: 1970-01-01T00:00:12.345Z"
+          "STRING: 1970-01-01T00:00:12.345Z[UTC]"
         };
     for (int i = 0; i < methods.length; ++i) {
       SelType res = one.call(methods[i], new SelType[] {});

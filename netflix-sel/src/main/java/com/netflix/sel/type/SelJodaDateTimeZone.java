@@ -13,18 +13,19 @@
 package com.netflix.sel.type;
 
 import com.netflix.sel.visitor.SelOp;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
-import org.joda.time.DateTimeZone;
 
-/** Wrapper class to support org.joda.time.DateTimeZone. */
+/** Wrapper class to support java.time.ZoneId. */
 public final class SelJodaDateTimeZone extends AbstractSelType {
-  private DateTimeZone val;
+  private ZoneId val;
 
-  private SelJodaDateTimeZone(DateTimeZone val) {
+  private SelJodaDateTimeZone(ZoneId val) {
     this.val = val;
   }
 
-  static SelJodaDateTimeZone of(DateTimeZone dtz) {
+  static SelJodaDateTimeZone of(ZoneId dtz) {
     return new SelJodaDateTimeZone(dtz);
   }
 
@@ -44,7 +45,7 @@ public final class SelJodaDateTimeZone extends AbstractSelType {
   }
 
   @Override
-  public DateTimeZone getInternalVal() {
+  public ZoneId getInternalVal() {
     return val;
   }
 
@@ -52,9 +53,9 @@ public final class SelJodaDateTimeZone extends AbstractSelType {
   public SelType call(String methodName, SelType[] args) {
     if (args.length == 1) {
       if ("forID".equals(methodName)) {
-        return new SelJodaDateTimeZone(DateTimeZone.forID(((SelString) args[0]).getInternalVal()));
+        return new SelJodaDateTimeZone(ZoneId.of(((SelString) args[0]).getInternalVal()));
       } else if ("getOffset".equals(methodName)) {
-        return SelLong.of((long) val.getOffset(((SelJodaDateTime) args[0]).getInternalVal()));
+        return SelLong.of((long) val.getRules().getOffset(((ZonedDateTime) ((SelJodaDateTime) args[0]).getInternalVal()).toInstant()).getTotalSeconds() * 1000L);
       }
     }
     throw new UnsupportedOperationException(
@@ -69,7 +70,7 @@ public final class SelJodaDateTimeZone extends AbstractSelType {
   public SelJodaDateTimeZone field(SelString field) {
     String fieldName = field.getInternalVal();
     if ("UTC".equals(fieldName)) {
-      return new SelJodaDateTimeZone(DateTimeZone.UTC);
+      return new SelJodaDateTimeZone(ZoneId.of("UTC"));
     }
     throw new UnsupportedOperationException(type() + " DO NOT support accessing field: " + field);
   }

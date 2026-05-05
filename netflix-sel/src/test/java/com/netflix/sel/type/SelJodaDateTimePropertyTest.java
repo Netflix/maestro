@@ -15,9 +15,11 @@ package com.netflix.sel.type;
 import static org.junit.Assert.assertEquals;
 
 import com.netflix.sel.visitor.SelOp;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeUtils;
-import org.joda.time.DateTimeZone;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoField;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,21 +31,21 @@ public class SelJodaDateTimePropertyTest {
 
   @Before
   public void setUp() throws Exception {
-    DateTimeUtils.setCurrentMillisFixed(12345L);
-    one = SelJodaDateTimeProperty.of(new DateTime(DateTimeZone.UTC).dayOfWeek());
-    another = SelJodaDateTimeProperty.of(new DateTime(DateTimeZone.UTC).dayOfMonth());
+    SelJodaDateTime.CLOCK = Clock.fixed(Instant.ofEpochMilli(12345L), ZoneId.of("UTC"));
+    one = SelJodaDateTimeProperty.of(ZonedDateTime.now(SelJodaDateTime.CLOCK), ChronoField.DAY_OF_WEEK);
+    another = SelJodaDateTimeProperty.of(ZonedDateTime.now(SelJodaDateTime.CLOCK), ChronoField.DAY_OF_MONTH);
   }
 
   @After
   public void tearDown() throws Exception {
-    DateTimeUtils.setCurrentMillisSystem();
+    SelJodaDateTime.CLOCK = Clock.systemDefaultZone();
   }
 
   @Test
   public void testAssignOps() {
-    assertEquals("DATETIME_PROPERTY: Property[dayOfWeek]", one.type() + ": " + one);
+    assertEquals("DATETIME_PROPERTY: Property[DayOfWeek]", one.type() + ": " + one);
     one.assignOps(SelOp.ASSIGN, another);
-    assertEquals("DATETIME_PROPERTY: Property[dayOfMonth]", one.type() + ": " + one);
+    assertEquals("DATETIME_PROPERTY: Property[DayOfMonth]", one.type() + ": " + one);
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -61,9 +63,9 @@ public class SelJodaDateTimePropertyTest {
     SelType res = one.call("getAsText", new SelType[0]);
     assertEquals("STRING: Thursday", res.type() + ": " + res);
     res = one.call("withMinimumValue", new SelType[0]);
-    assertEquals("DATETIME: 1969-12-29T00:00:12.345Z", res.type() + ": " + res);
+    assertEquals("DATETIME: 1969-12-29T00:00:12.345Z[UTC]", res.type() + ": " + res);
     res = one.call("withMaximumValue", new SelType[0]);
-    assertEquals("DATETIME: 1970-01-04T00:00:12.345Z", res.type() + ": " + res);
+    assertEquals("DATETIME: 1970-01-04T00:00:12.345Z[UTC]", res.type() + ": " + res);
     res = one.call("get", new SelType[0]);
     assertEquals("LONG: 4", res.type() + ": " + res);
   }

@@ -14,7 +14,9 @@ package com.netflix.sel.type;
 
 import static org.junit.Assert.*;
 
-import org.joda.time.DateTimeUtils;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,12 +25,12 @@ public class SelMiscFuncTest {
 
   @Before
   public void setUp() throws Exception {
-    DateTimeUtils.setCurrentMillisFixed(12345L);
+    SelJodaDateTime.CLOCK = Clock.fixed(Instant.ofEpochMilli(12345L), ZoneId.of("UTC"));
   }
 
   @After
   public void tearDown() throws Exception {
-    DateTimeUtils.setCurrentMillisSystem();
+    SelJodaDateTime.CLOCK = Clock.systemDefaultZone();
   }
 
   @Test
