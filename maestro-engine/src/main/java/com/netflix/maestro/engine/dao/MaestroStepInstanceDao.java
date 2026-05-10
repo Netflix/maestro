@@ -64,7 +64,7 @@ import javax.sql.DataSource;
  * <p>In the data model, we use `null` to indicate `unset`.
  */
 @SuppressWarnings("checkstyle:MultipleStringLiterals")
-@SuppressFBWarnings("OBL_UNSATISFIED_OBLIGATION")
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class MaestroStepInstanceDao extends AbstractDatabaseDao {
   private static final TypeReference<Map<String, Artifact>> ARTIFACTS_REFERENCE =
       new TypeReference<>() {};

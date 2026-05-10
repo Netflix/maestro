@@ -18,6 +18,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.GitInfo;
 import com.netflix.maestro.models.definition.StepType;
@@ -44,6 +45,7 @@ import lombok.Data;
     value = {"metadata", "definition"},
     alphabetic = true)
 @Data
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class JobTemplate {
   @Valid @NotNull private Metadata metadata;
   @Valid @NotNull private Definition definition;

@@ -1,6 +1,7 @@
 package com.netflix.maestro.flow.engine;
 
 import com.netflix.maestro.annotations.Nullable;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.flow.Constants;
 import com.netflix.maestro.flow.actor.Action;
 import com.netflix.maestro.flow.actor.Actor;
@@ -28,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author jun-he
  */
 @Slf4j
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class FlowExecutor {
   private final ScheduledExecutorService maintainer = Executors.newSingleThreadScheduledExecutor();
   private final Map<Long, Actor> groupActors = new ConcurrentHashMap<>(); // never remove

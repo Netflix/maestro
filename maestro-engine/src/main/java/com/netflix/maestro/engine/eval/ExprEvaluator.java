@@ -13,6 +13,7 @@
 package com.netflix.maestro.engine.eval;
 
 import com.netflix.maestro.annotations.Nullable;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.engine.properties.SelProperties;
 import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.exceptions.MaestroInvalidExpressionException;
@@ -27,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /** SEL expression evaluator wrapper. */
 @Slf4j
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class ExprEvaluator {
   private static final String SEMICOLON = ";";
 

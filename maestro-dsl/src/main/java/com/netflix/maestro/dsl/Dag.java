@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.netflix.maestro.annotations.Nullable;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.utils.Checks;
 import java.io.IOException;
 import java.util.List;
@@ -24,6 +25,7 @@ import java.util.Map;
  */
 @JsonDeserialize(using = Dag.DagDeserializer.class)
 @JsonSerialize(using = Dag.DagSerializer.class)
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public record Dag(@Nullable String order, @Nullable Map<String, List<String>> transitions) {
 
   public Dag {

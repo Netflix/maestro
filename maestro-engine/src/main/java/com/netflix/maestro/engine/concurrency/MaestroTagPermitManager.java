@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.engine.concurrency;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.engine.dao.MaestroTagPermitDao;
 import com.netflix.maestro.engine.tasks.MaestroTagPermitTask;
 import com.netflix.maestro.models.Constants;
@@ -28,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /** Database based implementation of tag permit manager. */
 @Slf4j
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class MaestroTagPermitManager implements TagPermitManager {
   private static final int NOT_FOUND_STATUS_CODE = -1;
   private static final int INTERNAL_FLOW_GROUP_ID = 0;

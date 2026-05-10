@@ -68,8 +68,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <p>In the data model, we use `null` to indicate `unset`.
  */
-// mute the false positive error due to https://github.com/spotbugs/spotbugs/issues/293
-@SuppressFBWarnings("OBL_UNSATISFIED_OBLIGATION")
+@SuppressFBWarnings({"EI_EXPOSE_REP", "DCN_NULLPOINTER_EXCEPTION"})
 @SuppressWarnings("PMD.ReplaceJavaUtilDate")
 @Slf4j
 public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {

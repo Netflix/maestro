@@ -81,7 +81,15 @@ configure(allprojects - project(':netflix-sel')) {
     }
 
     spotbugs {
-        ignoreFailures = true
+        ignoreFailures = false
+    }
+
+    tasks.withType(com.github.spotbugs.snom.SpotBugsTask) {
+        enabled = name.contains("Main")
+        reports {
+            xml.enabled = true
+            html.enabled = true
+        }
     }
 
     group = 'com.netflix.maestro'

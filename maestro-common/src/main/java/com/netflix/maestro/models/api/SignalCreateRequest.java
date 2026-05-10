@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.annotations.Nullable;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.models.signal.SignalParamValue;
 import com.netflix.maestro.validations.MaestroNameConstraint;
 import java.util.LinkedHashMap;
@@ -26,6 +27,7 @@ import lombok.ToString;
     alphabetic = true)
 @Data
 @ToString
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class SignalCreateRequest {
   /** Name of the signal. */
   @MaestroNameConstraint private String name;

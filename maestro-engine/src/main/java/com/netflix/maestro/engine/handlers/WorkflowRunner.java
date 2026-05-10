@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.engine.handlers;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.engine.transformation.WorkflowTranslator;
 import com.netflix.maestro.engine.utils.WorkflowHelper;
 import com.netflix.maestro.exceptions.MaestroInternalError;
@@ -29,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 /** Workflow runner to run a maestro workflow in the internal flow engine. */
 @AllArgsConstructor
 @Slf4j
+@SuppressFBWarnings({"EI_EXPOSE_REP", "DCN_NULLPOINTER_EXCEPTION"})
 public class WorkflowRunner {
   private final MaestroFlowDao flowDao;
   private final FlowOperation flowOperation;

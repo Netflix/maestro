@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.annotations.Nullable;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.definition.StepTransition;
 import com.netflix.maestro.models.definition.Workflow;
@@ -70,6 +71,7 @@ import lombok.Getter;
     },
     alphabetic = true)
 @Data
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class WorkflowInstance {
   @Valid @NotNull private String workflowId;
 

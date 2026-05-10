@@ -16,6 +16,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.instance.WorkflowRollupOverview;
@@ -46,6 +47,7 @@ import lombok.Data;
     },
     alphabetic = true)
 @Data
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class WorkflowRuntimeSummary {
   private WorkflowInstance.Status instanceStatus = WorkflowInstance.Status.CREATED; // initial state
 

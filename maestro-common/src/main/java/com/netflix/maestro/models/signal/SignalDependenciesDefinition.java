@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.annotations.Nullable;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import java.util.List;
 import java.util.Map;
 import lombok.Data;
@@ -29,6 +30,7 @@ import lombok.Data;
  * @param definitions signal dependency definitions.
  */
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public record SignalDependenciesDefinition(
     @JsonValue List<SignalDependencyDefinition> definitions) {
   /** Constructor. */

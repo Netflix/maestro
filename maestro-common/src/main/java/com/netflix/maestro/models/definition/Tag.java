@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.validations.MaestroNameConstraint;
 import java.util.HashMap;
 import java.util.Locale;
@@ -33,6 +34,7 @@ import lombok.Data;
     value = {"name", "namespace", "permit", "attributes"},
     alphabetic = true)
 @Data
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class Tag {
   @MaestroNameConstraint private String name;
   private Namespace namespace;

@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.engine.processors;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
 import com.netflix.maestro.exceptions.MaestroRetryableError;
@@ -43,6 +44,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @AllArgsConstructor
+@SuppressFBWarnings({"EI_EXPOSE_REP", "RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"})
 public class InstanceActionJobEventProcessor
     implements MaestroEventProcessor<InstanceActionJobEvent> {
   private static final Integer DEFAULT_ACTION_CODE =

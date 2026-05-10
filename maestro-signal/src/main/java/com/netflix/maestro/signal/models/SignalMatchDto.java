@@ -1,5 +1,6 @@
 package com.netflix.maestro.signal.models;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.models.signal.SignalOperator;
 import com.netflix.maestro.models.signal.SignalParamValue;
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.List;
  * @param paramMatches params to match
  * @author jun-he
  */
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public record SignalMatchDto(String signalName, List<ParamMatchDto> paramMatches) {
   public boolean withParams() {
     return paramMatches != null && !paramMatches.isEmpty();

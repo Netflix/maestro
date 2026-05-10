@@ -13,7 +13,6 @@
 package com.netflix.maestro.extensions.processors;
 
 import com.netflix.maestro.annotations.Nullable;
-import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.exceptions.MaestroNotFoundException;
 import com.netflix.maestro.extensions.models.StepEventHandlerInput;
 import com.netflix.maestro.extensions.provider.MaestroClient;
@@ -27,7 +26,6 @@ import lombok.extern.slf4j.Slf4j;
  * StepInstanceStatusChangeEvent} and creates a {@link StepEventHandlerInput}.
  */
 @Slf4j
-@SuppressFBWarnings("EI_EXPOSE_REP2")
 public class StepEventPreprocessor {
   private static final String METRIC_INSTANCE_NOT_FOUND =
       "maestroevent.preprocessor.instance.not.found";

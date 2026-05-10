@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.queue.worker;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.exceptions.MaestroNotFoundException;
 import com.netflix.maestro.metrics.MaestroMetrics;
@@ -42,9 +43,14 @@ public final class MaestroQueueWorker implements Runnable {
   private final long scanInterval;
   private final long retryInterval;
 
+  @SuppressFBWarnings("EI_EXPOSE_REP2")
   private final MaestroQueueDao queueDao;
+
   private final ScheduledExecutorService scheduler;
+
+  @SuppressFBWarnings("EI_EXPOSE_REP2")
   private final BlockingQueue<MessageDto> messageQueue;
+
   private final MaestroJobEventDispatcher dispatcher;
   private final MaestroMetrics metrics;
 
@@ -160,7 +166,10 @@ public final class MaestroQueueWorker implements Runnable {
             currentSize,
             messageLimit);
       }
-      requeue(message, scanInterval + (int) (JITTER_IN_MILLIS * Math.random()));
+      requeue(
+          message,
+          scanInterval
+              + java.util.concurrent.ThreadLocalRandom.current().nextLong(JITTER_IN_MILLIS));
     } else if (message.ownedUntil() > curTime) {
       metrics.timer(
           MetricConstants.WORKER_QUEUE_QUEUEING_DELAY,
@@ -208,6 +217,7 @@ public final class MaestroQueueWorker implements Runnable {
     // note that not requeue as the message goes to another queue in the current use cases
   }
 
+  @SuppressFBWarnings("RV_RETURN_VALUE_IGNORED_BAD_PRACTICE")
   private void requeue(MessageDto message, long delayInMillis) {
     if (!running) {
       LOG.debug(

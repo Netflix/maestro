@@ -12,7 +12,10 @@
  */
 package com.netflix.maestro.timetrigger.metrics;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
+
 /** Constants for time trigger metrics. */
+@SuppressFBWarnings("NM_SAME_SIMPLE_NAME_AS_SUPERCLASS")
 public final class MetricConstants extends com.netflix.maestro.metrics.MetricConstants {
   private MetricConstants() {}
 

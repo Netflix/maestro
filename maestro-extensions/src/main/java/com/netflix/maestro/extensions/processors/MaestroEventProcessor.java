@@ -12,7 +12,6 @@
  */
 package com.netflix.maestro.extensions.processors;
 
-import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.exceptions.MaestroRetryableError;
 import com.netflix.maestro.extensions.handlers.ForeachFlatteningHandler;
 import com.netflix.maestro.extensions.models.StepEventHandlerInput;
@@ -32,7 +31,6 @@ import lombok.extern.slf4j.Slf4j;
  * subscription handling which are not yet ported to OSS.
  */
 @Slf4j
-@SuppressFBWarnings("EI_EXPOSE_REP2")
 public class MaestroEventProcessor {
   private static final String TYPE_TAG = "type";
   private static final String METRIC_PROCESSOR_FAILURE = "maestroevent.processor.failure";

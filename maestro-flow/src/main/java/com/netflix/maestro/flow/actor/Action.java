@@ -1,6 +1,7 @@
 package com.netflix.maestro.flow.actor;
 
 import com.netflix.maestro.annotations.Nullable;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.flow.Constants;
 import com.netflix.maestro.flow.models.Flow;
 import com.netflix.maestro.flow.models.Task;
@@ -17,6 +18,7 @@ public sealed interface Action {
 
   Action GROUP_START = new GroupStart();
 
+  @SuppressFBWarnings("EI_EXPOSE_REP")
   record FlowLaunch(Flow flow, boolean resume) implements Action {}
 
   record GroupHeartbeat() implements Action {}
@@ -82,6 +84,7 @@ public sealed interface Action {
 
   Action TASK_PING = new TaskPing(Constants.TASK_PING_CODE);
 
+  @SuppressFBWarnings("EI_EXPOSE_REP")
   record TaskUpdate(Task updatedTask) implements Action {}
 
   record TaskTimeout() implements Action {}

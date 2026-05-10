@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.server.controllers;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.flow.models.FlowDef;
 import com.netflix.maestro.flow.runtime.FlowOperation;
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,6 +40,7 @@ import org.springframework.web.bind.annotation.RestController;
     value = "/api/v3/groups",
     produces = MediaType.APPLICATION_JSON_VALUE,
     consumes = MediaType.APPLICATION_JSON_VALUE)
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class FlowEngineController {
 
   private final FlowOperation flowOperation;

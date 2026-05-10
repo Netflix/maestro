@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import jakarta.validation.Valid;
 import java.util.Map;
 import lombok.EqualsAndHashCode;
@@ -50,6 +51,7 @@ import lombok.experimental.SuperBuilder;
 @Getter(onMethod = @__({@Override}))
 @SuperBuilder(toBuilder = true)
 @EqualsAndHashCode(callSuper = true)
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public final class StringMapParameter extends AbstractParameter {
   @Valid private final Map<String, String> value;
   private Map<String, String> evaluatedResult;

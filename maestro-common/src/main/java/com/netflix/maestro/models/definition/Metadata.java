@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.utils.Checks;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -37,6 +38,7 @@ import lombok.Data;
     value = {"workflow_id", "workflow_version_id", "create_time", "version_author", "git_info"},
     alphabetic = true)
 @Data
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class Metadata {
   /** Constants for extra info key mappings. */
   private static final String SOURCE = "source";

@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.EqualsAndHashCode;
@@ -30,6 +31,7 @@ import lombok.ToString;
 @JsonPropertyOrder(alphabetic = true)
 @EqualsAndHashCode
 @ToString
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class DefaultArtifact implements Artifact {
   private static final String VALUE_FIELD = "value";
   private final Map<String, Object> data = new LinkedHashMap<>();

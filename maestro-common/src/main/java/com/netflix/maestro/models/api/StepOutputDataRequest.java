@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.parameter.Parameter;
 import jakarta.validation.Valid;
@@ -20,6 +21,7 @@ import lombok.Data;
     value = {"params", "artifacts"},
     alphabetic = true)
 @Data
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class StepOutputDataRequest {
   @Valid private Map<String, Parameter> params;
   @Valid private Map<String, Artifact> artifacts;

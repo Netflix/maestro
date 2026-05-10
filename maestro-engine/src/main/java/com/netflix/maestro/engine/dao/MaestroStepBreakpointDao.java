@@ -75,8 +75,8 @@ import lombok.extern.slf4j.Slf4j;
  * <p>Store paused step attempts which additional column ("system_generated"=true) since the schema
  * of paused step attempt is same as that of breakpoint.
  */
-@SuppressFBWarnings("OBL_UNSATISFIED_OBLIGATION")
 @Slf4j
+@SuppressFBWarnings({"EI_EXPOSE_REP", "OBL_UNSATISFIED_OBLIGATION_EXCEPTION_EDGE"})
 public class MaestroStepBreakpointDao extends AbstractDatabaseDao {
   private static final String WORKFLOW_ID = "workflow_id";
   private static final String VERSION = "version";

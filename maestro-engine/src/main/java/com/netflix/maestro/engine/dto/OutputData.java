@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.parameter.Parameter;
@@ -47,6 +48,7 @@ import lombok.ToString;
 @AllArgsConstructor
 @ToString
 @Builder
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class OutputData {
   @Setter private StepType externalJobType;
   @Setter private String externalJobId;

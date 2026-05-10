@@ -68,13 +68,13 @@ import lombok.extern.slf4j.Slf4j;
  * to avoid unexpected behavior. Users have to manually stop them before switching to LAST_ONLY
  * because a new run might unexpectedly stop all previously queued or running instances.
  */
-@SuppressFBWarnings("OBL_UNSATISFIED_OBLIGATION")
 @SuppressWarnings({
   "PMD.ExhaustiveSwitchHasDefault",
   "PMD.ReplaceJavaUtilDate",
   "checkstyle:MultipleStringLiterals"
 })
 @Slf4j
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class MaestroRunStrategyDao extends AbstractDatabaseDao {
   private static final String ONE_STRING = "1";
   private static final String TWO_STRING = "2";

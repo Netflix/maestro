@@ -16,6 +16,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.utils.Checks;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -31,6 +32,7 @@ import lombok.Data;
     value = {"predecessors", "successors"},
     alphabetic = true)
 @Data
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class StepTransition {
   /**
    * This is optional. Callers do not need to provide it. If empty, will derive it from DAG during

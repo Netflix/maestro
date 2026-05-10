@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -44,7 +45,7 @@ final class FlowActor extends BaseActor {
   private final Flow flow; // read-only access from all child actors
   private final long reconciliationInterval; // flow reconciliation interval in millis
   private final long refreshInterval; // flow refresh (monitor task) interval in millis
-  private boolean finalized; // flag indicating if the final call is done
+  private volatile boolean finalized; // flag indicating if the final call is done
 
   FlowActor(Flow flow, GroupActor parent, ExecutionContext context) {
     super(context, parent);
@@ -153,7 +154,7 @@ final class FlowActor extends BaseActor {
   }
 
   private long delayForNext(long delayInterval) {
-    return delayInterval + (int) (JITTER * Math.random());
+    return delayInterval + ThreadLocalRandom.current().nextLong(JITTER);
   }
 
   private void refresh() {
