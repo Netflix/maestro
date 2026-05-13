@@ -16,6 +16,8 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
@@ -43,6 +45,7 @@ import com.netflix.maestro.queue.jobevents.StartWorkflowJobEvent;
 import com.netflix.maestro.queue.jobevents.TerminateThenRunJobEvent;
 import com.netflix.maestro.queue.jobevents.WorkflowInstanceUpdateJobEvent;
 import com.netflix.maestro.queue.jobevents.WorkflowVersionUpdateJobEvent;
+import com.netflix.maestro.queue.models.MessageDto;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -468,6 +471,49 @@ public class MaestroRunStrategyDaoTest extends MaestroDaoBaseTest {
     assertEquals("wfi3-uuid", latestRun.getWorkflowUuid());
     assertEquals(WorkflowInstance.Status.CREATED, latestRun.getStatus());
     verifyEnqueue(0, 1, 1);
+
+    MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID, 2);
+  }
+
+  @Test
+  public void testStartBatchRunStrategyRetryKeepsFreshAttemptState() throws Exception {
+    List<WorkflowInstance> batch = prepareBatch();
+
+    // Simulate Postgres aborting the first serializable LAST_ONLY attempt after the DAO has
+    // assigned instance IDs and removed UUIDs from the transaction-attempt dedup set. The DB
+    // transaction retry must rebuild that mutable state; otherwise it falsely treats the batch as
+    // duplicated.
+    SQLException retryable = new SQLException("retry start batch", "40001");
+    MessageDto message = new MessageDto(Long.MAX_VALUE, "retry-message", null, 0);
+    doReturn(message).when(queueSystem).enqueue(any(), any());
+    doThrow(retryable)
+        .doReturn(message)
+        .when(queueSystem)
+        .enqueue(any(), any(TerminateThenRunJobEvent.class));
+
+    int[] res =
+        runStrategyDao.startBatchWithRunStrategy(
+            TEST_WORKFLOW_ID, RunStrategy.create("LAST_ONLY"), batch);
+
+    assertArrayEquals(new int[] {-1, 0, 1}, res);
+    assertEquals(1, batch.get(0).getWorkflowInstanceId());
+    assertEquals(0, batch.get(1).getWorkflowInstanceId());
+    assertEquals(2, batch.get(2).getWorkflowInstanceId());
+
+    // The retry should commit the same rows as a normal LAST_ONLY batch start instead of returning
+    // DUPLICATED with only Java-side instance IDs.
+    WorkflowInstance previous = dao.getWorkflowInstanceRun(TEST_WORKFLOW_ID, 1, 1);
+    WorkflowInstance latestRun = dao.getLatestWorkflowInstanceRun(TEST_WORKFLOW_ID, 2);
+    assertEquals("wfi1-uuid", previous.getWorkflowUuid());
+    assertEquals(WorkflowInstance.Status.STOPPED, previous.getStatus());
+    assertEquals("wfi3-uuid", latestRun.getWorkflowUuid());
+    assertEquals(WorkflowInstance.Status.CREATED, latestRun.getStatus());
+    verify(queueSystem, times(2)).enqueue(any(), any(TerminateThenRunJobEvent.class));
+    verify(queueSystem, times(2))
+        .enqueue(
+            any(), any(com.netflix.maestro.queue.jobevents.WorkflowInstanceUpdateJobEvent.class));
+    verify(queueSystem, times(2)).notify(any());
+    reset(queueSystem);
 
     MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID, 2);
   }
