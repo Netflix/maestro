@@ -31,7 +31,9 @@ import com.netflix.maestro.engine.http.SizeBoundedBodyHandler;
 import com.netflix.maestro.engine.http.UrlValidator;
 import com.netflix.maestro.engine.kubernetes.KubernetesCommandGenerator;
 import com.netflix.maestro.engine.kubernetes.KubernetesRuntimeExecutor;
+import com.netflix.maestro.engine.notebook.DefaultAlertingNotebookParamsContributor;
 import com.netflix.maestro.engine.notebook.NotebookParamsBuilder;
+import com.netflix.maestro.engine.notebook.NotebookParamsContributor;
 import com.netflix.maestro.engine.notebook.PapermillEntrypointBuilder;
 import com.netflix.maestro.engine.params.DefaultParamManager;
 import com.netflix.maestro.engine.params.OutputDataManager;
@@ -63,6 +65,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
@@ -161,10 +164,17 @@ public class MaestroStepRuntimeConfiguration {
   }
 
   @Bean
-  public NotebookParamsBuilder notebookParamsBuilder(
+  public NotebookParamsContributor defaultAlertingNotebookParamsContributor(
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper) {
+    return new DefaultAlertingNotebookParamsContributor(objectMapper);
+  }
+
+  @Bean
+  public NotebookParamsBuilder notebookParamsBuilder(
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
+      List<NotebookParamsContributor> contributors) {
     LOG.info("Creating notebookParamsBuilder within Spring boot...");
-    return new NotebookParamsBuilder(objectMapper);
+    return new NotebookParamsBuilder(objectMapper, contributors);
   }
 
   @Bean

@@ -28,6 +28,7 @@ import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.models.parameter.StringParamDefinition;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,7 +42,9 @@ public class NotebookParamsBuilderTest extends MaestroBaseTest {
 
   @Before
   public void before() {
-    notebookParamsBuilder = new NotebookParamsBuilder(MAPPER);
+    notebookParamsBuilder =
+        new NotebookParamsBuilder(
+            MAPPER, List.of(new DefaultAlertingNotebookParamsContributor(MAPPER)));
     workflowParams = new LinkedHashMap<>();
     workflowSummary = new WorkflowSummary();
     workflowSummary.setWorkflowRunId(2);
