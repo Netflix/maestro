@@ -52,6 +52,12 @@ dependencies {
     testImplementation(testFixtures(project(':maestro-common')))
 }
 
+bootJar {
+    layered {
+        enabled = true
+    }
+}
+
 bootRun {
     jvmArgs += ["-Djava.security.manager=allow"]
 }
