@@ -91,6 +91,13 @@ public class WorkflowHelperTest extends MaestroEngineBaseTest {
             WorkflowDefinition.class);
     assertEquals(
         RunStrategy.Rule.PARALLEL, parallel.getPropertiesSnapshot().getRunStrategy().getRule());
+    WorkflowDefinition serialLatestOnly =
+        loadObject(
+            "fixtures/workflows/definition/sample-minimal-wf-run-strategy-serial-latest-only.json",
+            WorkflowDefinition.class);
+    assertEquals(
+        RunStrategy.Rule.SERIAL_LATEST_ONLY,
+        serialLatestOnly.getPropertiesSnapshot().getRunStrategy().getRule());
   }
 
   @Test
