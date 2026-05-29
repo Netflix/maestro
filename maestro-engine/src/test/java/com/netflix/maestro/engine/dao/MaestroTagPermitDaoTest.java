@@ -27,7 +27,9 @@ import com.netflix.maestro.models.tagpermits.TagPermit;
 import com.netflix.maestro.models.timeline.TimelineActionEvent;
 import com.netflix.maestro.models.timeline.TimelineLogEvent;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.After;
 import org.junit.Before;
@@ -65,7 +67,7 @@ public class MaestroTagPermitDaoTest extends MaestroDaoBaseTest {
 
   @Test
   public void testUpsertTagPermit() {
-    tagPermitDao.upsertTagPermit(tag1, 5, user);
+    tagPermitDao.upsertTagPermit(tag1, 5, user, null);
 
     // create a new tag permit
     TagPermit result = tagPermitDao.getTagPermit(tag1);
@@ -79,7 +81,7 @@ public class MaestroTagPermitDaoTest extends MaestroDaoBaseTest {
         result.getTimeline().getTimelineEvents().getFirst().getMessage());
 
     // Update with new limit
-    tagPermitDao.upsertTagPermit(tag1, 10, user);
+    tagPermitDao.upsertTagPermit(tag1, 10, user, null);
     result = tagPermitDao.getTagPermit(tag1);
     assertNotNull(result);
     assertEquals(10, result.getMaxAllowed());
@@ -91,7 +93,7 @@ public class MaestroTagPermitDaoTest extends MaestroDaoBaseTest {
 
   @Test
   public void testMarkRemoveTagPermit() {
-    tagPermitDao.upsertTagPermit(tag1, 5, user);
+    tagPermitDao.upsertTagPermit(tag1, 5, user, null);
 
     assertNotNull(tagPermitDao.getTagPermit(tag1));
     assertTrue(tagPermitDao.markRemoveTagPermit(tag1));
@@ -102,8 +104,46 @@ public class MaestroTagPermitDaoTest extends MaestroDaoBaseTest {
     // Tag permit should not exist
     assertNull(tagPermitDao.getTagPermit(tag1));
 
-    tagPermitDao.upsertTagPermit(tag1, 5, user);
+    tagPermitDao.upsertTagPermit(tag1, 5, user, null);
     assertNotNull(tagPermitDao.getTagPermit(tag1));
+  }
+
+  @Test
+  public void testUpsertTagPermitWithNullExtraInfo() {
+    tagPermitDao.upsertTagPermit(tag1, 5, user, null);
+
+    TagPermit result = tagPermitDao.getTagPermit(tag1);
+    assertNotNull(result);
+    assertEquals(Collections.emptyMap(), result.getExtraInfo());
+  }
+
+  @Test
+  public void testUpsertTagPermitWithEmptyExtraInfo() {
+    tagPermitDao.upsertTagPermit(tag1, 5, user, Collections.emptyMap());
+
+    TagPermit result = tagPermitDao.getTagPermit(tag1);
+    assertNotNull(result);
+    assertEquals(Collections.emptyMap(), result.getExtraInfo());
+  }
+
+  @Test
+  public void testUpsertTagPermitWithExtraInfo() {
+    Map<String, Object> extraInfo = Map.of("source", "test", "owners", List.of("alice", "bob"));
+    tagPermitDao.upsertTagPermit(tag1, 5, user, extraInfo);
+
+    TagPermit result = tagPermitDao.getTagPermit(tag1);
+    assertNotNull(result);
+    assertEquals(extraInfo, result.getExtraInfo());
+  }
+
+  @Test
+  public void testUpsertTagPermitOverwritesExtraInfo() {
+    tagPermitDao.upsertTagPermit(tag1, 5, user, Map.of("source", "first"));
+    tagPermitDao.upsertTagPermit(tag1, 5, user, Map.of("source", "second"));
+
+    TagPermit result = tagPermitDao.getTagPermit(tag1);
+    assertNotNull(result);
+    assertEquals(Map.of("source", "second"), result.getExtraInfo());
   }
 
   @Test
@@ -145,7 +185,7 @@ public class MaestroTagPermitDaoTest extends MaestroDaoBaseTest {
 
   @Test
   public void testGetSyncedTagPermits() {
-    tagPermitDao.upsertTagPermit(tag1, 5, user);
+    tagPermitDao.upsertTagPermit(tag1, 5, user, null);
     tagPermitDao.markAndLoadTagPermits(1);
 
     // Get synced tag permits
@@ -159,7 +199,7 @@ public class MaestroTagPermitDaoTest extends MaestroDaoBaseTest {
 
   @Test
   public void testRemoveTagPermits() {
-    tagPermitDao.upsertTagPermit(tag1, 5, user);
+    tagPermitDao.upsertTagPermit(tag1, 5, user, null);
     tagPermitDao.markRemoveTagPermit(tag1);
 
     List<String> removedTags = tagPermitDao.removeTagPermits(10);
@@ -172,8 +212,8 @@ public class MaestroTagPermitDaoTest extends MaestroDaoBaseTest {
   @Test
   public void testMarkAndLoadTagPermits() {
     // Create some tag permits
-    tagPermitDao.upsertTagPermit(tag1, 5, user);
-    tagPermitDao.upsertTagPermit(tag2, 10, user);
+    tagPermitDao.upsertTagPermit(tag1, 5, user, null);
+    tagPermitDao.upsertTagPermit(tag2, 10, user, null);
 
     // Mark and load tag permits
     List<TagPermit> permits = tagPermitDao.markAndLoadTagPermits(10);

@@ -1,6 +1,7 @@
 {
   "tag": "tag1",
   "max_allowed": 42,
+  "source": "test",
   "timeline": [
     {
       "timestamp": 1758087046642,

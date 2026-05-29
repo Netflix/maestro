@@ -136,9 +136,9 @@ public class MaestroTagPermitManagerTest extends MaestroEngineBaseTest {
     int limit = 10;
     User user = User.builder().name("test-user").build();
 
-    tagPermitManager.upsertTagPermit(tag, limit, user);
+    tagPermitManager.upsertTagPermit(tag, limit, user, null);
 
-    verify(tagPermitDao, times(1)).upsertTagPermit(tag, limit, user);
+    verify(tagPermitDao, times(1)).upsertTagPermit(tag, limit, user, null);
     verify(queueSystem, times(1)).notify(any(MessageDto.class));
   }
 
@@ -154,7 +154,7 @@ public class MaestroTagPermitManagerTest extends MaestroEngineBaseTest {
 
   @Test
   public void testGetTagPermit() {
-    TagPermit expectedPermit = new TagPermit(tag, 5, new Timeline(Collections.emptyList()));
+    TagPermit expectedPermit = new TagPermit(tag, 5, new Timeline(Collections.emptyList()), null);
     when(tagPermitDao.getTagPermit(tag)).thenReturn(expectedPermit);
 
     TagPermit result = tagPermitManager.getTagPermit(tag);
