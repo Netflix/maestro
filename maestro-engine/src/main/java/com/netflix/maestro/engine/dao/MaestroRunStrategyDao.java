@@ -939,6 +939,15 @@ public class MaestroRunStrategyDao extends AbstractDatabaseDao {
     return insertInstance(conn, instance, true, null, messages);
   }
 
+  /**
+   * Starts a batch of workflow instances under the SERIAL_LATEST_ONLY run strategy.
+   *
+   * <p>The batch is reversed so the last arrival (highest instance id) is processed first and
+   * becomes the sole queued candidate. All existing queued rows for the workflow and all earlier
+   * rows in the batch are stopped in the same transaction. A single {@link StartWorkflowJobEvent}
+   * is emitted for the new arrival. The instances list and the return array are restored to their
+   * original order before returning.
+   */
   private int[] startSerialLatestOnlyInstances(
       Connection conn,
       String workflowId,
@@ -948,33 +957,23 @@ public class MaestroRunStrategyDao extends AbstractDatabaseDao {
     Collections.reverse(instances);
     int[] ret = new int[instances.size()];
     List<WorkflowInstance> stoppedInstances = new ArrayList<>();
-    long newInstanceId = 0;
-    long newRunId = 0;
     TimelineEvent timelineEvent = null;
     boolean firstInserted = false;
-
-    // scan to find the new arrival identity before touching the DB
-    for (WorkflowInstance inst : instances) {
-      if (inst.getWorkflowInstanceId() != DO_NOTHING_CODE) {
-        newInstanceId = inst.getWorkflowInstanceId();
-        newRunId = inst.getWorkflowRunId();
-        timelineEvent =
-            TimelineLogEvent.info(SERIAL_LATEST_ONLY_TIMELINE_TEMPLATE, newInstanceId, newRunId);
-        break;
-      }
-    }
-
-    if (newInstanceId != DO_NOTHING_CODE) {
-      stopSerialLatestOnlyQueuedInstance(conn, workflowId, newInstanceId, newRunId, messages);
-    }
+    int idx = 0;
 
     try (PreparedStatement insertStmt = conn.prepareStatement(INSERT_WORKFLOW_INSTANCE_QUERY);
         PreparedStatement stopStmt =
             conn.prepareStatement(INSERT_STOPPED_WORKFLOW_INSTANCE_QUERY)) {
-      int idx = 0;
       for (WorkflowInstance inst : instances) {
         if (inst.getWorkflowInstanceId() != DO_NOTHING_CODE) {
           if (!firstInserted) {
+            stopSerialLatestOnlyQueuedInstance(
+                conn, workflowId, inst.getWorkflowInstanceId(), inst.getWorkflowRunId(), messages);
+            timelineEvent =
+                TimelineLogEvent.info(
+                    SERIAL_LATEST_ONLY_TIMELINE_TEMPLATE,
+                    inst.getWorkflowInstanceId(),
+                    inst.getWorkflowRunId());
             prepareCreateInstanceStatement(insertStmt, inst);
             insertStmt.addBatch();
             ret[idx] = SUCCESS_WRITE_SIZE;
@@ -1014,7 +1013,6 @@ public class MaestroRunStrategyDao extends AbstractDatabaseDao {
       publishStartWorkflowJobEvent(conn, workflowId, messages);
     }
 
-    // restore original order
     Collections.reverse(instances);
     int tmp;
     for (int i = 0, j = ret.length - 1; i < j; ++i, --j) {

@@ -708,6 +708,72 @@ public class MaestroRunStrategyDaoTest extends MaestroDaoBaseTest {
   }
 
   @Test
+  public void testStartBatchRunStrategyWithSerialLatestOnlyStopsAllQueued() throws Exception {
+    RunStrategy slo = RunStrategy.create("SERIAL_LATEST_ONLY");
+    markInstanceRunning(1, 1);
+
+    // enqueue instances 2 and 3 via SEQUENTIAL before the batch arrives
+    RunStrategy sequential = RunStrategy.create("SEQUENTIAL");
+    WorkflowInstance wfi2 = loadObject(TEST_WORKFLOW_INSTANCE, WorkflowInstance.class);
+    wfi2.setWorkflowInstanceId(0);
+    wfi2.setWorkflowUuid("slo-stale-batch-uuid-2");
+    runStrategyDao.startWithRunStrategy(wfi2, sequential);
+    assertEquals(2, wfi2.getWorkflowInstanceId());
+    verifyEnqueue(1, 0, 0);
+
+    WorkflowInstance wfi3 = loadObject(TEST_WORKFLOW_INSTANCE, WorkflowInstance.class);
+    wfi3.setWorkflowInstanceId(0);
+    wfi3.setWorkflowUuid("slo-stale-batch-uuid-3");
+    runStrategyDao.startWithRunStrategy(wfi3, sequential);
+    assertEquals(3, wfi3.getWorkflowInstanceId());
+    verifyEnqueue(1, 0, 0);
+
+    // batch under SLO: last batch row becomes CREATED, first becomes STOPPED, pre-existing queued
+    // rows 2 and 3 are also stopped
+    List<WorkflowInstance> batch = prepareBatch();
+    int[] res = runStrategyDao.startBatchWithRunStrategy(TEST_WORKFLOW_ID, slo, batch);
+    assertArrayEquals(new int[] {-1, 0, 1}, res);
+    assertEquals(4, batch.get(0).getWorkflowInstanceId());
+    assertEquals(0, batch.get(1).getWorkflowInstanceId());
+    assertEquals(5, batch.get(2).getWorkflowInstanceId());
+
+    assertEquals(
+        WorkflowInstance.Status.STOPPED,
+        dao.getWorkflowInstanceRun(TEST_WORKFLOW_ID, 2, 1).getStatus());
+    assertEquals(
+        WorkflowInstance.Status.STOPPED,
+        dao.getWorkflowInstanceRun(TEST_WORKFLOW_ID, 3, 1).getStatus());
+    assertEquals(
+        WorkflowInstance.Status.STOPPED,
+        dao.getWorkflowInstanceRun(TEST_WORKFLOW_ID, 4, 1).getStatus());
+    assertEquals(
+        WorkflowInstance.Status.CREATED,
+        dao.getLatestWorkflowInstanceRun(TEST_WORKFLOW_ID, 5).getStatus());
+    // one WorkflowInstanceUpdateJobEvent for pre-existing queued rows 2+3, one for batch-stopped
+    // row 4, one StartWorkflowJobEvent
+    verifyEnqueue(1, 0, 2);
+
+    MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID, 2);
+    MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID, 3);
+    MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID, 4);
+    MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID, 5);
+  }
+
+  @Test
+  public void testStartBatchRunStrategyWithSerialLatestOnlyAllDuplicates() throws Exception {
+    RunStrategy slo = RunStrategy.create("SERIAL_LATEST_ONLY");
+    // batch where all UUIDs already exist — seed row has the existing uuid
+    WorkflowInstance dup = loadObject(TEST_WORKFLOW_INSTANCE, WorkflowInstance.class);
+    dup.setWorkflowInstanceId(0);
+    dup.setWorkflowUuid(wfi.getWorkflowUuid()); // same uuid as seed
+    List<WorkflowInstance> batch = Collections.singletonList(dup);
+    int[] res = runStrategyDao.startBatchWithRunStrategy(TEST_WORKFLOW_ID, slo, batch);
+    assertArrayEquals(new int[] {0}, res);
+    // no new instance created, no events emitted
+    verifyEnqueue(0, 0, 0);
+  }
+
+  @Test
   public void testStartRunStrategyWithSerialLatestOnlyHonorsRestart() {
     RunStrategy slo = RunStrategy.create("SERIAL_LATEST_ONLY");
 
