@@ -14,6 +14,7 @@ package com.netflix.maestro.engine.utils;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 
@@ -27,7 +28,9 @@ import com.netflix.maestro.engine.params.ParamsManager;
 import com.netflix.maestro.engine.transformation.DagTranslator;
 import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.models.Defaults;
+import com.netflix.maestro.models.definition.DefaultAlerting;
 import com.netflix.maestro.models.definition.RunStrategy;
+import com.netflix.maestro.models.definition.Tct;
 import com.netflix.maestro.models.definition.Workflow;
 import com.netflix.maestro.models.definition.WorkflowDefinition;
 import com.netflix.maestro.models.initiator.ForeachInitiator;
@@ -43,6 +46,7 @@ import com.netflix.maestro.models.parameter.ParamDefinition;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.Before;
 import org.junit.Test;
@@ -337,5 +341,34 @@ public class WorkflowHelperTest extends MaestroEngineBaseTest {
         instance.getAggregatedInfo().getStepAggregatedViews());
     assertEquals(
         WorkflowInstance.Status.FAILED, instance.getAggregatedInfo().getWorkflowInstanceStatus());
+  }
+
+  @Test
+  public void testCreateWorkflowInstanceCopiesRunProperties() {
+    RunRequest request =
+        RunRequest.builder()
+            .initiator(new ManualInitiator())
+            .currentPolicy(RunPolicy.START_FRESH_NEW_RUN)
+            .requestTime(12345L)
+            .build();
+    RunProperties shared = new RunProperties();
+    DefaultAlerting alerting = new DefaultAlerting();
+    alerting.setEmails(Set.of("oncall@test"));
+    Tct tct = new Tct();
+    tct.setCompletedByHour(2);
+    alerting.setTct(tct);
+    shared.setAlerting(alerting);
+
+    WorkflowInstance instance =
+        workflowHelper.createWorkflowInstance(definition.getWorkflow(), 12345L, 1, shared, request);
+    // the instance owns a copy: same values, different objects, so updating the instance's
+    // alerting never mutates the caller's shared run properties
+    assertNotSame(shared, instance.getRunProperties());
+    DefaultAlerting copied = (DefaultAlerting) instance.getRunProperties().getAlerting();
+    assertNotSame(alerting, copied);
+    assertNotSame(tct, copied.getTct());
+    assertEquals(Set.of("oncall@test"), copied.getEmails());
+    copied.getTct().setCompletedByTs(999L);
+    assertNull(tct.getCompletedByTs());
   }
 }

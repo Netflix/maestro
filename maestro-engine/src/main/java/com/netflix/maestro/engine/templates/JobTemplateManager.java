@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.engine.templates;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.engine.dao.MaestroJobTemplateDao;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
@@ -59,11 +60,15 @@ public class JobTemplateManager {
 
   private final MaestroJobTemplateDao jobTemplateDao;
   private final JobTemplateCacheProperties properties;
+  private final ObjectMapper objectMapper;
 
   public JobTemplateManager(
-      MaestroJobTemplateDao jobTemplateDao, JobTemplateCacheProperties properties) {
+      MaestroJobTemplateDao jobTemplateDao,
+      JobTemplateCacheProperties properties,
+      ObjectMapper objectMapper) {
     this.jobTemplateDao = jobTemplateDao;
     this.properties = properties;
+    this.objectMapper = objectMapper;
   }
 
   /**
@@ -84,7 +89,18 @@ public class JobTemplateManager {
             .flatMap(p -> p.entrySet().stream())
             .collect(
                 Collectors.toMap(
-                    Map.Entry::getKey, Map.Entry::getValue, (u, v) -> v, LinkedHashMap::new));
+                    Map.Entry::getKey,
+                    // deep copy the cached schema param so the merge never mutates the shared
+                    // template cache when map values are merged in place; restore the param name
+                    // afterwards because the name is not part of the serialized form
+                    entry -> {
+                      ParamDefinition copied =
+                          objectMapper.convertValue(entry.getValue(), ParamDefinition.class);
+                      copied.setName(entry.getKey());
+                      return copied;
+                    },
+                    (u, v) -> v,
+                    LinkedHashMap::new));
     // merge workflow level params into template schema introduced params.
     mergeWorkflowParamsIntoSchemaParams(allParams, workflowSummary.getParams());
     return Map.copyOf(allParams);
@@ -123,8 +139,19 @@ public class JobTemplateManager {
             .map(JobTemplate.Definition::getTags)
             .filter(Objects::nonNull)
             .flatMap(Collection::stream)
-            .collect(Collectors.toMap(Tag::getName, t -> t, (u, v) -> v, LinkedHashMap::new));
+            // copy each tag so callers never share or mutate the cached template's tag objects
+            .collect(
+                Collectors.toMap(Tag::getName, this::copyTag, (u, v) -> v, LinkedHashMap::new));
     return List.copyOf(allTags.values());
+  }
+
+  private Tag copyTag(Tag tag) {
+    Tag copied = Tag.create(tag.getName());
+    copied.setNamespace(tag.getNamespace());
+    if (tag.getAttributes() != null) {
+      tag.getAttributes().forEach(copied::addAttribute);
+    }
+    return copied;
   }
 
   /**

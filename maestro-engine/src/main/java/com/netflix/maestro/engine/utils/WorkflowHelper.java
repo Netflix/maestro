@@ -71,7 +71,10 @@ public class WorkflowHelper {
     instance.setWorkflowInstanceId(Constants.LATEST_ONE);
     // set correlation id if request contains it, otherwise, update it later inside DAO
     instance.setCorrelationId(runRequest.getCorrelationId());
-    instance.setRunProperties(runProperties);
+    // each instance owns a copy of the run properties so the alerting update during param
+    // initiation never mutates the caller's shared object (the definition's properties snapshot,
+    // batch siblings, or the parent workflow's run properties for inline child instances)
+    instance.setRunProperties(runProperties.copy());
     // set the current max group num for the fresh new workflow instance
     instance.setGroupInfo(ObjectHelper.valueOrDefault(runRequest.getGroupInfo(), maxGroupNum));
     // it includes runtime params and tags. Its dag is versioned dag.

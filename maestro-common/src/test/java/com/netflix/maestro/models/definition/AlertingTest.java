@@ -42,6 +42,13 @@ public class AlertingTest {
 
     @Override
     public void update(Function<ParamDefinition, Parameter> paramParser) {}
+
+    @Override
+    public Alerting copy() {
+      TestConsumerAlerting copied = new TestConsumerAlerting();
+      copied.customField = customField;
+      return copied;
+    }
   }
 
   @Test

@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.models.instance;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
@@ -39,6 +40,23 @@ public class RunProperties {
   private Long stepConcurrency;
 
   @Valid private TagList tags;
+
+  /**
+   * Create a copy of the run properties so each workflow instance owns its run properties and
+   * updating its alerting never mutates a shared object.
+   */
+  @JsonIgnore
+  public RunProperties copy() {
+    RunProperties copied = new RunProperties();
+    copied.setCreateTime(createTime);
+    copied.setOwner(owner);
+    copied.setStepConcurrency(stepConcurrency);
+    copied.setTags(tags);
+    if (alerting != null) {
+      copied.setAlerting(alerting.copy());
+    }
+    return copied;
+  }
 
   /** static creator to extract un-evaluated properties from snapshot. */
   public static RunProperties from(PropertiesSnapshot snapshot) {

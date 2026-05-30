@@ -46,7 +46,8 @@ public class StepInstanceTransition {
   /** Create step instance transition from step definition. */
   public static StepInstanceTransition from(Step stepDefinition) {
     StepInstanceTransition transition = new StepInstanceTransition();
-    transition.setPredecessors(stepDefinition.getTransition().getPredecessors());
+    // copy the list so the step instance transition never aliases the step definition's list
+    transition.setPredecessors(new ArrayList<>(stepDefinition.getTransition().getPredecessors()));
     Map<String, Parameter> nextStepConditions = new LinkedHashMap<>();
     stepDefinition
         .getTransition()

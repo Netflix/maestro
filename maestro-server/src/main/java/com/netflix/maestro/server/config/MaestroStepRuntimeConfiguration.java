@@ -343,9 +343,11 @@ public class MaestroStepRuntimeConfiguration {
 
   @Bean
   public JobTemplateManager jobTemplateManager(
-      MaestroJobTemplateDao jobTemplateDao, StepRuntimeProperties properties) {
+      MaestroJobTemplateDao jobTemplateDao,
+      StepRuntimeProperties properties,
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper) {
     LOG.info("Creating Maestro jobTemplateManager within Spring boot...");
-    return new JobTemplateManager(jobTemplateDao, properties.getJobTemplateCache());
+    return new JobTemplateManager(jobTemplateDao, properties.getJobTemplateCache(), objectMapper);
   }
 
   @Bean

@@ -190,10 +190,19 @@ public class ParamsManager {
                     && Constants.RESERVED_PARAM_NAMES.contains(key)
                     && val.getMode() == ParamMode.CONSTANT
                     && val.getSource() == ParamSource.SYSTEM_INJECTED) {
-                  ((AbstractParamDefinition) val)
-                      .getMeta()
-                      .put(Constants.METADATA_SOURCE_KEY, ParamSource.RESTART.name());
-                  systemInjectedRestartRunParams.put(key, val);
+                  // copy the param def with updated meta instead of mutating the shared one
+                  Map<String, Object> meta =
+                      new LinkedHashMap<>(((AbstractParamDefinition) val).getMeta());
+                  meta.put(Constants.METADATA_SOURCE_KEY, ParamSource.RESTART.name());
+                  systemInjectedRestartRunParams.put(
+                      key,
+                      val.copyAndUpdate(
+                          val.getValue(),
+                          val.getExpression(),
+                          val.getMode(),
+                          meta,
+                          val.getTags(),
+                          ((AbstractParamDefinition) val).getValidator()));
                 }
               });
           systemInjectedRestartRunParams.keySet().forEach(params::remove);
@@ -213,12 +222,14 @@ public class ParamsManager {
       mergeUserProvidedStepParams(allParamDefs, undefinedRestartParams, workflowSummary);
     }
 
-    // Final merge from step definition
+    // Final merge from step definition; copy the definition's param map so the type override
+    // hook and the merge never modify the step definition itself
     if (stepDefinition.getParams() != null) {
-      maybeOverrideParamType(stepDefinition.getParams());
+      Map<String, ParamDefinition> stepDefParams = new LinkedHashMap<>(stepDefinition.getParams());
+      maybeOverrideParamType(stepDefParams);
       ParamsMergeHelper.mergeParams(
           allParamDefs,
-          stepDefinition.getParams(),
+          stepDefParams,
           ParamsMergeHelper.MergeContext.stepCreate(ParamSource.DEFINITION));
     }
 
@@ -240,6 +251,10 @@ public class ParamsManager {
   /**
    * Override param type if needed. This is mainly used to help data mode change for backward
    * compatibility.
+   *
+   * <p>One call site passes the step definition's own param map, which must not be modified during
+   * execution; an implementation overriding params in place should make the caller pass a copy of
+   * the definition's map first.
    *
    * @param params params to be overridden
    */
@@ -327,12 +342,14 @@ public class ParamsManager {
                 stepTypeParams,
                 ParamsMergeHelper.MergeContext.stepCreate(ParamSource.SYSTEM_DEFAULT)));
 
-    // Final merge from step definition
+    // Final merge from step definition; copy the definition's param map so the type override
+    // hook and the merge never modify the step definition itself
     if (stepDefinition.getParams() != null) {
-      maybeOverrideParamType(stepDefinition.getParams());
+      Map<String, ParamDefinition> stepDefParams = new LinkedHashMap<>(stepDefinition.getParams());
+      maybeOverrideParamType(stepDefParams);
       ParamsMergeHelper.mergeParams(
           allParamDefs,
-          stepDefinition.getParams(),
+          stepDefParams,
           ParamsMergeHelper.MergeContext.stepCreate(ParamSource.DEFINITION));
     }
     return allParamDefs;
@@ -348,11 +365,14 @@ public class ParamsManager {
 
   private Optional<Map<String, ParamDefinition>> getStepRunParams(
       WorkflowSummary workflowSummary, StepRuntimeSummary runtimeSummary) {
+    // copy the run param map so callers never mutate the summaries' own maps, which are reused
+    // across execution attempts
     if (runtimeSummary.getStepRunParams() != null) {
-      return Optional.of(runtimeSummary.getStepRunParams());
+      return Optional.of(new LinkedHashMap<>(runtimeSummary.getStepRunParams()));
     } else if (workflowSummary.getStepRunParams() != null
         && workflowSummary.getStepRunParams().containsKey(runtimeSummary.getStepId())) {
-      return Optional.of(workflowSummary.getStepRunParams().get(runtimeSummary.getStepId()));
+      return Optional.of(
+          new LinkedHashMap<>(workflowSummary.getStepRunParams().get(runtimeSummary.getStepId())));
     } else {
       return Optional.empty();
     }

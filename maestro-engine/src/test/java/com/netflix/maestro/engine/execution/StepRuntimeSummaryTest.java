@@ -33,6 +33,8 @@ import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.artifact.DefaultArtifact;
 import com.netflix.maestro.models.artifact.ForeachArtifact;
 import com.netflix.maestro.models.artifact.SubworkflowArtifact;
+import com.netflix.maestro.models.definition.Tag;
+import com.netflix.maestro.models.definition.TagList;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.instance.ForeachStepOverview;
 import com.netflix.maestro.models.instance.StepDependencyMatchStatus;
@@ -55,6 +57,7 @@ import com.netflix.maestro.models.signal.SignalTransformer;
 import com.netflix.maestro.models.timeline.Timeline;
 import com.netflix.maestro.models.timeline.TimelineEvent;
 import com.netflix.maestro.models.timeline.TimelineLogEvent;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -62,6 +65,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -509,5 +513,36 @@ public class StepRuntimeSummaryTest extends MaestroEngineBaseTest {
     summary.markFinishing(tracingManager);
     verify(tracingManager, times(1))
         .handleStepStatus(tracingContext, StepInstance.Status.FINISHING);
+  }
+
+  @Test
+  public void testMergeTagsKeepsExistingTagOnDuplicateNames() {
+    Tag definitionFoo = Tag.create("foo");
+    definitionFoo.addAttribute("creator", "tester");
+    StepRuntimeSummary tagged =
+        StepRuntimeSummary.builder()
+            .stepId("test")
+            .stepAttemptId(1)
+            .stepInstanceUuid("uuid")
+            .stepName("testStep")
+            .stepInstanceId(1)
+            .tags(new TagList(new ArrayList<>(List.of(definitionFoo, Tag.create("bar")))))
+            .build();
+    Tag runtimeFoo = Tag.create("foo");
+    runtimeFoo.addAttribute("creator", "runtime");
+    tagged.mergeTags(List.of(runtimeFoo, Tag.create("baz")));
+    assertEquals(3, tagged.getTags().getTags().size());
+    assertEquals(
+        List.of("foo", "bar", "baz"),
+        tagged.getTags().getTags().stream().map(Tag::getName).collect(Collectors.toList()));
+    // the definition tag and its attributes win over the same-named runtime injected tag
+    assertEquals(
+        "tester",
+        tagged.getTags().getTags().stream()
+            .filter(t -> t.getName().equals("foo"))
+            .findFirst()
+            .orElseThrow()
+            .getAttributes()
+            .get("creator"));
   }
 }

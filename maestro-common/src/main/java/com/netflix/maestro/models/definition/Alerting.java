@@ -40,7 +40,6 @@ import java.util.function.Function;
  * discriminator is needed. Existing serialized data continues to deserialize as {@link
  * DefaultAlerting} on any mapper that doesn't register a different mapping.
  */
-@SuppressWarnings("PMD.ImplicitFunctionalInterface")
 public interface Alerting {
   /**
    * Update fields by parsing parameters within them. Implementations should resolve any parameter
@@ -49,4 +48,12 @@ public interface Alerting {
    */
   @JsonIgnore
   void update(Function<ParamDefinition, Parameter> paramParser);
+
+  /**
+   * Create a copy of this alerting so that {@link #update(Function)} on the copy never mutates this
+   * object. Implementations should copy any state their {@code update} mutates in place and may
+   * share the rest.
+   */
+  @JsonIgnore
+  Alerting copy();
 }

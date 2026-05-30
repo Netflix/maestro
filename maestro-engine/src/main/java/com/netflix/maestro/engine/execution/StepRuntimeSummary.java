@@ -175,7 +175,8 @@ public final class StepRuntimeSummary {
     this.stepInstanceUuid = stepInstanceUuid;
     this.stepName = stepName;
     this.stepInstanceId = stepInstanceId;
-    this.tags = tags == null ? new TagList(null) : tags;
+    // copy the tags so the summary never aliases and mutates the step definition's tag list
+    this.tags = tags == null ? new TagList(null) : new TagList(tags.getTags());
     this.type = type;
     this.subType = subType;
     this.params = Parameter.preprocessInstanceParams(params);
@@ -207,7 +208,7 @@ public final class StepRuntimeSummary {
     synced = false;
   }
 
-  /** merge tags. */
+  /** Merge tags; an existing tag keeps winning over a runtime provided tag with the same name. */
   public void mergeTags(List<Tag> input) {
     tags.merge(input);
     runtimeState.setModifyTime(System.currentTimeMillis());

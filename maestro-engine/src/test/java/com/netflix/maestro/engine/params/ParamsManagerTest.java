@@ -260,6 +260,19 @@ public class ParamsManagerTest extends MaestroEngineBaseTest {
         "test-auth-manager", stepParams.get("AUTHORIZED_MANAGERS").asStringParam().getValue());
     Assert.assertEquals(ParamMode.CONSTANT, stepParams.get("AUTHORIZED_MANAGERS").getMode());
     Assert.assertEquals(ParamSource.RESTART, stepParams.get("AUTHORIZED_MANAGERS").getSource());
+
+    // the workflow summary's own step run params are not depleted or re-sourced by the merge,
+    // so a later execution attempt regenerating params sees the same inputs and results
+    Assert.assertTrue(
+        workflowSummary.getStepRunParams().get("stepid").containsKey("AUTHORIZED_MANAGERS"));
+    Assert.assertEquals(
+        ParamSource.SYSTEM_INJECTED,
+        workflowSummary.getStepRunParams().get("stepid").get("AUTHORIZED_MANAGERS").getSource());
+    Map<String, Parameter> regenerated =
+        paramsManager.generateMergedStepParams(workflowSummary, step, stepRuntime, runtimeSummary);
+    Assert.assertEquals(
+        "test-auth-manager", regenerated.get("AUTHORIZED_MANAGERS").asStringParam().getValue());
+    Assert.assertEquals(ParamSource.RESTART, regenerated.get("AUTHORIZED_MANAGERS").getSource());
   }
 
   @Test

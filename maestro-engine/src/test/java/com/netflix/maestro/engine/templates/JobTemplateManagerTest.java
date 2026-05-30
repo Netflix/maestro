@@ -13,6 +13,7 @@
 package com.netflix.maestro.engine.templates;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
@@ -27,6 +28,7 @@ import com.netflix.maestro.engine.properties.JobTemplateCacheProperties;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.Tag;
 import com.netflix.maestro.models.definition.TypedStep;
+import com.netflix.maestro.models.parameter.MapParameter;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.models.parameter.StringParamDefinition;
@@ -51,7 +53,7 @@ public class JobTemplateManagerTest extends MaestroBaseTest {
   public void setUp() throws IOException {
     JobTemplateCacheProperties cacheProperties = new JobTemplateCacheProperties();
     cacheProperties.setCacheTtl(60000); // 60 seconds
-    jobTemplateManager = new JobTemplateManager(jobTemplateDao, cacheProperties);
+    jobTemplateManager = new JobTemplateManager(jobTemplateDao, cacheProperties, MAPPER);
     jobTemplate = loadObject("fixtures/stepruntime/job_template.json", JobTemplate.class);
     workflowSummary = new WorkflowSummary();
     workflowSummary.setParams(
@@ -255,5 +257,44 @@ public class JobTemplateManagerTest extends MaestroBaseTest {
     assertEquals("overridden script", params.get("script").asStringParamDef().getValue());
     assertTrue(params.containsKey("kubernetes"));
     assertTrue(params.containsKey("notebook"));
+  }
+
+  @Test
+  public void testLoadRuntimeParamsDoesNotMutateCachedTemplate() {
+    when(jobTemplateDao.getJobTemplate(anyString(), anyString())).thenReturn(jobTemplate);
+    MapParameter k8sOverride =
+        MapParameter.builder()
+            .name("kubernetes")
+            .value(Map.of("env", ParamDefinition.buildParamDefinition("env", "a-team")))
+            .evaluatedResult(Map.of("env", "a-team"))
+            .evaluatedTime(12345L)
+            .build();
+    workflowSummary.setParams(
+        Map.of(
+            "job_template_version",
+            buildParam("job_template_version", "v1"),
+            "kubernetes",
+            k8sOverride));
+    Map<String, ParamDefinition> merged =
+        jobTemplateManager.loadRuntimeParams(workflowSummary, step);
+    assertTrue(merged.get("kubernetes").asMapParamDef().getValue().containsKey("env"));
+    // the deep copies keep the param names, which are not part of the serialized form
+    merged.forEach((name, def) -> assertEquals(name, def.getName()));
+    // the cached template definition is not polluted by this workflow's entries
+    assertFalse(
+        jobTemplate
+            .getDefinition()
+            .getParams()
+            .get("kubernetes")
+            .asMapParamDef()
+            .getValue()
+            .containsKey("env"));
+
+    // another workflow using the same cached template does not see the first workflow's entries
+    workflowSummary.setParams(
+        Map.of("job_template_version", buildParam("job_template_version", "v1")));
+    Map<String, ParamDefinition> second =
+        jobTemplateManager.loadRuntimeParams(workflowSummary, step);
+    assertFalse(second.get("kubernetes").asMapParamDef().getValue().containsKey("env"));
   }
 }

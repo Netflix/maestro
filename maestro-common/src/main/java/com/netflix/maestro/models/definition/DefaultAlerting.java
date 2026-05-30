@@ -136,6 +136,31 @@ public class DefaultAlerting implements Alerting {
     }
   }
 
+  /**
+   * {@inheritDoc} The copy shares the nested configs that {@link #update(Function)} never mutates
+   * in place and owns a copy of the tct, which update mutates.
+   */
+  @JsonIgnore
+  @Override
+  public DefaultAlerting copy() {
+    DefaultAlerting copied = new DefaultAlerting();
+    copied.emails = emails;
+    copied.pagerduties = pagerduties;
+    copied.slackConfig = slackConfig;
+    copied.bypassDigestConfig = bypassDigestConfig;
+    copied.typeConfigs = typeConfigs;
+    copied.pagerdutyConfig = pagerdutyConfig;
+    if (tct != null) {
+      Tct copiedTct = new Tct();
+      copiedTct.setDurationMinutes(tct.getDurationMinutes());
+      copiedTct.setCompletedByHour(tct.getCompletedByHour());
+      copiedTct.setCompletedByTs(tct.getCompletedByTs());
+      copiedTct.setTz(tct.getTz());
+      copied.tct = copiedTct;
+    }
+    return copied;
+  }
+
   @Override
   public void update(Function<ParamDefinition, Parameter> paramParser) {
     if (emails != null && !emails.isEmpty()) {

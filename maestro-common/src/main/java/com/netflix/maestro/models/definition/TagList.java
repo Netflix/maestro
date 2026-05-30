@@ -35,28 +35,37 @@ import lombok.Data;
 @JsonPropertyOrder(alphabetic = true)
 @Data
 public class TagList {
-  /** singleton object for empty tag list. */
-  public static final TagList EMPTY_TAG_LIST = new TagList(Collections.emptyList());
+  /** singleton object for empty tag list. Its backing list is immutable. */
+  public static final TagList EMPTY_TAG_LIST = new TagList();
 
   @JsonValue @Valid private final List<Tag> tags;
 
-  /** TagList constructor. */
+  /** TagList constructor. It copies the input list and never keeps a reference to it. */
   @JsonCreator
   public TagList(List<Tag> input) {
     if (input == null) {
       tags = new ArrayList<>();
     } else {
-      tags = input;
+      tags = new ArrayList<>(input);
     }
   }
 
-  /** Merge tags to the tag list. */
+  /** Private constructor for the shared immutable empty singleton. */
+  private TagList() {
+    tags = Collections.emptyList();
+  }
+
+  /**
+   * Merge tags to the tag list. An input tag with the same name as an existing tag is skipped, so
+   * the existing tag and its configuration win. The input list is not modified.
+   */
   @JsonIgnore
   public void merge(@Nullable List<Tag> input) {
     if (input == null) {
       return;
     }
-    tags.addAll(input);
+    Set<String> existingTagNames = tags.stream().map(Tag::getName).collect(Collectors.toSet());
+    input.stream().filter(tag -> !existingTagNames.contains(tag.getName())).forEach(tags::add);
     Checks.checkTrue(
         !containsDuplicate(), "Invalid tag list as there are duplicate tag names: %s", tags);
   }
