@@ -73,9 +73,10 @@ public class RunStrategy {
      */
     PARALLEL,
     /**
-     * SERIAL_LATEST_ONLY: run workflow instances one at a time and, when the running instance
-     * reaches a terminal state, only the latest queued instance is dequeued to run while every
-     * older queued instance is stopped. The running instance is never terminated by a new arrival.
+     * SERIAL_LATEST_ONLY: run workflow instances one at a time. When a new instance arrives, any
+     * existing queued instance is stopped eagerly so only the new arrival is queued. When the
+     * running instance reaches a terminal state, the single queued instance is dequeued to run. The
+     * running instance is never terminated by a new arrival.
      */
     SERIAL_LATEST_ONLY;
 

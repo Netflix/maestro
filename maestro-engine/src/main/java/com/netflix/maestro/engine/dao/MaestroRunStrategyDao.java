@@ -683,6 +683,7 @@ public class MaestroRunStrategyDao extends AbstractDatabaseDao {
             case SEQUENTIAL:
             case PARALLEL:
             case STRICT_SEQUENTIAL:
+            case SERIAL_LATEST_ONLY:
               return dequeueWorkflowInstances(
                   workflowId,
                   runStrategy.getWorkflowConcurrency(),
@@ -690,8 +691,6 @@ public class MaestroRunStrategyDao extends AbstractDatabaseDao {
             case FIRST_ONLY:
             case LAST_ONLY:
               return null; // no queueing support
-            case SERIAL_LATEST_ONLY:
-              return dequeueWorkflowInstances(workflowId, 1, false);
             default:
               throw new MaestroInternalError(
                   "When dequeue, run strategy [%s] hasn't been implemented yet", runStrategy);
