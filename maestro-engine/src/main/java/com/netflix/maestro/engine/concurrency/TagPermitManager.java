@@ -18,6 +18,7 @@ import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.tagpermits.TagPermit;
 import com.netflix.maestro.models.timeline.TimelineEvent;
 import java.util.List;
+import java.util.Map;
 
 /** Interface for tag permit manager. */
 public interface TagPermitManager {
@@ -35,7 +36,8 @@ public interface TagPermitManager {
         public void releaseTagPermits(String uuid) {}
 
         @Override
-        public void upsertTagPermit(String tag, int limit, User user) {}
+        public void upsertTagPermit(
+            String tag, int limit, User user, Map<String, Object> extraInfo) {}
 
         @Override
         public void removeTagPermit(String tag) {}
@@ -72,8 +74,9 @@ public interface TagPermitManager {
    * @param tag tag name
    * @param limit tag permit limit
    * @param user user performing the operation
+   * @param extraInfo optional extra information associated with the tag permit
    */
-  void upsertTagPermit(String tag, int limit, User user);
+  void upsertTagPermit(String tag, int limit, User user, Map<String, Object> extraInfo);
 
   /**
    * Remove the tag permit.

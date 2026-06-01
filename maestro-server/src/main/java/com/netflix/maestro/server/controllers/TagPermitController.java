@@ -59,7 +59,10 @@ public class TagPermitController {
   @Operation(summary = "Create or update a tag permit.")
   public ResponseEntity<?> upsertTagPermit(@Valid @RequestBody TagPermitRequest tagPermitRequest) {
     tagPermitManager.upsertTagPermit(
-        tagPermitRequest.getTag(), tagPermitRequest.getMaxAllowed(), callerBuilder.build());
+        tagPermitRequest.getTag(),
+        tagPermitRequest.getMaxAllowed(),
+        callerBuilder.build(),
+        tagPermitRequest.getExtraInfo());
     return ResponseEntity.ok().build();
   }
 

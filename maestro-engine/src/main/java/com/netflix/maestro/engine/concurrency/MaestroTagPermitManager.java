@@ -23,6 +23,7 @@ import com.netflix.maestro.queue.MaestroQueueSystem;
 import com.netflix.maestro.queue.models.MessageDto;
 import com.netflix.maestro.utils.ObjectHelper;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 
@@ -105,10 +106,11 @@ public class MaestroTagPermitManager implements TagPermitManager {
    * @param tag tag name
    * @param limit tag permit limit
    * @param user user performing the operation
+   * @param extraInfo optional extra information associated with the tag permit
    */
   @Override
-  public void upsertTagPermit(String tag, int limit, User user) {
-    tagPermitDao.upsertTagPermit(tag, limit, user);
+  public void upsertTagPermit(String tag, int limit, User user, Map<String, Object> extraInfo) {
+    tagPermitDao.upsertTagPermit(tag, limit, user, extraInfo);
     wakeUpTagPermitTask(MaestroTagPermitTask.TAG_PERMIT_CHANGE_CODE);
   }
 
