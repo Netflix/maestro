@@ -42,20 +42,18 @@ allprojects {
         jvmArgs += ["-Djava.security.manager=allow"]
     }
 
-    configurations.configureEach {
-        resolutionStrategy {
-        }
+    dependencyLocking {
+        lockAllConfigurations()
     }
 
-    configurations {
-        compileClasspath {
-            resolutionStrategy.activateDependencyLocking()
-        }
-        runtimeClasspath {
-            resolutionStrategy.activateDependencyLocking()
-        }
-        annotationProcessor {
-            resolutionStrategy.activateDependencyLocking()
+    configurations.configureEach {
+        resolutionStrategy.componentSelection {
+            all { ComponentSelection selection ->
+                if (selection.candidate.group.startsWith('com.fasterxml.jackson')
+                        && selection.candidate.version == '2.22.0') {
+                    selection.reject('jackson 2.22.0 artifacts missing from Maven Central (https://github.com/FasterXML/jackson/discussions/367)')
+                }
+            }
         }
     }
 }

@@ -1,6 +1,20 @@
 # This is a Gradle generated file for dependency locking.
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
-joda-time:joda-time:2.10.14=compileClasspath
-org.slf4j:slf4j-api:1.7.36=compileClasspath
-empty=annotationProcessor
+joda-time:joda-time:2.10.14=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+junit:junit:4.13.2=testCompileClasspath,testRuntimeClasspath
+org.hamcrest:hamcrest-core:1.3=testCompileClasspath,testRuntimeClasspath
+org.jacoco:org.jacoco.agent:0.8.11=jacocoAgent,jacocoAnt
+org.jacoco:org.jacoco.ant:0.8.11=jacocoAnt
+org.jacoco:org.jacoco.core:0.8.11=jacocoAnt
+org.jacoco:org.jacoco.report:0.8.11=jacocoAnt
+org.junit.platform:junit-platform-commons:1.14.4=testRuntimeClasspath
+org.junit.platform:junit-platform-engine:1.14.4=testRuntimeClasspath
+org.junit.vintage:junit-vintage-engine:5.14.4=testRuntimeClasspath
+org.junit:junit-bom:5.14.4=testRuntimeClasspath
+org.opentest4j:opentest4j:1.3.0=testRuntimeClasspath
+org.ow2.asm:asm-commons:9.6=jacocoAnt
+org.ow2.asm:asm-tree:9.6=jacocoAnt
+org.ow2.asm:asm:9.6=jacocoAnt
+org.slf4j:slf4j-api:1.7.36=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+empty=annotationProcessor,testAnnotationProcessor
