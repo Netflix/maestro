@@ -71,7 +71,14 @@ public class RunStrategy {
      * PARALLEL: run all triggered workflows in parallel constrained by the workflow concurrency
      * setting.
      */
-    PARALLEL;
+    PARALLEL,
+    /**
+     * SERIAL_LATEST_ONLY: run workflow instances one at a time. When a new instance arrives, any
+     * existing queued instance is stopped eagerly so only the new arrival is queued. When the
+     * running instance reaches a terminal state, the single queued instance is dequeued to run. The
+     * running instance is never terminated by a new arrival.
+     */
+    SERIAL_LATEST_ONLY;
 
     /** Static creator. */
     @JsonCreator
