@@ -22,11 +22,12 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeUtils;
-import org.joda.time.DateTimeZone;
-import org.joda.time.Days;
-import org.joda.time.format.DateTimeFormat;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoField;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,12 +39,12 @@ public class SelTypeUtilTest {
 
   @Before
   public void setUp() throws Exception {
-    DateTimeUtils.setCurrentMillisFixed(12345L);
+    SelJodaDateTime.CLOCK = Clock.fixed(Instant.ofEpochMilli(12345L), ZoneId.of("UTC"));
   }
 
   @After
   public void tearDown() throws Exception {
-    DateTimeUtils.setCurrentMillisSystem();
+    SelJodaDateTime.CLOCK = Clock.systemDefaultZone();
   }
 
   @Test
@@ -105,7 +106,7 @@ public class SelTypeUtilTest {
             .findVirtual(
                 MockType.class,
                 "twoArgs",
-                MethodType.methodType(String.class, String.class, DateTime.class));
+                MethodType.methodType(String.class, String.class, ZonedDateTime.class));
     SelType res =
         SelTypeUtil.callJavaMethod(
             null, new SelType[] {SelDouble.of(1.2), SelBoolean.of(true)}, m1, "staticTwoArgs");
@@ -114,11 +115,11 @@ public class SelTypeUtilTest {
     res =
         SelTypeUtil.callJavaMethod(
             new MockType(),
-            new SelType[] {SelString.of("foo"), SelJodaDateTime.of(new DateTime(DateTimeZone.UTC))},
+            new SelType[] {SelString.of("foo"), SelJodaDateTime.of(ZonedDateTime.ofInstant(Instant.ofEpochMilli(12345), ZoneId.of("UTC")))},
             m2,
             "twoArgs");
     assertEquals(SelTypes.STRING, res.type());
-    assertEquals("foo1970-01-01T00:00:12.345Z", res.toString());
+    assertEquals("foo1970-01-01T00:00:12.345Z[UTC]", res.toString());
   }
 
   @Test
@@ -138,8 +139,8 @@ public class SelTypeUtilTest {
           new Boolean[] {true, false},
           new boolean[] {},
           new HashMap(),
-          new DateTime(DateTimeZone.UTC),
-          new DateTime(DateTimeZone.UTC).dayOfWeek()
+          ZonedDateTime.ofInstant(Instant.ofEpochMilli(12345), ZoneId.of("UTC")),
+          SelJodaDateTimeProperty.of(ZonedDateTime.ofInstant(Instant.ofEpochMilli(12345), ZoneId.of("UTC")), ChronoField.DAY_OF_WEEK)
         };
     String[] expectedResults =
         new String[] {
@@ -156,8 +157,8 @@ public class SelTypeUtilTest {
           "BOOLEAN_ARRAY: [true, false]",
           "BOOLEAN_ARRAY: []",
           "MAP: {}",
-          "DATETIME: 1970-01-01T00:00:12.345Z",
-          "DATETIME_PROPERTY: Property[dayOfWeek]"
+          "DATETIME: 1970-01-01T00:00:12.345Z[UTC]",
+          "DATETIME_PROPERTY: Property[DayOfWeek]"
         };
 
     for (int i = 0; i < testObjects.length; ++i) {
@@ -191,9 +192,6 @@ public class SelTypeUtilTest {
   public void testBoxUnsupported() {
     Object[] testObjects =
         new Object[] {
-          DateTimeZone.forID("UTC"),
-          DateTimeFormat.forPattern("yyyy"),
-          Days.days(1),
           new SimpleDateFormat("yyyyMMdd"),
           new Date(12345),
           new ArrayList()

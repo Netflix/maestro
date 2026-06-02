@@ -16,50 +16,55 @@ import com.netflix.sel.visitor.SelOp;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoField;
+import java.time.temporal.IsoFields;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.joda.time.ReadableInstant;
-import org.joda.time.base.AbstractDateTime;
-import org.joda.time.base.BaseDateTime;
-import org.joda.time.format.DateTimeFormatter;
 
-/** Wrapper class to support org.joda.time.DateTime. */
+/** Wrapper class to support java.time.ZonedDateTime. */
 public final class SelJodaDateTime extends AbstractSelType {
-  private DateTime val;
+  private ZonedDateTime val;
 
-  private SelJodaDateTime(DateTime val) {
+  static Clock CLOCK = Clock.systemDefaultZone();
+
+  private SelJodaDateTime(ZonedDateTime val) {
     this.val = val;
   }
 
-  static SelJodaDateTime of(DateTime d) {
+  static SelJodaDateTime of(ZonedDateTime d) {
     return new SelJodaDateTime(d);
   }
 
   static SelJodaDateTime create(SelType[] args) {
     if (args.length == 0) {
-      return new SelJodaDateTime(new DateTime());
+      return new SelJodaDateTime(ZonedDateTime.now(CLOCK));
     } else if (args.length == 1 && args[0].type() == SelTypes.LONG) {
-      return new SelJodaDateTime(new DateTime(((SelLong) args[0]).longVal()));
+      return new SelJodaDateTime(ZonedDateTime.ofInstant(Instant.ofEpochMilli(((SelLong) args[0]).longVal()), CLOCK.getZone()));
     } else if (args.length == 1) {
-      return new SelJodaDateTime(new DateTime(args[0].getInternalVal()));
+      return new SelJodaDateTime(ZonedDateTime.from((ZonedDateTime) args[0].getInternalVal()));
     } else if (args.length == 2) {
-      return new SelJodaDateTime(
-          new DateTime(args[0].getInternalVal(), ((SelJodaDateTimeZone) args[1]).getInternalVal()));
+      if (args[0].type() == SelTypes.LONG) {
+        return new SelJodaDateTime(ZonedDateTime.ofInstant(Instant.ofEpochMilli(((SelLong) args[0]).longVal()), (ZoneId) ((SelJodaDateTimeZone) args[1]).getInternalVal()));
+      }
+      return new SelJodaDateTime(((ZonedDateTime) args[0].getInternalVal()).withZoneSameLocal((ZoneId) ((SelJodaDateTimeZone) args[1]).getInternalVal()));
     } else if (args.length == 8) {
       return new SelJodaDateTime(
-          new DateTime(
+          ZonedDateTime.of(
               ((SelLong) args[0]).intVal(),
               ((SelLong) args[1]).intVal(),
               ((SelLong) args[2]).intVal(),
               ((SelLong) args[3]).intVal(),
               ((SelLong) args[4]).intVal(),
               ((SelLong) args[5]).intVal(),
-              ((SelLong) args[6]).intVal(),
-              ((SelJodaDateTimeZone) args[7]).getInternalVal()));
+              ((SelLong) args[6]).intVal() * 1000000,
+              (ZoneId) ((SelJodaDateTimeZone) args[7]).getInternalVal()));
     }
     throw new IllegalArgumentException(
         "Invalid input arguments (" + Arrays.toString(args) + ") for DateTime constructor");
@@ -81,7 +86,7 @@ public final class SelJodaDateTime extends AbstractSelType {
   }
 
   @Override
-  public DateTime getInternalVal() {
+  public ZonedDateTime getInternalVal() {
     return val;
   }
 
@@ -93,402 +98,394 @@ public final class SelJodaDateTime extends AbstractSelType {
       map.put(
           "toString0",
           MethodHandles.lookup()
-              .findVirtual(DateTime.class, "toString", MethodType.methodType(String.class)));
+              .findVirtual(ZonedDateTime.class, "toString", MethodType.methodType(String.class)));
       map.put(
           "toString1",
           MethodHandles.lookup()
               .findVirtual(
-                  DateTime.class, "toString", MethodType.methodType(String.class, String.class)));
+                  SelJodaDateTime.class, "toStringWithFormat", MethodType.methodType(String.class, String.class)));
       map.put(
           "parse2",
           MethodHandles.lookup()
               .findStatic(
-                  DateTime.class,
+                  SelJodaDateTime.class,
                   "parse",
-                  MethodType.methodType(DateTime.class, String.class, DateTimeFormatter.class)));
+                  MethodType.methodType(ZonedDateTime.class, CharSequence.class, DateTimeFormatter.class)));
       map.put(
           "withZone1",
           MethodHandles.lookup()
               .findVirtual(
-                  DateTime.class,
-                  "withZone",
-                  MethodType.methodType(DateTime.class, DateTimeZone.class)));
+                  ZonedDateTime.class,
+                  "withZoneSameInstant",
+                  MethodType.methodType(ZonedDateTime.class, ZoneId.class)));
 
       map.put(
           "minusYears1",
           MethodHandles.lookup()
               .findVirtual(
-                  DateTime.class, "minusYears", MethodType.methodType(DateTime.class, int.class))
-              .asType(MethodType.methodType(DateTime.class, DateTime.class, Integer.class)));
+                  ZonedDateTime.class, "minusYears", MethodType.methodType(ZonedDateTime.class, long.class))
+              .asType(MethodType.methodType(ZonedDateTime.class, ZonedDateTime.class, Integer.class)));
       map.put(
           "plusYears1",
           MethodHandles.lookup()
               .findVirtual(
-                  DateTime.class, "plusYears", MethodType.methodType(DateTime.class, int.class))
-              .asType(MethodType.methodType(DateTime.class, DateTime.class, Integer.class)));
+                  ZonedDateTime.class, "plusYears", MethodType.methodType(ZonedDateTime.class, long.class))
+              .asType(MethodType.methodType(ZonedDateTime.class, ZonedDateTime.class, Integer.class)));
       map.put(
           "minusMonths1",
           MethodHandles.lookup()
               .findVirtual(
-                  DateTime.class, "minusMonths", MethodType.methodType(DateTime.class, int.class))
-              .asType(MethodType.methodType(DateTime.class, DateTime.class, Integer.class)));
+                  ZonedDateTime.class, "minusMonths", MethodType.methodType(ZonedDateTime.class, long.class))
+              .asType(MethodType.methodType(ZonedDateTime.class, ZonedDateTime.class, Integer.class)));
       map.put(
           "plusMonths1",
           MethodHandles.lookup()
               .findVirtual(
-                  DateTime.class, "plusMonths", MethodType.methodType(DateTime.class, int.class))
-              .asType(MethodType.methodType(DateTime.class, DateTime.class, Integer.class)));
+                  ZonedDateTime.class, "plusMonths", MethodType.methodType(ZonedDateTime.class, long.class))
+              .asType(MethodType.methodType(ZonedDateTime.class, ZonedDateTime.class, Integer.class)));
       map.put(
           "minusWeeks1",
           MethodHandles.lookup()
               .findVirtual(
-                  DateTime.class, "minusWeeks", MethodType.methodType(DateTime.class, int.class))
-              .asType(MethodType.methodType(DateTime.class, DateTime.class, Integer.class)));
+                  ZonedDateTime.class, "minusWeeks", MethodType.methodType(ZonedDateTime.class, long.class))
+              .asType(MethodType.methodType(ZonedDateTime.class, ZonedDateTime.class, Integer.class)));
       map.put(
           "plusWeeks1",
           MethodHandles.lookup()
               .findVirtual(
-                  DateTime.class, "plusWeeks", MethodType.methodType(DateTime.class, int.class))
-              .asType(MethodType.methodType(DateTime.class, DateTime.class, Integer.class)));
+                  ZonedDateTime.class, "plusWeeks", MethodType.methodType(ZonedDateTime.class, long.class))
+              .asType(MethodType.methodType(ZonedDateTime.class, ZonedDateTime.class, Integer.class)));
       map.put(
           "minusDays1",
           MethodHandles.lookup()
               .findVirtual(
-                  DateTime.class, "minusDays", MethodType.methodType(DateTime.class, int.class))
-              .asType(MethodType.methodType(DateTime.class, DateTime.class, Integer.class)));
+                  ZonedDateTime.class, "minusDays", MethodType.methodType(ZonedDateTime.class, long.class))
+              .asType(MethodType.methodType(ZonedDateTime.class, ZonedDateTime.class, Integer.class)));
       map.put(
           "plusDays1",
           MethodHandles.lookup()
               .findVirtual(
-                  DateTime.class, "plusDays", MethodType.methodType(DateTime.class, int.class))
-              .asType(MethodType.methodType(DateTime.class, DateTime.class, Integer.class)));
+                  ZonedDateTime.class, "plusDays", MethodType.methodType(ZonedDateTime.class, long.class))
+              .asType(MethodType.methodType(ZonedDateTime.class, ZonedDateTime.class, Integer.class)));
       map.put(
           "minusHours1",
           MethodHandles.lookup()
               .findVirtual(
-                  DateTime.class, "minusHours", MethodType.methodType(DateTime.class, int.class))
-              .asType(MethodType.methodType(DateTime.class, DateTime.class, Integer.class)));
+                  ZonedDateTime.class, "minusHours", MethodType.methodType(ZonedDateTime.class, long.class))
+              .asType(MethodType.methodType(ZonedDateTime.class, ZonedDateTime.class, Integer.class)));
       map.put(
           "plusHours1",
           MethodHandles.lookup()
               .findVirtual(
-                  DateTime.class, "plusHours", MethodType.methodType(DateTime.class, int.class))
-              .asType(MethodType.methodType(DateTime.class, DateTime.class, Integer.class)));
+                  ZonedDateTime.class, "plusHours", MethodType.methodType(ZonedDateTime.class, long.class))
+              .asType(MethodType.methodType(ZonedDateTime.class, ZonedDateTime.class, Integer.class)));
       map.put(
           "minusMinutes1",
           MethodHandles.lookup()
               .findVirtual(
-                  DateTime.class, "minusMinutes", MethodType.methodType(DateTime.class, int.class))
-              .asType(MethodType.methodType(DateTime.class, DateTime.class, Integer.class)));
+                  ZonedDateTime.class, "minusMinutes", MethodType.methodType(ZonedDateTime.class, long.class))
+              .asType(MethodType.methodType(ZonedDateTime.class, ZonedDateTime.class, Integer.class)));
       map.put(
           "plusMinutes1",
           MethodHandles.lookup()
               .findVirtual(
-                  DateTime.class, "plusMinutes", MethodType.methodType(DateTime.class, int.class))
-              .asType(MethodType.methodType(DateTime.class, DateTime.class, Integer.class)));
+                  ZonedDateTime.class, "plusMinutes", MethodType.methodType(ZonedDateTime.class, long.class))
+              .asType(MethodType.methodType(ZonedDateTime.class, ZonedDateTime.class, Integer.class)));
       map.put(
           "minusSeconds1",
           MethodHandles.lookup()
               .findVirtual(
-                  DateTime.class, "minusSeconds", MethodType.methodType(DateTime.class, int.class))
-              .asType(MethodType.methodType(DateTime.class, DateTime.class, Integer.class)));
+                  ZonedDateTime.class, "minusSeconds", MethodType.methodType(ZonedDateTime.class, long.class))
+              .asType(MethodType.methodType(ZonedDateTime.class, ZonedDateTime.class, Integer.class)));
       map.put(
           "plusSeconds1",
           MethodHandles.lookup()
               .findVirtual(
-                  DateTime.class, "plusSeconds", MethodType.methodType(DateTime.class, int.class))
-              .asType(MethodType.methodType(DateTime.class, DateTime.class, Integer.class)));
+                  ZonedDateTime.class, "plusSeconds", MethodType.methodType(ZonedDateTime.class, long.class))
+              .asType(MethodType.methodType(ZonedDateTime.class, ZonedDateTime.class, Integer.class)));
       map.put(
           "minusMillis1",
           MethodHandles.lookup()
-              .findVirtual(
-                  DateTime.class, "minusMillis", MethodType.methodType(DateTime.class, int.class))
-              .asType(MethodType.methodType(DateTime.class, DateTime.class, Integer.class)));
+              .findStatic(
+                  SelJodaDateTime.class, "minusMillis", MethodType.methodType(ZonedDateTime.class, ZonedDateTime.class, Integer.class)));
       map.put(
           "plusMillis1",
           MethodHandles.lookup()
-              .findVirtual(
-                  DateTime.class, "plusMillis", MethodType.methodType(DateTime.class, int.class))
-              .asType(MethodType.methodType(DateTime.class, DateTime.class, Integer.class)));
+              .findStatic(
+                  SelJodaDateTime.class, "plusMillis", MethodType.methodType(ZonedDateTime.class, ZonedDateTime.class, Integer.class)));
 
       map.put(
           "isAfter1",
           MethodHandles.lookup()
-              .findVirtual(
-                  ReadableInstant.class,
+              .findStatic(
+                  SelJodaDateTime.class,
                   "isAfter",
-                  MethodType.methodType(boolean.class, ReadableInstant.class)));
+                  MethodType.methodType(boolean.class, ZonedDateTime.class, ZonedDateTime.class)));
       map.put(
           "isBefore1",
           MethodHandles.lookup()
-              .findVirtual(
-                  ReadableInstant.class,
+              .findStatic(
+                  SelJodaDateTime.class,
                   "isBefore",
-                  MethodType.methodType(boolean.class, ReadableInstant.class)));
+                  MethodType.methodType(boolean.class, ZonedDateTime.class, ZonedDateTime.class)));
       map.put(
           "isEqual1",
           MethodHandles.lookup()
-              .findVirtual(
-                  ReadableInstant.class,
+              .findStatic(
+                  SelJodaDateTime.class,
                   "isEqual",
-                  MethodType.methodType(boolean.class, ReadableInstant.class)));
+                  MethodType.methodType(boolean.class, ZonedDateTime.class, ZonedDateTime.class)));
 
       map.put(
           "monthOfYear0",
           MethodHandles.lookup()
-              .findVirtual(
-                  DateTime.class, "monthOfYear", MethodType.methodType(DateTime.Property.class)));
+              .findStatic(
+                  SelJodaDateTime.class, "propMonthOfYear", MethodType.methodType(SelJodaDateTimeProperty.class, ZonedDateTime.class)));
       map.put(
           "weekyear0",
           MethodHandles.lookup()
-              .findVirtual(
-                  DateTime.class, "weekyear", MethodType.methodType(DateTime.Property.class)));
+              .findStatic(
+                  SelJodaDateTime.class, "propWeekyear", MethodType.methodType(SelJodaDateTimeProperty.class, ZonedDateTime.class)));
       map.put(
           "weekOfWeekyear0",
           MethodHandles.lookup()
-              .findVirtual(
-                  DateTime.class,
-                  "weekOfWeekyear",
-                  MethodType.methodType(DateTime.Property.class)));
+              .findStatic(
+                  SelJodaDateTime.class,
+                  "propWeekOfWeekyear",
+                  MethodType.methodType(SelJodaDateTimeProperty.class, ZonedDateTime.class)));
       map.put(
           "dayOfYear0",
           MethodHandles.lookup()
-              .findVirtual(
-                  DateTime.class, "dayOfYear", MethodType.methodType(DateTime.Property.class)));
+              .findStatic(
+                  SelJodaDateTime.class, "propDayOfYear", MethodType.methodType(SelJodaDateTimeProperty.class, ZonedDateTime.class)));
       map.put(
           "dayOfMonth0",
           MethodHandles.lookup()
-              .findVirtual(
-                  DateTime.class, "dayOfMonth", MethodType.methodType(DateTime.Property.class)));
+              .findStatic(
+                  SelJodaDateTime.class, "propDayOfMonth", MethodType.methodType(SelJodaDateTimeProperty.class, ZonedDateTime.class)));
       map.put(
           "dayOfWeek0",
           MethodHandles.lookup()
-              .findVirtual(
-                  DateTime.class, "dayOfWeek", MethodType.methodType(DateTime.Property.class)));
+              .findStatic(
+                  SelJodaDateTime.class, "propDayOfWeek", MethodType.methodType(SelJodaDateTimeProperty.class, ZonedDateTime.class)));
       map.put(
           "hourOfDay0",
           MethodHandles.lookup()
-              .findVirtual(
-                  DateTime.class, "hourOfDay", MethodType.methodType(DateTime.Property.class)));
+              .findStatic(
+                  SelJodaDateTime.class, "propHourOfDay", MethodType.methodType(SelJodaDateTimeProperty.class, ZonedDateTime.class)));
       map.put(
           "minuteOfDay0",
           MethodHandles.lookup()
-              .findVirtual(
-                  DateTime.class, "minuteOfDay", MethodType.methodType(DateTime.Property.class)));
+              .findStatic(
+                  SelJodaDateTime.class, "propMinuteOfDay", MethodType.methodType(SelJodaDateTimeProperty.class, ZonedDateTime.class)));
       map.put(
           "minuteOfHour0",
           MethodHandles.lookup()
-              .findVirtual(
-                  DateTime.class, "minuteOfHour", MethodType.methodType(DateTime.Property.class)));
+              .findStatic(
+                  SelJodaDateTime.class, "propMinuteOfHour", MethodType.methodType(SelJodaDateTimeProperty.class, ZonedDateTime.class)));
       map.put(
           "secondOfDay0",
           MethodHandles.lookup()
-              .findVirtual(
-                  DateTime.class, "secondOfDay", MethodType.methodType(DateTime.Property.class)));
+              .findStatic(
+                  SelJodaDateTime.class, "propSecondOfDay", MethodType.methodType(SelJodaDateTimeProperty.class, ZonedDateTime.class)));
       map.put(
           "secondOfMinute0",
           MethodHandles.lookup()
-              .findVirtual(
-                  DateTime.class,
-                  "secondOfMinute",
-                  MethodType.methodType(DateTime.Property.class)));
+              .findStatic(
+                  SelJodaDateTime.class,
+                  "propSecondOfMinute",
+                  MethodType.methodType(SelJodaDateTimeProperty.class, ZonedDateTime.class)));
       map.put(
           "millisOfDay0",
           MethodHandles.lookup()
-              .findVirtual(
-                  DateTime.class, "millisOfDay", MethodType.methodType(DateTime.Property.class)));
+              .findStatic(
+                  SelJodaDateTime.class, "propMillisOfDay", MethodType.methodType(SelJodaDateTimeProperty.class, ZonedDateTime.class)));
       map.put(
           "millisOfSecond0",
           MethodHandles.lookup()
-              .findVirtual(
-                  DateTime.class,
-                  "millisOfSecond",
-                  MethodType.methodType(DateTime.Property.class)));
+              .findStatic(
+                  SelJodaDateTime.class,
+                  "propMillisOfSecond",
+                  MethodType.methodType(SelJodaDateTimeProperty.class, ZonedDateTime.class)));
 
       map.put(
           "withTimeAtStartOfDay0",
           MethodHandles.lookup()
-              .findVirtual(
-                  DateTime.class, "withTimeAtStartOfDay", MethodType.methodType(DateTime.class)));
+              .findStatic(
+                  SelJodaDateTime.class, "withTimeAtStartOfDay", MethodType.methodType(ZonedDateTime.class, ZonedDateTime.class)));
       map.put(
           "withYear1",
           MethodHandles.lookup()
               .findVirtual(
-                  DateTime.class, "withYear", MethodType.methodType(DateTime.class, int.class))
-              .asType(MethodType.methodType(DateTime.class, DateTime.class, Integer.class)));
+                  ZonedDateTime.class, "withYear", MethodType.methodType(ZonedDateTime.class, int.class))
+              .asType(MethodType.methodType(ZonedDateTime.class, ZonedDateTime.class, Integer.class)));
       map.put(
           "withWeekyear1",
           MethodHandles.lookup()
-              .findVirtual(
-                  DateTime.class, "withWeekyear", MethodType.methodType(DateTime.class, int.class))
-              .asType(MethodType.methodType(DateTime.class, DateTime.class, Integer.class)));
+              .findStatic(
+                  SelJodaDateTime.class, "withWeekyear", MethodType.methodType(ZonedDateTime.class, ZonedDateTime.class, Integer.class)));
       map.put(
           "withMonthOfYear1",
           MethodHandles.lookup()
               .findVirtual(
-                  DateTime.class,
-                  "withMonthOfYear",
-                  MethodType.methodType(DateTime.class, int.class))
-              .asType(MethodType.methodType(DateTime.class, DateTime.class, Integer.class)));
+                  ZonedDateTime.class,
+                  "withMonth",
+                  MethodType.methodType(ZonedDateTime.class, int.class))
+              .asType(MethodType.methodType(ZonedDateTime.class, ZonedDateTime.class, Integer.class)));
       map.put(
           "withWeekOfWeekyear1",
           MethodHandles.lookup()
-              .findVirtual(
-                  DateTime.class,
+              .findStatic(
+                  SelJodaDateTime.class,
                   "withWeekOfWeekyear",
-                  MethodType.methodType(DateTime.class, int.class))
-              .asType(MethodType.methodType(DateTime.class, DateTime.class, Integer.class)));
+                  MethodType.methodType(ZonedDateTime.class, ZonedDateTime.class, Integer.class)));
       map.put(
           "withDayOfYear1",
           MethodHandles.lookup()
               .findVirtual(
-                  DateTime.class, "withDayOfYear", MethodType.methodType(DateTime.class, int.class))
-              .asType(MethodType.methodType(DateTime.class, DateTime.class, Integer.class)));
+                  ZonedDateTime.class, "withDayOfYear", MethodType.methodType(ZonedDateTime.class, int.class))
+              .asType(MethodType.methodType(ZonedDateTime.class, ZonedDateTime.class, Integer.class)));
       map.put(
           "withDayOfMonth1",
           MethodHandles.lookup()
               .findVirtual(
-                  DateTime.class,
+                  ZonedDateTime.class,
                   "withDayOfMonth",
-                  MethodType.methodType(DateTime.class, int.class))
-              .asType(MethodType.methodType(DateTime.class, DateTime.class, Integer.class)));
+                  MethodType.methodType(ZonedDateTime.class, int.class))
+              .asType(MethodType.methodType(ZonedDateTime.class, ZonedDateTime.class, Integer.class)));
       map.put(
           "withDayOfWeek1",
           MethodHandles.lookup()
-              .findVirtual(
-                  DateTime.class, "withDayOfWeek", MethodType.methodType(DateTime.class, int.class))
-              .asType(MethodType.methodType(DateTime.class, DateTime.class, Integer.class)));
+              .findStatic(
+                  SelJodaDateTime.class, "withDayOfWeek", MethodType.methodType(ZonedDateTime.class, ZonedDateTime.class, Integer.class)));
       map.put(
           "withHourOfDay1",
           MethodHandles.lookup()
               .findVirtual(
-                  DateTime.class, "withHourOfDay", MethodType.methodType(DateTime.class, int.class))
-              .asType(MethodType.methodType(DateTime.class, DateTime.class, Integer.class)));
+                  ZonedDateTime.class, "withHour", MethodType.methodType(ZonedDateTime.class, int.class))
+              .asType(MethodType.methodType(ZonedDateTime.class, ZonedDateTime.class, Integer.class)));
       map.put(
           "withMinuteOfHour1",
           MethodHandles.lookup()
               .findVirtual(
-                  DateTime.class,
-                  "withMinuteOfHour",
-                  MethodType.methodType(DateTime.class, int.class))
-              .asType(MethodType.methodType(DateTime.class, DateTime.class, Integer.class)));
+                  ZonedDateTime.class,
+                  "withMinute",
+                  MethodType.methodType(ZonedDateTime.class, int.class))
+              .asType(MethodType.methodType(ZonedDateTime.class, ZonedDateTime.class, Integer.class)));
       map.put(
           "withSecondOfMinute1",
           MethodHandles.lookup()
               .findVirtual(
-                  DateTime.class,
-                  "withSecondOfMinute",
-                  MethodType.methodType(DateTime.class, int.class))
-              .asType(MethodType.methodType(DateTime.class, DateTime.class, Integer.class)));
+                  ZonedDateTime.class,
+                  "withSecond",
+                  MethodType.methodType(ZonedDateTime.class, int.class))
+              .asType(MethodType.methodType(ZonedDateTime.class, ZonedDateTime.class, Integer.class)));
       map.put(
           "withMillisOfSecond1",
           MethodHandles.lookup()
-              .findVirtual(
-                  DateTime.class,
+              .findStatic(
+                  SelJodaDateTime.class,
                   "withMillisOfSecond",
-                  MethodType.methodType(DateTime.class, int.class))
-              .asType(MethodType.methodType(DateTime.class, DateTime.class, Integer.class)));
+                  MethodType.methodType(ZonedDateTime.class, ZonedDateTime.class, Integer.class)));
       map.put(
           "withMillisOfDay1",
           MethodHandles.lookup()
-              .findVirtual(
-                  DateTime.class,
+              .findStatic(
+                  SelJodaDateTime.class,
                   "withMillisOfDay",
-                  MethodType.methodType(DateTime.class, int.class))
-              .asType(MethodType.methodType(DateTime.class, DateTime.class, Integer.class)));
+                  MethodType.methodType(ZonedDateTime.class, ZonedDateTime.class, Integer.class)));
 
       map.put(
           "getMillis0",
           MethodHandles.lookup()
-              .findVirtual(BaseDateTime.class, "getMillis", MethodType.methodType(long.class))
-              .asType(MethodType.methodType(Long.class, DateTime.class)));
+              .findStatic(SelJodaDateTime.class, "getMillis", MethodType.methodType(long.class, ZonedDateTime.class))
+              .asType(MethodType.methodType(Long.class, ZonedDateTime.class)));
       map.put(
           "getYear0",
           MethodHandles.lookup()
-              .findVirtual(AbstractDateTime.class, "getYear", MethodType.methodType(int.class))
-              .asType(MethodType.methodType(Integer.class, DateTime.class)));
+              .findVirtual(ZonedDateTime.class, "getYear", MethodType.methodType(int.class))
+              .asType(MethodType.methodType(Integer.class, ZonedDateTime.class)));
       map.put(
           "getHourOfDay0",
           MethodHandles.lookup()
-              .findVirtual(AbstractDateTime.class, "getHourOfDay", MethodType.methodType(int.class))
-              .asType(MethodType.methodType(Integer.class, DateTime.class)));
+              .findVirtual(ZonedDateTime.class, "getHour", MethodType.methodType(int.class))
+              .asType(MethodType.methodType(Integer.class, ZonedDateTime.class)));
       map.put(
           "getWeekOfWeekyear0",
           MethodHandles.lookup()
-              .findVirtual(
-                  AbstractDateTime.class, "getWeekOfWeekyear", MethodType.methodType(int.class))
-              .asType(MethodType.methodType(Integer.class, DateTime.class)));
+              .findStatic(SelJodaDateTime.class, "getWeekOfWeekyear", MethodType.methodType(int.class, ZonedDateTime.class))
+              .asType(MethodType.methodType(Integer.class, ZonedDateTime.class)));
       map.put(
           "getWeekyear0",
           MethodHandles.lookup()
-              .findVirtual(AbstractDateTime.class, "getWeekyear", MethodType.methodType(int.class))
-              .asType(MethodType.methodType(Integer.class, DateTime.class)));
+              .findStatic(SelJodaDateTime.class, "getWeekyear", MethodType.methodType(int.class, ZonedDateTime.class))
+              .asType(MethodType.methodType(Integer.class, ZonedDateTime.class)));
       map.put(
           "getDayOfWeek0",
           MethodHandles.lookup()
-              .findVirtual(AbstractDateTime.class, "getDayOfWeek", MethodType.methodType(int.class))
-              .asType(MethodType.methodType(Integer.class, DateTime.class)));
+              .findStatic(SelJodaDateTime.class, "getDayOfWeek", MethodType.methodType(int.class, ZonedDateTime.class))
+              .asType(MethodType.methodType(Integer.class, ZonedDateTime.class)));
       map.put(
           "getDayOfMonth0",
           MethodHandles.lookup()
               .findVirtual(
-                  AbstractDateTime.class, "getDayOfMonth", MethodType.methodType(int.class))
-              .asType(MethodType.methodType(Integer.class, DateTime.class)));
+                  ZonedDateTime.class, "getDayOfMonth", MethodType.methodType(int.class))
+              .asType(MethodType.methodType(Integer.class, ZonedDateTime.class)));
       map.put(
           "getDayOfYear0",
           MethodHandles.lookup()
-              .findVirtual(AbstractDateTime.class, "getDayOfYear", MethodType.methodType(int.class))
-              .asType(MethodType.methodType(Integer.class, DateTime.class)));
+              .findVirtual(ZonedDateTime.class, "getDayOfYear", MethodType.methodType(int.class))
+              .asType(MethodType.methodType(Integer.class, ZonedDateTime.class)));
       map.put(
           "getMillisOfDay0",
           MethodHandles.lookup()
-              .findVirtual(
-                  AbstractDateTime.class, "getMillisOfDay", MethodType.methodType(int.class))
-              .asType(MethodType.methodType(Integer.class, DateTime.class)));
+              .findStatic(
+                  SelJodaDateTime.class, "getMillisOfDay", MethodType.methodType(int.class, ZonedDateTime.class))
+              .asType(MethodType.methodType(Integer.class, ZonedDateTime.class)));
       map.put(
           "getMillisOfSecond0",
           MethodHandles.lookup()
-              .findVirtual(
-                  AbstractDateTime.class, "getMillisOfSecond", MethodType.methodType(int.class))
-              .asType(MethodType.methodType(Integer.class, DateTime.class)));
+              .findStatic(
+                  SelJodaDateTime.class, "getMillisOfSecond", MethodType.methodType(int.class, ZonedDateTime.class))
+              .asType(MethodType.methodType(Integer.class, ZonedDateTime.class)));
       map.put(
           "getMinuteOfDay0",
           MethodHandles.lookup()
-              .findVirtual(
-                  AbstractDateTime.class, "getMinuteOfDay", MethodType.methodType(int.class))
-              .asType(MethodType.methodType(Integer.class, DateTime.class)));
+              .findStatic(
+                  SelJodaDateTime.class, "getMinuteOfDay", MethodType.methodType(int.class, ZonedDateTime.class))
+              .asType(MethodType.methodType(Integer.class, ZonedDateTime.class)));
       map.put(
           "getMinuteOfHour0",
           MethodHandles.lookup()
               .findVirtual(
-                  AbstractDateTime.class, "getMinuteOfHour", MethodType.methodType(int.class))
-              .asType(MethodType.methodType(Integer.class, DateTime.class)));
+                  ZonedDateTime.class, "getMinute", MethodType.methodType(int.class))
+              .asType(MethodType.methodType(Integer.class, ZonedDateTime.class)));
       map.put(
           "getSecondOfMinute0",
           MethodHandles.lookup()
               .findVirtual(
-                  AbstractDateTime.class, "getSecondOfMinute", MethodType.methodType(int.class))
-              .asType(MethodType.methodType(Integer.class, DateTime.class)));
+                  ZonedDateTime.class, "getSecond", MethodType.methodType(int.class))
+              .asType(MethodType.methodType(Integer.class, ZonedDateTime.class)));
       map.put(
           "getMonthOfYear0",
           MethodHandles.lookup()
               .findVirtual(
-                  AbstractDateTime.class, "getMonthOfYear", MethodType.methodType(int.class))
-              .asType(MethodType.methodType(Integer.class, DateTime.class)));
+                  ZonedDateTime.class, "getMonthValue", MethodType.methodType(int.class))
+              .asType(MethodType.methodType(Integer.class, ZonedDateTime.class)));
       map.put(
           "getSecondOfDay0",
           MethodHandles.lookup()
-              .findVirtual(
-                  AbstractDateTime.class, "getSecondOfDay", MethodType.methodType(int.class))
-              .asType(MethodType.methodType(Integer.class, DateTime.class)));
+              .findStatic(
+                  SelJodaDateTime.class, "getSecondOfDay", MethodType.methodType(int.class, ZonedDateTime.class))
+              .asType(MethodType.methodType(Integer.class, ZonedDateTime.class)));
 
       map.put(
           "toDateTime1",
           MethodHandles.lookup()
               .findVirtual(
-                  DateTime.class,
-                  "toDateTime",
-                  MethodType.methodType(DateTime.class, DateTimeZone.class)));
+                  ZonedDateTime.class,
+                  "withZoneSameInstant",
+                  MethodType.methodType(ZonedDateTime.class, ZoneId.class)));
     } catch (Exception ex) {
       throw new RuntimeException("Initialization failure in DateTime static block.", ex);
     }
@@ -496,11 +493,67 @@ public final class SelJodaDateTime extends AbstractSelType {
     SUPPORTED_METHODS = Collections.unmodifiableMap(map);
   }
 
+  public String toStringWithFormat(String format) {
+    // Basic mapping for Joda to JavaTime formats where possible
+    return val.format(DateTimeFormatter.ofPattern(format.replace("YYYY", "yyyy").replace("ww", "ww").replace("DD", "DDD")));
+  }
+
+  static SelJodaDateTimeProperty propMonthOfYear(ZonedDateTime val) { return SelJodaDateTimeProperty.of(val, ChronoField.MONTH_OF_YEAR); }
+  static SelJodaDateTimeProperty propWeekyear(ZonedDateTime val) { return SelJodaDateTimeProperty.of(val, IsoFields.WEEK_BASED_YEAR); }
+  static SelJodaDateTimeProperty propWeekOfWeekyear(ZonedDateTime val) { return SelJodaDateTimeProperty.of(val, IsoFields.WEEK_OF_WEEK_BASED_YEAR); }
+  static SelJodaDateTimeProperty propDayOfYear(ZonedDateTime val) { return SelJodaDateTimeProperty.of(val, ChronoField.DAY_OF_YEAR); }
+  static SelJodaDateTimeProperty propDayOfMonth(ZonedDateTime val) { return SelJodaDateTimeProperty.of(val, ChronoField.DAY_OF_MONTH); }
+  static SelJodaDateTimeProperty propDayOfWeek(ZonedDateTime val) { return SelJodaDateTimeProperty.of(val, ChronoField.DAY_OF_WEEK); }
+  static SelJodaDateTimeProperty propHourOfDay(ZonedDateTime val) { return SelJodaDateTimeProperty.of(val, ChronoField.HOUR_OF_DAY); }
+  static SelJodaDateTimeProperty propMinuteOfDay(ZonedDateTime val) { return SelJodaDateTimeProperty.of(val, ChronoField.MINUTE_OF_DAY); }
+  static SelJodaDateTimeProperty propMinuteOfHour(ZonedDateTime val) { return SelJodaDateTimeProperty.of(val, ChronoField.MINUTE_OF_HOUR); }
+  static SelJodaDateTimeProperty propSecondOfDay(ZonedDateTime val) { return SelJodaDateTimeProperty.of(val, ChronoField.SECOND_OF_DAY); }
+  static SelJodaDateTimeProperty propSecondOfMinute(ZonedDateTime val) { return SelJodaDateTimeProperty.of(val, ChronoField.SECOND_OF_MINUTE); }
+  static SelJodaDateTimeProperty propMillisOfDay(ZonedDateTime val) { return SelJodaDateTimeProperty.of(val, ChronoField.MILLI_OF_DAY); }
+  static SelJodaDateTimeProperty propMillisOfSecond(ZonedDateTime val) { return SelJodaDateTimeProperty.of(val, ChronoField.MILLI_OF_SECOND); }
+
+  static ZonedDateTime withTimeAtStartOfDay(ZonedDateTime d) {
+    return d.toLocalDate().atStartOfDay(d.getZone());
+  }
+  static ZonedDateTime minusMillis(ZonedDateTime d, Integer val) { return d.minusNanos(val * 1000000L); }
+  static ZonedDateTime plusMillis(ZonedDateTime d, Integer val) { return d.plusNanos(val * 1000000L); }
+  
+  static boolean isAfter(ZonedDateTime a, ZonedDateTime b) { return a.toInstant().isAfter(b.toInstant()); }
+  static boolean isBefore(ZonedDateTime a, ZonedDateTime b) { return a.toInstant().isBefore(b.toInstant()); }
+  static boolean isEqual(ZonedDateTime a, ZonedDateTime b) { return a.toInstant().equals(b.toInstant()); }
+
+  static ZonedDateTime parse(CharSequence text, DateTimeFormatter val) {
+    java.time.temporal.TemporalAccessor parsed = val.parse(text);
+    ZoneId zone = val.getZone() != null ? val.getZone() : ZoneId.of("UTC");
+    try {
+      zone = ZoneId.from(parsed);
+    } catch (Exception e) {}
+    return java.time.LocalDateTime.from(parsed).atZone(zone);
+  }
+
+  static ZonedDateTime withWeekyear(ZonedDateTime d, Integer val) { return d.with(IsoFields.WEEK_BASED_YEAR, val); }
+  static ZonedDateTime withWeekOfWeekyear(ZonedDateTime d, Integer val) { return d.with(IsoFields.WEEK_OF_WEEK_BASED_YEAR, val); }
+  static ZonedDateTime withDayOfWeek(ZonedDateTime d, Integer val) { return d.with(ChronoField.DAY_OF_WEEK, val); }
+  static ZonedDateTime withMillisOfDay(ZonedDateTime d, Integer val) { return d.with(ChronoField.MILLI_OF_DAY, val); }
+  static ZonedDateTime withMillisOfSecond(ZonedDateTime d, Integer val) { return d.withNano(val * 1000000); }
+
+  static long getMillis(ZonedDateTime d) { return d.toInstant().toEpochMilli(); }
+  static int getWeekOfWeekyear(ZonedDateTime d) { return d.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR); }
+  static int getWeekyear(ZonedDateTime d) { return d.get(IsoFields.WEEK_BASED_YEAR); }
+  static int getDayOfWeek(ZonedDateTime d) { return d.get(ChronoField.DAY_OF_WEEK); }
+  static int getMillisOfDay(ZonedDateTime d) { return d.get(ChronoField.MILLI_OF_DAY); }
+  static int getMillisOfSecond(ZonedDateTime d) { return d.get(ChronoField.MILLI_OF_SECOND); }
+  static int getMinuteOfDay(ZonedDateTime d) { return d.get(ChronoField.MINUTE_OF_DAY); }
+  static int getSecondOfDay(ZonedDateTime d) { return d.get(ChronoField.SECOND_OF_DAY); }
+
   @Override
   public SelType call(String methodName, SelType[] args) {
-    methodName += args.length;
-    if (SUPPORTED_METHODS.containsKey(methodName)) {
-      return SelTypeUtil.callJavaMethod(val, args, SUPPORTED_METHODS.get(methodName), methodName);
+    String methodKey = methodName + args.length;
+    if (SUPPORTED_METHODS.containsKey(methodKey)) {
+      if ("toString1".equals(methodKey)) {
+          return SelString.of(toStringWithFormat(((SelString)args[0]).getInternalVal()));
+      }
+      return SelTypeUtil.callJavaMethod(val, args, SUPPORTED_METHODS.get(methodKey), methodName);
     }
 
     throw new UnsupportedOperationException(

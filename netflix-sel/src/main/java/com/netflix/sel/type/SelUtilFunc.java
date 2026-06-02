@@ -13,18 +13,19 @@
 package com.netflix.sel.type;
 
 import com.netflix.sel.ext.ExtFunction;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.temporal.ChronoField;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.joda.time.Days;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.PeriodFormat;
 
 /** Util class to include all Maestro predefined methods */
 public final class SelUtilFunc implements SelType {
@@ -93,60 +94,85 @@ public final class SelUtilFunc implements SelType {
   }
 
   private final DateTimeFormatter dateIntFormatter =
-      DateTimeFormat.forPattern("YYYYMMdd").withZoneUTC();
+      new DateTimeFormatterBuilder()
+          .appendPattern("uuuuMMdd")
+          .parseDefaulting(ChronoField.HOUR_OF_DAY, 0)
+          .parseDefaulting(ChronoField.MINUTE_OF_HOUR, 0)
+          .parseDefaulting(ChronoField.SECOND_OF_MINUTE, 0)
+          .toFormatter()
+          .withResolverStyle(java.time.format.ResolverStyle.STRICT)
+          .withZone(ZoneId.of("UTC"));
 
   private SelString tsToDateInt(SelType ts) {
-    return SelString.of(dateIntFormatter.print(SelLong.create(ts).longVal()));
+    return SelString.of(dateIntFormatter.format(ZonedDateTime.ofInstant(java.time.Instant.ofEpochMilli(SelLong.create(ts).longVal()), ZoneId.of("UTC"))));
   }
 
   private SelString incrementDateInt(SelType dateInt, SelType days) {
     String newDateInt =
-        dateIntFormatter.print(
-            dateIntFormatter
-                .parseDateTime(SelString.create(dateInt).getInternalVal())
+        dateIntFormatter.format(
+            ZonedDateTime.parse(SelString.create(dateInt).getInternalVal(), dateIntFormatter)
                 .plusDays(((SelLong) days).intVal()));
     return SelString.of(newDateInt);
   }
 
   private SelLong dateIntToTs(SelType dateInt) {
     return SelLong.of(
-        dateIntFormatter.parseDateTime(SelString.create(dateInt).getInternalVal()).getMillis());
+        ZonedDateTime.parse(SelString.create(dateInt).getInternalVal(), dateIntFormatter).toInstant().toEpochMilli());
   }
 
   private SelLong dateIntHourToTs(SelType... args) {
     final DateTimeFormatter dateIntHourFormatter =
-        DateTimeFormat.forPattern("YYYYMMddHH")
-            .withZone(DateTimeZone.forID(SelString.create(args[2]).getInternalVal()));
+        new DateTimeFormatterBuilder()
+            .appendPattern("uuuuMMddHH")
+            .parseDefaulting(ChronoField.MINUTE_OF_HOUR, 0)
+            .parseDefaulting(ChronoField.SECOND_OF_MINUTE, 0)
+            .toFormatter()
+            .withResolverStyle(java.time.format.ResolverStyle.STRICT)
+            .withZone(ZoneId.of(SelString.create(args[2]).getInternalVal()));
     return SelLong.of(
-        dateIntHourFormatter
-            .parseDateTime(
-                SelString.create(args[0]).getInternalVal()
-                    + SelString.create(args[1]).getInternalVal())
+        ZonedDateTime.parse(
+                SelString.create(args[0]).toString()
+                    + String.format("%02d", SelLong.create(args[1]).intVal()), dateIntHourFormatter)
             .minusDays(SelLong.create(args[3]).intVal())
             .minusHours(SelLong.create(args[4]).intVal())
-            .getMillis());
+            .toInstant().toEpochMilli());
   }
 
   private SelString timeoutForDateTimeDeadline(SelType dateTime, SelType durationStr) {
     String timeout =
         timeoutForDateTimeDeadline(
-            ((SelJodaDateTime) dateTime).getInternalVal(),
+            (ZonedDateTime) ((SelJodaDateTime) dateTime).getInternalVal(),
             ((SelString) durationStr).getInternalVal());
     return SelString.of(timeout);
   }
 
   private SelString timeoutForDateIntDeadline(SelType dateInt, SelType durationStr) {
-    DateTime dateTime = dateIntFormatter.parseDateTime(SelString.create(dateInt).toString());
+    ZonedDateTime dateTime = ZonedDateTime.parse(SelString.create(dateInt).toString(), dateIntFormatter);
     String timeout =
         timeoutForDateTimeDeadline(dateTime, ((SelString) durationStr).getInternalVal());
     return SelString.of(timeout);
   }
 
-  private String timeoutForDateTimeDeadline(DateTime dateTime, String durationStr) {
-    long duration =
-        PeriodFormat.wordBased().parsePeriod(durationStr).toStandardDuration().getMillis();
-    long deadline = dateTime.plus(duration).getMillis();
-    long remainingMillis = Math.max(deadline - DateTime.now().getMillis(), 0);
+  private long parsePeriodDuration(String durationStr) {
+      long millis = 0;
+      String[] parts = durationStr.split("(?<=\\D)(?=\\d)|(?<=\\d)(?=\\D)");
+      for(int i = 0; i < parts.length; i+=2) {
+          if (i + 1 >= parts.length) break;
+          long val = Long.parseLong(parts[i].trim());
+          String unit = parts[i+1].trim().toLowerCase();
+          if (unit.startsWith("day")) millis += val * 24 * 60 * 60 * 1000;
+          else if (unit.startsWith("hour")) millis += val * 60 * 60 * 1000;
+          else if (unit.startsWith("minute")) millis += val * 60 * 1000;
+          else if (unit.startsWith("second")) millis += val * 1000;
+          else if (unit.startsWith("milli")) millis += val;
+      }
+      return millis;
+  }
+
+  private String timeoutForDateTimeDeadline(ZonedDateTime dateTime, String durationStr) {
+    long duration = parsePeriodDuration(durationStr);
+    long deadline = dateTime.toInstant().toEpochMilli() + duration;
+    long remainingMillis = Math.max(deadline - ZonedDateTime.now(SelJodaDateTime.CLOCK).toInstant().toEpochMilli(), 0);
     return remainingMillis + " milliseconds";
   }
 
@@ -163,14 +189,13 @@ public final class SelUtilFunc implements SelType {
       throw new IllegalArgumentException("Invalid incremental interval value: " + inc);
     }
 
-    DateTimeFormatter fmt = dateIntFormatter.withZone(DateTimeZone.UTC);
-    DateTime d1 = fmt.parseDateTime(SelString.create(fromDate).toString());
-    DateTime d2 = fmt.parseDateTime(SelString.create(toDate).toString());
-    int days = Days.daysBetween(d1, d2).getDays();
+    ZonedDateTime d1 = ZonedDateTime.parse(SelString.create(fromDate).toString(), dateIntFormatter);
+    ZonedDateTime d2 = ZonedDateTime.parse(SelString.create(toDate).toString(), dateIntFormatter);
+    int days = (int) ChronoUnit.DAYS.between(d1, d2);
     List<Integer> list = new ArrayList<>();
     int increment = Math.abs(inc);
     for (int i = 0; i < days; i += increment) {
-      list.add(Integer.valueOf(d1.plusDays(i).toString("yyyyMMdd")));
+      list.add(Integer.valueOf(d1.plusDays(i).format(DateTimeFormatter.ofPattern("yyyyMMdd"))));
     }
     if (inc < 0) {
       Collections.reverse(list);

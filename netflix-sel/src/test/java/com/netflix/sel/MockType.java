@@ -13,7 +13,7 @@
 package com.netflix.sel;
 
 import com.netflix.sel.type.AbstractSelType;
-import org.joda.time.DateTime;
+import java.time.ZonedDateTime;
 
 public class MockType extends AbstractSelType {
   public static void staticNoArg() {}
@@ -34,7 +34,7 @@ public class MockType extends AbstractSelType {
     return arg + (b ? 1 : 2);
   }
 
-  public String twoArgs(String arg, DateTime dt) {
+  public String twoArgs(String arg, ZonedDateTime dt) {
     return arg + dt;
   }
 }

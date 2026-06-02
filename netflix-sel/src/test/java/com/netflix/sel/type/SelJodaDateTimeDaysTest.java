@@ -15,9 +15,8 @@ package com.netflix.sel.type;
 import static org.junit.Assert.*;
 
 import com.netflix.sel.visitor.SelOp;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.joda.time.Days;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,8 +27,8 @@ public class SelJodaDateTimeDaysTest {
 
   @Before
   public void setUp() throws Exception {
-    one = SelJodaDateTimeDays.of(Days.days(2));
-    another = SelJodaDateTimeDays.of(Days.days(5));
+    one = SelJodaDateTimeDays.of(2);
+    another = SelJodaDateTimeDays.of(5);
   }
 
   @After
@@ -38,7 +37,7 @@ public class SelJodaDateTimeDaysTest {
   @Test
   public void testAssignOps() {
     one.assignOps(SelOp.ASSIGN, another);
-    assertEquals("DATETIME_DAYS: P5D", one.type() + ": " + one);
+    assertEquals("DATETIME_DAYS: 5", one.type() + ": " + one);
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -59,10 +58,10 @@ public class SelJodaDateTimeDaysTest {
         one.call(
             "daysBetween",
             new SelType[] {
-              SelJodaDateTime.of(new DateTime("2019-01-01", DateTimeZone.UTC)),
-              SelJodaDateTime.of(new DateTime("2019-02-01", DateTimeZone.UTC))
+              SelJodaDateTime.of(LocalDate.parse("2019-01-01").atStartOfDay(ZoneId.of("UTC"))),
+              SelJodaDateTime.of(LocalDate.parse("2019-02-01").atStartOfDay(ZoneId.of("UTC")))
             });
-    assertEquals("DATETIME_DAYS: P31D", res.type() + ": " + res);
+    assertEquals("DATETIME_DAYS: 31", res.type() + ": " + res);
   }
 
   @Test(expected = UnsupportedOperationException.class)

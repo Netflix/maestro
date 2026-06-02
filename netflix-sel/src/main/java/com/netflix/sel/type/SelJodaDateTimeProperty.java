@@ -13,20 +13,24 @@
 package com.netflix.sel.type;
 
 import com.netflix.sel.visitor.SelOp;
+import java.time.ZonedDateTime;
+import java.time.format.TextStyle;
+import java.time.temporal.TemporalField;
 import java.util.Arrays;
 import java.util.Locale;
-import org.joda.time.DateTime;
 
-/** Wrapper class to support org.joda.time.DateTime.Property. */
+/** Wrapper class to support date time property. */
 public final class SelJodaDateTimeProperty extends AbstractSelType {
-  private DateTime.Property val;
+  private ZonedDateTime zdt;
+  private TemporalField field;
 
-  private SelJodaDateTimeProperty(DateTime.Property val) {
-    this.val = val;
+  private SelJodaDateTimeProperty(ZonedDateTime zdt, TemporalField field) {
+    this.zdt = zdt;
+    this.field = field;
   }
 
-  static SelJodaDateTimeProperty of(DateTime.Property p) {
-    return new SelJodaDateTimeProperty(p);
+  static SelJodaDateTimeProperty of(ZonedDateTime zdt, TemporalField field) {
+    return new SelJodaDateTimeProperty(zdt, field);
   }
 
   @Override
@@ -38,28 +42,34 @@ public final class SelJodaDateTimeProperty extends AbstractSelType {
   public SelJodaDateTimeProperty assignOps(SelOp op, SelType rhs) {
     if (op == SelOp.ASSIGN) {
       SelTypeUtil.checkTypeMatch(this.type(), rhs.type());
-      this.val = ((SelJodaDateTimeProperty) rhs).val;
+      this.zdt = ((SelJodaDateTimeProperty) rhs).zdt;
+      this.field = ((SelJodaDateTimeProperty) rhs).field;
       return this;
     }
     throw new UnsupportedOperationException(type() + " DO NOT support assignment operation " + op);
   }
 
   @Override
-  public DateTime.Property getInternalVal() {
-    return val;
+  public Object getInternalVal() {
+    return this; // not directly used
   }
 
   @Override
   public SelType call(String methodName, SelType[] args) {
     if (args.length == 0) {
       if ("getAsText".equals(methodName)) {
-        return SelString.of(val.getAsText(Locale.US));
+        if (field == java.time.temporal.ChronoField.DAY_OF_WEEK) {
+            return SelString.of(java.time.format.DateTimeFormatter.ofPattern("EEEE", Locale.US).format(zdt));
+        } else if (field == java.time.temporal.ChronoField.MONTH_OF_YEAR) {
+            return SelString.of(java.time.format.DateTimeFormatter.ofPattern("MMMM", Locale.US).format(zdt));
+        }
+        return SelString.of(Long.toString(zdt.get(field)));
       } else if ("withMinimumValue".equals(methodName)) {
-        return SelJodaDateTime.of(val.withMinimumValue());
+        return SelJodaDateTime.of(zdt.with(field, field.range().getMinimum()));
       } else if ("withMaximumValue".equals(methodName)) {
-        return SelJodaDateTime.of(val.withMaximumValue());
+        return SelJodaDateTime.of(zdt.with(field, field.range().getMaximum()));
       } else if ("get".equals(methodName)) {
-        return SelLong.of((long) val.get());
+        return SelLong.of((long) zdt.get(field));
       }
     }
     throw new UnsupportedOperationException(
@@ -72,6 +82,6 @@ public final class SelJodaDateTimeProperty extends AbstractSelType {
 
   @Override
   public String toString() {
-    return String.valueOf(val);
+    return "Property[" + field + "]";
   }
 }

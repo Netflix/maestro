@@ -117,9 +117,9 @@ public enum SelTypes implements SelType {
       case DATETIME_ZONE:
         return SelJodaDateTimeZone.of(null);
       case DATETIME_DAYS:
-        return SelJodaDateTimeDays.of(null);
+        return SelJodaDateTimeDays.of(0L);
       case DATETIME_PROPERTY:
-        return SelJodaDateTimeProperty.of(null);
+        return SelJodaDateTimeProperty.of(null, null);
       case DATETIME_FORMATTER:
         return SelJodaDateTimeFormatter.of(null);
 

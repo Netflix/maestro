@@ -15,8 +15,9 @@ package com.netflix.sel.type;
 import static org.junit.Assert.*;
 
 import com.netflix.sel.visitor.SelOp;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -27,8 +28,8 @@ public class SelJodaDateTimeZoneTest {
 
   @Before
   public void setUp() throws Exception {
-    one = SelJodaDateTimeZone.of(DateTimeZone.UTC);
-    another = SelJodaDateTimeZone.of(DateTimeZone.forID("America/Los_Angeles"));
+    one = SelJodaDateTimeZone.of(ZoneId.of("UTC"));
+    another = SelJodaDateTimeZone.of(ZoneId.of("America/Los_Angeles"));
   }
 
   @Test
@@ -55,14 +56,14 @@ public class SelJodaDateTimeZoneTest {
         one.call(
             "getOffset",
             new SelType[] {
-              SelJodaDateTime.of(new DateTime(0, DateTimeZone.forID("America/Los_Angeles")))
+              SelJodaDateTime.of(ZonedDateTime.ofInstant(Instant.ofEpochMilli(0), ZoneId.of("America/Los_Angeles")))
             });
     assertEquals("LONG: 0", res.type() + ": " + res);
     res =
         another.call(
             "getOffset",
             new SelType[] {
-              SelJodaDateTime.of(new DateTime(0, DateTimeZone.forID("America/Los_Angeles")))
+              SelJodaDateTime.of(ZonedDateTime.ofInstant(Instant.ofEpochMilli(0), ZoneId.of("America/Los_Angeles")))
             });
     assertEquals("LONG: -28800000", res.type() + ": " + res);
   }
