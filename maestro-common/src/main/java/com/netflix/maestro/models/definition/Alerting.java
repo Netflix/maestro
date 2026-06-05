@@ -34,9 +34,7 @@ import java.util.function.Function;
  * </pre>
  *
  * <p>A later-registered abstract-type mapping replaces the OSS default, so the consumer's impl
- * wins. We avoid {@code @JsonDeserialize(as = DefaultAlerting.class)} on the interface because
- * Jackson would still apply that annotation after the abstract-type mapping resolved a different
- * concrete class, producing a "not subtype of" error during type narrowing.
+ * wins.
  *
  * <p>Each running JVM uses exactly one {@code Alerting} implementation, so no JSON type
  * discriminator is needed. Existing serialized data continues to deserialize as {@link

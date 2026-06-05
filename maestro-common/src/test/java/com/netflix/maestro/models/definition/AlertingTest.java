@@ -53,12 +53,19 @@ public class AlertingTest {
     assertEquals(Set.of("alice@example.com"), ((DefaultAlerting) parsed).getEmails());
   }
 
+  /** Holder whose declared field type is the {@link Alerting} interface. */
+  public static class AlertingHolder {
+    public Alerting alerting;
+  }
+
   @Test
   public void defaultMapper_serializedJsonHasNoExtraTypeField() throws Exception {
     DefaultAlerting alerting = new DefaultAlerting();
     alerting.setEmails(Set.of("alice@example.com"));
+    AlertingHolder holder = new AlertingHolder();
+    holder.alerting = alerting;
     ObjectMapper mapper = JsonHelper.objectMapper();
-    String json = mapper.writeValueAsString(alerting);
+    String json = mapper.writeValueAsString(holder);
     assertFalse("JSON should not carry a type discriminator", json.contains("\"type\""));
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Netflix, Inc.
+ * Copyright 2026 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -19,10 +19,12 @@ import java.util.Map;
  * SPI that lets consumers contribute extra entries to the notebook param map alongside the standard
  * parameters built by {@link NotebookParamsBuilder}.
  *
- * <p>{@link NotebookParamsBuilder} invokes every registered contributor in injection order. A
- * contributor may noop when the workflow's properties don't carry the shape it understands (typical
- * for alerting-driven contributors that only handle one concrete {@link
- * com.netflix.maestro.models.definition.Alerting} implementation).
+ * <p>{@link NotebookParamsBuilder} invokes every registered contributor. The invocation order
+ * follows the injected {@code List} order, which Spring does not strongly guarantee, so
+ * contributors should write disjoint keys; if two contributors write the same key the result
+ * depends on ordering and is effectively undefined. A contributor may noop when the workflow's
+ * properties don't carry the shape it understands (typical for alerting-driven contributors that
+ * only handle one concrete {@link com.netflix.maestro.models.definition.Alerting} implementation).
  *
  * <p>Contributors own their own dependencies (e.g., an {@code ObjectMapper} for nested JSON
  * serialization); the SPI itself stays narrow on purpose.
