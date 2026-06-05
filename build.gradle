@@ -45,17 +45,6 @@ allprojects {
     dependencyLocking {
         lockAllConfigurations()
     }
-
-    configurations.configureEach {
-        resolutionStrategy.componentSelection {
-            all { ComponentSelection selection ->
-                if (selection.candidate.group.startsWith('com.fasterxml.jackson')
-                        && selection.candidate.version == '2.22.0') {
-                    selection.reject('jackson 2.22.0 artifacts missing from Maven Central (https://github.com/FasterXML/jackson/discussions/367)')
-                }
-            }
-        }
-    }
 }
 
 configure(allprojects - project(':netflix-sel')) {
