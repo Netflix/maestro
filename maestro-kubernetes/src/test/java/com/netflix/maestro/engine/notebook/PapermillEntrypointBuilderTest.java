@@ -32,6 +32,7 @@ import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.Parameter;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -87,7 +88,10 @@ public class PapermillEntrypointBuilderTest extends MaestroBaseTest {
             .subType("SparkJob")
             .build();
     context = new KubernetesStepContext(workflowSummary, stepRuntimeSummary, null);
-    papermillEntrypointBuilder = new PapermillEntrypointBuilder(new NotebookParamsBuilder(MAPPER));
+    papermillEntrypointBuilder =
+        new PapermillEntrypointBuilder(
+            new NotebookParamsBuilder(
+                MAPPER, List.of(new DefaultAlertingNotebookParamsContributor(MAPPER))));
   }
 
   @Test

@@ -39,6 +39,7 @@ import com.netflix.maestro.exceptions.MaestroUnprocessableEntityException;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.Defaults;
 import com.netflix.maestro.models.api.WorkflowOverviewResponse;
+import com.netflix.maestro.models.definition.DefaultAlerting;
 import com.netflix.maestro.models.definition.Metadata;
 import com.netflix.maestro.models.definition.Properties;
 import com.netflix.maestro.models.definition.PropertiesSnapshot;
@@ -1005,7 +1006,8 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
     assertEquals(RunStrategy.Rule.PARALLEL, snapshot.getRunStrategy().getRule());
     assertEquals(20, snapshot.getRunStrategy().getWorkflowConcurrency());
     assertEquals(20, snapshot.getStepConcurrency().longValue());
-    assertEquals(1, snapshot.getAlerting().getTct().getCompletedByHour().intValue());
+    assertEquals(
+        1, ((DefaultAlerting) snapshot.getAlerting()).getTct().getCompletedByHour().intValue());
   }
 
   @Test
@@ -1032,7 +1034,8 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
     assertEquals(RunStrategy.Rule.PARALLEL, snapshot.getRunStrategy().getRule());
     assertEquals(20, snapshot.getRunStrategy().getWorkflowConcurrency());
     assertEquals(20, snapshot.getStepConcurrency().longValue());
-    assertEquals(1, snapshot.getAlerting().getTct().getCompletedByHour().intValue());
+    assertEquals(
+        1, ((DefaultAlerting) snapshot.getAlerting()).getTct().getCompletedByHour().intValue());
 
     assertEquals(wfd.getPropertiesSnapshot(), snapshot);
 
