@@ -38,10 +38,6 @@ allprojects {
         }
     }
 
-    test {
-        jvmArgs += ["-Djava.security.manager=allow"]
-    }
-
     dependencyLocking {
         lockAllConfigurations()
     }
