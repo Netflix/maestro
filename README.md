@@ -46,6 +46,13 @@ You can read more details about it in our series of blog posts
 ## Get the sample workflow instance
 - `curl -X GET 'http://127.0.0.1:8080/api/v3/workflows/sample-dag-test-1/instances/1/runs/1'`
 
+## Browse the read-only UI
+A server-rendered, read-only operator dashboard is served by `maestro-server` at
+[http://127.0.0.1:8080/ui](http://127.0.0.1:8080/ui). Use it to list workflows and drill into a
+workflow's versions, instances, step instances, and change timeline. It reads through the same DAOs
+as the API; it performs no mutations. Like the API, it is unauthenticated (no `user:` header) — when
+deploying behind the `deploy/` nginx setup, enforce auth at the load balancer.
+
 ## Delete the sample workflow and its data
 - `curl --header "user: tester" -X DELETE 'http://127.0.0.1:8080/api/v3/workflows/sample-dag-test-1'`
 
