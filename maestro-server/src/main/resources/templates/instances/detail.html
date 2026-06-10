@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head(${workflowId} + ' #' + ${instanceId})}"></head>
+<body>
+<header th:replace="~{fragments :: topnav}"></header>
+<main>
+  <div class="breadcrumb">
+    <a th:href="@{/ui/workflows}">Workflows</a> /
+    <a th:href="@{/ui/workflows/{w}(w=${workflowId})}" th:text="${workflowId}">id</a> /
+    instance <span th:text="${instanceId}">1</span>
+  </div>
+  <h1>
+    Instance <span th:text="${instanceId}">1</span>
+    <span th:replace="~{fragments :: badge(${instance.status})}"></span>
+  </h1>
+
+  <div class="panel">
+    <dl class="kv">
+      <dt>Status</dt><dd><span th:replace="~{fragments :: badge(${instance.status})}"></span></dd>
+      <dt>Latest run</dt><dd th:text="${instance.workflowRunId}">1</dd>
+      <dt>Workflow version</dt><dd th:text="${instance.workflowVersionId}">1</dd>
+      <dt>Initiator</dt>
+      <dd th:text="${instance.initiator != null ? instance.initiator.type : '-'}">-</dd>
+      <dt>Requested</dt><dd th:text="${@uiFmt.time(instance.requestTime)}">-</dd>
+      <dt>Started</dt><dd th:text="${@uiFmt.time(instance.startTime)}">-</dd>
+      <dt>Ended</dt><dd th:text="${@uiFmt.time(instance.endTime)}">-</dd>
+      <dt>Duration</dt><dd th:text="${@uiFmt.duration(instance.startTime, instance.endTime)}">-</dd>
+    </dl>
+  </div>
+
+  <h2>Steps</h2>
+  <div class="panel">
+    <table>
+      <thead>
+      <tr>
+        <th>Step ID</th>
+        <th class="num">Seq</th>
+        <th>Type</th>
+        <th>Status</th>
+        <th>Started</th>
+        <th>Duration</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="s : ${steps}">
+        <td>
+          <a th:href="@{/ui/workflows/{w}/instances/{i}/steps/{s}(w=${workflowId},i=${instanceId},s=${s.stepId})}"
+             th:text="${s.stepId}">step</a>
+        </td>
+        <td class="num" th:text="${s.stepInstanceId}">1</td>
+        <td th:text="${s.definition != null ? s.definition.type : '-'}">type</td>
+        <td><span th:replace="~{fragments :: badge(${s.runtimeState.status})}"></span></td>
+        <td th:text="${@uiFmt.time(s.runtimeState.startTime)}">-</td>
+        <td th:text="${@uiFmt.duration(s.runtimeState.startTime, s.runtimeState.endTime)}">-</td>
+      </tr>
+      <tr th:if="${steps.isEmpty()}">
+        <td colspan="6" class="empty">No steps.</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Run parameters</h2>
+  <pre class="json" th:text="${@uiFmt.json(instance.runParams)}">{}</pre>
+
+  <h2>Evaluated parameters</h2>
+  <pre class="json" th:text="${@uiFmt.json(instance.params)}">{}</pre>
+</main>
+</body>
+</html>

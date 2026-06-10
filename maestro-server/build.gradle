@@ -16,6 +16,7 @@ configurations {
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web:3.+'
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf:3.+'
     implementation 'org.springframework.boot:spring-boot-starter-actuator:3.+'
     implementation 'io.micrometer:micrometer-tracing-bridge-brave:1.+'
     implementation 'io.swagger.core.v3:swagger-annotations:2.+'

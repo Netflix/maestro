@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Error')}"></head>
+<body>
+<header th:replace="~{fragments :: topnav}"></header>
+<main>
+  <h1>
+    <span th:text="${status != null ? status : 'Error'}">500</span>
+    &middot; <span th:text="${title != null ? title : 'Something went wrong'}">Error</span>
+  </h1>
+  <div class="panel">
+    <pre class="json" th:text="${message != null ? message : 'No further detail available.'}">message</pre>
+  </div>
+  <p><a class="button" th:href="@{/ui/workflows}">&laquo; Back to workflows</a></p>
+</main>
+</body>
+</html>

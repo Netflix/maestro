@@ -1,0 +1,133 @@
+# Production profile for a self-hosted, multi-instance maestro-server cluster that shares
+# an EXTERNAL Postgres (and does NOT use SNS/SQS). Activate with:
+#   SPRING_PROFILES_ACTIVE=prod
+#   SPRING_CONFIG_ADDITIONAL_LOCATION=file:/config/
+#
+# Clustering is coordinated entirely through the shared Postgres "flow group" tables; no Redis
+# or AWS messaging is required. Each node claims flow groups and heartbeats them; if a node dies,
+# the survivors re-claim its groups after the expiration window (~56s).
+spring:
+  application:
+    name: maestro
+  autoconfigure:
+    # No AWS: keep SNS/SQS and Maestro's AwsConfiguration disabled.
+    exclude:
+      - com.netflix.maestro.engine.autoconfigure.AwsConfiguration
+      - io.awspring.cloud.autoconfigure.sns.SnsAutoConfiguration
+      - io.awspring.cloud.autoconfigure.sqs.SqsAutoConfiguration
+
+server:
+  port: 8080
+
+# Expose health/info/metrics for the load balancer and monitoring.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+maestro:
+  queue: # check MaestroJobEvent class for queue id
+    properties:
+      1: { worker-num: 8, scan-interval: 5000 }
+      2: { worker-num: 12, scan-interval: 5000 }
+      3: { worker-num: 17, scan-interval: 5000 }
+      4: { worker-num: 3, scan-interval: 5000 }
+      5: { worker-num: 3, scan-interval: 30000, ownership-timeout: 125000 }
+  notifier:
+    type: noop
+  alerting:
+    type: noop
+  redis:
+    enabled: false        # clustering uses Postgres, not Redis
+  sel:
+    thread-num: 3
+    timeout-millis: 120000
+    stack-limit: 128
+    loop-limit: 25001
+    array-limit: 25001
+    length-limit: 10000
+    visit-limit: 100000000
+    memory-limit: 100000000
+  cluster:
+    name: ${MAESTRO_CLUSTER_NAME:prod}
+  step-action:
+    action-timeout: 5000
+    check-interval: 500
+
+engine:
+  configs:
+    # ---- External Postgres (provided via environment) ----
+    jdbc-url: ${MAESTRO_DB_URL}            # e.g. jdbc:postgresql://my-postgres-host:5432/maestro
+    jdbc-username: ${MAESTRO_DB_USERNAME}
+    jdbc-password: ${MAESTRO_DB_PASSWORD}
+    db-type: postgres
+    flyway-enabled: true                  # runs schema migrations on startup
+    workflow-database-error-retries: 5
+    workflow-database-insert-batch-size: 32
+    workflow-database-rewrite-batched-inserts: true
+    workflow-database-login-timeout-seconds: 5
+    workflow-database-socket-timeout-seconds: 50
+    workflow-database-client-name: ${HOSTNAME:maestro-prod}
+    workflow-database-connection-pool-size-max: 16
+    workflow-database-connection-pool-idle-min: 8
+    workflow-database-connection-lifetime-max: 50000
+    workflow-database-connection-idle-timeout: 30000
+
+    # ---- Multi-node flow engine ----
+    # Each node advertises a peer-reachable address; siblings look it up in Postgres and call it
+    # over HTTP to wake/route flows. MUST be reachable by the OTHER maestro nodes. In the compose
+    # network this is the service's DNS name (set per-node via MAESTRO_NODE_ADDRESS).
+    flow-engine-address: ${MAESTRO_NODE_ADDRESS:http://localhost:8080}
+    internal-worker-num: 80
+    # Cluster sizing rule (see FlowExecutor.maintenance javadoc): for N>=3 nodes use
+    # max-group-num = 3*N and max-group-num-per-node = 5 so survivors can absorb a dead node.
+    # Defaults shown are tuned for a 3-node cluster.
+    max-group-num: ${MAESTRO_MAX_GROUP_NUM:9}
+    max-group-num-per-node: ${MAESTRO_MAX_GROUP_NUM_PER_NODE:5}
+    initial-maintenance-delay-millis: ${random.long[2000,5000]}
+
+stepruntime:
+  env: prod
+  foreach:
+    loop-batch-limit: 50
+    insert-batch-limit: 10
+    get-rollup-batch-limit: 100
+  subworkflow:
+    always-pass-down-param-names: []
+  http:
+    connection-timeout: 30000
+    send-timeout: 30000
+    max-response-size: 1048576
+    allow-list: []          # HTTP step targets must be allow-listed; empty blocks all
+  job-template-cache:
+    cache-ttl: 60000
+  callback-delay-config:
+    fixed-callback-delay-in-secs:
+      RUNNING: { default: 3 }
+      WAITING_FOR_PERMITS: { default: 15 }
+      WAITING_FOR_SIGNALS: { default: 5 }
+      PAUSED: { default: 5 }
+      FINISHING: { default: 5 }
+      NOT_CREATED: { default: 30 }
+  enable-tag-permit: true
+  tag-permit-task:
+    batch-size: 512
+    clean-up-interval: 60000
+    scan-interval: 30000
+
+triggers:
+  time-trigger:
+    type: noop            # set to a real implementation only if you wire up SQS
+    trigger-batch-size: 10
+  signal-trigger:
+    type: noop
+
+logging:
+  level:
+    com:
+      netflix: INFO

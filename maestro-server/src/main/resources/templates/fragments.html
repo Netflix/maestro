@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<!--
+  Shared Thymeleaf fragments for the read-only Maestro UI.
+  Pages include head(title) and topnav, then provide their own <main> content.
+-->
+<head th:fragment="head(title)">
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title th:text="${title} + ' · Maestro'">Maestro</title>
+  <link rel="stylesheet" th:href="@{/css/maestro.css}"/>
+</head>
+
+<body>
+<header class="topnav" th:fragment="topnav">
+  <a class="brand" th:href="@{/ui/workflows}">Maestro<span> UI</span></a>
+  <span class="tag">read-only</span>
+</header>
+
+<!-- Status badge: usage th:replace="~{fragments :: badge(${status})}" -->
+<span th:fragment="badge(status)" class="badge"
+      th:classappend="'badge-' + ${status}" th:text="${status}">STATUS</span>
+</body>
+</html>

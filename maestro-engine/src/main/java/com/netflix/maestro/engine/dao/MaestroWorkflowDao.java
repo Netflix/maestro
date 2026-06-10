@@ -127,9 +127,14 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
   private static final String GET_CURRENT_PROPERTIES_SNAPSHOT =
       "SELECT properties_snapshot FROM maestro_workflow WHERE workflow_id=?";
 
-  private static final String GET_MAESTRO_WORKFLOW =
+  private static final String MAESTRO_WORKFLOW_SELECT =
       "SELECT workflow_id,internal_id,active_version_id,activate_ts,activated_by,properties_snapshot,"
-          + "latest_version_id,modify_ts FROM maestro_workflow WHERE workflow_id=?";
+          + "latest_version_id,modify_ts FROM maestro_workflow WHERE ";
+
+  private static final String GET_MAESTRO_WORKFLOW = MAESTRO_WORKFLOW_SELECT + "workflow_id=?";
+
+  private static final String SCAN_MAESTRO_WORKFLOWS_QUERY =
+      MAESTRO_WORKFLOW_SELECT + "internal_id>? ORDER BY internal_id LIMIT ?";
 
   private static final String GET_MAESTRO_WORKFLOW_VERSION =
       "SELECT metadata,definition,trigger_uuids FROM maestro_workflow_version WHERE workflow_id=? AND version_id=?";
@@ -1468,6 +1473,39 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
                     new WorkflowTimeline.WorkflowTimelineEvent(
                         e.getAuthor(), e.getLog(), e.getEventTime()))
             .collect(Collectors.toList()));
+  }
+
+  /**
+   * Scan workflows (one row per workflow id) ordered by the internal sequence id for listing in the
+   * read-only operator UI. The open-source API has no "list all workflows" path because the
+   * indexing/search service is not included; this provides a simple cursor-based scan over the
+   * {@code maestro_workflow} table for that purpose.
+   *
+   * @param fromInternalId exclusive cursor; pass 0 to start from the beginning
+   * @param limit max number of workflows to return
+   * @return a list of {@link MaestroWorkflow} summaries (no definition/metadata loaded)
+   */
+  public List<MaestroWorkflow> scanWorkflows(long fromInternalId, int limit) {
+    return withMetricLogError(
+        () ->
+            withRetryableQuery(
+                SCAN_MAESTRO_WORKFLOWS_QUERY,
+                stmt -> {
+                  int idx = 0;
+                  stmt.setLong(++idx, fromInternalId);
+                  stmt.setInt(++idx, limit);
+                },
+                rs -> {
+                  List<MaestroWorkflow> workflows = new ArrayList<>();
+                  while (rs.next()) {
+                    workflows.add(maestroWorkflowFromResult(rs));
+                  }
+                  return workflows;
+                }),
+        "scanWorkflows",
+        "Failed to scan workflows from internal id [{}] with limit [{}]",
+        fromInternalId,
+        limit);
   }
 
   /**

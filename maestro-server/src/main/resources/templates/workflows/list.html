@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Workflows')}"></head>
+<body>
+<header th:replace="~{fragments :: topnav}"></header>
+<main>
+  <h1>Workflows</h1>
+  <p class="subtitle">All workflow definitions registered on this cluster.</p>
+
+  <div class="panel">
+    <table>
+      <thead>
+      <tr>
+        <th>Workflow ID</th>
+        <th class="num">Active version</th>
+        <th class="num">Latest version</th>
+        <th>Owner</th>
+        <th>Last modified</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="wf : ${workflows}">
+        <td><a th:href="@{/ui/workflows/{id}(id=${wf.workflowId})}" th:text="${wf.workflowId}">id</a></td>
+        <td class="num" th:text="${wf.activeVersionId > 0 ? wf.activeVersionId : 'inactive'}">0</td>
+        <td class="num" th:text="${wf.latestVersionId}">0</td>
+        <td th:text="${wf.propertiesSnapshot != null and wf.propertiesSnapshot.owner != null ? wf.propertiesSnapshot.owner.name : '-'}">owner</td>
+        <td th:text="${@uiFmt.time(wf.modifyTime)}">time</td>
+      </tr>
+      <tr th:if="${workflows.isEmpty()}">
+        <td colspan="5" class="empty">No workflows found.</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pager">
+    <a th:if="${cursor > 0}" class="button" th:href="@{/ui/workflows}">&laquo; First</a>
+    <a th:if="${nextCursor != null}" class="button"
+       th:href="@{/ui/workflows(cursor=${nextCursor})}">Next &raquo;</a>
+  </div>
+</main>
+</body>
+</html>

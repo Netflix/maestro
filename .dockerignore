@@ -1,0 +1,10 @@
+# Keep the build context small; the build stage compiles from source inside the image.
+.git
+.gradle
+**/build/
+**/out/
+.idea
+*.iml
+tmp/
+maestro-aws/tmp/
+deploy/*.env

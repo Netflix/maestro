@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head(${workflowId})}"></head>
+<body>
+<header th:replace="~{fragments :: topnav}"></header>
+<main>
+  <div class="breadcrumb">
+    <a th:href="@{/ui/workflows}">Workflows</a> / <span th:text="${workflowId}">id</span>
+  </div>
+  <h1 th:text="${workflowId}">id</h1>
+  <p class="subtitle">
+    active version
+    <strong th:text="${overview.activeVersionId > 0 ? overview.activeVersionId : 'none'}">0</strong>,
+    latest version <strong th:text="${overview.latestVersionId}">0</strong>,
+    latest instance <strong th:text="${overview.latestInstanceId}">0</strong>
+  </p>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="label">Failed</div>
+      <div class="value" th:text="${overview.failedInstances != null ? overview.failedInstances : 0}">0</div>
+    </div>
+    <div class="stat" th:each="e : ${overview.nonterminalInstances}">
+      <div class="label" th:text="${e.key}">STATUS</div>
+      <div class="value" th:text="${e.value}">0</div>
+    </div>
+  </div>
+
+  <h2>Recent instances</h2>
+  <div class="panel">
+    <table>
+      <thead>
+      <tr>
+        <th class="num">Instance</th>
+        <th class="num">Run</th>
+        <th>Status</th>
+        <th>Started</th>
+        <th>Duration</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="wi : ${instances}">
+        <td class="num">
+          <a th:href="@{/ui/workflows/{w}/instances/{i}(w=${workflowId},i=${wi.workflowInstanceId})}"
+             th:text="${wi.workflowInstanceId}">1</a>
+        </td>
+        <td class="num" th:text="${wi.workflowRunId}">1</td>
+        <td><span th:replace="~{fragments :: badge(${wi.status})}"></span></td>
+        <td th:text="${@uiFmt.time(wi.startTime)}">-</td>
+        <td th:text="${@uiFmt.duration(wi.startTime, wi.endTime)}">-</td>
+      </tr>
+      <tr th:if="${instances.isEmpty()}">
+        <td colspan="5" class="empty">No instances yet.</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Recent versions</h2>
+  <div class="panel">
+    <table>
+      <thead>
+      <tr>
+        <th class="num">Version</th>
+        <th>Flags</th>
+        <th>Author</th>
+        <th>Created</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="v : ${versions}">
+        <td class="num" th:text="${v.metadata.workflowVersionId}">1</td>
+        <td>
+          <span class="badge badge-IN_PROGRESS" th:if="${v.getIsActive()}">active</span>
+          <span class="badge" th:if="${v.getIsLatest()}">latest</span>
+          <span class="badge" th:if="${v.getIsDefault()}">default</span>
+        </td>
+        <td th:text="${v.metadata.versionAuthor != null ? v.metadata.versionAuthor.name : '-'}">author</td>
+        <td th:text="${@uiFmt.time(v.metadata.createTime)}">-</td>
+      </tr>
+      <tr th:if="${versions.isEmpty()}">
+        <td colspan="4" class="empty">No versions.</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Change timeline</h2>
+  <div class="panel">
+    <table>
+      <thead>
+      <tr><th>When</th><th>Author</th><th>Change</th></tr>
+      </thead>
+      <tbody>
+      <tr th:each="ev : ${timeline.timelineEvents}">
+        <td th:text="${@uiFmt.time(ev.timestamp)}">-</td>
+        <td th:text="${ev.author != null ? ev.author.name : '-'}">author</td>
+        <td th:text="${ev.log}">change</td>
+      </tr>
+      <tr th:if="${timeline.timelineEvents == null or timeline.timelineEvents.isEmpty()}">
+        <td colspan="3" class="empty">No change history.</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+</body>
+</html>

@@ -56,3 +56,5 @@ Thumbs.db
 tomcat.8080/
 cockroach-data
 **/tmp
+# Local deployment secrets
+deploy/maestro.env
