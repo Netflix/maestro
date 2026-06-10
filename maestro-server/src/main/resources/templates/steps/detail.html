@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head(${stepId})}"></head>
+<body>
+<header th:replace="~{fragments :: topnav}"></header>
+<main>
+  <div class="breadcrumb">
+    <a th:href="@{/ui/workflows}">Workflows</a> /
+    <a th:href="@{/ui/workflows/{w}(w=${workflowId})}" th:text="${workflowId}">id</a> /
+    <a th:href="@{/ui/workflows/{w}/instances/{i}(w=${workflowId},i=${instanceId})}"
+       th:text="'instance ' + ${instanceId}">instance</a> /
+    step <span th:text="${stepId}">step</span>
+  </div>
+  <h1>
+    Step <span th:text="${stepId}">step</span>
+    <span th:replace="~{fragments :: badge(${step.runtimeState.status})}"></span>
+  </h1>
+
+  <div class="panel">
+    <dl class="kv">
+      <dt>Status</dt><dd><span th:replace="~{fragments :: badge(${step.runtimeState.status})}"></span></dd>
+      <dt>Step sequence</dt><dd th:text="${step.stepInstanceId}">1</dd>
+      <dt>Latest attempt</dt><dd th:text="${step.stepAttemptId}">1</dd>
+      <dt>Type</dt><dd th:text="${step.definition != null ? step.definition.type : '-'}">-</dd>
+      <dt>Started</dt><dd th:text="${@uiFmt.time(step.runtimeState.startTime)}">-</dd>
+      <dt>Ended</dt><dd th:text="${@uiFmt.time(step.runtimeState.endTime)}">-</dd>
+      <dt>Duration</dt><dd th:text="${@uiFmt.duration(step.runtimeState.startTime, step.runtimeState.endTime)}">-</dd>
+    </dl>
+  </div>
+
+  <h2>Timeline</h2>
+  <div class="panel">
+    <table>
+      <thead>
+      <tr><th>When</th><th>Type</th><th>Message</th></tr>
+      </thead>
+      <tbody>
+      <tr th:each="ev : ${step.timeline != null ? step.timeline.timelineEvents : null}">
+        <td th:text="${@uiFmt.time(ev.timestamp)}">-</td>
+        <td th:text="${ev.type}">-</td>
+        <td th:text="${ev.message}">-</td>
+      </tr>
+      <tr th:if="${step.timeline == null or step.timeline.timelineEvents == null or step.timeline.timelineEvents.isEmpty()}">
+        <td colspan="3" class="empty">No timeline events.</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Parameters</h2>
+  <pre class="json" th:text="${@uiFmt.json(step.params)}">{}</pre>
+
+  <h2>Artifacts</h2>
+  <pre class="json" th:text="${@uiFmt.json(step.artifacts)}">{}</pre>
+</main>
+</body>
+</html>

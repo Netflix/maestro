@@ -1,0 +1,127 @@
+:root {
+  --bg: #0f1419;
+  --panel: #1a212b;
+  --panel-alt: #222b38;
+  --border: #2c3645;
+  --text: #e6edf3;
+  --muted: #8b97a7;
+  --accent: #4c8dff;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+header.topnav {
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+header.topnav .brand { font-weight: 700; font-size: 16px; color: var(--text); }
+header.topnav .brand span { color: var(--accent); }
+header.topnav .tag {
+  font-size: 11px;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1px 8px;
+}
+
+main { padding: 24px; max-width: 1200px; margin: 0 auto; }
+
+.breadcrumb { color: var(--muted); margin-bottom: 16px; font-size: 13px; }
+.breadcrumb a { color: var(--muted); }
+.breadcrumb a:hover { color: var(--text); }
+
+h1 { font-size: 20px; margin: 0 0 4px; }
+h2 { font-size: 15px; margin: 24px 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.subtitle { color: var(--muted); margin: 0 0 16px; font-size: 13px; }
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--border); }
+th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: var(--panel-alt); }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.empty { padding: 24px; color: var(--muted); text-align: center; }
+
+dl.kv { display: grid; grid-template-columns: 180px 1fr; gap: 0; margin: 0; }
+dl.kv dt { color: var(--muted); padding: 7px 14px; border-bottom: 1px solid var(--border); }
+dl.kv dd { margin: 0; padding: 7px 14px; border-bottom: 1px solid var(--border); }
+dl.kv dt:last-of-type, dl.kv dd:last-of-type { border-bottom: none; }
+
+pre.json {
+  background: var(--panel-alt);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+  overflow-x: auto;
+  font: 12px/1.5 "SF Mono", Menlo, Consolas, monospace;
+  color: #cdd9e5;
+  margin: 0;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 11px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+/* running / in-progress family */
+.badge-IN_PROGRESS, .badge-RUNNING, .badge-STARTING, .badge-FINISHING { background: #103a5c; color: #6cb6ff; border-color: #1d5a8a; }
+/* queued / waiting family */
+.badge-CREATED, .badge-NOT_CREATED, .badge-INITIALIZED, .badge-PAUSED,
+.badge-WAITING_FOR_SIGNALS, .badge-EVALUATING_PARAMS, .badge-WAITING_FOR_PERMITS { background: #3a3320; color: #e3c878; border-color: #5c5230; }
+/* success family */
+.badge-SUCCEEDED, .badge-COMPLETED_WITH_ERROR { background: #14361f; color: #5fd38d; border-color: #246b3a; }
+/* terminal-neutral family */
+.badge-STOPPED, .badge-SKIPPED, .badge-DISABLED, .badge-UNSATISFIED, .badge-TIMED_OUT { background: #2c3645; color: #aeb9c7; border-color: #3c4859; }
+/* failure family */
+.badge-FAILED, .badge-USER_FAILED, .badge-PLATFORM_FAILED, .badge-FATALLY_FAILED,
+.badge-INTERNALLY_FAILED, .badge-TIMEOUT_FAILED { background: #44181a; color: #ff7b72; border-color: #6e2528; }
+
+.stats { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+.stat {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 16px;
+  min-width: 110px;
+}
+.stat .label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .03em; }
+.stat .value { font-size: 20px; font-weight: 700; }
+
+.pager { margin-top: 16px; display: flex; gap: 12px; align-items: center; }
+.button {
+  display: inline-block;
+  background: var(--panel-alt);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 14px;
+  color: var(--text);
+}
+.button:hover { text-decoration: none; border-color: var(--accent); }
+code { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 12px; }
