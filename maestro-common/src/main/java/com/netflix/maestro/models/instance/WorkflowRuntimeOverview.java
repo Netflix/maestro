@@ -18,6 +18,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.annotations.Nullable;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.models.definition.StepTransition;
 import com.netflix.maestro.utils.Checks;
 import java.util.EnumMap;
@@ -37,8 +38,9 @@ import lombok.Data;
     alphabetic = true)
 @Data
 @SuppressWarnings("PMD.LooseCoupling")
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class WorkflowRuntimeOverview {
-  private long totalStepCount;
+  private volatile long totalStepCount;
   private EnumMap<StepInstance.Status, WorkflowStepStatusSummary> stepOverview =
       new EnumMap<>(StepInstance.Status.class);
 

@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.server.controllers;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
 import com.netflix.maestro.models.Actions;
 import com.netflix.maestro.models.Constants;
@@ -56,6 +57,7 @@ import org.springframework.web.bind.annotation.RestController;
     produces = MediaType.APPLICATION_JSON_VALUE,
     consumes = MediaType.APPLICATION_JSON_VALUE)
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class WorkflowInstanceController {
   private static final int WORKFLOW_INSTANCE_MAX_BATCH_LIMIT = 200;
   private static final int WORKFLOW_INSTANCE_MIN_BATCH_LIMIT = 1;

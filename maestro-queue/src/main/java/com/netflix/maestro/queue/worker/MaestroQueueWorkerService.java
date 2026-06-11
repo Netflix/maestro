@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.queue.worker;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.queue.dao.MaestroQueueDao;
 import com.netflix.maestro.queue.jobevents.MaestroJobEvent;
@@ -63,7 +64,8 @@ public final class MaestroQueueWorkerService {
       if (!visited.contains(queueId)) {
         visited.add(queueId);
         // boostrap the queue with a message to trigger the worker
-        messageQueue.offer(MessageDto.SCAN_CMD_MSG);
+        @SuppressFBWarnings("RV_RETURN_VALUE_IGNORED_BAD_PRACTICE")
+        boolean ignored = messageQueue.offer(MessageDto.SCAN_CMD_MSG);
         queueDao.addLockIfAbsent(queueId);
         var workerProperties = properties.getQueueWorkerProperties(queueId);
         int workerNum = workerProperties.getWorkerNum();

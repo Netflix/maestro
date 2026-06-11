@@ -18,6 +18,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.TagList;
 import com.netflix.maestro.utils.Checks;
@@ -36,6 +37,7 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @SuperBuilder(toBuilder = true)
 @EqualsAndHashCode
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public abstract class AbstractParameter implements Parameter {
   @Setter @JsonIgnore @MaestroReferenceIdConstraint private String name;
 

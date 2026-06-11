@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.server.runtime;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.exceptions.MaestroRetryableError;
 import com.netflix.maestro.flow.dao.MaestroFlowDao;
 import com.netflix.maestro.flow.engine.FlowExecutor;
@@ -25,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.web.client.RestTemplate;
 
 /** Implementation of FlowOperation using REST API. */
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class RestBasedFlowOperation implements FlowOperation {
 
   private final RestTemplate restTemplate;

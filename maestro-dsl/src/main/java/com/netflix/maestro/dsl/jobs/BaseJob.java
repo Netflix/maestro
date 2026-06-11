@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.models.definition.FailureMode;
 import com.netflix.maestro.utils.Checks;
 import java.util.LinkedHashMap;
@@ -16,6 +17,7 @@ import lombok.Data;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public abstract class BaseJob implements Job {
   /** reserved fields cannot be set within jobParams. */
   static final Set<String> RESERVED_FIELDS =

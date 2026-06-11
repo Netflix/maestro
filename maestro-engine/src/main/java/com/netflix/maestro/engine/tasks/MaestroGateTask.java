@@ -13,6 +13,7 @@
 package com.netflix.maestro.engine.tasks;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
 import com.netflix.maestro.engine.transformation.Translator;
@@ -33,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
  * execution following the order defined in the DAG of the Maestro workflow definition.
  */
 @Slf4j
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public final class MaestroGateTask implements FlowTask {
 
   private final MaestroStepInstanceDao stepInstanceDao;

@@ -13,6 +13,7 @@
 package com.netflix.maestro.engine.tasks;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
 import com.netflix.maestro.engine.utils.StepHelper;
@@ -32,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
  * be simplified with the new internal flow engine but not required for now.
  */
 @Slf4j
+@SuppressFBWarnings({"EI_EXPOSE_REP", "DCN_NULLPOINTER_EXCEPTION"})
 public final class MaestroStartTask implements FlowTask {
   /** Special prefix to indicate that the failure is due to dedup and ignore its finalized. */
   public static final String DEDUP_FAILURE_PREFIX = "[DEDUP][IGNORE]";

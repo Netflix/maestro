@@ -1,5 +1,6 @@
 package com.netflix.maestro.flow.models;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import java.util.List;
 import lombok.Data;
 
@@ -10,6 +11,7 @@ import lombok.Data;
  * @author jun-he
  */
 @Data
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class FlowDef {
   private TaskDef prepareTask; // TaskDef for the task to run at the beginning before user tasks
   private TaskDef monitorTask; // TaskDef for the task to run whenever there is an update

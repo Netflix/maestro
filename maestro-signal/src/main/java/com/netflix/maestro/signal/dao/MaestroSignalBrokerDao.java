@@ -1,6 +1,7 @@
 package com.netflix.maestro.signal.dao;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.database.AbstractDatabaseDao;
 import com.netflix.maestro.database.DatabaseConfiguration;
 import com.netflix.maestro.exceptions.MaestroResourceConflictException;
@@ -37,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author jun-he
  */
 @Slf4j
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class MaestroSignalBrokerDao extends AbstractDatabaseDao {
   private final MaestroSignalInstanceDao instanceDao;
   private final MaestroSignalParamDao paramDao;

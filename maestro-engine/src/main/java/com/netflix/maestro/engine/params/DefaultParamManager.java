@@ -14,6 +14,7 @@ package com.netflix.maestro.engine.params;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.exceptions.MaestroRuntimeException;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.parameter.ParamDefinition;
@@ -27,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /** DefaultParamManager used to manage various levels of default and schema level parameters. */
 @Slf4j
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class DefaultParamManager {
   private static final String WORKFLOW_PARAMS_FILE = "defaultparams/default-workflow-params.yaml";
   private static final String NETFLIX_PARAMS_FILE = "defaultparams/default-step-params.yaml";

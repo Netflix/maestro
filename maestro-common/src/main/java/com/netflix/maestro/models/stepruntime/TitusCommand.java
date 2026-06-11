@@ -62,7 +62,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@SuppressFBWarnings({"EI", "EI2"})
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class TitusCommand {
   private String applicationName;
   private Map<String, String> attributes;

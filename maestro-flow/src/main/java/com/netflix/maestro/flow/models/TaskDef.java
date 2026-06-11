@@ -1,6 +1,7 @@
 package com.netflix.maestro.flow.models;
 
 import com.netflix.maestro.annotations.Nullable;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import java.util.List;
 
 /**
@@ -13,4 +14,5 @@ import java.util.List;
  * @param joinOn this is nullable and optional field.
  * @author jun-he
  */
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public record TaskDef(String taskReferenceName, String type, @Nullable List<String> joinOn) {}

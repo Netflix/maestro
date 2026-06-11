@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.server.controllers;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.engine.dao.MaestroWorkflowDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowDeletionDao;
 import com.netflix.maestro.engine.db.PropertiesUpdate;
@@ -72,6 +73,7 @@ import org.springframework.web.bind.annotation.RestController;
     produces = MediaType.APPLICATION_JSON_VALUE,
     consumes = MediaType.APPLICATION_JSON_VALUE)
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class WorkflowController {
   private static final Set<Type> VALID_UPDATE_PROPERTY_TAGS_TYPES =
       Set.of(Type.ADD_WORKFLOW_TAG, Type.DELETE_WORKFLOW_TAG);
