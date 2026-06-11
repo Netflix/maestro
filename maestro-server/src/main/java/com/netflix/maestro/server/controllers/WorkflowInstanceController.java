@@ -17,8 +17,17 @@ import com.netflix.maestro.models.Actions;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.api.PaginationDirection;
 import com.netflix.maestro.models.api.PaginationResult;
+import com.netflix.maestro.models.definition.ForeachStep;
+import com.netflix.maestro.models.definition.Step;
+import com.netflix.maestro.models.definition.StepType;
+import com.netflix.maestro.models.initiator.ForeachInitiator;
+import com.netflix.maestro.models.initiator.UpstreamInitiator;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.server.utils.PaginationHelper;
+import com.netflix.maestro.utils.Checks;
+import com.netflix.maestro.utils.HashHelper;
+import com.netflix.maestro.utils.IdHelper;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,12 +36,14 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -279,5 +290,100 @@ public class WorkflowInstanceController {
     }
 
     return new long[] {max, min}; // high, low
+  }
+
+  @Operation(
+      summary =
+          "Get the inline workflow id for a given node path, which includes the node info up to the non-inline parent")
+  @Hidden
+  @GetMapping(value = "/instances/inline-workflow-id")
+  public String getInlineWorkflowIdForStepWithinForeach(
+      @Valid @NotNull @RequestBody List<UpstreamInitiator.Info> nodePath) {
+    UpstreamInitiator.Info root = nodePath.get(0);
+    UpstreamInitiator.Info current = nodePath.get(nodePath.size() - 1);
+    WorkflowInstance instance =
+        workflowInstanceDao.getWorkflowInstanceRun(
+            root.getWorkflowId(), root.getInstanceId(), Constants.LATEST_ONE);
+
+    List<String> path = new ArrayList<>();
+    for (Step step : instance.getRuntimeWorkflow().getSteps()) {
+      if (getPathToStepId(step, current.getStepId(), path)) {
+        break;
+      }
+    }
+    Checks.checkTrue(
+        path.size() == nodePath.size() && path.size() > 1,
+        "Inline workflow step path [%s] is invalid for the input path [%s]",
+        path,
+        nodePath);
+
+    String inlineWorkflowId = root.getWorkflowId();
+    for (int i = 0; i < path.size() - 1; ++i) {
+      UpstreamInitiator.Info node = nodePath.get(i);
+      node.setStepId(path.get(i));
+      node.setWorkflowId(inlineWorkflowId);
+      inlineWorkflowId =
+          computeInlineWorkflowId(instance.getInternalId(), instance.getWorkflowInstanceId(), node);
+    }
+    return inlineWorkflowId;
+  }
+
+  private String computeInlineWorkflowId(
+      long internalId, long instanceId, UpstreamInitiator.Info node) {
+    return String.format(
+        "%s_%s_%s_%s",
+        Constants.FOREACH_INLINE_WORKFLOW_PREFIX,
+        IdHelper.hashKey(internalId),
+        IdHelper.rangeKey(instanceId),
+        HashHelper.md5(
+            node.getStepId(), String.valueOf(node.getInstanceId()), node.getWorkflowId()));
+  }
+
+  private boolean getPathToStepId(Step step, String target, List<String> path) {
+    if (target.equals(step.getId())) {
+      path.add(step.getId());
+      return true;
+    }
+
+    if (step.getType() == StepType.FOREACH) {
+      path.add(step.getId());
+      for (Step foreachStep : ((ForeachStep) step).getSteps()) {
+        if (getPathToStepId(foreachStep, target, path)) {
+          return true;
+        }
+      }
+      path.remove(path.size() - 1);
+    }
+    return false;
+  }
+
+  @Operation(
+      summary =
+          "Get the inline node path for a given foreach inline workflow instance. "
+              + "The path is rooted at the non-inline parent and expanded to the foreach instance itself.")
+  @Hidden
+  @GetMapping(
+      value = "/{workflowId}/instances/{workflowInstanceId}/inline-path",
+      consumes = MediaType.ALL_VALUE)
+  public List<UpstreamInitiator.Info> getForeachInitiatorForInlineWorkflowInstance(
+      @Valid @NotNull @PathVariable("workflowId") String workflowId,
+      @Valid @NotNull @PathVariable("workflowInstanceId") long workflowInstanceId) {
+    WorkflowInstance instance =
+        workflowInstanceDao.getWorkflowInstanceRun(
+            workflowId, workflowInstanceId, Constants.LATEST_ONE);
+    Checks.checkTrue(
+        instance.getInitiator() instanceof ForeachInitiator,
+        "This endpoint only supports getting ForeachInitiator for an inline workflow instance.");
+
+    ForeachInitiator foreachInitiator = (ForeachInitiator) instance.getInitiator();
+    UpstreamInitiator.Info nonInlineParent = foreachInitiator.getNonInlineParent();
+    while (!foreachInitiator.getRoot().equals(nonInlineParent)) {
+      foreachInitiator.getAncestors().remove(0);
+    }
+    UpstreamInitiator.Info current = new UpstreamInitiator.Info();
+    current.setWorkflowId(workflowId);
+    current.setInstanceId(workflowInstanceId);
+    foreachInitiator.getAncestors().add(current);
+    return foreachInitiator.getAncestors();
   }
 }
