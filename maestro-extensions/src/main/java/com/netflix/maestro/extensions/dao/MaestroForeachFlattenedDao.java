@@ -19,6 +19,7 @@ import com.netflix.maestro.annotations.VisibleForTesting;
 import com.netflix.maestro.database.AbstractDatabaseDao;
 import com.netflix.maestro.database.DatabaseConfiguration;
 import com.netflix.maestro.extensions.dao.models.ForeachFlattenedModel;
+import com.netflix.maestro.extensions.models.LeafStepInstanceReference;
 import com.netflix.maestro.extensions.models.StepIteration;
 import com.netflix.maestro.extensions.models.StepIterationsSummary;
 import com.netflix.maestro.extensions.utils.ForeachFlatteningHelper;
@@ -457,7 +458,7 @@ public class MaestroForeachFlattenedDao extends AbstractDatabaseDao {
       String workflowId, long workflowInstanceId, String stepId, ResultSet rs) throws SQLException {
     String iterationRank = rs.getString("iteration_rank");
     String stepAttemptSeq = rs.getString("step_attempt_seq");
-    String leafStepRef =
+    LeafStepInstanceReference leafStepRef =
         ForeachFlatteningHelper.getLeafStepRef(
             rs.getString("leaf_workflow_id"), iterationRank, stepId, stepAttemptSeq);
     return StepIteration.create(

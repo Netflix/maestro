@@ -47,7 +47,7 @@ public class StepIteration {
   private String stepId;
   private String iterationRank;
   private String stepAttemptSeq;
-  @Nullable private String leafStepRef;
+  @Nullable private LeafStepInstanceReference leafStepRef;
   @Nullable private Map<String, String> loopParams;
   private StepRuntimeState stepRuntimeState;
 
@@ -58,7 +58,7 @@ public class StepIteration {
       String stepId,
       String iterationRank,
       String stepAttemptSeq,
-      String leafStepRef,
+      LeafStepInstanceReference leafStepRef,
       Map<String, String> loopParams,
       StepRuntimeState stepRuntimeState) {
     StepIteration ret = new StepIteration();

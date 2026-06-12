@@ -14,6 +14,7 @@ package com.netflix.maestro.extensions.utils;
 
 import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.annotations.VisibleForTesting;
+import com.netflix.maestro.extensions.models.LeafStepInstanceReference;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.ForeachStep;
 import com.netflix.maestro.models.definition.Step;
@@ -159,37 +160,32 @@ public class ForeachFlatteningHelper {
   }
 
   /**
-   * Assembles the leaf step reference of the form
-   * [leafWorkflowId]:[leafInstanceId]:[leafRunId]:[stepId]:[leafStepAttemptId]. The leaf instance
-   * id is the last segment of the iterationRank, and the leaf run id and step attempt id are the
-   * last two segments of the stepAttemptSeq, each decoded by stripping its length prefix. Returns
-   * null when leafWorkflowId is absent, since the rest of the reference is not resolvable without
-   * it.
+   * Resolves the leaf step instance reference from the encoded breadcrumbs. The leaf instance id is
+   * the last segment of the iterationRank, and the leaf run id and step attempt id are the last two
+   * segments of the stepAttemptSeq, each decoded by stripping its length prefix. Returns null when
+   * leafWorkflowId is absent, since the rest of the reference is not resolvable without it.
    *
    * @param leafWorkflowId the leaf inline workflow id, or null for rows without it
    * @param iterationRank the encoded iteration rank
    * @param stepId the leaf step id
    * @param stepAttemptSeq the encoded attempt sequence
-   * @return the leaf step reference, or null
+   * @return the leaf step instance reference, or null
    */
   @Nullable
-  public static String getLeafStepRef(
+  public static LeafStepInstanceReference getLeafStepRef(
       @Nullable String leafWorkflowId, String iterationRank, String stepId, String stepAttemptSeq) {
     if (leafWorkflowId == null) {
       return null;
     }
     String[] iterationSegments = iterationRank.split(ITERATION_ID_DELIMITER);
     String[] attemptSegments = stepAttemptSeq.split(ITERATION_ID_DELIMITER);
-    String leafInstanceId = decodeByLength(iterationSegments[iterationSegments.length - 1]);
-    String leafRunId = decodeByLength(attemptSegments[attemptSegments.length - 2]);
-    String leafStepAttemptId = decodeByLength(attemptSegments[attemptSegments.length - 1]);
-    return String.join(
-        Constants.REFERENCE_DELIMITER,
-        leafWorkflowId,
-        leafInstanceId,
-        leafRunId,
-        stepId,
-        leafStepAttemptId);
+    long leafInstanceId =
+        Long.parseLong(decodeByLength(iterationSegments[iterationSegments.length - 1]));
+    long leafRunId = Long.parseLong(decodeByLength(attemptSegments[attemptSegments.length - 2]));
+    long leafStepAttemptId =
+        Long.parseLong(decodeByLength(attemptSegments[attemptSegments.length - 1]));
+    return new LeafStepInstanceReference(
+        leafWorkflowId, leafInstanceId, leafRunId, stepId, leafStepAttemptId);
   }
 
   private void getLoopParamNames(

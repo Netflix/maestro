@@ -18,7 +18,7 @@ import static junit.framework.TestCase.assertNull;
 import static org.mockito.Mockito.when;
 
 import com.netflix.maestro.MaestroBaseTest;
-import com.netflix.maestro.models.Constants;
+import com.netflix.maestro.extensions.models.LeafStepInstanceReference;
 import com.netflix.maestro.models.initiator.ForeachInitiator;
 import com.netflix.maestro.models.initiator.UpstreamInitiator;
 import com.netflix.maestro.models.initiator.UpstreamInitiator.Info;
@@ -116,11 +116,11 @@ public class ForeachFlatteningHelperTest extends MaestroBaseTest {
   @Test
   public void testGetLeafStepRef() {
     assertEquals(
-        "maestro_foreach_inline:23:1:leaf-step:9",
+        new LeafStepInstanceReference("maestro_foreach_inline", 23, 1, "leaf-step", 9),
         ForeachFlatteningHelper.getLeafStepRef(
             "maestro_foreach_inline", "3344-13-223", "leaf-step", "211-12-13-11-11-19"));
     assertEquals(
-        "maestro_foreach_inline:2:1:leaf-step:1",
+        new LeafStepInstanceReference("maestro_foreach_inline", 2, 1, "leaf-step", 1),
         ForeachFlatteningHelper.getLeafStepRef(
             "maestro_foreach_inline", "12", "leaf-step", "11-11"));
   }
@@ -155,13 +155,8 @@ public class ForeachFlatteningHelperTest extends MaestroBaseTest {
     String attemptSeq = FOREACH_FLATTENING_HELPER.getAttemptSeq(initiator, stepInstance);
 
     assertEquals(
-        String.join(
-            Constants.REFERENCE_DELIMITER,
-            leafWorkflowId,
-            String.valueOf(leafInstanceId),
-            String.valueOf(leafRunId),
-            stepId,
-            String.valueOf(leafStepAttemptId)),
+        new LeafStepInstanceReference(
+            leafWorkflowId, leafInstanceId, leafRunId, stepId, leafStepAttemptId),
         ForeachFlatteningHelper.getLeafStepRef(leafWorkflowId, iterationRank, stepId, attemptSeq));
   }
 

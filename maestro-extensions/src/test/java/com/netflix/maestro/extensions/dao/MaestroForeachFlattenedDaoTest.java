@@ -16,6 +16,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.netflix.maestro.extensions.ExtensionsDaoBaseTest;
 import com.netflix.maestro.extensions.dao.models.ForeachFlattenedInstance;
 import com.netflix.maestro.extensions.dao.models.ForeachFlattenedModel;
+import com.netflix.maestro.extensions.models.LeafStepInstanceReference;
 import com.netflix.maestro.extensions.models.StepIteration;
 import com.netflix.maestro.extensions.models.StepIterationsSummary;
 import com.netflix.maestro.extensions.utils.StepInstanceStatusEncoder;
@@ -224,7 +225,8 @@ public class MaestroForeachFlattenedDaoTest extends ExtensionsDaoBaseTest {
     Assert.assertEquals(firstStepAttemptSeq, stepIterationRun5.getStepAttemptSeq());
     Assert.assertEquals(firstWorkflowRunId, stepIterationRun5.getWorkflowRunId());
     Assert.assertEquals(
-        LEAF_WORKFLOW_ID + ":2:3:" + STEP_ID + ":1", stepIterationRun5.getLeafStepRef());
+        new LeafStepInstanceReference(LEAF_WORKFLOW_ID, 2, 3, STEP_ID, 1),
+        stepIterationRun5.getLeafStepRef());
 
     List<StepIteration> stepIterationsRun3 =
         foreachFlattenedDao.scanStepIterations(
@@ -566,7 +568,8 @@ public class MaestroForeachFlattenedDaoTest extends ExtensionsDaoBaseTest {
         foreachFlattenedDao.getStepIteration(
             "foreach.flattening.leafref", 1, 1, "leaf-ref-step", "225-14");
     Assert.assertEquals(
-        "maestro_foreach_fixture_inline:4:1:leaf-ref-step:9", iteration.getLeafStepRef());
+        new LeafStepInstanceReference("maestro_foreach_fixture_inline", 4, 1, "leaf-ref-step", 9),
+        iteration.getLeafStepRef());
   }
 
   @Test
@@ -597,7 +600,9 @@ public class MaestroForeachFlattenedDaoTest extends ExtensionsDaoBaseTest {
 
     StepIteration iteration =
         foreachFlattenedDao.getStepIteration(WORKFLOW_ID, 1, 1, STEP_ID, iterationRank);
-    Assert.assertEquals(LEAF_WORKFLOW_ID + ":2:1:" + STEP_ID + ":9", iteration.getLeafStepRef());
+    Assert.assertEquals(
+        new LeafStepInstanceReference(LEAF_WORKFLOW_ID, 2, 1, STEP_ID, 9),
+        iteration.getLeafStepRef());
   }
 
   private static ForeachFlattenedModel getForeachFlattenedModel(
