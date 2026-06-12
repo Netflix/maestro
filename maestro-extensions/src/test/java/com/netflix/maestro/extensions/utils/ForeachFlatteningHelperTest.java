@@ -112,6 +112,23 @@ public class ForeachFlatteningHelperTest extends MaestroBaseTest {
     assertEquals("14-17-222", getIterationRank("4-7-22"));
   }
 
+  @Test
+  public void testGetLeafStepRef() {
+    assertEquals(
+        "maestro_foreach_inline:23:1:leaf-step:9",
+        ForeachFlatteningHelper.getLeafStepRef(
+            "maestro_foreach_inline", "3344-13-223", "leaf-step", "211-12-13-11-11-19"));
+    assertEquals(
+        "maestro_foreach_inline:2:1:leaf-step:1",
+        ForeachFlatteningHelper.getLeafStepRef(
+            "maestro_foreach_inline", "12", "leaf-step", "11-11"));
+  }
+
+  @Test
+  public void testGetLeafStepRefReturnsNullWhenLeafWorkflowIdMissing() {
+    assertNull(ForeachFlatteningHelper.getLeafStepRef(null, "12", "leaf-step", "11-11"));
+  }
+
   private static UpstreamInitiator getUpstreamInitiator(long nestedInstanceIdLong) {
     UpstreamInitiator initiator = new ForeachInitiator();
     Info rootInfo = new Info();

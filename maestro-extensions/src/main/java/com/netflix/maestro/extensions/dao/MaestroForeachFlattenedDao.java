@@ -21,6 +21,7 @@ import com.netflix.maestro.database.DatabaseConfiguration;
 import com.netflix.maestro.extensions.dao.models.ForeachFlattenedModel;
 import com.netflix.maestro.extensions.models.StepIteration;
 import com.netflix.maestro.extensions.models.StepIterationsSummary;
+import com.netflix.maestro.extensions.utils.ForeachFlatteningHelper;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.StepRuntimeState;
@@ -100,7 +101,7 @@ public class MaestroForeachFlattenedDao extends AbstractDatabaseDao {
   private static final String STATUS_FILTER_TEMPLATE = "and step_status in (%s)";
 
   private static final String STEP_ITERATION_QUERY =
-      "select workflow_run_id, iteration_rank, loop_parameters, step_attempt_seq, step_runtime_state"
+      "select workflow_run_id, iteration_rank, loop_parameters, step_attempt_seq, step_runtime_state, instance->>'leaf_workflow_id' as leaf_workflow_id"
           + " from maestro_step_foreach_flattened"
           + COMMON_WHERE_CLAUSE
           + " and iteration_rank = ?";
@@ -111,7 +112,7 @@ public class MaestroForeachFlattenedDao extends AbstractDatabaseDao {
           + "group by step_status";
 
   private static final String REPRESENTATIVE_STEP_ITERATION_QUERY =
-      "select workflow_run_id, iteration_rank, loop_parameters, step_attempt_seq, step_runtime_state "
+      "select workflow_run_id, iteration_rank, loop_parameters, step_attempt_seq, step_runtime_state, instance->>'leaf_workflow_id' as leaf_workflow_id "
           + "from maestro_step_foreach_flattened "
           + COMMON_WHERE_CLAUSE
           + "order by step_status_priority desc, iteration_rank COLLATE \"C\" asc limit 1";
@@ -454,13 +455,19 @@ public class MaestroForeachFlattenedDao extends AbstractDatabaseDao {
 
   private StepIteration getStepIterationFromResultSet(
       String workflowId, long workflowInstanceId, String stepId, ResultSet rs) throws SQLException {
+    String iterationRank = rs.getString("iteration_rank");
+    String stepAttemptSeq = rs.getString("step_attempt_seq");
+    String leafStepRef =
+        ForeachFlatteningHelper.getLeafStepRef(
+            rs.getString("leaf_workflow_id"), iterationRank, stepId, stepAttemptSeq);
     return StepIteration.create(
         workflowId,
         workflowInstanceId,
         rs.getLong("workflow_run_id"),
         stepId,
-        rs.getString("iteration_rank"),
-        rs.getString("step_attempt_seq"),
+        iterationRank,
+        stepAttemptSeq,
+        leafStepRef,
         fromJson(rs.getString(LOOP_PARAMETERS), TYPE_REF),
         fromJson(rs.getString("step_runtime_state"), StepRuntimeState.class));
   }
@@ -483,7 +490,7 @@ public class MaestroForeachFlattenedDao extends AbstractDatabaseDao {
   /** Returns the scan query template for Postgres (no CRDB index hints). */
   private String getScanQueryTemplate() {
     return "select *"
-        + " from (select workflow_run_id, iteration_rank, loop_parameters, step_attempt_seq, step_runtime_state"
+        + " from (select workflow_run_id, iteration_rank, loop_parameters, step_attempt_seq, step_runtime_state, instance->>'leaf_workflow_id' as leaf_workflow_id"
         + "      from maestro_step_foreach_flattened"
         + COMMON_WHERE_CLAUSE
         + "        and iteration_rank COLLATE \"C\" %s ? COLLATE \"C\""

@@ -44,7 +44,7 @@ public class ForeachFlattenControllerTest extends ExtensionsBaseTest {
     MockitoAnnotations.initMocks(this);
     stepIteration =
         StepIteration.create(
-            "wf1", 1, 1, "s", "11-11", "1234", Collections.EMPTY_MAP, new StepRuntimeState());
+            "wf1", 1, 1, "s", "11-11", "1234", null, Collections.EMPTY_MAP, new StepRuntimeState());
     stepIterationsSummary = new StepIterationsSummary();
     stepIterationsSummary.setCountByStatus(
         Collections.singletonMap(StepInstance.Status.RUNNING, 10l));

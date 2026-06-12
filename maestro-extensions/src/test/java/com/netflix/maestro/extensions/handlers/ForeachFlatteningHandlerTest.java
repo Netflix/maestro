@@ -118,7 +118,8 @@ public class ForeachFlatteningHandlerTest extends ExtensionsBaseTest {
             rootWorkflowRunId,
             leafStepId,
             iterationRank,
-            createTime);
+            createTime,
+            workflowId);
     long expectedRunIdValidityEnd = Long.MAX_VALUE;
     ForeachFlattenedModel expectedModel =
         new ForeachFlattenedModel(

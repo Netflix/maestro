@@ -16,6 +16,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.netflix.maestro.annotations.Nullable;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -32,7 +33,8 @@ import lombok.ToString;
       "workflow_run_id",
       "step_id",
       "iteration_rank",
-      "initial_step_created_ms"
+      "initial_step_created_ms",
+      "leaf_workflow_id"
     },
     alphabetic = true)
 @ToString
@@ -54,4 +56,7 @@ public class ForeachFlattenedInstance {
 
   @Min(0)
   private final long initialStepCreatedMs;
+
+  /** The leaf inline foreach workflow id. Nullable for rows written before this field existed. */
+  @Nullable private final String leafWorkflowId;
 }

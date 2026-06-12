@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.extensions.utils;
 
+import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.ForeachStep;
 import com.netflix.maestro.models.definition.Step;
@@ -35,6 +36,8 @@ import lombok.NonNull;
 
 public class ForeachFlatteningHelper {
   private static final String ITERATION_ID_DELIMITER = "-";
+
+  private static final String LEAF_STEP_REF_DELIMITER = ":";
 
   /**
    * Maximum number of digits for iteration we can encode in the iteration rank. So we can encode
@@ -154,6 +157,44 @@ public class ForeachFlatteningHelper {
     return Stream.of(iterationId.split(ITERATION_ID_DELIMITER))
         .map(ForeachFlatteningHelper::encodeByLength)
         .collect(Collectors.joining(ITERATION_ID_DELIMITER));
+  }
+
+  /**
+   * Assembles the leaf step reference of the form
+   * [leafWorkflowId]:[leafInstanceId]:[leafRunId]:[stepId]:[leafStepAttemptId]. The leaf instance
+   * id is the last segment of the iterationRank, and the leaf run id and step attempt id are the
+   * last two segments of the stepAttemptSeq, each decoded by stripping its length prefix. Returns
+   * null when leafWorkflowId is absent, since the rest of the reference is not resolvable without
+   * it.
+   *
+   * @param leafWorkflowId the leaf inline workflow id, or null for rows without it
+   * @param iterationRank the encoded iteration rank
+   * @param stepId the leaf step id
+   * @param stepAttemptSeq the encoded attempt sequence
+   * @return the leaf step reference, or null
+   */
+  @Nullable
+  public static String getLeafStepRef(
+      @Nullable String leafWorkflowId, String iterationRank, String stepId, String stepAttemptSeq) {
+    if (leafWorkflowId == null) {
+      return null;
+    }
+    String[] iterationSegments = iterationRank.split(ITERATION_ID_DELIMITER);
+    String[] attemptSegments = stepAttemptSeq.split(ITERATION_ID_DELIMITER);
+    String leafInstanceId = decodeByLength(iterationSegments[iterationSegments.length - 1]);
+    String leafRunId = decodeByLength(attemptSegments[attemptSegments.length - 2]);
+    String leafStepAttemptId = decodeByLength(attemptSegments[attemptSegments.length - 1]);
+    return String.join(
+        LEAF_STEP_REF_DELIMITER,
+        leafWorkflowId,
+        leafInstanceId,
+        leafRunId,
+        stepId,
+        leafStepAttemptId);
+  }
+
+  private static String decodeByLength(String encoded) {
+    return encoded.substring(1);
   }
 
   private void getLoopParamNames(
