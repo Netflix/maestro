@@ -18,6 +18,7 @@ import static junit.framework.TestCase.assertNull;
 import static org.mockito.Mockito.when;
 
 import com.netflix.maestro.MaestroBaseTest;
+import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.initiator.ForeachInitiator;
 import com.netflix.maestro.models.initiator.UpstreamInitiator;
 import com.netflix.maestro.models.initiator.UpstreamInitiator.Info;
@@ -127,6 +128,41 @@ public class ForeachFlatteningHelperTest extends MaestroBaseTest {
   @Test
   public void testGetLeafStepRefReturnsNullWhenLeafWorkflowIdMissing() {
     assertNull(ForeachFlatteningHelper.getLeafStepRef(null, "12", "leaf-step", "11-11"));
+  }
+
+  @Test
+  public void testEncodeDecodeByLengthRoundTrip() {
+    String[] values = {"1", "9", "23", "344", "265000009998", "33456000999898"};
+    for (String value : values) {
+      assertEquals(
+          value,
+          ForeachFlatteningHelper.decodeByLength(ForeachFlatteningHelper.encodeByLength(value)));
+    }
+  }
+
+  @Test
+  public void testGetLeafStepRefRoundTripsEncoders() {
+    long leafInstanceId = WORKFLOW_INSTANCE_ID_LONG_NON_DIGIT_ENCODING;
+    long leafRunId = NESTED_WORKFLOW_RUN_ID;
+    long leafStepAttemptId = 9L;
+    when(stepInstance.getWorkflowRunId()).thenReturn(leafRunId);
+    when(stepInstance.getStepAttemptId()).thenReturn(leafStepAttemptId);
+    UpstreamInitiator initiator = getUpstreamInitiator(NESTED_INSTANCE_ID_LONG);
+    String leafWorkflowId = "maestro_foreach_leaf";
+    String stepId = "leaf-step";
+
+    String iterationRank = FOREACH_FLATTENING_HELPER.getIterationRank(initiator, leafInstanceId);
+    String attemptSeq = FOREACH_FLATTENING_HELPER.getAttemptSeq(initiator, stepInstance);
+
+    assertEquals(
+        String.join(
+            Constants.REFERENCE_DELIMITER,
+            leafWorkflowId,
+            String.valueOf(leafInstanceId),
+            String.valueOf(leafRunId),
+            stepId,
+            String.valueOf(leafStepAttemptId)),
+        ForeachFlatteningHelper.getLeafStepRef(leafWorkflowId, iterationRank, stepId, attemptSeq));
   }
 
   private static UpstreamInitiator getUpstreamInitiator(long nestedInstanceIdLong) {

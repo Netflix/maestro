@@ -13,6 +13,7 @@
 package com.netflix.maestro.extensions.utils;
 
 import com.netflix.maestro.annotations.Nullable;
+import com.netflix.maestro.annotations.VisibleForTesting;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.ForeachStep;
 import com.netflix.maestro.models.definition.Step;
@@ -36,8 +37,6 @@ import lombok.NonNull;
 
 public class ForeachFlatteningHelper {
   private static final String ITERATION_ID_DELIMITER = "-";
-
-  private static final String LEAF_STEP_REF_DELIMITER = ":";
 
   /**
    * Maximum number of digits for iteration we can encode in the iteration rank. So we can encode
@@ -185,16 +184,12 @@ public class ForeachFlatteningHelper {
     String leafRunId = decodeByLength(attemptSegments[attemptSegments.length - 2]);
     String leafStepAttemptId = decodeByLength(attemptSegments[attemptSegments.length - 1]);
     return String.join(
-        LEAF_STEP_REF_DELIMITER,
+        Constants.REFERENCE_DELIMITER,
         leafWorkflowId,
         leafInstanceId,
         leafRunId,
         stepId,
         leafStepAttemptId);
-  }
-
-  private static String decodeByLength(String encoded) {
-    return encoded.substring(1);
   }
 
   private void getLoopParamNames(
@@ -220,7 +215,8 @@ public class ForeachFlatteningHelper {
         + encodeByLength(String.valueOf(attemptId));
   }
 
-  private static String encodeByLength(String s) {
+  @VisibleForTesting
+  static String encodeByLength(String s) {
     if (s.length() > MAX_ITERATION_ID_ENCODE_LENGTH) {
       throw new IllegalArgumentException("The input number exceeds max length: " + s.length());
     }
@@ -229,5 +225,11 @@ public class ForeachFlatteningHelper {
             ? (char) ('0' + s.length())
             : (char) ('A' + (s.length() - LENGTH_LIMIT_FOR_NUMBER_BASED_ENCODING));
     return len + s;
+  }
+
+  /** Inverse of {@link #encodeByLength(String)}: strips the leading length-prefix character. */
+  @VisibleForTesting
+  static String decodeByLength(String encoded) {
+    return encoded.substring(1);
   }
 }
