@@ -130,10 +130,14 @@ public class MaestroEngineConfiguration {
   public MaestroParamExtensionRepo maestroParamExtensionRepo(
       MaestroStepInstanceDao stepInstanceDao,
       StepRuntimeProperties stepRuntimeProperties,
+      MaestroProperties maestroProperties,
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper) {
     LOG.info("Creating Maestro MaestroParamExtensionRepo within Spring boot...");
     return new MaestroParamExtensionRepo(
-        stepInstanceDao, stepRuntimeProperties.getEnv(), objectMapper);
+        stepInstanceDao,
+        stepRuntimeProperties.getEnv(),
+        objectMapper,
+        maestroProperties.getThreading());
   }
 
   @Bean(initMethod = "postConstruct", destroyMethod = "preDestroy")

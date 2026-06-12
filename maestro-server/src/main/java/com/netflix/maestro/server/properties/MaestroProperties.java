@@ -14,6 +14,7 @@ package com.netflix.maestro.server.properties;
 
 import com.netflix.maestro.engine.properties.SelProperties;
 import com.netflix.maestro.engine.properties.StepActionProperties;
+import com.netflix.maestro.engine.properties.ThreadingProperties;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.queue.properties.QueueProperties;
 import lombok.AllArgsConstructor;
@@ -29,10 +30,16 @@ public class MaestroProperties {
   private final SelProperties sel;
   private final ParamEvaluatorProperties paramEvaluator;
   private final StepActionProperties stepAction;
+  private final ThreadingProperties threading;
   private final MaestroIdNameValidationProperties maestroIdNameValidation;
 
   /** Returns the param evaluator properties, defaulting to {@code __} separator if not set. */
   public ParamEvaluatorProperties getParamEvaluator() {
     return paramEvaluator != null ? paramEvaluator : new ParamEvaluatorProperties();
+  }
+
+  /** Returns the threading properties, defaulting to virtual threads if not set. */
+  public ThreadingProperties getThreading() {
+    return threading != null ? threading : new ThreadingProperties();
   }
 }
