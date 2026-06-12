@@ -14,7 +14,7 @@ package com.netflix.maestro.extensions.utils;
 
 import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.annotations.VisibleForTesting;
-import com.netflix.maestro.extensions.models.LeafStepInstanceReference;
+import com.netflix.maestro.extensions.models.StepInstanceReference;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.ForeachStep;
 import com.netflix.maestro.models.definition.Step;
@@ -172,7 +172,7 @@ public class ForeachFlatteningHelper {
    * @return the leaf step instance reference, or null
    */
   @Nullable
-  public static LeafStepInstanceReference getLeafStepRef(
+  public static StepInstanceReference getLeafStepInstanceRef(
       @Nullable String leafWorkflowId, String iterationRank, String stepId, String stepAttemptSeq) {
     if (leafWorkflowId == null) {
       return null;
@@ -184,7 +184,7 @@ public class ForeachFlatteningHelper {
     long leafRunId = Long.parseLong(decodeByLength(attemptSegments[attemptSegments.length - 2]));
     long leafStepAttemptId =
         Long.parseLong(decodeByLength(attemptSegments[attemptSegments.length - 1]));
-    return new LeafStepInstanceReference(
+    return new StepInstanceReference(
         leafWorkflowId, leafInstanceId, leafRunId, stepId, leafStepAttemptId);
   }
 

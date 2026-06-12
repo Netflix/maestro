@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Netflix, Inc.
+ * Copyright 2026 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -18,14 +18,13 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
 /**
- * Reference to a leaf step instance attempt within a flattened foreach. The workflow coordinates
- * are those of the leaf inline foreach workflow the iteration ran in.
+ * Reference to a specific step instance attempt.
  *
- * @param workflowId the leaf inline foreach workflow id
- * @param workflowInstanceId the leaf inline workflow instance id
- * @param workflowRunId the leaf inline workflow run id
- * @param stepId the leaf step id
- * @param stepAttemptId the leaf step attempt id
+ * @param workflowId the workflow id
+ * @param workflowInstanceId the workflow instance id
+ * @param workflowRunId the workflow run id
+ * @param stepId the step id
+ * @param stepAttemptId the step attempt id
  */
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -38,7 +37,7 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
       "step_attempt_id"
     },
     alphabetic = true)
-public record LeafStepInstanceReference(
+public record StepInstanceReference(
     String workflowId,
     long workflowInstanceId,
     long workflowRunId,

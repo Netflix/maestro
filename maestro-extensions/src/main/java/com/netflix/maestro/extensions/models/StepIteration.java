@@ -33,7 +33,7 @@ import lombok.ToString;
       "step_id",
       "iteration_rank",
       "step_attempt_seq",
-      "leaf_step_ref",
+      "leaf_step_instance_ref",
       "loop_params",
       "step_runtime_state"
     },
@@ -47,7 +47,7 @@ public class StepIteration {
   private String stepId;
   private String iterationRank;
   private String stepAttemptSeq;
-  @Nullable private LeafStepInstanceReference leafStepRef;
+  @Nullable private StepInstanceReference leafStepInstanceRef;
   @Nullable private Map<String, String> loopParams;
   private StepRuntimeState stepRuntimeState;
 
@@ -58,7 +58,7 @@ public class StepIteration {
       String stepId,
       String iterationRank,
       String stepAttemptSeq,
-      LeafStepInstanceReference leafStepRef,
+      StepInstanceReference leafStepInstanceRef,
       Map<String, String> loopParams,
       StepRuntimeState stepRuntimeState) {
     StepIteration ret = new StepIteration();
@@ -68,7 +68,7 @@ public class StepIteration {
     ret.setStepId(stepId);
     ret.setIterationRank(iterationRank);
     ret.setStepAttemptSeq(stepAttemptSeq);
-    ret.setLeafStepRef(leafStepRef);
+    ret.setLeafStepInstanceRef(leafStepInstanceRef);
     ret.setLoopParams(loopParams);
     ret.setStepRuntimeState(stepRuntimeState);
     return ret;

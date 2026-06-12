@@ -16,7 +16,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.netflix.maestro.extensions.ExtensionsDaoBaseTest;
 import com.netflix.maestro.extensions.dao.models.ForeachFlattenedInstance;
 import com.netflix.maestro.extensions.dao.models.ForeachFlattenedModel;
-import com.netflix.maestro.extensions.models.LeafStepInstanceReference;
+import com.netflix.maestro.extensions.models.StepInstanceReference;
 import com.netflix.maestro.extensions.models.StepIteration;
 import com.netflix.maestro.extensions.models.StepIterationsSummary;
 import com.netflix.maestro.extensions.utils.StepInstanceStatusEncoder;
@@ -225,8 +225,8 @@ public class MaestroForeachFlattenedDaoTest extends ExtensionsDaoBaseTest {
     Assert.assertEquals(firstStepAttemptSeq, stepIterationRun5.getStepAttemptSeq());
     Assert.assertEquals(firstWorkflowRunId, stepIterationRun5.getWorkflowRunId());
     Assert.assertEquals(
-        new LeafStepInstanceReference(LEAF_WORKFLOW_ID, 2, 3, STEP_ID, 1),
-        stepIterationRun5.getLeafStepRef());
+        new StepInstanceReference(LEAF_WORKFLOW_ID, 2, 3, STEP_ID, 1),
+        stepIterationRun5.getLeafStepInstanceRef());
 
     List<StepIteration> stepIterationsRun3 =
         foreachFlattenedDao.scanStepIterations(
@@ -276,7 +276,7 @@ public class MaestroForeachFlattenedDaoTest extends ExtensionsDaoBaseTest {
             Collections.emptyMap(),
             Collections.EMPTY_LIST);
     Assert.assertEquals(10, stepIterations0.size());
-    Assert.assertNull(stepIterations0.get(0).getLeafStepRef());
+    Assert.assertNull(stepIterations0.get(0).getLeafStepInstanceRef());
 
     // ask for next 10 items
     List<StepIteration> stepIterations1 =
@@ -495,7 +495,7 @@ public class MaestroForeachFlattenedDaoTest extends ExtensionsDaoBaseTest {
     Assert.assertEquals(
         Status.FATALLY_FAILED,
         stepIterationsSummary.getRepresentativeIteration().getStepRuntimeState().getStatus());
-    Assert.assertNull(stepIterationsSummary.getRepresentativeIteration().getLeafStepRef());
+    Assert.assertNull(stepIterationsSummary.getRepresentativeIteration().getLeafStepInstanceRef());
 
     Assert.assertEquals(2, stepIterationsSummary.getLoopParamValues().size());
   }
@@ -554,7 +554,7 @@ public class MaestroForeachFlattenedDaoTest extends ExtensionsDaoBaseTest {
     Assert.assertEquals("11-11-11-11-11-11", iteration.getStepAttemptSeq());
     Assert.assertEquals("225-14", iteration.getIterationRank());
     Assert.assertEquals("i_nested-step-2", iteration.getStepId());
-    Assert.assertNull(iteration.getLeafStepRef());
+    Assert.assertNull(iteration.getLeafStepInstanceRef());
     Map<String, String> params = iteration.getLoopParams();
     Assert.assertEquals(2, params.size());
     Assert.assertEquals("4", params.get("i_range"));
@@ -568,8 +568,8 @@ public class MaestroForeachFlattenedDaoTest extends ExtensionsDaoBaseTest {
         foreachFlattenedDao.getStepIteration(
             "foreach.flattening.leafref", 1, 1, "leaf-ref-step", "225-14");
     Assert.assertEquals(
-        new LeafStepInstanceReference("maestro_foreach_fixture_inline", 4, 1, "leaf-ref-step", 9),
-        iteration.getLeafStepRef());
+        new StepInstanceReference("maestro_foreach_fixture_inline", 4, 1, "leaf-ref-step", 9),
+        iteration.getLeafStepInstanceRef());
   }
 
   @Test
@@ -601,8 +601,8 @@ public class MaestroForeachFlattenedDaoTest extends ExtensionsDaoBaseTest {
     StepIteration iteration =
         foreachFlattenedDao.getStepIteration(WORKFLOW_ID, 1, 1, STEP_ID, iterationRank);
     Assert.assertEquals(
-        new LeafStepInstanceReference(LEAF_WORKFLOW_ID, 2, 1, STEP_ID, 9),
-        iteration.getLeafStepRef());
+        new StepInstanceReference(LEAF_WORKFLOW_ID, 2, 1, STEP_ID, 9),
+        iteration.getLeafStepInstanceRef());
   }
 
   private static ForeachFlattenedModel getForeachFlattenedModel(

@@ -18,7 +18,7 @@ import static junit.framework.TestCase.assertNull;
 import static org.mockito.Mockito.when;
 
 import com.netflix.maestro.MaestroBaseTest;
-import com.netflix.maestro.extensions.models.LeafStepInstanceReference;
+import com.netflix.maestro.extensions.models.StepInstanceReference;
 import com.netflix.maestro.models.initiator.ForeachInitiator;
 import com.netflix.maestro.models.initiator.UpstreamInitiator;
 import com.netflix.maestro.models.initiator.UpstreamInitiator.Info;
@@ -114,20 +114,20 @@ public class ForeachFlatteningHelperTest extends MaestroBaseTest {
   }
 
   @Test
-  public void testGetLeafStepRef() {
+  public void testGetLeafStepInstanceRef() {
     assertEquals(
-        new LeafStepInstanceReference("maestro_foreach_inline", 23, 1, "leaf-step", 9),
-        ForeachFlatteningHelper.getLeafStepRef(
+        new StepInstanceReference("maestro_foreach_inline", 23, 1, "leaf-step", 9),
+        ForeachFlatteningHelper.getLeafStepInstanceRef(
             "maestro_foreach_inline", "3344-13-223", "leaf-step", "211-12-13-11-11-19"));
     assertEquals(
-        new LeafStepInstanceReference("maestro_foreach_inline", 2, 1, "leaf-step", 1),
-        ForeachFlatteningHelper.getLeafStepRef(
+        new StepInstanceReference("maestro_foreach_inline", 2, 1, "leaf-step", 1),
+        ForeachFlatteningHelper.getLeafStepInstanceRef(
             "maestro_foreach_inline", "12", "leaf-step", "11-11"));
   }
 
   @Test
-  public void testGetLeafStepRefReturnsNullWhenLeafWorkflowIdMissing() {
-    assertNull(ForeachFlatteningHelper.getLeafStepRef(null, "12", "leaf-step", "11-11"));
+  public void testGetLeafStepInstanceRefReturnsNullWhenLeafWorkflowIdMissing() {
+    assertNull(ForeachFlatteningHelper.getLeafStepInstanceRef(null, "12", "leaf-step", "11-11"));
   }
 
   @Test
@@ -155,9 +155,10 @@ public class ForeachFlatteningHelperTest extends MaestroBaseTest {
     String attemptSeq = FOREACH_FLATTENING_HELPER.getAttemptSeq(initiator, stepInstance);
 
     assertEquals(
-        new LeafStepInstanceReference(
+        new StepInstanceReference(
             leafWorkflowId, leafInstanceId, leafRunId, stepId, leafStepAttemptId),
-        ForeachFlatteningHelper.getLeafStepRef(leafWorkflowId, iterationRank, stepId, attemptSeq));
+        ForeachFlatteningHelper.getLeafStepInstanceRef(
+            leafWorkflowId, iterationRank, stepId, attemptSeq));
   }
 
   private static UpstreamInitiator getUpstreamInitiator(long nestedInstanceIdLong) {

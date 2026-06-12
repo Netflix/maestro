@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Netflix, Inc.
+ * Copyright 2026 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -17,15 +17,15 @@ import static org.junit.Assert.assertEquals;
 import com.netflix.maestro.extensions.ExtensionsBaseTest;
 import org.junit.Test;
 
-public class LeafStepInstanceReferenceTest extends ExtensionsBaseTest {
-  private static final LeafStepInstanceReference REFERENCE =
-      new LeafStepInstanceReference("maestro_foreach_inline", 23, 1, "leaf-step", 9);
+public class StepInstanceReferenceTest extends ExtensionsBaseTest {
+  private static final StepInstanceReference REFERENCE =
+      new StepInstanceReference("maestro_foreach_inline", 23, 1, "leaf-step", 9);
 
   @Test
   public void testRoundTripSerde() throws Exception {
     assertEquals(
         REFERENCE,
-        MAPPER.readValue(MAPPER.writeValueAsString(REFERENCE), LeafStepInstanceReference.class));
+        MAPPER.readValue(MAPPER.writeValueAsString(REFERENCE), StepInstanceReference.class));
   }
 
   @Test
@@ -33,6 +33,6 @@ public class LeafStepInstanceReferenceTest extends ExtensionsBaseTest {
     String json =
         """
         {"workflow_id":"maestro_foreach_inline","workflow_instance_id":23,"workflow_run_id":1,"step_id":"leaf-step","step_attempt_id":9}""";
-    assertEquals(REFERENCE, MAPPER.readValue(json, LeafStepInstanceReference.class));
+    assertEquals(REFERENCE, MAPPER.readValue(json, StepInstanceReference.class));
   }
 }
