@@ -50,6 +50,10 @@ maestro:
   step-action:
     action-timeout: 5000
     check-interval: 500
+  threading:
+    model: VIRTUAL
+    platform-thread-pool-size: 3
+    virtual-thread-name-prefix: "maestro-vt-"
 
 engine:
   configs:
