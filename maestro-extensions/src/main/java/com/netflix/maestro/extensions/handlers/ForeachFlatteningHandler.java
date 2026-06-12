@@ -96,9 +96,10 @@ public class ForeachFlatteningHandler {
         foreachFlatteningHelper.getIterationRank(
             upstreamInitiator, inlineWorkflowInstance.getWorkflowInstanceId());
     Long createTime = stepInstance.getRuntimeState().getCreateTime();
+    String leafWorkflowId = inlineWorkflowInstance.getWorkflowId();
     ForeachFlattenedInstance instance =
         new ForeachFlattenedInstance(
-            workflowId, instanceId, runId, stepId, iterationRank, createTime);
+            workflowId, instanceId, runId, stepId, iterationRank, createTime, leafWorkflowId);
 
     long runIdValidityEnd = Long.MAX_VALUE;
     long stepStatusEncoded =

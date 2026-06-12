@@ -12,6 +12,9 @@
  */
 package com.netflix.maestro.extensions.utils;
 
+import com.netflix.maestro.annotations.Nullable;
+import com.netflix.maestro.annotations.VisibleForTesting;
+import com.netflix.maestro.extensions.models.StepInstanceReference;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.ForeachStep;
 import com.netflix.maestro.models.definition.Step;
@@ -156,6 +159,35 @@ public class ForeachFlatteningHelper {
         .collect(Collectors.joining(ITERATION_ID_DELIMITER));
   }
 
+  /**
+   * Resolves the leaf step instance reference from the encoded breadcrumbs. The leaf instance id is
+   * the last segment of the iterationRank, and the leaf run id and step attempt id are the last two
+   * segments of the stepAttemptSeq, each decoded by stripping its length prefix. Returns null when
+   * leafWorkflowId is absent, since the rest of the reference is not resolvable without it.
+   *
+   * @param leafWorkflowId the leaf inline workflow id, or null for rows without it
+   * @param iterationRank the encoded iteration rank
+   * @param stepId the leaf step id
+   * @param stepAttemptSeq the encoded attempt sequence
+   * @return the leaf step instance reference, or null
+   */
+  @Nullable
+  public static StepInstanceReference getLeafStepInstanceRef(
+      @Nullable String leafWorkflowId, String iterationRank, String stepId, String stepAttemptSeq) {
+    if (leafWorkflowId == null) {
+      return null;
+    }
+    String[] iterationSegments = iterationRank.split(ITERATION_ID_DELIMITER);
+    String[] attemptSegments = stepAttemptSeq.split(ITERATION_ID_DELIMITER);
+    long leafInstanceId =
+        Long.parseLong(decodeByLength(iterationSegments[iterationSegments.length - 1]));
+    long leafRunId = Long.parseLong(decodeByLength(attemptSegments[attemptSegments.length - 2]));
+    long leafStepAttemptId =
+        Long.parseLong(decodeByLength(attemptSegments[attemptSegments.length - 1]));
+    return new StepInstanceReference(
+        leafWorkflowId, leafInstanceId, leafRunId, stepId, leafStepAttemptId);
+  }
+
   private void getLoopParamNames(
       List<Step> steps, Set<String> upstreamSteps, List<String> loopParamNames) {
     for (Step step : steps) {
@@ -179,7 +211,8 @@ public class ForeachFlatteningHelper {
         + encodeByLength(String.valueOf(attemptId));
   }
 
-  private static String encodeByLength(String s) {
+  @VisibleForTesting
+  static String encodeByLength(String s) {
     if (s.length() > MAX_ITERATION_ID_ENCODE_LENGTH) {
       throw new IllegalArgumentException("The input number exceeds max length: " + s.length());
     }
@@ -188,5 +221,11 @@ public class ForeachFlatteningHelper {
             ? (char) ('0' + s.length())
             : (char) ('A' + (s.length() - LENGTH_LIMIT_FOR_NUMBER_BASED_ENCODING));
     return len + s;
+  }
+
+  /** Inverse of {@link #encodeByLength(String)}: strips the leading length-prefix character. */
+  @VisibleForTesting
+  static String decodeByLength(String encoded) {
+    return encoded.substring(1);
   }
 }

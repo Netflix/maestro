@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Netflix, Inc.
+ * Copyright 2026 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -10,20 +10,22 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.maestro.extensions.dao.models;
+package com.netflix.maestro.extensions.models;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import com.netflix.maestro.annotations.Nullable;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
 
+/**
+ * Reference to a specific step instance attempt.
+ *
+ * @param workflowId the workflow id
+ * @param workflowInstanceId the workflow instance id
+ * @param workflowRunId the workflow run id
+ * @param stepId the step id
+ * @param stepAttemptId the step attempt id
+ */
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(
@@ -32,31 +34,12 @@ import lombok.ToString;
       "workflow_instance_id",
       "workflow_run_id",
       "step_id",
-      "iteration_rank",
-      "initial_step_created_ms",
-      "leaf_workflow_id"
+      "step_attempt_id"
     },
     alphabetic = true)
-@ToString
-@EqualsAndHashCode
-@AllArgsConstructor
-@Getter
-public class ForeachFlattenedInstance {
-  @NotNull private final String workflowId;
-
-  @Min(1)
-  private final long workflowInstanceId;
-
-  @Min(1)
-  private final long workflowRunId;
-
-  @NotNull private final String stepId;
-
-  @NotNull private final String iterationRank;
-
-  @Min(0)
-  private final long initialStepCreatedMs;
-
-  /** The leaf inline foreach workflow id. Nullable for rows written before this field existed. */
-  @Nullable private final String leafWorkflowId;
-}
+public record StepInstanceReference(
+    String workflowId,
+    long workflowInstanceId,
+    long workflowRunId,
+    String stepId,
+    long stepAttemptId) {}
