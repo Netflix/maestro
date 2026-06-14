@@ -17,8 +17,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Transient in-memory storage for step runtimes to store step-instance-scoped states.
- * States are NOT persisted and will be lost on JVM reboot.
+ * Transient in-memory storage for step runtimes to store step-instance-scoped states. States are
+ * NOT persisted and will be lost on JVM reboot.
  */
 public final class StepLocalMemory {
   private static final Map<String, Map<String, Object>> MEMORY_MAP = new ConcurrentHashMap<>();
@@ -28,39 +28,40 @@ public final class StepLocalMemory {
   private StepLocalMemory() {}
 
   /**
-   * Get or create a transient memory map for the specified step instance.
-   * Scoped to the step instance run.
+   * Get or create a transient memory map for the specified step instance. Scoped to the step
+   * instance run.
    */
   public static Map<String, Object> getOrCreate(String stepInstanceUuid) {
     if (stepInstanceUuid == null) {
       return new ConcurrentHashMap<>();
     }
-    return MEMORY_MAP.computeIfAbsent(stepInstanceUuid, k -> new ConcurrentHashMap<String, Object>() {
-      @Override
-      public Object put(String key, Object value) {
-        Object old = super.put(key, value);
-        checkSize(this);
-        return old;
-      }
+    return MEMORY_MAP.computeIfAbsent(
+        stepInstanceUuid,
+        k ->
+            new ConcurrentHashMap<String, Object>() {
+              @Override
+              public Object put(String key, Object value) {
+                Object old = super.put(key, value);
+                checkSize(this);
+                return old;
+              }
 
-      @Override
-      public void putAll(Map<? extends String, ?> m) {
-        super.putAll(m);
-        checkSize(this);
-      }
+              @Override
+              public void putAll(Map<? extends String, ?> m) {
+                super.putAll(m);
+                checkSize(this);
+              }
 
-      @Override
-      public Object putIfAbsent(String key, Object value) {
-        Object old = super.putIfAbsent(key, value);
-        checkSize(this);
-        return old;
-      }
-    });
+              @Override
+              public Object putIfAbsent(String key, Object value) {
+                Object old = super.putIfAbsent(key, value);
+                checkSize(this);
+                return old;
+              }
+            });
   }
 
-  /**
-   * Remove the step instance memory map.
-   */
+  /** Remove the step instance memory map. */
   public static void remove(String stepInstanceUuid) {
     if (stepInstanceUuid != null) {
       MEMORY_MAP.remove(stepInstanceUuid);
@@ -72,7 +73,8 @@ public final class StepLocalMemory {
       byte[] bytes = OBJECT_MAPPER.writeValueAsBytes(map);
       if (bytes.length > SIZE_LIMIT_BYTES) {
         throw new IllegalArgumentException(
-            String.format("Step local memory size limit exceeded: %d bytes (limit: %d bytes)",
+            String.format(
+                "Step local memory size limit exceeded: %d bytes (limit: %d bytes)",
                 bytes.length, SIZE_LIMIT_BYTES));
       }
     } catch (IllegalArgumentException e) {

@@ -70,7 +70,10 @@ public final class StepSyncManager {
         case INSERT:
         case UPSERT:
           instanceDao.insertOrUpsertStepInstance(
-              instance, stepSummary.getDbOperation() == DbOperation.UPSERT, jobEvent, flowGeneration);
+              instance,
+              stepSummary.getDbOperation() == DbOperation.UPSERT,
+              jobEvent,
+              flowGeneration);
           break;
         case UPDATE:
           instanceDao.updateStepInstance(workflowSummary, stepSummary, jobEvent, flowGeneration);

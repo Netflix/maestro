@@ -406,9 +406,7 @@ public final class StepRuntimeSummary {
     return String.format("[%s][%s][%s]", stepId, stepAttemptId, stepInstanceUuid);
   }
 
-  /**
-   * Get the transient local memory map for this step instance.
-   */
+  /** Get the transient local memory map for this step instance. */
   @JsonIgnore
   public Map<String, Object> getLocalMemory() {
     return StepLocalMemory.getOrCreate(stepInstanceUuid);

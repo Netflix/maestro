@@ -145,7 +145,8 @@ public class StepSyncManagerTest extends MaestroEngineBaseTest {
     assertFalse(details.isPresent());
     var eventCaptor = ArgumentCaptor.forClass(MaestroJobEvent.class);
     verify(instanceDao, times(1))
-        .updateStepInstance(eq(workflowSummary), eq(stepRuntimeSummary), eventCaptor.capture(), eq(1L));
+        .updateStepInstance(
+            eq(workflowSummary), eq(stepRuntimeSummary), eventCaptor.capture(), eq(1L));
     assertEquals(NotificationJobEvent.class, eventCaptor.getValue().getClass());
   }
 

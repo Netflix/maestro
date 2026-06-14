@@ -694,7 +694,8 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
     siGen2.setStepId("job1");
     try {
       stepDao.getStepInstance(TEST_WORKFLOW_ID, 1, 2, "job1", "1");
-    } catch (MaestroNotFoundException ignored) {}
+    } catch (MaestroNotFoundException ignored) {
+    }
 
     stepDao.insertOrUpsertStepInstance(siGen2, false, null, 2L);
 
@@ -703,16 +704,17 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
     workflowSummary.setWorkflowInstanceId(1);
     workflowSummary.setWorkflowRunId(2);
 
-    StepRuntimeSummary summary = StepRuntimeSummary.builder()
-        .stepId("job1")
-        .stepAttemptId(1)
-        .stepInstanceId(1)
-        .runtimeState(siGen2.getRuntimeState())
-        .artifacts(siGen2.getArtifacts())
-        .signalDependencies(siGen2.getSignalDependencies())
-        .signalOutputs(siGen2.getSignalOutputs())
-        .timeline(siGen2.getTimeline())
-        .build();
+    StepRuntimeSummary summary =
+        StepRuntimeSummary.builder()
+            .stepId("job1")
+            .stepAttemptId(1)
+            .stepInstanceId(1)
+            .runtimeState(siGen2.getRuntimeState())
+            .artifacts(siGen2.getArtifacts())
+            .signalDependencies(siGen2.getSignalDependencies())
+            .signalOutputs(siGen2.getSignalOutputs())
+            .timeline(siGen2.getTimeline())
+            .build();
 
     siGen2.getRuntimeState().setStatus(StepInstance.Status.FATALLY_FAILED);
     summary.getRuntimeState().setStatus(StepInstance.Status.FATALLY_FAILED);

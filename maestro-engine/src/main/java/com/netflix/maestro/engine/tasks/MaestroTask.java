@@ -1001,7 +1001,8 @@ public final class MaestroTask implements FlowTask {
       boolean thrown,
       long flowGeneration) {
     StepInstance stepInstance = createStepInstance(workflowSummary, runtimeSummary);
-    Optional<Details> result = stepSyncManager.sync(stepInstance, workflowSummary, runtimeSummary, flowGeneration);
+    Optional<Details> result =
+        stepSyncManager.sync(stepInstance, workflowSummary, runtimeSummary, flowGeneration);
     if (result.isPresent()) {
       runtimeSummary.addTimeline(
           TimelineLogEvent.warn("Failed to sync due to error: " + result.get()));

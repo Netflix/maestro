@@ -91,7 +91,8 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
 
   private static final String UPDATE_STEP_INSTANCE_QUERY =
       "UPDATE maestro_step_instance SET (runtime_state,dependencies,outputs,artifacts,timeline,generation_id) = (?::jsonb,?::jsonb,?::jsonb,?::jsonb,?,?) "
-          + WHERE_CONDITION_BY_IDS + " AND generation_id <= ?";
+          + WHERE_CONDITION_BY_IDS
+          + " AND generation_id <= ?";
 
   private static final String SELECT_STEP_FIELDS = "SELECT %s FROM maestro_step_instance ";
 
@@ -221,7 +222,10 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
   }
 
   public void insertOrUpsertStepInstance(
-      StepInstance instance, boolean inserted, @Nullable MaestroJobEvent jobEvent, long flowGeneration) {
+      StepInstance instance,
+      boolean inserted,
+      @Nullable MaestroJobEvent jobEvent,
+      long flowGeneration) {
     final StepRuntimeState runtimeState = instance.getRuntimeState();
     final SignalDependencies dependencies = instance.getSignalDependencies();
     final SignalOutputs outputs = instance.getSignalOutputs();
@@ -249,33 +253,33 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
               () ->
                   withRetryableTransaction(
                       conn -> {
-                         try (PreparedStatement stmt =
-                             conn.prepareStatement(
-                                 inserted
-                                     ? UPSERT_STEP_INSTANCE_QUERY
-                                     : CREATE_STEP_INSTANCE_QUERY)) {
-                           int idx = 0;
-                           stmt.setString(++idx, instance.getWorkflowId());
-                           stmt.setLong(++idx, instance.getWorkflowInstanceId());
-                           stmt.setLong(++idx, instance.getWorkflowRunId());
-                           stmt.setString(++idx, instance.getStepId());
-                           stmt.setLong(++idx, instance.getStepAttemptId());
-                           stmt.setString(++idx, instance.getWorkflowUuid());
-                           stmt.setString(++idx, instance.getStepUuid());
-                           stmt.setString(++idx, instance.getCorrelationId());
-                           stmt.setString(++idx, stepInstanceStr);
-                           stmt.setString(++idx, runtimeStateStr);
-                           stmt.setString(++idx, stepDependenciesSummariesStr);
-                           stmt.setString(++idx, outputsStr);
-                           stmt.setString(++idx, artifactsStr);
-                           stmt.setArray(++idx, conn.createArrayOf(ARRAY_TYPE_NAME, timelineArray));
-                           stmt.setLong(++idx, flowGeneration);
-                           int res = stmt.executeUpdate();
-                           if (res == SUCCESS_WRITE_SIZE && jobEvent != null) {
-                             return queueSystem.enqueue(conn, jobEvent);
-                           }
-                           return null;
-                         }
+                        try (PreparedStatement stmt =
+                            conn.prepareStatement(
+                                inserted
+                                    ? UPSERT_STEP_INSTANCE_QUERY
+                                    : CREATE_STEP_INSTANCE_QUERY)) {
+                          int idx = 0;
+                          stmt.setString(++idx, instance.getWorkflowId());
+                          stmt.setLong(++idx, instance.getWorkflowInstanceId());
+                          stmt.setLong(++idx, instance.getWorkflowRunId());
+                          stmt.setString(++idx, instance.getStepId());
+                          stmt.setLong(++idx, instance.getStepAttemptId());
+                          stmt.setString(++idx, instance.getWorkflowUuid());
+                          stmt.setString(++idx, instance.getStepUuid());
+                          stmt.setString(++idx, instance.getCorrelationId());
+                          stmt.setString(++idx, stepInstanceStr);
+                          stmt.setString(++idx, runtimeStateStr);
+                          stmt.setString(++idx, stepDependenciesSummariesStr);
+                          stmt.setString(++idx, outputsStr);
+                          stmt.setString(++idx, artifactsStr);
+                          stmt.setArray(++idx, conn.createArrayOf(ARRAY_TYPE_NAME, timelineArray));
+                          stmt.setLong(++idx, flowGeneration);
+                          int res = stmt.executeUpdate();
+                          if (res == SUCCESS_WRITE_SIZE && jobEvent != null) {
+                            return queueSystem.enqueue(conn, jobEvent);
+                          }
+                          return null;
+                        }
                       }),
               "insertOrUpsertStepInstance",
               "Failed to insert or upsert step instance {}[{}]",
