@@ -73,15 +73,15 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
       "INTO maestro_step_instance "
           + "(workflow_id,workflow_instance_id,workflow_run_id,step_id,step_attempt_id,"
           + "workflow_uuid,step_uuid,correlation_id,"
-          + "instance,runtime_state,dependencies,outputs,artifacts,timeline) "
-          + "VALUES (?,?,?,?,?,?,?,?,?::json,?::jsonb,?::jsonb,?::jsonb,?::jsonb,?)";
+          + "instance,runtime_state,dependencies,outputs,artifacts,timeline,generation_id) "
+          + "VALUES (?,?,?,?,?,?,?,?,?::json,?::jsonb,?::jsonb,?::jsonb,?::jsonb,?,?)";
 
   private static final String CREATE_STEP_INSTANCE_QUERY = "INSERT " + ADD_STEP_INSTANCE_POSTFIX;
 
   private static final String UPSERT_STEP_INSTANCE_QUERY =
       "INSERT "
           + ADD_STEP_INSTANCE_POSTFIX
-          + " ON CONFLICT(workflow_id,workflow_instance_id,workflow_run_id,step_id,step_attempt_id) DO UPDATE SET workflow_uuid=EXCLUDED.workflow_uuid,step_uuid=EXCLUDED.step_uuid,correlation_id=EXCLUDED.correlation_id,instance=EXCLUDED.instance,runtime_state=EXCLUDED.runtime_state,dependencies=EXCLUDED.dependencies,outputs=EXCLUDED.outputs,artifacts=EXCLUDED.artifacts,timeline=EXCLUDED.timeline";
+          + " ON CONFLICT(workflow_id,workflow_instance_id,workflow_run_id,step_id,step_attempt_id) DO UPDATE SET workflow_uuid=EXCLUDED.workflow_uuid,step_uuid=EXCLUDED.step_uuid,correlation_id=EXCLUDED.correlation_id,instance=EXCLUDED.instance,runtime_state=EXCLUDED.runtime_state,dependencies=EXCLUDED.dependencies,outputs=EXCLUDED.outputs,artifacts=EXCLUDED.artifacts,timeline=EXCLUDED.timeline,generation_id=EXCLUDED.generation_id WHERE maestro_step_instance.generation_id <= EXCLUDED.generation_id";
 
   private static final String WHERE_CONDITION_BY_WORKFLOW_IDS =
       "WHERE workflow_id=? AND workflow_instance_id=? AND workflow_run_id=?";
@@ -90,8 +90,8 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
       WHERE_CONDITION_BY_WORKFLOW_IDS + " AND step_id=? AND step_attempt_id=?";
 
   private static final String UPDATE_STEP_INSTANCE_QUERY =
-      "UPDATE maestro_step_instance SET (runtime_state,dependencies,outputs,artifacts,timeline) = (?::jsonb,?::jsonb,?::jsonb,?::jsonb,?) "
-          + WHERE_CONDITION_BY_IDS;
+      "UPDATE maestro_step_instance SET (runtime_state,dependencies,outputs,artifacts,timeline,generation_id) = (?::jsonb,?::jsonb,?::jsonb,?::jsonb,?,?) "
+          + WHERE_CONDITION_BY_IDS + " AND generation_id <= ?";
 
   private static final String SELECT_STEP_FIELDS = "SELECT %s FROM maestro_step_instance ";
 
@@ -217,6 +217,11 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
    */
   public void insertOrUpsertStepInstance(
       StepInstance instance, boolean inserted, @Nullable MaestroJobEvent jobEvent) {
+    insertOrUpsertStepInstance(instance, inserted, jobEvent, 0L);
+  }
+
+  public void insertOrUpsertStepInstance(
+      StepInstance instance, boolean inserted, @Nullable MaestroJobEvent jobEvent, long flowGeneration) {
     final StepRuntimeState runtimeState = instance.getRuntimeState();
     final SignalDependencies dependencies = instance.getSignalDependencies();
     final SignalOutputs outputs = instance.getSignalOutputs();
@@ -244,32 +249,33 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
               () ->
                   withRetryableTransaction(
                       conn -> {
-                        try (PreparedStatement stmt =
-                            conn.prepareStatement(
-                                inserted
-                                    ? UPSERT_STEP_INSTANCE_QUERY
-                                    : CREATE_STEP_INSTANCE_QUERY)) {
-                          int idx = 0;
-                          stmt.setString(++idx, instance.getWorkflowId());
-                          stmt.setLong(++idx, instance.getWorkflowInstanceId());
-                          stmt.setLong(++idx, instance.getWorkflowRunId());
-                          stmt.setString(++idx, instance.getStepId());
-                          stmt.setLong(++idx, instance.getStepAttemptId());
-                          stmt.setString(++idx, instance.getWorkflowUuid());
-                          stmt.setString(++idx, instance.getStepUuid());
-                          stmt.setString(++idx, instance.getCorrelationId());
-                          stmt.setString(++idx, stepInstanceStr);
-                          stmt.setString(++idx, runtimeStateStr);
-                          stmt.setString(++idx, stepDependenciesSummariesStr);
-                          stmt.setString(++idx, outputsStr);
-                          stmt.setString(++idx, artifactsStr);
-                          stmt.setArray(++idx, conn.createArrayOf(ARRAY_TYPE_NAME, timelineArray));
-                          int res = stmt.executeUpdate();
-                          if (res == SUCCESS_WRITE_SIZE && jobEvent != null) {
-                            return queueSystem.enqueue(conn, jobEvent);
-                          }
-                          return null;
-                        }
+                         try (PreparedStatement stmt =
+                             conn.prepareStatement(
+                                 inserted
+                                     ? UPSERT_STEP_INSTANCE_QUERY
+                                     : CREATE_STEP_INSTANCE_QUERY)) {
+                           int idx = 0;
+                           stmt.setString(++idx, instance.getWorkflowId());
+                           stmt.setLong(++idx, instance.getWorkflowInstanceId());
+                           stmt.setLong(++idx, instance.getWorkflowRunId());
+                           stmt.setString(++idx, instance.getStepId());
+                           stmt.setLong(++idx, instance.getStepAttemptId());
+                           stmt.setString(++idx, instance.getWorkflowUuid());
+                           stmt.setString(++idx, instance.getStepUuid());
+                           stmt.setString(++idx, instance.getCorrelationId());
+                           stmt.setString(++idx, stepInstanceStr);
+                           stmt.setString(++idx, runtimeStateStr);
+                           stmt.setString(++idx, stepDependenciesSummariesStr);
+                           stmt.setString(++idx, outputsStr);
+                           stmt.setString(++idx, artifactsStr);
+                           stmt.setArray(++idx, conn.createArrayOf(ARRAY_TYPE_NAME, timelineArray));
+                           stmt.setLong(++idx, flowGeneration);
+                           int res = stmt.executeUpdate();
+                           if (res == SUCCESS_WRITE_SIZE && jobEvent != null) {
+                             return queueSystem.enqueue(conn, jobEvent);
+                           }
+                           return null;
+                         }
                       }),
               "insertOrUpsertStepInstance",
               "Failed to insert or upsert step instance {}[{}]",
@@ -296,6 +302,14 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
       WorkflowSummary workflowSummary,
       StepRuntimeSummary stepSummary,
       @Nullable MaestroJobEvent jobEvent) {
+    updateStepInstance(workflowSummary, stepSummary, jobEvent, 0L);
+  }
+
+  public void updateStepInstance(
+      WorkflowSummary workflowSummary,
+      StepRuntimeSummary stepSummary,
+      @Nullable MaestroJobEvent jobEvent,
+      long flowGeneration) {
     final String runtimeState = toJson(stepSummary.getRuntimeState());
     final String stepDependenciesSummariesStr = toJson(stepSummary.getSignalDependencies());
     final String artifacts = toJson(stepSummary.getArtifacts());
@@ -320,11 +334,13 @@ public class MaestroStepInstanceDao extends AbstractDatabaseDao {
                         stmt.setString(++idx, stepOutputs);
                         stmt.setString(++idx, artifacts);
                         stmt.setArray(++idx, conn.createArrayOf(ARRAY_TYPE_NAME, timelineArray));
+                        stmt.setLong(++idx, flowGeneration);
                         stmt.setString(++idx, workflowSummary.getWorkflowId());
                         stmt.setLong(++idx, workflowSummary.getWorkflowInstanceId());
                         stmt.setLong(++idx, workflowSummary.getWorkflowRunId());
                         stmt.setString(++idx, stepSummary.getStepId());
                         stmt.setLong(++idx, stepSummary.getStepAttemptId());
+                        stmt.setLong(++idx, flowGeneration);
                         int res = stmt.executeUpdate();
                         if (res == SUCCESS_WRITE_SIZE && jobEvent != null) {
                           return queueSystem.enqueue(conn, jobEvent);

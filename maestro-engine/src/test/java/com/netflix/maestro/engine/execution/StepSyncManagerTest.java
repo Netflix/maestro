@@ -16,6 +16,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -57,9 +58,9 @@ public class StepSyncManagerTest extends MaestroEngineBaseTest {
             .stepInstanceId(1)
             .dbOperation(DbOperation.INSERT)
             .build();
-    Optional<Details> details = syncManager.sync(instance, workflowSummary, stepRuntimeSummary);
+    Optional<Details> details = syncManager.sync(instance, workflowSummary, stepRuntimeSummary, 1L);
     assertFalse(details.isPresent());
-    verify(instanceDao, times(1)).insertOrUpsertStepInstance(instance, false, null);
+    verify(instanceDao, times(1)).insertOrUpsertStepInstance(instance, false, null, 1L);
   }
 
   @Test
@@ -71,9 +72,9 @@ public class StepSyncManagerTest extends MaestroEngineBaseTest {
             .stepInstanceId(1)
             .dbOperation(DbOperation.UPSERT)
             .build();
-    Optional<Details> details = syncManager.sync(instance, workflowSummary, stepRuntimeSummary);
+    Optional<Details> details = syncManager.sync(instance, workflowSummary, stepRuntimeSummary, 1L);
     assertFalse(details.isPresent());
-    verify(instanceDao, times(1)).insertOrUpsertStepInstance(instance, true, null);
+    verify(instanceDao, times(1)).insertOrUpsertStepInstance(instance, true, null, 1L);
   }
 
   @Test
@@ -85,9 +86,9 @@ public class StepSyncManagerTest extends MaestroEngineBaseTest {
             .stepInstanceId(1)
             .dbOperation(DbOperation.UPDATE)
             .build();
-    Optional<Details> details = syncManager.sync(instance, workflowSummary, stepRuntimeSummary);
+    Optional<Details> details = syncManager.sync(instance, workflowSummary, stepRuntimeSummary, 1L);
     assertFalse(details.isPresent());
-    verify(instanceDao, times(1)).updateStepInstance(workflowSummary, stepRuntimeSummary, null);
+    verify(instanceDao, times(1)).updateStepInstance(workflowSummary, stepRuntimeSummary, null, 1L);
   }
 
   @Test
@@ -99,7 +100,7 @@ public class StepSyncManagerTest extends MaestroEngineBaseTest {
             .stepInstanceId(1)
             .dbOperation(DbOperation.DELETE)
             .build();
-    Optional<Details> details = syncManager.sync(instance, workflowSummary, stepRuntimeSummary);
+    Optional<Details> details = syncManager.sync(instance, workflowSummary, stepRuntimeSummary, 1L);
     assertTrue(details.isPresent());
     assertEquals("Failed to sync a Maestro step state change", details.get().getMessage());
     assertFalse(details.get().getErrors().isEmpty());
@@ -120,11 +121,11 @@ public class StepSyncManagerTest extends MaestroEngineBaseTest {
                 Collections.singletonList(
                     mock(StepInstanceUpdateJobEvent.StepInstancePendingRecord.class)))
             .build();
-    Optional<Details> details = syncManager.sync(instance, workflowSummary, stepRuntimeSummary);
+    Optional<Details> details = syncManager.sync(instance, workflowSummary, stepRuntimeSummary, 1L);
     assertFalse(details.isPresent());
     var eventCaptor = ArgumentCaptor.forClass(MaestroJobEvent.class);
     verify(instanceDao, times(1))
-        .insertOrUpsertStepInstance(eq(instance), eq(false), eventCaptor.capture());
+        .insertOrUpsertStepInstance(eq(instance), eq(false), eventCaptor.capture(), eq(1L));
     assertEquals(StepInstanceUpdateJobEvent.class, eventCaptor.getValue().getClass());
   }
 
@@ -140,11 +141,11 @@ public class StepSyncManagerTest extends MaestroEngineBaseTest {
                 Collections.singletonList(
                     mock(StepInstanceUpdateJobEvent.StepInstancePendingRecord.class)))
             .build();
-    Optional<Details> details = syncManager.sync(instance, workflowSummary, stepRuntimeSummary);
+    Optional<Details> details = syncManager.sync(instance, workflowSummary, stepRuntimeSummary, 1L);
     assertFalse(details.isPresent());
     var eventCaptor = ArgumentCaptor.forClass(MaestroJobEvent.class);
     verify(instanceDao, times(1))
-        .updateStepInstance(eq(workflowSummary), eq(stepRuntimeSummary), eventCaptor.capture());
+        .updateStepInstance(eq(workflowSummary), eq(stepRuntimeSummary), eventCaptor.capture(), eq(1L));
     assertEquals(NotificationJobEvent.class, eventCaptor.getValue().getClass());
   }
 
@@ -152,7 +153,7 @@ public class StepSyncManagerTest extends MaestroEngineBaseTest {
   public void testSyncFailure() {
     doThrow(new RuntimeException("test error"))
         .when(instanceDao)
-        .updateStepInstance(any(), any(), any());
+        .updateStepInstance(any(), any(), any(), anyLong());
     StepRuntimeSummary stepRuntimeSummary =
         StepRuntimeSummary.builder()
             .stepId("test-summary")
@@ -163,7 +164,7 @@ public class StepSyncManagerTest extends MaestroEngineBaseTest {
                 Collections.singletonList(
                     mock(StepInstanceUpdateJobEvent.StepInstancePendingRecord.class)))
             .build();
-    Optional<Details> details = syncManager.sync(instance, workflowSummary, stepRuntimeSummary);
+    Optional<Details> details = syncManager.sync(instance, workflowSummary, stepRuntimeSummary, 1L);
     assertTrue(details.isPresent());
     assertEquals("Failed to sync a Maestro step state change", details.get().getMessage());
   }
