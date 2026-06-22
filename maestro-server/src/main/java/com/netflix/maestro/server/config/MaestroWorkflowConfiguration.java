@@ -59,6 +59,7 @@ import com.netflix.maestro.signal.handler.MaestroSignalHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.bval.jsr.ApacheValidationProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -221,9 +222,13 @@ public class MaestroWorkflowConfiguration {
   }
 
   @Bean
-  public SignalHandler signalHandler(MaestroSignalBrokerDao brokerDao) {
-    LOG.info("Creating maestroSignalHandler within Spring boot...");
-    return new MaestroSignalHandler(brokerDao);
+  public SignalHandler signalHandler(
+      MaestroSignalBrokerDao brokerDao,
+      @Value("${maestro.signal.terminal-states-enabled:false}") boolean terminalStatesEnabled) {
+    LOG.info(
+        "Creating maestroSignalHandler within Spring boot (terminalStatesEnabled={})...",
+        terminalStatesEnabled);
+    return new MaestroSignalHandler(brokerDao, terminalStatesEnabled);
   }
 
   @Bean

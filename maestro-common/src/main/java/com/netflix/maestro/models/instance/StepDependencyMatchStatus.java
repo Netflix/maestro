@@ -26,7 +26,17 @@ public enum StepDependencyMatchStatus {
    */
   PENDING(false),
   /** SKIPPED status indicating that conditions are skipped by a BYPASS_STEP_DEPENDENCIES action. */
-  SKIPPED(true);
+  SKIPPED(true),
+  /**
+   * CANCELED status indicating that the owning step reached a terminal state while the dependency
+   * was still pending, so it can no longer be matched.
+   */
+  CANCELED(false),
+  /**
+   * FAILED status indicating that resolving the dependency raised a non-retryable error, carried in
+   * the dependency details.
+   */
+  FAILED(false);
 
   private final boolean done;
 
