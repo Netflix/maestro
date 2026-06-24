@@ -224,7 +224,8 @@ public class HttpStepRuntime implements StepRuntime {
             System.currentTimeMillis(),
             System.currentTimeMillis(),
             outputParams,
-            Collections.emptyMap()));
+            Collections.emptyMap(),
+            null));
     return outputParams;
   }
 

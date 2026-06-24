@@ -83,7 +83,8 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
             System.currentTimeMillis(),
             System.currentTimeMillis(),
             params,
-            new HashMap<>());
+            new HashMap<>(),
+            null);
     outputData.setExternalJobId(TASK_ID);
     outputData.setExternalJobType(StepType.TITUS);
   }
@@ -108,6 +109,29 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
   public void testSaveOutputData() {
     outputDataManager.saveOutputData(outputData);
     Mockito.verify(outputDataDao, times(1)).insertOrUpdateOutputData(outputData);
+  }
+
+  @Test
+  public void testIsStepNonRetryableWhenSignaled() {
+    OutputData nonRetryable =
+        new OutputData(StepType.TITUS, TASK_ID, "wfid", null, null, null, null, true);
+    when(outputDataDao.getOutputDataForExternalJob(TASK_ID, StepType.TITUS))
+        .thenReturn(Optional.of(nonRetryable));
+    runtimeSummary = runtimeSummaryBuilder().type(StepType.TITUS).artifacts(artifacts).build();
+    assertTrue(outputDataManager.isStepNonRetryable(runtimeSummary));
+  }
+
+  @Test
+  public void testIsStepNonRetryableWhenNotSignaled() {
+    setupOutputDataDao();
+    runtimeSummary = runtimeSummaryBuilder().type(StepType.TITUS).artifacts(artifacts).build();
+    assertFalse(outputDataManager.isStepNonRetryable(runtimeSummary));
+  }
+
+  @Test
+  public void testIsStepNonRetryableWhenNoOutputData() {
+    runtimeSummary = runtimeSummaryBuilder().type(StepType.TITUS).artifacts(artifacts).build();
+    assertFalse(outputDataManager.isStepNonRetryable(runtimeSummary));
   }
 
   @Test
@@ -251,7 +275,8 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
             System.currentTimeMillis(),
             System.currentTimeMillis(),
             outputParams,
-            new HashMap<>());
+            new HashMap<>(),
+            null);
     setupOutputDataDao();
     runtimeSummary =
         runtimeSummaryBuilder()
@@ -294,7 +319,8 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
             System.currentTimeMillis(),
             System.currentTimeMillis(),
             Collections.emptyMap(),
-            Map.of(Artifact.Type.DYNAMIC_OUTPUT.key(), signalsArtifact));
+            Map.of(Artifact.Type.DYNAMIC_OUTPUT.key(), signalsArtifact),
+            null);
     when(outputDataDao.getOutputDataForExternalJob(TASK_ID, StepType.TITUS))
         .thenReturn(Optional.of(outputData));
 
@@ -321,6 +347,7 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
             "wfid",
             System.currentTimeMillis(),
             System.currentTimeMillis(),
+            null,
             null,
             null);
     when(outputDataDao.getOutputDataForExternalJob(TASK_ID, StepType.TITUS))

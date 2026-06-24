@@ -1,0 +1,40 @@
+{
+  "properties": {
+    "owner": "tester",
+    "run_strategy": "sequential"
+  },
+  "workflow": {
+    "id": "sample-kubernetes-nonretryable-wf",
+    "name": "Test kubernetes workflow that fails and is classified non-retryable via output data",
+    "steps": [
+      {
+        "step": {
+          "id": "job1",
+          "type": "kubernetes",
+          "retry_policy": {
+            "error_retry_limit": 3
+          },
+          "params": {
+            "kubernetes": {
+              "value": {
+                "image": {
+                  "value": "busybox",
+                  "type": "STRING"
+                },
+                "command": {
+                  "value": ["/bin/sh"],
+                  "type": "STRING_ARRAY"
+                },
+                "args": {
+                  "value": ["-c", "sleep 5 && echo $$MAESTRO_OUTPUT_START$1$$MAESTRO_OUTPUT_END && exit 1", "sh", "{\"non_retryable\":true}"],
+                  "type": "STRING_ARRAY"
+                }
+              },
+              "type": "MAP"
+            }
+          }
+        }
+      }
+    ]
+  }
+}
