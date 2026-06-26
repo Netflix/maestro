@@ -50,6 +50,9 @@ maestro:
   step-action:
     action-timeout: 5000
     check-interval: 500
+  signal:
+    # when true, mark still-pending signal dependencies as CANCELED once the owning step is terminal
+    terminal-states-enabled: false
 
 engine:
   configs:

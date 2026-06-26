@@ -28,6 +28,7 @@ import com.netflix.maestro.engine.execution.StepRuntimeCallbackDelayPolicy;
 import com.netflix.maestro.engine.execution.StepRuntimeManager;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
+import com.netflix.maestro.engine.handlers.SignalHandler;
 import com.netflix.maestro.engine.params.OutputDataManager;
 import com.netflix.maestro.flow.models.Flow;
 import com.netflix.maestro.flow.models.Task;
@@ -372,13 +373,15 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
       Step stepDef,
       StepRuntimeSummary input,
       WorkflowSummary workflowSummary) {
+    SignalHandler signalHandler = mock(SignalHandler.class);
+    when(signalHandler.sendOutputSignals(any(), any())).thenReturn(true);
     maestroTask =
         new MaestroTask(
             stepRuntimeManager,
             null,
             paramEvaluator,
             MAPPER,
-            null,
+            signalHandler,
             mock(OutputDataManager.class),
             null,
             actionDao,

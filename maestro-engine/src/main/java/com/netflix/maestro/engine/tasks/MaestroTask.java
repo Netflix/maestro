@@ -1131,6 +1131,7 @@ public final class MaestroTask implements FlowTask {
               "step is timed out by either step or workflow timeout");
         }
         stepRuntimeManager.terminate(workflowSummary, runtimeSummary, toStatus);
+        signalHandler.onTermination(workflowSummary, runtimeSummary);
       }
     } catch (RuntimeException e) {
       LOG.warn(
