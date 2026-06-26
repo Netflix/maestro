@@ -855,11 +855,12 @@ public final class MaestroTask implements FlowTask {
               doneWithExecute = true;
               break;
             }
+            StepInstance.Status failedStatus = runtimeSummary.getRuntimeState().getStatus();
             runtimeSummary.markTerminated(StepInstance.Status.FATALLY_FAILED, tracingManager);
             runtimeSummary.addTimeline(
                 TimelineLogEvent.info(
                     "Step failed with [%s] and its output data classified it as non-retryable.",
-                    runtimeSummary.getRuntimeState().getStatus()));
+                    failedStatus));
             // fall through, to apply failure mode handling
           case FATALLY_FAILED: // Failure mode only applies to FATALLY_FAILED
             if (!runtimeSummary.isIgnoreFailureMode()) {

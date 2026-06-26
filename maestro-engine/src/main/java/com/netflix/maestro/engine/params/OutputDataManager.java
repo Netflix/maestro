@@ -104,7 +104,11 @@ public class OutputDataManager {
     }
     Optional<OutputData> outputDataOpt =
         outputDataDao.getOutputDataForExternalJob(externalJobId.get(), runtimeSummary.getType());
-    return outputDataOpt.map(OutputData::getNonRetryable).map(Boolean.TRUE::equals).orElse(false);
+    return outputDataOpt
+        .map(OutputData::getArtifacts)
+        .map(artifacts -> artifacts.get(Artifact.Type.RETRY.key()))
+        .map(artifact -> !artifact.asRetry().isRetryable())
+        .orElse(false);
   }
 
   private Optional<String> extractExternalJobId(StepRuntimeSummary runtimeSummary) {

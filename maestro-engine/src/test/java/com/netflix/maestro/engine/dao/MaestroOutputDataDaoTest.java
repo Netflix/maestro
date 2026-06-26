@@ -78,8 +78,7 @@ public class MaestroOutputDataDaoTest extends MaestroDaoBaseTest {
                     System.currentTimeMillis(),
                     System.currentTimeMillis(),
                     params,
-                    new HashMap<>(),
-                    null)));
+                    new HashMap<>())));
   }
 
   @Test(expected = NullPointerException.class)
@@ -98,8 +97,7 @@ public class MaestroOutputDataDaoTest extends MaestroDaoBaseTest {
             System.currentTimeMillis(),
             System.currentTimeMillis(),
             new HashMap<>(),
-            new HashMap<>(),
-            null);
+            new HashMap<>());
     dao.insertOrUpdateOutputData(data);
   }
 
@@ -179,8 +177,7 @@ public class MaestroOutputDataDaoTest extends MaestroDaoBaseTest {
             System.currentTimeMillis(),
             System.currentTimeMillis(),
             params,
-            artifacts,
-            null);
+            artifacts);
     dao.insertOrUpdateOutputData(data);
   }
 

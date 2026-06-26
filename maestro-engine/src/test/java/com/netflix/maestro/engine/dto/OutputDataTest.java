@@ -13,8 +13,6 @@
 package com.netflix.maestro.engine.dto;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 import com.netflix.maestro.MaestroBaseTest;
 import org.junit.BeforeClass;
@@ -34,20 +32,5 @@ public class OutputDataTest extends MaestroBaseTest {
     OutputData actual = MAPPER.readValue(MAPPER.writeValueAsString(expected), OutputData.class);
     String ser2 = MAPPER.writeValueAsString(actual);
     assertEquals(ser1, ser2);
-  }
-
-  @Test
-  public void testDeserializeNonRetryable() throws Exception {
-    OutputData actual =
-        MAPPER.readValue("""
-            {"non_retryable": true}
-            """, OutputData.class);
-    assertTrue(actual.getNonRetryable());
-  }
-
-  @Test
-  public void testDeserializeWithoutNonRetryable() throws Exception {
-    OutputData actual = MAPPER.readValue("{}", OutputData.class);
-    assertNull(actual.getNonRetryable());
   }
 }

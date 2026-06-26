@@ -33,6 +33,7 @@ import com.netflix.maestro.models.Constants;
   @JsonSubTypes.Type(name = "DYNAMIC_OUTPUT", value = DynamicOutputArtifact.class),
   @JsonSubTypes.Type(name = "KUBERNETES", value = KubernetesArtifact.class),
   @JsonSubTypes.Type(name = "HTTP", value = HttpArtifact.class),
+  @JsonSubTypes.Type(name = "RETRY", value = RetryArtifact.class),
 })
 @SuppressWarnings("PMD.ImplicitFunctionalInterface")
 public interface Artifact {
@@ -58,7 +59,9 @@ public interface Artifact {
     /** kubernetes artifact. */
     KUBERNETES(Constants.MAESTRO_PREFIX + "kubernetes"),
     /** http artifact. */
-    HTTP(Constants.MAESTRO_PREFIX + "http");
+    HTTP(Constants.MAESTRO_PREFIX + "http"),
+    /** retry artifact. */
+    RETRY(Constants.MAESTRO_PREFIX + "retry");
 
     private final String key;
 
@@ -151,5 +154,14 @@ public interface Artifact {
    */
   default HttpArtifact asHttp() {
     throw new MaestroInternalError("Artifact type [%s] cannot be used as HTTP", getType());
+  }
+
+  /**
+   * Get Retry type artifact.
+   *
+   * @return concrete artifact object.
+   */
+  default RetryArtifact asRetry() {
+    throw new MaestroInternalError("Artifact type [%s] cannot be used as RETRY", getType());
   }
 }

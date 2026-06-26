@@ -42,8 +42,7 @@ import lombok.ToString;
       "params",
       "artifacts",
       "create_time",
-      "modify_time",
-      "non_retryable"
+      "modify_time"
     })
 @AllArgsConstructor
 @ToString
@@ -57,18 +56,10 @@ public class OutputData {
   private final Map<String, Parameter> params;
   private final Map<String, Artifact> artifacts;
 
-  /**
-   * Optional flag from the step's output indicating that a failed step must not be retried by the
-   * system. A null value (the default for records that never set it, including all records written
-   * before this field existed) means no opinion; callers must null-probe before reading.
-   */
-  private final Boolean nonRetryable;
-
   /** Constructor. */
   public OutputData(Map<String, Parameter> params, Map<String, Artifact> artifacts) {
     this.params = params;
     this.artifacts = artifacts;
-    this.nonRetryable = null;
   }
 
   /** builder class for lombok and jackson. */
@@ -78,8 +69,6 @@ public class OutputData {
 
   @JsonIgnore
   public boolean isNotEmpty() {
-    return (params != null && !params.isEmpty())
-        || (artifacts != null && !artifacts.isEmpty())
-        || nonRetryable != null;
+    return (params != null && !params.isEmpty()) || (artifacts != null && !artifacts.isEmpty());
   }
 }
