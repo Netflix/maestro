@@ -18,6 +18,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.models.timeline.Timeline;
 import com.netflix.maestro.utils.Checks;
 import java.util.Arrays;
@@ -36,6 +37,7 @@ import lombok.NoArgsConstructor;
     alphabetic = true)
 @NoArgsConstructor
 @Data
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class TagPermit {
   /** reserved fields cannot be set within extraInfo. */
   private static final Set<String> RESERVED_FIELDS =

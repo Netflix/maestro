@@ -13,6 +13,7 @@
 package com.netflix.maestro.server.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.dsl.DslWorkflowDef;
 import com.netflix.maestro.dsl.parsers.WorkflowParser;
 import com.netflix.maestro.models.api.WorkflowCreateRequest;
@@ -32,6 +33,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /** Maestro MVC configuration for custom message converters. */
 @Configuration
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class MaestroWebMvcConfig implements WebMvcConfigurer {
 
   private final WorkflowParser workflowParser;

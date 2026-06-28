@@ -31,7 +31,6 @@ import lombok.experimental.SuperBuilder;
  *
  * <p>SHOULD NOT mutate the evaluated array data.
  */
-@SuppressFBWarnings({"EI_EXPOSE_REP", "EI_EXPOSE_REP2"})
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(
@@ -51,6 +50,7 @@ import lombok.experimental.SuperBuilder;
 @Getter(onMethod = @__({@Override}))
 @SuperBuilder(toBuilder = true)
 @EqualsAndHashCode(callSuper = true)
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public final class BooleanArrayParameter extends AbstractParameter {
   private final boolean[] value;
   private boolean[] evaluatedResult;

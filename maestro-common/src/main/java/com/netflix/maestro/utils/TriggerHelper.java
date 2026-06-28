@@ -17,6 +17,7 @@ import com.cronutils.model.CronType;
 import com.cronutils.model.definition.CronDefinitionBuilder;
 import com.cronutils.model.time.ExecutionTime;
 import com.cronutils.parser.CronParser;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.models.Defaults;
 import com.netflix.maestro.models.trigger.CronTimeTrigger;
 import com.netflix.maestro.models.trigger.PredefinedTimeTrigger;
@@ -32,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /** Cron Helper utility class. */
 @Slf4j
+@SuppressFBWarnings("DMI_RANDOM_USED_ONLY_ONCE")
 public final class TriggerHelper {
   /** Private constructor for utility class. */
   private TriggerHelper() {}

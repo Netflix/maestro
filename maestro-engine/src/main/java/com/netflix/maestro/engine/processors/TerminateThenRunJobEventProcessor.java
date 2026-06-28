@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.engine.processors;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceActionDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
 import com.netflix.maestro.engine.handlers.WorkflowRunner;
@@ -39,6 +40,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @AllArgsConstructor
+@SuppressFBWarnings({"EI_EXPOSE_REP", "DCN_NULLPOINTER_EXCEPTION"})
 public class TerminateThenRunJobEventProcessor
     implements MaestroEventProcessor<TerminateThenRunJobEvent> {
   private final MaestroWorkflowInstanceDao instanceDao;

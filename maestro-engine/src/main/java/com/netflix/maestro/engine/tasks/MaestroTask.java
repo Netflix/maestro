@@ -14,6 +14,7 @@ package com.netflix.maestro.engine.tasks;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.annotations.Nullable;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.annotations.VisibleForTesting;
 import com.netflix.maestro.engine.concurrency.InstanceStepConcurrencyHandler;
 import com.netflix.maestro.engine.concurrency.TagPermitManager;
@@ -97,6 +98,7 @@ import lombok.extern.slf4j.Slf4j;
  * data update and persistence.
  */
 @Slf4j
+@SuppressFBWarnings({"EI_EXPOSE_REP", "SF_SWITCH_FALLTHROUGH"})
 public final class MaestroTask implements FlowTask {
   private static final User MAESTRO_TASK_USER = User.create(Constants.MAESTRO_TASK_NAME);
 

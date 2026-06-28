@@ -13,6 +13,7 @@
 package com.netflix.maestro.engine.tasks;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceActionDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
 import com.netflix.maestro.engine.execution.WorkflowRuntimeSummary;
@@ -59,6 +60,7 @@ import lombok.extern.slf4j.Slf4j;
  * terminate this workflow instance DAG tree.
  */
 @Slf4j
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public final class MaestroEndTask implements FlowTask {
   private static final long WORKFLOW_LONG_START_DELAY_INTERVAL = 180000;
   private static final User END_TASK_USER = User.create(Constants.DEFAULT_END_TASK_NAME);

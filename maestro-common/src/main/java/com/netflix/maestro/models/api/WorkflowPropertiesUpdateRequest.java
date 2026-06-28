@@ -18,6 +18,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.exceptions.MaestroValidationException;
 import com.netflix.maestro.models.definition.AccessControl;
 import com.netflix.maestro.models.definition.Alerting;
@@ -40,6 +41,7 @@ import lombok.Data;
     },
     alphabetic = true)
 @Data
+@SuppressFBWarnings({"EI_EXPOSE_REP", "CT_CONSTRUCTOR_THROW"})
 public class WorkflowPropertiesUpdateRequest {
   @Valid @PropertiesConstraint private Properties properties;
 

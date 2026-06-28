@@ -18,6 +18,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.models.Defaults;
 import com.netflix.maestro.models.definition.GitInfo;
 import com.netflix.maestro.models.definition.Properties;
@@ -36,6 +37,7 @@ import lombok.Data;
     value = {"properties", "workflow", "is_active", "git_info"},
     alphabetic = true)
 @Data
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class WorkflowCreateRequest {
   @Valid @PropertiesConstraint private Properties properties;
   @Valid @WorkflowConstraint private Workflow workflow;

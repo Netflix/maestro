@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.engine.dto;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.models.timeline.TimelineActionEvent;
 import java.util.UUID;
 
@@ -25,6 +26,7 @@ import java.util.UUID;
  * @param limits tag permit limits
  * @param event timeline action event
  */
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public record StepTagPermit(
     UUID uuid,
     long seqNum,

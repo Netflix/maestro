@@ -81,8 +81,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <p>In the data model, we use `null` to indicate `unset`.
  */
-// mute the false positive error due to https://github.com/spotbugs/spotbugs/issues/293
-@SuppressFBWarnings("OBL_UNSATISFIED_OBLIGATION")
+@SuppressFBWarnings("EI_EXPOSE_REP")
 @SuppressWarnings({"PMD.LooseCoupling", "PMD.ReplaceJavaUtilDate"})
 @Slf4j
 public class MaestroWorkflowDao extends AbstractDatabaseDao {
@@ -408,17 +407,17 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
     boolean isEmpty = true;
     if (versionId > Constants.INACTIVE_VERSION_ID
         && snapshot != null
-        && (snapshot.getTimeTriggerDisabled() != Boolean.TRUE
-            || snapshot.getSignalTriggerDisabled() != Boolean.TRUE)) {
+        && (!Boolean.TRUE.equals(snapshot.getTimeTriggerDisabled())
+            || !Boolean.TRUE.equals(snapshot.getSignalTriggerDisabled()))) {
       TriggerUuids.TriggerUuidsBuilder builder = TriggerUuids.builder();
       TriggerUuids uuids = getUuids.get();
       if (uuids != null) {
-        if (snapshot.getTimeTriggerDisabled() != Boolean.TRUE
+        if (!Boolean.TRUE.equals(snapshot.getTimeTriggerDisabled())
             && uuids.getTimeTriggerUuid() != null) {
           builder.timeTriggerUuid(uuids.getTimeTriggerUuid());
           isEmpty = false;
         }
-        if (snapshot.getSignalTriggerDisabled() != Boolean.TRUE
+        if (!Boolean.TRUE.equals(snapshot.getSignalTriggerDisabled())
             && uuids.getSignalTriggerUuids() != null) {
           builder.signalTriggerUuids(uuids.getSignalTriggerUuids());
           isEmpty = false;

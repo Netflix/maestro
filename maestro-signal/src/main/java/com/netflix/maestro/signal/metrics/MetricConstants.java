@@ -1,10 +1,13 @@
 package com.netflix.maestro.signal.metrics;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
+
 /**
  * Constants for signal metrics.
  *
  * @author jun-he
  */
+@SuppressFBWarnings("NM_SAME_SIMPLE_NAME_AS_SUPERCLASS")
 public final class MetricConstants extends com.netflix.maestro.metrics.MetricConstants {
   private MetricConstants() {}
 

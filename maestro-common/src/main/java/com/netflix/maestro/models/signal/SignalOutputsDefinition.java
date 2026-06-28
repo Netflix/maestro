@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.annotations.Nullable;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.ParamType;
 import com.netflix.maestro.utils.Checks;
@@ -32,6 +33,7 @@ import lombok.Data;
  * @param definitions signal output definitions.
  */
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public record SignalOutputsDefinition(@JsonValue List<SignalOutputDefinition> definitions) {
   /** Constructor. */
   @JsonCreator
