@@ -750,7 +750,7 @@ public final class MaestroTask implements FlowTask {
   }
 
   /** Executes the step instance. It returns true, if the task is in dummy run mode. */
-  @SuppressWarnings("PMD.ExhaustiveSwitchHasDefault")
+  @SuppressWarnings({"PMD.ExhaustiveSwitchHasDefault", "checkstyle:MethodLength"})
   private boolean doExecute(
       Flow flow,
       Task task,
@@ -847,6 +847,21 @@ public final class MaestroTask implements FlowTask {
             evaluateNextConditionParams(flow, stepDefinition, runtimeSummary);
             doneWithExecute = true;
             break;
+          case USER_FAILED:
+          case PLATFORM_FAILED:
+            // A retryable failure is escalated to FATALLY_FAILED when the step's output data marks
+            // it as non-retryable, then falls through to the FATALLY_FAILED handling.
+            if (!outputDataManager.isStepNonRetryable(runtimeSummary)) {
+              doneWithExecute = true;
+              break;
+            }
+            StepInstance.Status failedStatus = runtimeSummary.getRuntimeState().getStatus();
+            runtimeSummary.markTerminated(StepInstance.Status.FATALLY_FAILED, tracingManager);
+            runtimeSummary.addTimeline(
+                TimelineLogEvent.info(
+                    "Step failed with [%s] and its output data classified it as non-retryable.",
+                    failedStatus));
+            // fall through, to apply failure mode handling
           case FATALLY_FAILED: // Failure mode only applies to FATALLY_FAILED
             if (!runtimeSummary.isIgnoreFailureMode()) {
               if (FailureMode.IGNORE_FAILURE == stepDefinition.getFailureMode()) {
@@ -864,8 +879,6 @@ public final class MaestroTask implements FlowTask {
             }
             // fall through, otherwise
           case INTERNALLY_FAILED: // Ignoring failure model as the error happens within Maestro
-          case USER_FAILED:
-          case PLATFORM_FAILED:
           case TIMEOUT_FAILED:
           case STOPPED:
           case TIMED_OUT:

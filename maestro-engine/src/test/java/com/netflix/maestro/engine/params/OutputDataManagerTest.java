@@ -31,6 +31,7 @@ import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.artifact.DynamicOutputArtifact;
 import com.netflix.maestro.models.artifact.KubernetesArtifact;
+import com.netflix.maestro.models.artifact.RetryArtifact;
 import com.netflix.maestro.models.artifact.TitusArtifact;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.parameter.InternalParamMode;
@@ -108,6 +109,40 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
   public void testSaveOutputData() {
     outputDataManager.saveOutputData(outputData);
     Mockito.verify(outputDataDao, times(1)).insertOrUpdateOutputData(outputData);
+  }
+
+  @Test
+  public void testIsStepNonRetryableWhenMarkedNonRetryable() {
+    RetryArtifact retryArtifact = new RetryArtifact();
+    retryArtifact.setRetryable(false);
+    OutputData output = new OutputData(null, Map.of(Artifact.Type.RETRY.key(), retryArtifact));
+    when(outputDataDao.getOutputDataForExternalJob(TASK_ID, StepType.TITUS))
+        .thenReturn(Optional.of(output));
+    runtimeSummary = runtimeSummaryBuilder().type(StepType.TITUS).artifacts(artifacts).build();
+    assertTrue(outputDataManager.isStepNonRetryable(runtimeSummary));
+  }
+
+  @Test
+  public void testIsStepNonRetryableWhenMarkedRetryable() {
+    OutputData output =
+        new OutputData(null, Map.of(Artifact.Type.RETRY.key(), new RetryArtifact()));
+    when(outputDataDao.getOutputDataForExternalJob(TASK_ID, StepType.TITUS))
+        .thenReturn(Optional.of(output));
+    runtimeSummary = runtimeSummaryBuilder().type(StepType.TITUS).artifacts(artifacts).build();
+    assertFalse(outputDataManager.isStepNonRetryable(runtimeSummary));
+  }
+
+  @Test
+  public void testIsStepNonRetryableWhenNoRetryArtifact() {
+    setupOutputDataDao();
+    runtimeSummary = runtimeSummaryBuilder().type(StepType.TITUS).artifacts(artifacts).build();
+    assertFalse(outputDataManager.isStepNonRetryable(runtimeSummary));
+  }
+
+  @Test
+  public void testIsStepNonRetryableWhenNoOutputData() {
+    runtimeSummary = runtimeSummaryBuilder().type(StepType.TITUS).artifacts(artifacts).build();
+    assertFalse(outputDataManager.isStepNonRetryable(runtimeSummary));
   }
 
   @Test

@@ -91,6 +91,26 @@ public class OutputDataManager {
     }
   }
 
+  /**
+   * Checks whether the step's output data marks a failed step as non-retryable by the system.
+   *
+   * @param runtimeSummary step runtime summary used to locate the output data
+   * @return true if the output data marks the step non-retryable, false otherwise
+   */
+  public boolean isStepNonRetryable(StepRuntimeSummary runtimeSummary) {
+    Optional<String> externalJobId = extractExternalJobId(runtimeSummary);
+    if (externalJobId.isEmpty()) {
+      return false;
+    }
+    Optional<OutputData> outputDataOpt =
+        outputDataDao.getOutputDataForExternalJob(externalJobId.get(), runtimeSummary.getType());
+    return outputDataOpt
+        .map(OutputData::getArtifacts)
+        .map(artifacts -> artifacts.get(Artifact.Type.RETRY.key()))
+        .map(artifact -> !artifact.asRetry().isRetryable())
+        .orElse(false);
+  }
+
   private Optional<String> extractExternalJobId(StepRuntimeSummary runtimeSummary) {
     Map<String, Artifact> artifacts = runtimeSummary.getArtifacts();
     String jobId = null;
