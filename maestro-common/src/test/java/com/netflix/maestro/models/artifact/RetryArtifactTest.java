@@ -21,6 +21,14 @@ import org.junit.Test;
 
 public class RetryArtifactTest extends MaestroBaseTest {
   @Test
+  public void testRoundTripSerde() throws Exception {
+    RetryArtifact artifact =
+        loadObject("fixtures/artifact/sample-retry-artifact.json", RetryArtifact.class);
+    assertEquals(
+        artifact, MAPPER.readValue(MAPPER.writeValueAsString(artifact), RetryArtifact.class));
+  }
+
+  @Test
   public void testDeserializeRetryable() throws Exception {
     Artifact artifact =
         MAPPER.readValue(
