@@ -12,8 +12,11 @@
  */
 package com.netflix.maestro.server.controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.maestro.engine.execution.WorkflowSummary;
 import com.netflix.maestro.flow.models.FlowDef;
 import com.netflix.maestro.flow.runtime.FlowOperation;
+import com.netflix.maestro.models.Constants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -21,6 +24,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.Map;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -42,10 +46,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class FlowEngineController {
 
   private final FlowOperation flowOperation;
+  private final ObjectMapper objectMapper;
 
   @Autowired
-  public FlowEngineController(FlowOperation flowOperation) {
+  public FlowEngineController(
+      FlowOperation flowOperation,
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper) {
     this.flowOperation = flowOperation;
+    this.objectMapper = objectMapper;
   }
 
   public record StartFlowRequest(String flowId, FlowDef flowDef, Map<String, Object> flowInput) {}
@@ -58,8 +66,18 @@ public class FlowEngineController {
       @PathVariable("groupId") long groupId,
       @Valid @NotNull @PathVariable("flowReference") String flowReference,
       @Valid @NotNull @RequestBody StartFlowRequest request) {
+    // The request body was JSON-deserialized into a Map<String, Object>, so the workflow summary
+    // value is an untyped LinkedHashMap. Re-materialize it once here into a WorkflowSummary so the
+    // flow runs with the typed object and downstream reads cast instead of converting per poll.
+    Map<String, Object> flowInput = request.flowInput();
+    Object summary = flowInput.get(Constants.WORKFLOW_SUMMARY_FIELD);
+    if (summary != null && !(summary instanceof WorkflowSummary)) {
+      flowInput.put(
+          Constants.WORKFLOW_SUMMARY_FIELD,
+          objectMapper.convertValue(summary, WorkflowSummary.class));
+    }
     return flowOperation.startFlow(
-        groupId, request.flowId(), flowReference, request.flowDef(), request.flowInput());
+        groupId, request.flowId(), flowReference, request.flowDef(), flowInput);
   }
 
   @PostMapping(
