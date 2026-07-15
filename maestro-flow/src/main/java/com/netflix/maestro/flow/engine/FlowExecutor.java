@@ -7,6 +7,7 @@ import com.netflix.maestro.flow.actor.Actor;
 import com.netflix.maestro.flow.models.Flow;
 import com.netflix.maestro.flow.models.FlowDef;
 import com.netflix.maestro.flow.models.FlowGroup;
+import com.netflix.maestro.flow.models.MessagePayload;
 import com.netflix.maestro.flow.utils.ExecutionHelper;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -209,9 +210,29 @@ public class FlowExecutor {
    */
   public boolean wakeUp(
       long groupId, String flowReference, @Nullable String taskReference, int code) {
+    return wakeUp(groupId, flowReference, taskReference, code, MessagePayload.DEFAULT);
+  }
+
+  /**
+   * Wake up a flow or a task with a payload.
+   *
+   * @param groupId group id to group flow instances
+   * @param flowReference flow reference
+   * @param taskReference task reference. If it is null, it wakes up all the tasks in the flow.
+   * @param code notification signaling code, which is passed to the task when it is woken up
+   * @param payload payload passed to the task when it is woken up
+   * @return true if the flow or task is woken up successfully, otherwise, false. The caller can
+   *     retry based on the returned result.
+   */
+  public boolean wakeUp(
+      long groupId,
+      String flowReference,
+      @Nullable String taskReference,
+      int code,
+      MessagePayload payload) {
     Actor groupActor = groupActors.get(groupId);
     if (groupActor != null && groupActor.isRunning()) {
-      groupActor.post(new Action.FlowWakeUp(flowReference, taskReference, code));
+      groupActor.post(new Action.FlowWakeUp(flowReference, taskReference, code, payload));
       return true;
     }
     return false;

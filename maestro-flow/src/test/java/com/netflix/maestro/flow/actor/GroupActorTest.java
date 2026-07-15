@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.exceptions.MaestroUnprocessableEntityException;
 import com.netflix.maestro.flow.models.Flow;
+import com.netflix.maestro.flow.models.MessagePayload;
 import java.util.List;
 import java.util.Set;
 import org.junit.Before;
@@ -120,7 +121,8 @@ public class GroupActorTest extends ActorBaseTest {
 
   @Test
   public void testRunForActionFlowWakeUp() {
-    groupActor.runForAction(new Action.FlowWakeUp(flow.getReference(), "taskRef", 0));
+    groupActor.runForAction(
+        new Action.FlowWakeUp(flow.getReference(), "taskRef", 0, MessagePayload.DEFAULT));
     assertNull(groupActor.getChild(flow.getReference()));
 
     groupActor.runForAction(new Action.FlowLaunch(flow, false));
@@ -128,11 +130,13 @@ public class GroupActorTest extends ActorBaseTest {
     var child = groupActor.getChild(flow.getReference());
     verifyActions(child, Action.FLOW_START);
 
-    groupActor.runForAction(new Action.FlowWakeUp(flow.getReference(), "taskRef", 0));
-    verifyActions(child, new Action.TaskWakeUp("taskRef", 0));
+    groupActor.runForAction(
+        new Action.FlowWakeUp(flow.getReference(), "taskRef", 0, MessagePayload.DEFAULT));
+    verifyActions(child, new Action.TaskWakeUp("taskRef", 0, MessagePayload.DEFAULT));
 
-    groupActor.runForAction(new Action.FlowWakeUp(flow.getReference(), "taskRef", 123));
-    verifyActions(child, new Action.TaskWakeUp("taskRef", 123));
+    groupActor.runForAction(
+        new Action.FlowWakeUp(flow.getReference(), "taskRef", 123, MessagePayload.DEFAULT));
+    verifyActions(child, new Action.TaskWakeUp("taskRef", 123, MessagePayload.DEFAULT));
   }
 
   @Test

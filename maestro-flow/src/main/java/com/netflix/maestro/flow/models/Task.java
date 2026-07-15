@@ -71,6 +71,7 @@ public class Task {
   private boolean active = true; // flag to indicate if a running task is active or not
   private boolean started; // flag to indicate if a running task is started or not
   private int code = Constants.TASK_PING_CODE; // wakeup code for custom signaling
+  private MessagePayload messagePayload = MessagePayload.DEFAULT; // message payload for signaling
   private Long startTime; // used to record the execution start time
   private Long timeoutInMillis; // keep unset timeout value from maestro engine
   private Long endTime; // used to record the execution end time

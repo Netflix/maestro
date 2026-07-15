@@ -20,9 +20,12 @@ import static org.mockito.Mockito.when;
 
 import com.netflix.maestro.MaestroBaseTest;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
+import com.netflix.maestro.flow.models.DefaultMessagePayload;
+import com.netflix.maestro.flow.models.MessagePayload;
 import com.netflix.maestro.flow.runtime.FlowOperation;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.server.controllers.FlowEngineController.StartFlowRequest;
+import com.netflix.maestro.utils.IdHelper;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -130,6 +133,46 @@ public class FlowEngineControllerTest extends MaestroBaseTest {
     Boolean result = flowEngineController.wakeUp(groupId, code, refs);
 
     verify(mockFlowOperation, times(1)).wakeUp(eq(groupId), eq(refs), eq(code));
+    assert result.equals(true);
+  }
+
+  @Test
+  public void testWakeUpSingleTaskWithPayload() {
+    String flowReference = "test-flow-ref";
+    String taskReference = "test-task-ref";
+    MessagePayload payload = new DefaultMessagePayload();
+    when(mockFlowOperation.wakeUp(
+            eq(groupId), eq(flowReference), eq(taskReference), eq(code), eq(payload)))
+        .thenReturn(true);
+
+    Boolean result =
+        flowEngineController.wakeUp(groupId, flowReference, taskReference, code, payload);
+
+    verify(mockFlowOperation, times(1))
+        .wakeUp(eq(groupId), eq(flowReference), eq(taskReference), eq(code), eq(payload));
+    assert result.equals(true);
+  }
+
+  @Test
+  public void testWakeUpWorkflowStep() {
+    String workflowId = "test-wf";
+    long instanceId = 1L;
+    long runId = 1L;
+    long groupInfo = 2L;
+    String stepId = "step1";
+    MessagePayload payload = new DefaultMessagePayload();
+    String flowReference = IdHelper.deriveFlowRef(workflowId, instanceId, runId);
+    long derivedGroupId = IdHelper.deriveGroupId(flowReference, groupInfo);
+    when(mockFlowOperation.wakeUp(
+            eq(derivedGroupId), eq(flowReference), eq(stepId), eq(code), eq(payload)))
+        .thenReturn(true);
+
+    Boolean result =
+        flowEngineController.wakeUpWorkflowStep(
+            workflowId, instanceId, runId, groupInfo, stepId, code, payload);
+
+    verify(mockFlowOperation, times(1))
+        .wakeUp(eq(derivedGroupId), eq(flowReference), eq(stepId), eq(code), eq(payload));
     assert result.equals(true);
   }
 }
