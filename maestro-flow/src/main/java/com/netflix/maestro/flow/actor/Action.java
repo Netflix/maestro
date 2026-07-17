@@ -3,6 +3,7 @@ package com.netflix.maestro.flow.actor;
 import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.flow.Constants;
 import com.netflix.maestro.flow.models.Flow;
+import com.netflix.maestro.flow.models.MessagePayload;
 import com.netflix.maestro.flow.models.Task;
 
 /**
@@ -32,7 +33,9 @@ public sealed interface Action {
 
   Action FLOW_DOWN = new FlowDown();
 
-  record FlowWakeUp(String flowReference, @Nullable String taskRef, int code) implements Action {}
+  record FlowWakeUp(
+      String flowReference, @Nullable String taskRef, int code, MessagePayload payload)
+      implements Action {}
 
   // actions for flow actors
   record FlowStart(boolean resume) implements Action {}
@@ -61,7 +64,7 @@ public sealed interface Action {
 
   Action TASK_DOWN = new TaskDown();
 
-  record TaskWakeUp(@Nullable String taskRef, int code) implements Action {}
+  record TaskWakeUp(@Nullable String taskRef, int code, MessagePayload payload) implements Action {}
 
   // actions for task actors
   record TaskStart(boolean resume) implements Action {}
@@ -69,18 +72,18 @@ public sealed interface Action {
   Action TASK_START = new TaskStart(false);
   Action TASK_RESUME = new TaskStart(true);
 
-  record TaskActivate(int code) implements Action {}
+  record TaskActivate(int code, MessagePayload payload) implements Action {}
 
-  Action TASK_ACTIVATE = new TaskActivate(Constants.TASK_PING_CODE);
+  Action TASK_ACTIVATE = new TaskActivate(Constants.TASK_PING_CODE, MessagePayload.DEFAULT);
 
   record TaskStop() implements Action {}
 
   Action TASK_STOP = new TaskStop();
 
   // used to wakeup actor, which might be directly scheduled by using TASK_PING constant.
-  record TaskPing(int code) implements Action {}
+  record TaskPing(int code, MessagePayload payload) implements Action {}
 
-  Action TASK_PING = new TaskPing(Constants.TASK_PING_CODE);
+  Action TASK_PING = new TaskPing(Constants.TASK_PING_CODE, MessagePayload.DEFAULT);
 
   record TaskUpdate(Task updatedTask) implements Action {}
 

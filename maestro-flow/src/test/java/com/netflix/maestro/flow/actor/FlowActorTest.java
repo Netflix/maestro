@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.exceptions.MaestroUnprocessableEntityException;
 import com.netflix.maestro.flow.models.Flow;
+import com.netflix.maestro.flow.models.MessagePayload;
 import com.netflix.maestro.flow.models.Task;
 import com.netflix.maestro.flow.models.TaskDef;
 import java.util.List;
@@ -269,7 +270,7 @@ public class FlowActorTest extends ActorBaseTest {
 
     flowActor.runForAction(new Action.TaskUpdate(task2));
     assertEquals(
-        Set.of(Action.FLOW_REFRESH, new Action.TaskWakeUp("task1", 0)),
+        Set.of(Action.FLOW_REFRESH, new Action.TaskWakeUp("task1", 0, MessagePayload.DEFAULT)),
         flowActor.getScheduledActions().keySet());
     assertEquals(task2, flow.getRunningTasks().get("task1"));
   }
@@ -318,7 +319,7 @@ public class FlowActorTest extends ActorBaseTest {
 
     Task task2 = flow.getRunningTasks().get("task1");
     task2.setActive(false);
-    flowActor.runForAction(new Action.TaskWakeUp("task1", 0));
+    flowActor.runForAction(new Action.TaskWakeUp("task1", 0, MessagePayload.DEFAULT));
     assertTrue(task2.isActive());
     verifyActions(flowActor.getChild("task1"), Action.TASK_ACTIVATE);
   }
@@ -330,7 +331,7 @@ public class FlowActorTest extends ActorBaseTest {
 
   @Test
   public void testTaskWakeUpWithCustomActionCode() {
-    testTaskWakeUp(123, new Action.TaskActivate(123));
+    testTaskWakeUp(123, new Action.TaskActivate(123, MessagePayload.DEFAULT));
   }
 
   private void testTaskWakeUp(int code, Action expectedAction) {
@@ -345,7 +346,7 @@ public class FlowActorTest extends ActorBaseTest {
     flowActor.runForAction(Action.FLOW_RESUME);
     assertFalse(flowActor.containsChild("task1"));
 
-    flowActor.runForAction(new Action.TaskWakeUp("task1", code));
+    flowActor.runForAction(new Action.TaskWakeUp("task1", code, MessagePayload.DEFAULT));
     verify(future, times(1)).cancel(false);
     verifyActions(flowActor.getChild("task1"), Action.TASK_START, expectedAction);
     assertTrue(flowActor.containsChild("task1"));
@@ -360,7 +361,7 @@ public class FlowActorTest extends ActorBaseTest {
 
   @Test
   public void testTaskWakeUpAllWithCustomActionCode() {
-    testTaskWakeUpForAll(123, new Action.TaskPing(123));
+    testTaskWakeUpForAll(123, new Action.TaskPing(123, MessagePayload.DEFAULT));
   }
 
   public void testTaskWakeUpForAll(int code, Action expectedAction) {
@@ -379,7 +380,7 @@ public class FlowActorTest extends ActorBaseTest {
     assertFalse(flowActor.containsChild("task1"));
     assertTrue(flowActor.containsChild("task2"));
 
-    flowActor.runForAction(new Action.TaskWakeUp(null, code));
+    flowActor.runForAction(new Action.TaskWakeUp(null, code, MessagePayload.DEFAULT));
     verify(future, times(1)).cancel(false);
     verifyActions(flowActor.getChild("task1"), Action.TASK_START, expectedAction);
     verifyActions(flowActor.getChild("task2"), Action.TASK_RESUME, expectedAction);
@@ -436,7 +437,7 @@ public class FlowActorTest extends ActorBaseTest {
     AssertHelper.assertThrows(
         "should throw for unexpected action",
         MaestroUnprocessableEntityException.class,
-        "Unexpected action: [TaskPing[code=0]] for flow ",
+        "Unexpected action: [TaskPing[code=0, payload=DefaultMessagePayload()]] for flow ",
         () -> flowActor.runForAction(Action.TASK_PING));
   }
 

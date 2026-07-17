@@ -40,6 +40,9 @@ bin/
 ### VS Code ###
 .vscode/
 
+### Claude Code ###
+.claude/
+
 # OS generated files #
 .DS_Store
 ehthumbs.db

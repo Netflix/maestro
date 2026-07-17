@@ -15,8 +15,10 @@ package com.netflix.maestro.server.controllers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
 import com.netflix.maestro.flow.models.FlowDef;
+import com.netflix.maestro.flow.models.MessagePayload;
 import com.netflix.maestro.flow.runtime.FlowOperation;
 import com.netflix.maestro.models.Constants;
+import com.netflix.maestro.utils.IdHelper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -44,6 +46,8 @@ import org.springframework.web.bind.annotation.RestController;
     produces = MediaType.APPLICATION_JSON_VALUE,
     consumes = MediaType.APPLICATION_JSON_VALUE)
 public class FlowEngineController {
+  private static final String GROUP_ID = "groupId";
+  private static final String CODE = "code";
 
   private final FlowOperation flowOperation;
   private final ObjectMapper objectMapper;
@@ -63,7 +67,7 @@ public class FlowEngineController {
       consumes = MediaType.APPLICATION_JSON_VALUE)
   @Operation(summary = "Start a flow in a group")
   public String startFlow(
-      @PathVariable("groupId") long groupId,
+      @PathVariable(GROUP_ID) long groupId,
       @Valid @NotNull @PathVariable("flowReference") String flowReference,
       @Valid @NotNull @RequestBody StartFlowRequest request) {
     // The request body was JSON-deserialized into a Map<String, Object>, so the workflow summary
@@ -85,10 +89,10 @@ public class FlowEngineController {
       consumes = MediaType.ALL_VALUE)
   @Operation(summary = "Wake up a specific flow task in a group")
   public Boolean wakeUp(
-      @PathVariable("groupId") long groupId,
+      @PathVariable(GROUP_ID) long groupId,
       @Valid @NotNull @PathVariable("flowReference") String flowReference,
       @Valid @NotNull @PathVariable("taskReference") String taskReference,
-      @PathVariable("code") int code) {
+      @PathVariable(CODE) int code) {
     return flowOperation.wakeUp(groupId, flowReference, taskReference, code);
   }
 
@@ -97,9 +101,40 @@ public class FlowEngineController {
       consumes = MediaType.APPLICATION_JSON_VALUE)
   @Operation(summary = "Wake up all the tasks in a list of flows in a group")
   public Boolean wakeUp(
-      @PathVariable("groupId") long groupId,
-      @PathVariable("code") int code,
+      @PathVariable(GROUP_ID) long groupId,
+      @PathVariable(CODE) int code,
       @Valid @NotNull @RequestBody Set<String> refs) {
     return flowOperation.wakeUp(groupId, refs, code);
+  }
+
+  @PostMapping(
+      value = "/{groupId}/flows/{flowReference}/tasks/{taskReference}/message/{code}",
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @Operation(summary = "Send a message payload to a specific flow task in a group")
+  public Boolean wakeUp(
+      @PathVariable(GROUP_ID) long groupId,
+      @Valid @NotNull @PathVariable("flowReference") String flowReference,
+      @Valid @NotNull @PathVariable("taskReference") String taskReference,
+      @PathVariable(CODE) int code,
+      @Valid @NotNull @RequestBody MessagePayload payload) {
+    return flowOperation.wakeUp(groupId, flowReference, taskReference, code, payload);
+  }
+
+  @PostMapping(
+      value =
+          "/workflows/{workflowId}/instances/{instanceId}/runs/{runId}/groups/{groupInfo}/steps/{stepId}/message/{code}",
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @Operation(summary = "Send a message payload to a step by workflow reference")
+  public Boolean wakeUpWorkflowStep(
+      @Valid @NotNull @PathVariable("workflowId") String workflowId,
+      @PathVariable("instanceId") long instanceId,
+      @PathVariable("runId") long runId,
+      @PathVariable("groupInfo") long groupInfo,
+      @Valid @NotNull @PathVariable("stepId") String stepId,
+      @PathVariable(CODE) int code,
+      @Valid @NotNull @RequestBody MessagePayload payload) {
+    String flowReference = IdHelper.deriveFlowRef(workflowId, instanceId, runId);
+    long groupId = IdHelper.deriveGroupId(flowReference, groupInfo);
+    return flowOperation.wakeUp(groupId, flowReference, stepId, code, payload);
   }
 }

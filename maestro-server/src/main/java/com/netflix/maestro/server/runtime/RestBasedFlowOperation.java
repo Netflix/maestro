@@ -17,6 +17,7 @@ import com.netflix.maestro.flow.dao.MaestroFlowDao;
 import com.netflix.maestro.flow.engine.FlowExecutor;
 import com.netflix.maestro.flow.models.FlowDef;
 import com.netflix.maestro.flow.models.FlowGroup;
+import com.netflix.maestro.flow.models.MessagePayload;
 import com.netflix.maestro.flow.properties.FlowEngineProperties;
 import com.netflix.maestro.flow.runtime.FlowOperation;
 import java.util.Map;
@@ -88,6 +89,31 @@ public class RestBasedFlowOperation implements FlowOperation {
                 group.address()
                     + "/api/v3/groups/{groupId}/flows/{flowReference}/tasks/{taskReference}/notify/{code}",
                 null,
+                Boolean.class,
+                groupId,
+                flowReference,
+                taskReference,
+                code));
+      }
+    } catch (MaestroRetryableError e) {
+      addressCache.remove(groupId);
+      throw e;
+    }
+  }
+
+  @Override
+  public boolean wakeUp(
+      long groupId, String flowReference, String taskReference, int code, MessagePayload payload) {
+    try {
+      FlowGroup group = loadFlowGroup(groupId);
+      if (group == null || localAddress.equals(group.address())) {
+        return flowExecutor.wakeUp(groupId, flowReference, taskReference, code, payload);
+      } else {
+        return Boolean.TRUE.equals(
+            restTemplate.postForObject(
+                group.address()
+                    + "/api/v3/groups/{groupId}/flows/{flowReference}/tasks/{taskReference}/message/{code}",
+                payload,
                 Boolean.class,
                 groupId,
                 flowReference,
