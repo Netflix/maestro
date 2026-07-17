@@ -103,7 +103,7 @@ public class ForeachDetails {
   }
 
   private static int intervalComparator(Interval i1, Interval i2) {
-    return (int) (i1.start - i2.start);
+    return Long.compare(i1.start, i2.start);
   }
 
   /** Add one instance with its status into the pending buffer. */
