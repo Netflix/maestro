@@ -83,4 +83,26 @@ public class SelArrayTest {
   public void invalidField() {
     one.field(SelString.of("size"));
   }
+
+  @Test
+  public void testContainsTrue() {
+    SelBoolean result = (SelBoolean) one.call("contains", new SelType[] {SelString.of("foo")});
+    assertTrue(result.booleanVal());
+  }
+
+  @Test
+  public void testContainsFalse() {
+    SelBoolean result = (SelBoolean) one.call("contains", new SelType[] {SelString.of("baz")});
+    assertFalse(result.booleanVal());
+  }
+
+  @Test(expected = UnsupportedOperationException.class)
+  public void testContainsInvalidArgs() {
+    one.call("contains", new SelType[] {});
+  }
+
+  @Test(expected = UnsupportedOperationException.class)
+  public void testInvalidMethod() {
+    one.call("invalidMethod", new SelType[] {SelString.of("test")});
+  }
 }
