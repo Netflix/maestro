@@ -19,6 +19,7 @@ import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import java.io.IOException;
 import java.net.URL;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -33,7 +34,17 @@ public class DefaultParamManager {
   private static final String STEP_TYPE_PARAMS_FILE = "defaultparams/default-%s-step-params.yaml";
   private static final String DRY_RUN_PARAMS_FILE = "defaultparams/default-dry-run-params.yaml";
 
+  /** Override key for the default workflow (system) params. */
+  public static final String WORKFLOW_OVERRIDE_KEY = "workflow";
+
+  /** Override key for the default step params. */
+  public static final String STEP_OVERRIDE_KEY = "step";
+
+  /** Override key for the default dry-run params. */
+  public static final String DRY_RUN_OVERRIDE_KEY = "dry-run";
+
   private final ObjectMapper objectMapper;
+  private final Map<String, String> paramOverrides;
   private final TypeReference<Map<String, ParamDefinition>> typeRef = new TypeReference<>() {};
   private Map<String, ParamDefinition> defaultSystemParams;
   private Map<String, ParamDefinition> defaultStepParams;
@@ -46,23 +57,42 @@ public class DefaultParamManager {
    * @param objectMapper object mapper
    */
   public DefaultParamManager(ObjectMapper objectMapper) {
+    this(objectMapper, Collections.emptyMap());
+  }
+
+  /**
+   * Constructor with param overrides supplied from configuration.
+   *
+   * @param objectMapper object mapper
+   * @param paramOverrides map of override key to a YAML blob of param definitions, merged on top of
+   *     the bundled defaults by param name
+   */
+  public DefaultParamManager(ObjectMapper objectMapper, Map<String, String> paramOverrides) {
     this.objectMapper = objectMapper;
+    this.paramOverrides = paramOverrides == null ? Collections.emptyMap() : paramOverrides;
   }
 
   /** Postconstruct initialization for DefaultParamManager. */
   public void init() throws IOException {
-    defaultSystemParams = loadParamsFromFile(WORKFLOW_PARAMS_FILE);
-    defaultStepParams = loadParamsFromFile(NETFLIX_PARAMS_FILE);
-    defaultDryRunParams = loadParamsFromFile(DRY_RUN_PARAMS_FILE);
+    defaultSystemParams =
+        applyOverride(loadParamsFromFile(WORKFLOW_PARAMS_FILE), WORKFLOW_OVERRIDE_KEY);
+    defaultStepParams = applyOverride(loadParamsFromFile(NETFLIX_PARAMS_FILE), STEP_OVERRIDE_KEY);
+    defaultDryRunParams =
+        applyOverride(loadParamsFromFile(DRY_RUN_PARAMS_FILE), DRY_RUN_OVERRIDE_KEY);
     defaultTypeParams = new HashMap<>();
     for (StepType stepType : StepType.values()) {
       String stepName = stepType.toString().toLowerCase(Locale.US);
       String defaultFile = String.format(STEP_TYPE_PARAMS_FILE, stepName);
       try {
+        Map<String, ParamDefinition> typeParams = Collections.emptyMap();
         URL filename = Thread.currentThread().getContextClassLoader().getResource(defaultFile);
         if (filename != null) {
           LOG.info("Loading default param file for {} step", stepName);
-          defaultTypeParams.put(stepName, loadParamsFromFile(defaultFile));
+          typeParams = loadParamsFromFile(defaultFile);
+        }
+        typeParams = applyOverride(typeParams, stepName);
+        if (!typeParams.isEmpty()) {
+          defaultTypeParams.put(stepName, typeParams);
         }
       } catch (Exception e) {
         throw new MaestroRuntimeException("Error processing step default file " + defaultFile, e);
@@ -117,6 +147,22 @@ public class DefaultParamManager {
   private Map<String, ParamDefinition> loadParamsFromFile(String paramsFile) throws IOException {
     return objectMapper.readValue(
         Thread.currentThread().getContextClassLoader().getResourceAsStream(paramsFile), typeRef);
+  }
+
+  /**
+   * Merge a configured override blob on top of the bundled defaults, by param name. Overrides
+   * replace matching params and add new ones; params absent from the override are kept as-is.
+   */
+  private Map<String, ParamDefinition> applyOverride(
+      Map<String, ParamDefinition> base, String overrideKey) throws IOException {
+    String blob = paramOverrides.get(overrideKey);
+    if (blob == null || blob.isBlank()) {
+      return base;
+    }
+    LOG.info("Applying default param override for [{}]", overrideKey);
+    Map<String, ParamDefinition> merged = new HashMap<>(base);
+    merged.putAll(objectMapper.readValue(blob, typeRef));
+    return merged;
   }
 
   private Map<String, ParamDefinition> preprocessParams(Map<String, ParamDefinition> params) {

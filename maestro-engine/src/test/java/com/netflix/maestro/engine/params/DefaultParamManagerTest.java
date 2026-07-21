@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.engine.params;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -112,5 +113,47 @@ public class DefaultParamManagerTest extends MaestroEngineBaseTest {
         .get()
         .put("TEST", ParamDefinition.buildParamDefinition("TEST", "123"));
     assertNull(defaultParamManager.getDefaultParamsForType(StepType.FOREACH).get().get("TEST"));
+  }
+
+  @Test
+  public void testWorkflowParamOverrideMergesAndAdds() throws IOException {
+    Map<String, String> overrides =
+        Map.of(
+            DefaultParamManager.WORKFLOW_OVERRIDE_KEY,
+            "TARGET_RUN_HOUR:\n"
+                + "  value: OVERRIDDEN\n"
+                + "  type: STRING\n"
+                + "MY_ORG_PARAM:\n"
+                + "  value: hello\n"
+                + "  type: STRING\n");
+    DefaultParamManager manager = new DefaultParamManager(YAML_MAPPER, overrides);
+    manager.init();
+
+    Map<String, ParamDefinition> params = manager.getDefaultWorkflowParams();
+    assertNotNull(params.get("TARGET_RUN_DATE"));
+    assertEquals("OVERRIDDEN", params.get("TARGET_RUN_HOUR").getValue());
+    assertEquals("hello", params.get("MY_ORG_PARAM").getValue());
+  }
+
+  @Test
+  public void testByTypeOverrideAddsParamsForTypeWithoutBundledFile() throws IOException {
+    Map<String, String> overrides =
+        Map.of("titus", "my_titus_param:\n  value: v\n  type: STRING\n");
+    DefaultParamManager manager = new DefaultParamManager(YAML_MAPPER, overrides);
+    manager.init();
+
+    assertTrue(manager.getDefaultParamsForType(StepType.TITUS).isPresent());
+    assertEquals(
+        "v",
+        manager.getDefaultParamsForType(StepType.TITUS).get().get("my_titus_param").getValue());
+  }
+
+  @Test
+  public void testNoOverrideLeavesDefaultsUnchanged() throws IOException {
+    DefaultParamManager manager = new DefaultParamManager(YAML_MAPPER, null);
+    manager.init();
+
+    assertNotNull(manager.getDefaultWorkflowParams().get("TARGET_RUN_HOUR").getName());
+    assertFalse(manager.getDefaultParamsForType(StepType.TITUS).isPresent());
   }
 }
