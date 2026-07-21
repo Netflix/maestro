@@ -31,11 +31,15 @@ import com.netflix.maestro.engine.params.ParamsManager;
 import com.netflix.maestro.engine.utils.WorkflowHelper;
 import com.netflix.maestro.engine.validations.DryRunValidator;
 import com.netflix.maestro.models.Constants;
+import com.netflix.maestro.server.properties.DefaultParamsProperties;
 import com.netflix.maestro.server.properties.MaestroProperties;
 import com.netflix.maestro.server.properties.StepRuntimeProperties;
 import com.netflix.maestro.utils.JsonHelper;
 import com.netflix.maestro.utils.StepParamSeparator;
 import com.netflix.spectator.api.DefaultRegistry;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -47,7 +51,11 @@ import org.springframework.context.annotation.Primary;
 /** beans for maestro engine related classes. */
 @Configuration
 @Slf4j
-@EnableConfigurationProperties({MaestroProperties.class, StepRuntimeProperties.class})
+@EnableConfigurationProperties({
+  MaestroProperties.class,
+  StepRuntimeProperties.class,
+  DefaultParamsProperties.class
+})
 public class MaestroEngineConfiguration {
   private static final String OBJECT_MAPPER_WITH_YAML_QUALIFIER = "ObjectMapperWithYaml";
 
@@ -115,9 +123,29 @@ public class MaestroEngineConfiguration {
 
   @Bean(initMethod = "init")
   public DefaultParamManager defaultParamManager(
-      @Qualifier(OBJECT_MAPPER_WITH_YAML_QUALIFIER) ObjectMapper objectMapper) {
+      @Qualifier(OBJECT_MAPPER_WITH_YAML_QUALIFIER) ObjectMapper objectMapper,
+      DefaultParamsProperties defaultParamsProperties) {
     LOG.info("Creating DefaultParamManager within Spring boot...");
-    return new DefaultParamManager(objectMapper);
+    return new DefaultParamManager(objectMapper, toParamOverrides(defaultParamsProperties));
+  }
+
+  private static Map<String, String> toParamOverrides(DefaultParamsProperties properties) {
+    Map<String, String> overrides = new HashMap<>();
+    if (properties.getWorkflow() != null) {
+      overrides.put(DefaultParamManager.WORKFLOW_OVERRIDE_KEY, properties.getWorkflow());
+    }
+    if (properties.getStep() != null) {
+      overrides.put(DefaultParamManager.STEP_OVERRIDE_KEY, properties.getStep());
+    }
+    if (properties.getDryRun() != null) {
+      overrides.put(DefaultParamManager.DRY_RUN_OVERRIDE_KEY, properties.getDryRun());
+    }
+    if (properties.getByType() != null) {
+      properties
+          .getByType()
+          .forEach((type, blob) -> overrides.put(type.toLowerCase(Locale.US), blob));
+    }
+    return overrides;
   }
 
   @Bean
