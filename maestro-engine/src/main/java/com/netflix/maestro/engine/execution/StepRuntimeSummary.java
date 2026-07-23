@@ -406,6 +406,12 @@ public final class StepRuntimeSummary {
     return String.format("[%s][%s][%s]", stepId, stepAttemptId, stepInstanceUuid);
   }
 
+  /** Get the transient local memory map for this step instance. */
+  @JsonIgnore
+  public Map<String, Object> getLocalMemory() {
+    return StepLocalMemory.getOrCreate(stepInstanceUuid);
+  }
+
   /**
    * Ignore failure mode only if KILL action is from upstream or KILL action is a workflow level
    * action. In either case, no need to apply failure mode after the step is failed.

@@ -13,6 +13,7 @@
 package com.netflix.maestro.engine.steps;
 
 import com.netflix.maestro.engine.concurrency.InstanceStepConcurrencyHandler;
+import com.netflix.maestro.engine.dao.MaestroStepBreakpointDao;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
 import com.netflix.maestro.engine.eval.ParamEvaluator;
@@ -80,6 +81,7 @@ public class WhileStepRuntime implements StepRuntime {
   private final WorkflowActionHandler actionHandler;
   private final MaestroWorkflowInstanceDao instanceDao;
   private final MaestroStepInstanceDao stepInstanceDao;
+  private final MaestroStepBreakpointDao stepBreakpointDao;
   private final MaestroQueueSystem queueSystem;
   private final InstanceStepConcurrencyHandler instanceStepConcurrencyHandler;
   private final ParamEvaluator paramEvaluator;
@@ -89,6 +91,14 @@ public class WhileStepRuntime implements StepRuntime {
   public Result start(
       WorkflowSummary workflowSummary, Step step, StepRuntimeSummary runtimeSummary) {
     try {
+      if (runtimeSummary.getArtifacts().containsKey(Artifact.Type.WHILE.key())) {
+        return new Result(
+            State.DONE,
+            Collections.singletonMap(
+                Artifact.Type.WHILE.key(),
+                runtimeSummary.getArtifacts().get(Artifact.Type.WHILE.key())),
+            Collections.emptyList());
+      }
       Artifact artifact = createArtifact(workflowSummary, runtimeSummary);
       return new Result(
           State.DONE,
@@ -233,6 +243,19 @@ public class WhileStepRuntime implements StepRuntime {
           trackWhileIteration(workflowSummary, runtimeSummary, (WhileStep) step, artifact);
 
       if (result == null) {
+        if (stepBreakpointDao.createPausedStepAttemptIfNeeded(
+            workflowSummary.getWorkflowId(),
+            workflowSummary.getWorkflowVersionId(),
+            workflowSummary.getWorkflowInstanceId(),
+            workflowSummary.getWorkflowRunId(),
+            runtimeSummary.getStepId(),
+            runtimeSummary.getStepAttemptId())) {
+          return new Result(
+              State.PAUSED,
+              Collections.singletonMap(artifact.getType().key(), artifact),
+              Collections.singletonList(
+                  TimelineLogEvent.info("While loop paused between iterations due to breakpoint")));
+        }
         return runWhileIteration(workflowSummary, (WhileStep) step, runtimeSummary, artifact);
       }
       return result;
