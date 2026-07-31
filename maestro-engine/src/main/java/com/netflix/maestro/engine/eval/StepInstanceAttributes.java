@@ -35,6 +35,7 @@ class StepInstanceAttributes {
   private final String stepInstanceUuid;
   private final StepInstance.StepRetry stepRetry;
   private final SignalDependencies signalDependencies;
+  private final StepInstance.Status status;
 
   static StepInstanceAttributes from(StepRuntimeSummary summary) {
     return StepInstanceAttributes.builder()
@@ -46,6 +47,7 @@ class StepInstanceAttributes {
         .stepInstanceUuid(summary.getStepInstanceUuid())
         .stepRetry(summary.getStepRetry())
         .signalDependencies(summary.getSignalDependencies())
+        .status(summary.getRuntimeState().getStatus())
         .build();
   }
 }

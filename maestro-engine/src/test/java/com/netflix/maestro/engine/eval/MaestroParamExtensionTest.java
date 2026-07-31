@@ -35,6 +35,7 @@ import com.netflix.maestro.models.initiator.ManualInitiator;
 import com.netflix.maestro.models.initiator.SignalInitiator;
 import com.netflix.maestro.models.initiator.SubworkflowInitiator;
 import com.netflix.maestro.models.instance.StepInstance;
+import com.netflix.maestro.models.instance.StepRuntimeState;
 import com.netflix.maestro.models.parameter.LongParameter;
 import com.netflix.maestro.models.parameter.MapParameter;
 import com.netflix.maestro.models.parameter.ParamType;
@@ -397,6 +398,29 @@ public class MaestroParamExtensionTest extends MaestroEngineBaseTest {
     assertEquals(
         StepType.NOTEBOOK.toString(), paramExtension.getFromStep(Constants.STEP_TYPE_INFO_PARAM));
     assertEquals(0L, paramExtension.getFromStep(Constants.STEP_ERROR_RETRIES_PARAM));
+    assertEquals(
+        StepInstance.Status.NOT_CREATED.name(),
+        paramExtension.getFromStep(Constants.STEP_STATUS_PARAM));
+  }
+
+  @Test
+  public void testGetStatusFromCurrentStep() {
+    StepRuntimeState runtimeState = new StepRuntimeState();
+    runtimeState.setStatus(StepInstance.Status.COMPLETED_WITH_ERROR);
+    StepRuntimeSummary summary =
+        StepRuntimeSummary.builder()
+            .stepId("step-123")
+            .type(StepType.NOTEBOOK)
+            .stepRetry(StepInstance.StepRetry.from(null))
+            .runtimeState(runtimeState)
+            .build();
+    when(instanceWrapper.isWorkflowParam()).thenReturn(false);
+    when(instanceWrapper.getStepInstanceAttributes())
+        .thenReturn(StepInstanceAttributes.from(summary));
+
+    assertEquals(
+        StepInstance.Status.COMPLETED_WITH_ERROR.name(),
+        paramExtension.getFromStep(Constants.STEP_STATUS_PARAM));
   }
 
   @Test
