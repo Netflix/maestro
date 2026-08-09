@@ -424,6 +424,39 @@ public class MaestroParamExtensionTest extends MaestroEngineBaseTest {
   }
 
   @Test
+  public void testGetEndTimeFromCurrentStep() {
+    StepRuntimeState runtimeState = new StepRuntimeState();
+    runtimeState.setEndTime(12345L);
+    StepRuntimeSummary summary =
+        StepRuntimeSummary.builder()
+            .stepId("step-123")
+            .type(StepType.NOTEBOOK)
+            .stepRetry(StepInstance.StepRetry.from(null))
+            .runtimeState(runtimeState)
+            .build();
+    when(instanceWrapper.isWorkflowParam()).thenReturn(false);
+    when(instanceWrapper.getStepInstanceAttributes())
+        .thenReturn(StepInstanceAttributes.from(summary));
+
+    assertEquals(12345L, paramExtension.getFromStep(Constants.STEP_END_TIME_PARAM));
+  }
+
+  @Test(expected = MaestroInternalError.class)
+  public void testGetEndTimeFromCurrentStepNotSetYet() {
+    StepRuntimeSummary summary =
+        StepRuntimeSummary.builder()
+            .stepId("step-123")
+            .type(StepType.NOTEBOOK)
+            .stepRetry(StepInstance.StepRetry.from(null))
+            .build();
+    when(instanceWrapper.isWorkflowParam()).thenReturn(false);
+    when(instanceWrapper.getStepInstanceAttributes())
+        .thenReturn(StepInstanceAttributes.from(summary));
+
+    paramExtension.getFromStep(Constants.STEP_END_TIME_PARAM);
+  }
+
+  @Test
   public void testGetFromStepThrowsErrorWhenInvokedFromWorkflowExecContext() {
     when(instanceWrapper.isWorkflowParam()).thenReturn(true);
     AssertHelper.assertThrows(
