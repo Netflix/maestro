@@ -1,0 +1,18 @@
+notebook:
+  internal_mode: REQUIRED
+  type: MAP
+  value:
+    image:
+      internal_mode: PROVIDED
+      type: STRING
+      value: "registry.local/notebook:latest"
+    cpu:
+      internal_mode: PROVIDED
+      type: STRING
+      value: "1"
+    memory:
+      internal_mode: PROVIDED
+      type: STRING
+      value: "4G"
+  tags:
+    - notebook

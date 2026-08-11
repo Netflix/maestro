@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.exceptions.MaestroRuntimeException;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.parameter.ParamDefinition;
+import com.netflix.maestro.models.parameter.ParamSource;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Collections;
@@ -150,8 +151,14 @@ public class DefaultParamManager {
   }
 
   /**
-   * Merge a configured override blob on top of the bundled defaults, by param name. Overrides
-   * replace matching params and add new ones; params absent from the override are kept as-is.
+   * Merge a configured override blob on top of the bundled defaults. Overrides add new params and
+   * update matching ones; params absent from the override are kept as-is.
+   *
+   * <p>The merge is recursive for MAP and STRING_MAP params, so an override may set a single nested
+   * entry without restating its siblings. The enclosing param keeps its bundled {@code
+   * internal_mode}, validator and tags. Merging is done as {@link ParamSource#SYSTEM_DEFAULT},
+   * which is a system stage, so operator-supplied overrides are allowed to update params of any
+   * mode, including {@code RESERVED} ones.
    */
   private Map<String, ParamDefinition> applyOverride(
       Map<String, ParamDefinition> base, String overrideKey) throws IOException {
@@ -161,7 +168,10 @@ public class DefaultParamManager {
     }
     LOG.info("Applying default param override for [{}]", overrideKey);
     Map<String, ParamDefinition> merged = new HashMap<>(base);
-    merged.putAll(objectMapper.readValue(blob, typeRef));
+    ParamsMergeHelper.mergeParams(
+        merged,
+        objectMapper.readValue(blob, typeRef),
+        ParamsMergeHelper.MergeContext.workflowCreate(ParamSource.SYSTEM_DEFAULT, false));
     return merged;
   }
 

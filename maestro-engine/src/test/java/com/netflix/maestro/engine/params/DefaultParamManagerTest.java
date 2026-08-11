@@ -20,6 +20,7 @@ import static org.junit.Assert.assertTrue;
 
 import com.netflix.maestro.engine.MaestroEngineBaseTest;
 import com.netflix.maestro.models.definition.StepType;
+import com.netflix.maestro.models.parameter.InternalParamMode;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.ParamType;
 import java.io.IOException;
@@ -155,5 +156,66 @@ public class DefaultParamManagerTest extends MaestroEngineBaseTest {
 
     assertNotNull(manager.getDefaultWorkflowParams().get("TARGET_RUN_HOUR").getName());
     assertFalse(manager.getDefaultParamsForType(StepType.TITUS).isPresent());
+  }
+
+  @Test
+  public void testMapOverrideKeepsSiblingEntries() throws IOException {
+    Map<String, String> overrides =
+        Map.of(
+            "notebook",
+            "notebook:\n"
+                + "  type: MAP\n"
+                + "  value:\n"
+                + "    image:\n"
+                + "      type: STRING\n"
+                + "      value: \"other-registry.local/notebook:v2\"\n");
+    DefaultParamManager manager = new DefaultParamManager(YAML_MAPPER, overrides);
+    manager.init();
+
+    Map<String, ParamDefinition> notebook =
+        manager
+            .getDefaultParamsForType(StepType.NOTEBOOK)
+            .orElseThrow()
+            .get("notebook")
+            .asMapParamDef()
+            .getValue();
+    assertEquals("other-registry.local/notebook:v2", notebook.get("image").getValue());
+    // siblings absent from the override survive rather than being dropped with the enclosing MAP
+    assertEquals("1", notebook.get("cpu").getValue());
+    assertEquals("4G", notebook.get("memory").getValue());
+  }
+
+  @Test
+  public void testMapOverrideKeepsEnclosingParamAttributes() throws IOException {
+    Map<String, String> overrides =
+        Map.of(
+            "notebook",
+            "notebook:\n"
+                + "  type: MAP\n"
+                + "  value:\n"
+                + "    image:\n"
+                + "      type: STRING\n"
+                + "      value: \"other-registry.local/notebook:v2\"\n");
+    DefaultParamManager manager = new DefaultParamManager(YAML_MAPPER, overrides);
+    manager.init();
+
+    ParamDefinition notebook =
+        manager.getDefaultParamsForType(StepType.NOTEBOOK).orElseThrow().get("notebook");
+    assertEquals(InternalParamMode.REQUIRED, notebook.getInternalMode());
+    assertNotNull(notebook.getTags());
+  }
+
+  @Test
+  public void testOverrideOfReservedParamIsAllowed() throws IOException {
+    // loop_index is internal_mode RESERVED; merging as SYSTEM_DEFAULT must not be rejected.
+    Map<String, String> overrides =
+        Map.of("foreach", "loop_index:\n" + "  type: LONG\n" + "  value: 7\n");
+    DefaultParamManager manager = new DefaultParamManager(YAML_MAPPER, overrides);
+    manager.init();
+
+    ParamDefinition loopIndex =
+        manager.getDefaultParamsForType(StepType.FOREACH).orElseThrow().get("loop_index");
+    assertEquals(7L, (long) loopIndex.getValue());
+    assertEquals(InternalParamMode.RESERVED, loopIndex.getInternalMode());
   }
 }
