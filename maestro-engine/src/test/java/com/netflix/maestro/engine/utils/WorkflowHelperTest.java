@@ -15,6 +15,7 @@ package com.netflix.maestro.engine.utils;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 
 import com.netflix.maestro.AssertHelper;
@@ -38,6 +39,8 @@ import com.netflix.maestro.models.instance.RunPolicy;
 import com.netflix.maestro.models.instance.RunProperties;
 import com.netflix.maestro.models.instance.StepAggregatedView;
 import com.netflix.maestro.models.instance.StepInstance;
+import com.netflix.maestro.models.instance.StepSelection;
+import com.netflix.maestro.models.instance.StepSelector;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import java.io.IOException;
@@ -317,6 +320,64 @@ public class WorkflowHelperTest extends MaestroEngineBaseTest {
     // For trigger based, verify if null has been passed.
     Mockito.verify(paramsManager, Mockito.times(1))
         .generateMergedWorkflowParams(createdInstance, request);
+  }
+
+  @Test
+  public void testRestartInheritsStepSelectionUnlessSupplied() {
+    StepSelection baseline =
+        StepSelection.builder()
+            .exclude(StepSelector.builder().stepIdPattern("report_.*").build())
+            .build();
+    Workflow workflow = definition.getWorkflow();
+    WorkflowInstance instance =
+        workflowHelper.createWorkflowInstance(
+            workflow,
+            12345L,
+            1,
+            new RunProperties(),
+            RunRequest.builder()
+                .initiator(new ManualInitiator())
+                .currentPolicy(RunPolicy.START_CUSTOMIZED_RUN)
+                .stepSelection(baseline)
+                .runParams(Collections.emptyMap())
+                .build());
+    assertEquals(baseline, instance.getRunConfig().getStepSelection());
+
+    // a restart that says nothing about selection keeps the baseline one
+    workflowHelper.updateWorkflowInstance(
+        instance,
+        RunRequest.builder()
+            .initiator(new ManualInitiator())
+            .currentPolicy(RunPolicy.RESTART_FROM_BEGINNING)
+            .runParams(Collections.emptyMap())
+            .build());
+    assertEquals(baseline, instance.getRunConfig().getStepSelection());
+
+    // a restart that supplies its own selection replaces the baseline one
+    StepSelection replacement =
+        StepSelection.builder()
+            .include(StepSelector.builder().stepIdPattern("load_.*").build())
+            .build();
+    workflowHelper.updateWorkflowInstance(
+        instance,
+        RunRequest.builder()
+            .initiator(new ManualInitiator())
+            .currentPolicy(RunPolicy.RESTART_FROM_BEGINNING)
+            .stepSelection(replacement)
+            .runParams(Collections.emptyMap())
+            .build());
+    assertEquals(replacement, instance.getRunConfig().getStepSelection());
+
+    // a restart that supplies an empty selection clears it, so every step runs
+    workflowHelper.updateWorkflowInstance(
+        instance,
+        RunRequest.builder()
+            .initiator(new ManualInitiator())
+            .currentPolicy(RunPolicy.RESTART_FROM_BEGINNING)
+            .stepSelection(StepSelection.builder().build())
+            .runParams(Collections.emptyMap())
+            .build());
+    assertTrue(instance.getRunConfig().getStepSelection().isEmpty());
   }
 
   @Test

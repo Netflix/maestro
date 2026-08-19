@@ -16,6 +16,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.netflix.maestro.models.instance.StepSelection;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.validations.RunParamsConstraint;
 import jakarta.validation.Valid;
@@ -31,7 +32,14 @@ import lombok.Data;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(
-    value = {"request_time", "request_id", "restart_policy", "run_params", "artifacts"},
+    value = {
+      "request_time",
+      "request_id",
+      "restart_policy",
+      "run_params",
+      "step_selection",
+      "artifacts"
+    },
     alphabetic = true)
 @Data
 public class WorkflowInstanceRestartRequest {
@@ -46,6 +54,13 @@ public class WorkflowInstanceRestartRequest {
   // for restart, the validation should make sure some params cannot be mutated
   @Valid @RunParamsConstraint
   private Map<String, ParamDefinition> runParams; // runtime parameter overrides
+
+  /**
+   * Replaces the baseline run's step selection for this new run. When absent, the baseline run's
+   * selection is inherited, so its skips are not silently undone. When present, it is used as
+   * given, and an empty one clears the inherited selection so every step runs.
+   */
+  @Valid private StepSelection stepSelection;
 
   /** set runParams. */
   public void setRunParams(Map<String, ParamDefinition> input) {

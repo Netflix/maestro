@@ -23,4 +23,11 @@ public class RunConfigTest extends MaestroBaseTest {
     RunConfig config = loadObject("fixtures/instances/sample-run-config.json", RunConfig.class);
     assertEquals(config, MAPPER.readValue(MAPPER.writeValueAsString(config), RunConfig.class));
   }
+
+  @Test
+  public void testStepSelectionFromJson() throws Exception {
+    RunConfig config = loadObject("fixtures/instances/sample-run-config.json", RunConfig.class);
+    assertEquals("load_.*", config.getStepSelection().getInclude().getStepIdPattern());
+    assertEquals("load_expensive", config.getStepSelection().getExclude().getStepIdPattern());
+  }
 }

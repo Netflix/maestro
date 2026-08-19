@@ -60,6 +60,8 @@ import com.netflix.maestro.models.instance.RestartConfig;
 import com.netflix.maestro.models.instance.RunPolicy;
 import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.StepInstanceTransition;
+import com.netflix.maestro.models.instance.StepSelection;
+import com.netflix.maestro.models.instance.StepSelector;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.instance.WorkflowRuntimeOverview;
 import com.netflix.maestro.models.parameter.BooleanParameter;
@@ -518,20 +520,42 @@ public final class MaestroTask implements FlowTask {
     if (stepRestartConfig != null
         && stepRestartConfig.getRestartPath() != null
         && stepRestartConfig.getRestartPath().size() == 1
-        && stepRestartConfig.getSkipSteps() != null) {
-      boolean skipped = stepRestartConfig.getSkipSteps().contains(runtimeSummary.getStepId());
-      if (skipped) {
-        LOG.info(
-            "workflow {}'s step {} is skipped.",
-            workflowSummary.getIdentity(),
-            runtimeSummary.getIdentity());
-        runtimeSummary.markTerminated(StepInstance.Status.SKIPPED, tracingManager);
-        runtimeSummary.addTimeline(
-            TimelineLogEvent.info("Step is skipped because of a user skip action."));
-      }
-      return skipped;
+        && stepRestartConfig.getSkipSteps() != null
+        && stepRestartConfig.getSkipSteps().contains(runtimeSummary.getStepId())) {
+      LOG.info(
+          "workflow {}'s step {} is skipped.",
+          workflowSummary.getIdentity(),
+          runtimeSummary.getIdentity());
+      runtimeSummary.markTerminated(StepInstance.Status.SKIPPED, tracingManager);
+      runtimeSummary.addTimeline(
+          TimelineLogEvent.info("Step is skipped because of a user skip action."));
+      return true;
     }
-    return false;
+
+    StepSelection selection = workflowSummary.getStepSelection();
+    if (selection == null || selection.isEmpty()) {
+      return false;
+    }
+    String stepId = runtimeSummary.getStepId();
+    if (!selection.isSkipped(stepId)) {
+      return false;
+    }
+    StepSelector exclude = selection.getExclude();
+    String reason =
+        exclude != null && exclude.matches(stepId)
+            ? String.format(
+                "it matches the run's excluded step pattern [%s]", exclude.getStepIdPattern())
+            : String.format(
+                "it is not matched by the run's included step pattern [%s]",
+                selection.getInclude().getStepIdPattern());
+    LOG.info(
+        "workflow {}'s step {} is skipped because {}.",
+        workflowSummary.getIdentity(),
+        runtimeSummary.getIdentity(),
+        reason);
+    runtimeSummary.markTerminated(StepInstance.Status.SKIPPED, tracingManager);
+    runtimeSummary.addTimeline(TimelineLogEvent.info("Step is skipped because %s.", reason));
+    return true;
   }
 
   private boolean isStepSatisfied(

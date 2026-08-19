@@ -25,4 +25,12 @@ public class WorkflowStartRequestTest extends MaestroBaseTest {
     assertEquals(
         request, MAPPER.readValue(MAPPER.writeValueAsString(request), WorkflowStartRequest.class));
   }
+
+  @Test
+  public void testStepSelectionFromJson() throws Exception {
+    WorkflowStartRequest request =
+        loadObject("fixtures/api/sample-workflow-start-request.json", WorkflowStartRequest.class);
+    assertEquals("load_.*", request.getStepSelection().getInclude().getStepIdPattern());
+    assertEquals("load_expensive", request.getStepSelection().getExclude().getStepIdPattern());
+  }
 }

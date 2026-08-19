@@ -31,7 +31,7 @@ import lombok.Data;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(
-    value = {"runtime_tags", "correlation_id", "policy", "restart_config"},
+    value = {"runtime_tags", "correlation_id", "policy", "restart_config", "step_selection"},
     alphabetic = true)
 @Data
 public class RunConfig {
@@ -65,4 +65,11 @@ public class RunConfig {
    * <p>skipStepIds is used to support skipping tasks.
    */
   @JsonIgnore @Nullable @Valid private List<String> skipStepIds;
+
+  /**
+   * Optional selection deciding which steps of this run execute. Unlike the fields above, it is
+   * supplied by the caller and is persisted with the instance so a run's skip rule stays auditable.
+   * Unset means every step runs.
+   */
+  @Nullable @Valid private StepSelection stepSelection;
 }

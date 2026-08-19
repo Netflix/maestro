@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.definition.Tag;
 import com.netflix.maestro.models.initiator.Initiator;
+import com.netflix.maestro.models.instance.StepSelection;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.validations.RunParamsConstraint;
 import jakarta.validation.Valid;
@@ -43,6 +44,7 @@ import lombok.Data;
       "request_id",
       "runtime_tags",
       "run_params",
+      "step_selection",
       "artifacts",
       "persist_failed_run"
     },
@@ -66,6 +68,9 @@ public class WorkflowStartRequest {
   public void setRunParams(Map<String, ParamDefinition> input) {
     this.runParams = ParamDefinition.preprocessDefinitionParams(input);
   }
+
+  // when set, only the selected steps run and the rest are skipped
+  @Valid private StepSelection stepSelection;
 
   @JsonInclude(JsonInclude.Include.NON_EMPTY)
   @Valid

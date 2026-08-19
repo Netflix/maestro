@@ -69,6 +69,8 @@ public class WorkflowInstanceActionController {
             .requestTime(restartRequest.getRequestTime())
             .requestId(restartRequest.getRequestId())
             .currentPolicy(restartRequest.getRestartPolicy())
+            // absent inherits the baseline run's selection, present replaces it
+            .stepSelection(restartRequest.getStepSelection())
             .runParams(new LinkedHashMap<>())
             // no runtimeTags, correlationId, or artifacts for manual step restart
             .restartConfig(

@@ -25,6 +25,7 @@ import com.netflix.maestro.models.definition.TagList;
 import com.netflix.maestro.models.definition.Workflow;
 import com.netflix.maestro.models.error.Details;
 import com.netflix.maestro.models.instance.RunProperties;
+import com.netflix.maestro.models.instance.StepSelection;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.models.timeline.Timeline;
@@ -103,7 +104,14 @@ public class WorkflowHelper {
     instance.setWorkflowRunId(Constants.LATEST_ONE);
     instance.setWorkflowUuid(IdHelper.getOrCreateUuid(runRequest.getRequestId()));
     instance.setExecutionId(null); // clear execution id if set
+    // A restart keeps the baseline run's step selection so its skips are not silently undone. The
+    // baseline run config is still readable here because the request's one replaces it below.
+    StepSelection inheritedSelection =
+        instance.getRunConfig() == null ? null : instance.getRunConfig().getStepSelection();
     instance.setRunConfig(runRequest.toRunConfig());
+    if (instance.getRunConfig().getStepSelection() == null && inheritedSelection != null) {
+      instance.getRunConfig().setStepSelection(inheritedSelection);
+    }
     instance.setRunParams(runRequest.getRunParams());
     instance.setStepRunParams(runRequest.getStepRunParams());
     instance.setInitiator(runRequest.getInitiator());
@@ -127,7 +135,6 @@ public class WorkflowHelper {
     // set initial timeline
     instance.setTimeline(
         new Timeline(Collections.singletonList(runRequest.getInitiator().getTimelineEvent())));
-
     try {
       initiateWorkflowParamsAndProperties(instance, runRequest);
     } catch (RuntimeException e) {
@@ -165,6 +172,7 @@ public class WorkflowHelper {
     if (instance.getRunConfig() != null) {
       summary.setRunPolicy(instance.getRunConfig().getPolicy());
       summary.setRestartConfig(instance.getRunConfig().getRestartConfig());
+      summary.setStepSelection(instance.getRunConfig().getStepSelection());
     }
     summary.setRunProperties(instance.getRunProperties());
     summary.setInitiator(instance.getInitiator());

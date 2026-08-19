@@ -24,6 +24,7 @@ import com.netflix.maestro.models.initiator.ManualInitiator;
 import com.netflix.maestro.models.instance.RestartConfig;
 import com.netflix.maestro.models.instance.RunConfig;
 import com.netflix.maestro.models.instance.RunPolicy;
+import com.netflix.maestro.models.instance.StepSelection;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.utils.Checks;
@@ -63,6 +64,10 @@ public class RunRequest {
   @Nullable private final Map<String, Artifact> artifacts;
 
   @Nullable private RestartConfig restartConfig;
+
+  /** When set, only the selected steps run and the rest are skipped. */
+  @Nullable private final StepSelection stepSelection;
+
   private final boolean persistFailedRun;
 
   /** Static util method to extract the last node from the restart path. */
@@ -189,6 +194,9 @@ public class RunRequest {
     runConfig.setCorrelationId(this.correlationId);
     runConfig.setPolicy(this.currentPolicy);
     runConfig.setRestartConfig(this.restartConfig);
+    // kept even when empty so a restart can distinguish "not supplied", which inherits the baseline
+    // run's selection, from "supplied but empty", which clears it so every step runs
+    runConfig.setStepSelection(this.stepSelection);
     return runConfig;
   }
 

@@ -29,6 +29,7 @@ import com.netflix.maestro.models.initiator.Initiator;
 import com.netflix.maestro.models.instance.RestartConfig;
 import com.netflix.maestro.models.instance.RunPolicy;
 import com.netflix.maestro.models.instance.RunProperties;
+import com.netflix.maestro.models.instance.StepSelection;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.utils.ObjectHelper;
@@ -61,6 +62,7 @@ import lombok.Data;
       "workflow_uuid",
       "run_policy",
       "restart_config",
+      "step_selection",
       "run_properties",
       "initiator",
       "params",
@@ -89,6 +91,9 @@ public class WorkflowSummary {
 
   @NotNull private RunPolicy runPolicy; // the policy used to run to this workflow instance
   @Nullable private RestartConfig restartConfig;
+
+  // when set, only the selected steps run and the rest are skipped
+  @Nullable private StepSelection stepSelection;
 
   // from workflow instance properties snapshot
   @Valid @NotNull private RunProperties runProperties;

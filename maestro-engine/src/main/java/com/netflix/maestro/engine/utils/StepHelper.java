@@ -235,6 +235,9 @@ public final class StepHelper {
         .correlationId(workflowSummary.getCorrelationId())
         .groupInfo(workflowSummary.getGroupInfo())
         .instanceStepConcurrency(workflowSummary.getInstanceStepConcurrency()) // pass it down
+        // a run's step selection applies to every level below it, including foreach inline
+        // workflows and the workflows started by subworkflow steps
+        .stepSelection(workflowSummary.getStepSelection())
         .runParams(runParams)
         .restartConfig(
             copyRestartConfigWithClonedPath(

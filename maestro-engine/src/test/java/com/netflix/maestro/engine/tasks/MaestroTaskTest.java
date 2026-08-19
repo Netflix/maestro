@@ -42,6 +42,8 @@ import com.netflix.maestro.models.instance.RestartConfig;
 import com.netflix.maestro.models.instance.RunPolicy;
 import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.StepRuntimeState;
+import com.netflix.maestro.models.instance.StepSelection;
+import com.netflix.maestro.models.instance.StepSelector;
 import com.netflix.maestro.models.signal.SignalOutputs;
 import com.netflix.maestro.models.timeline.Timeline;
 import com.netflix.maestro.models.timeline.TimelineEvent;
@@ -259,6 +261,92 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
         .contains(
             StepInstanceUpdateJobEvent.createRecord(
                 StepInstance.Status.USER_FAILED, StepInstance.Status.SKIPPED, 0L));
+  }
+
+  @Test
+  public void testIsStepSkippedByStepSelection() {
+    WorkflowSummary summary = new WorkflowSummary();
+    summary.setWorkflowId("test-workflow");
+    summary.setWorkflowInstanceId(1L);
+    summary.setWorkflowRunId(1L);
+
+    StepRuntimeState runtimeState = new StepRuntimeState();
+    runtimeState.setStatus(StepInstance.Status.NOT_CREATED);
+    Timeline timeline = new Timeline(new ArrayList<>());
+    StepInstance.StepRetry stepRetry = new StepInstance.StepRetry();
+    stepRetry.setRetryable(true);
+    StepRuntimeSummary runtimeSummary =
+        StepRuntimeSummary.builder()
+            .stepId("load_expensive")
+            .timeline(timeline)
+            .runtimeState(runtimeState)
+            .stepRetry(stepRetry)
+            .build();
+
+    // no selection at all leaves the step alone
+    Assert.assertFalse(maestroTask.isStepSkipped(summary, runtimeSummary));
+
+    // an empty selection leaves the step alone
+    summary.setStepSelection(StepSelection.builder().build());
+    Assert.assertFalse(maestroTask.isStepSkipped(summary, runtimeSummary));
+
+    // included and not excluded, so it runs
+    summary.setStepSelection(
+        StepSelection.builder()
+            .include(StepSelector.builder().stepIdPattern("load_.*").build())
+            .build());
+    Assert.assertFalse(maestroTask.isStepSkipped(summary, runtimeSummary));
+
+    // exclude overrides include
+    summary.setStepSelection(
+        StepSelection.builder()
+            .include(StepSelector.builder().stepIdPattern("load_.*").build())
+            .exclude(StepSelector.builder().stepIdPattern("load_expensive").build())
+            .build());
+    Assert.assertTrue(maestroTask.isStepSkipped(summary, runtimeSummary));
+    Assert.assertEquals(StepInstance.Status.SKIPPED, runtimeState.getStatus());
+    assertThat(timeline.getTimelineEvents())
+        .hasSize(1)
+        .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
+        .contains(
+            TimelineLogEvent.info(
+                "Step is skipped because it matches the run's excluded step pattern [%s].",
+                "load_expensive"));
+  }
+
+  @Test
+  public void testIsStepSkippedWhenNotIncluded() {
+    WorkflowSummary summary = new WorkflowSummary();
+    summary.setWorkflowId("test-workflow");
+    summary.setWorkflowInstanceId(1L);
+    summary.setWorkflowRunId(1L);
+    summary.setStepSelection(
+        StepSelection.builder()
+            .include(StepSelector.builder().stepIdPattern("load_.*").build())
+            .build());
+
+    StepRuntimeState runtimeState = new StepRuntimeState();
+    runtimeState.setStatus(StepInstance.Status.NOT_CREATED);
+    Timeline timeline = new Timeline(new ArrayList<>());
+    StepInstance.StepRetry stepRetry = new StepInstance.StepRetry();
+    stepRetry.setRetryable(true);
+    StepRuntimeSummary runtimeSummary =
+        StepRuntimeSummary.builder()
+            .stepId("transform")
+            .timeline(timeline)
+            .runtimeState(runtimeState)
+            .stepRetry(stepRetry)
+            .build();
+
+    Assert.assertTrue(maestroTask.isStepSkipped(summary, runtimeSummary));
+    Assert.assertEquals(StepInstance.Status.SKIPPED, runtimeState.getStatus());
+    assertThat(timeline.getTimelineEvents())
+        .hasSize(1)
+        .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
+        .contains(
+            TimelineLogEvent.info(
+                "Step is skipped because it is not matched by the run's included step pattern [%s].",
+                "load_.*"));
   }
 
   @Test

@@ -17,5 +17,13 @@
       "expression": "1 + 1;", "type": "LONG", "validator": "@Positive", "mode": "mutable_on_start"
     }
   },
+  "step_selection": {
+    "include": {
+      "step_id_pattern": "load_.*"
+    },
+    "exclude": {
+      "step_id_pattern": "load_expensive"
+    }
+  },
   "persist_failed_run": true
 }

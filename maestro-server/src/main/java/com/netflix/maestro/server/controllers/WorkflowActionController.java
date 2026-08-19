@@ -23,6 +23,7 @@ import com.netflix.maestro.models.api.WorkflowStartRequest;
 import com.netflix.maestro.models.api.WorkflowStartResponse;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.instance.RunPolicy;
+import com.netflix.maestro.models.instance.StepSelection;
 import com.netflix.maestro.models.timeline.TimelineActionEvent;
 import com.netflix.maestro.models.timeline.TimelineEvent;
 import com.netflix.maestro.utils.ObjectHelper;
@@ -78,11 +79,14 @@ public class WorkflowActionController {
 
   private RunRequest toRunRequest(WorkflowStartRequest request, User caller) {
     request.getInitiator().setCaller(caller);
+    StepSelection selection = request.getStepSelection();
+    boolean customized = selection != null && !selection.isEmpty();
     return RunRequest.builder()
         .initiator(request.getInitiator())
         .requestTime(request.getRequestTime())
         .requestId(request.getRequestId())
-        .currentPolicy(RunPolicy.START_FRESH_NEW_RUN)
+        .currentPolicy(customized ? RunPolicy.START_CUSTOMIZED_RUN : RunPolicy.START_FRESH_NEW_RUN)
+        .stepSelection(customized ? selection : null)
         .runParams(ObjectHelper.valueOrDefault(request.getRunParams(), new LinkedHashMap<>()))
         .persistFailedRun(request.isPersistFailedRun())
         .runtimeTags(request.getRuntimeTags())
