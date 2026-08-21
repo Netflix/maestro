@@ -56,9 +56,13 @@ public class WorkflowInstanceRestartRequest {
   private Map<String, ParamDefinition> runParams; // runtime parameter overrides
 
   /**
-   * Replaces the baseline run's step selection for this new run. When absent, the baseline run's
-   * selection is inherited, so its skips are not silently undone. When present, it is used as
-   * given, and an empty one clears the inherited selection so every step runs.
+   * Step selection for this new run.
+   *
+   * <ul>
+   *   <li>{@code null}: inherit the baseline run's selection, so the steps it skipped stay skipped.
+   *   <li>Non-empty: use this selection instead of the baseline run's.
+   *   <li>Empty: discard the inherited selection and run every step.
+   * </ul>
    */
   @Valid private StepSelection stepSelection;
 
