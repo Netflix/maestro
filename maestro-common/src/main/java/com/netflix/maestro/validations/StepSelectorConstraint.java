@@ -51,13 +51,22 @@ public @interface StepSelectorConstraint {
     private static final String PATTERN_PREFIX = "[step selector] step_id_pattern [";
 
     /**
-     * A quantifier applied to a group that itself contains a quantifier, such as {@code (a+)+} or
-     * {@code (.*)*}. This is the shape whose backtracking is exponential in the input length, so it
-     * can hang a step initialization thread on an input well within the step id length limit.
-     * Matching a step id never needs it.
+     * Escape sequences, replaced before scanning so a literal {@code \)} is not read as a group.
      */
-    private static final Pattern NESTED_QUANTIFIER =
-        Pattern.compile("\\((?:[^()\\\\]|\\\\.)*[*+}](?:[^()\\\\]|\\\\.)*\\)\\s*[*+]");
+    private static final Pattern ESCAPE_SEQUENCE = Pattern.compile("\\\\.");
+
+    /**
+     * A group repeated an unbounded or counted number of times, such as {@code (a+)+}, {@code
+     * (a|ab)+}, {@code ((a)+)+} or {@code (a?b?)+}. Every regex whose backtracking is exponential
+     * in the input length repeats a group, so rejecting that one shape covers the family rather
+     * than enumerating its members. A step id well within the id length limit is enough to hang a
+     * step initialization thread on any of them.
+     *
+     * <p>{@code ?} on a group is allowed, since at most one repetition cannot blow up, which keeps
+     * patterns like {@code (load_)?users} usable. Matching a step id does not otherwise need a
+     * repeated group; {@code step_ids} covers the cases where a literal sequence must repeat.
+     */
+    private static final Pattern REPEATED_GROUP = Pattern.compile("\\)[*+{]");
 
     @Override
     public void initialize(StepSelectorConstraint constraint) {}
@@ -77,13 +86,13 @@ public @interface StepSelectorConstraint {
                 + PATTERN_LENGTH_LIMIT
                 + "]");
       }
-      if (NESTED_QUANTIFIER.matcher(pattern).find()) {
+      if (REPEATED_GROUP.matcher(ESCAPE_SEQUENCE.matcher(pattern).replaceAll("x")).find()) {
         return reject(
             context,
             PATTERN_PREFIX
                 + pattern
-                + "] nests a quantifier inside a quantified group, which can backtrack"
-                + " exponentially. Use a flatter pattern or step_ids.");
+                + "] repeats a group, which can backtrack exponentially. Quantify a character or"
+                + " character class instead, or list the steps in step_ids.");
       }
       try {
         Pattern.compile(pattern);

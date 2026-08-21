@@ -36,10 +36,19 @@ public class StepSelectorConstraintTest extends BaseConstraintTest {
 
   @Test
   public void testValidPatternsAccepted() {
-    assertTrue(validatePattern("load_.*").isEmpty());
-    assertTrue(validatePattern("load_users|load_orders|transform").isEmpty());
-    assertTrue(validatePattern("[a-z_]+").isEmpty());
-    assertTrue(validatePattern("load_(users|orders)").isEmpty());
+    for (String pattern :
+        new String[] {
+          "load_.*",
+          "load_users|load_orders|transform",
+          "[a-z_]+",
+          "load_(users|orders)",
+          "(load|save)_.*",
+          "(load_)?users",
+          "step_\\d{1,3}",
+          "\\(literal\\)+"
+        }) {
+      assertTrue("expected [" + pattern + "] to be accepted", validatePattern(pattern).isEmpty());
+    }
   }
 
   @Test
@@ -52,11 +61,28 @@ public class StepSelectorConstraintTest extends BaseConstraintTest {
   }
 
   @Test
-  public void testNestedQuantifierRejected() {
-    for (String pattern : new String[] {"(a+)+", "(a*)*", "(a+)*", "(.*)+", "(load_.*)+"}) {
+  public void testRepeatedGroupRejected() {
+    for (String pattern :
+        new String[] {
+          "(a+)+", // nested quantifier
+          "(a*)*",
+          "(a+)*",
+          "(.*)+",
+          "(a{2,})+",
+          "(a|a)+", // overlapping alternation
+          "(a|ab)+",
+          "(x|xy)*",
+          "((a+))+", // nested deeper than one group
+          "(?:(?:a)+)+",
+          "((a)+)+",
+          "(a?b?)+", // optional elements under a quantifier
+          "(\\d*\\w*)+",
+          "(ab)+", // repeated literal sequence
+          "(load_.*)+"
+        }) {
       Set<ConstraintViolation<TestSelector>> violations = validatePattern(pattern);
       assertEquals("expected [" + pattern + "] to be rejected", 1, violations.size());
-      assertTrue(violations.iterator().next().getMessage().contains("nests a quantifier inside"));
+      assertTrue(violations.iterator().next().getMessage().contains("repeats a group"));
     }
   }
 
