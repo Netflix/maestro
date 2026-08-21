@@ -17,6 +17,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.netflix.maestro.MaestroBaseTest;
+import java.util.Set;
 import org.junit.Test;
 
 public class StepSelectionTest extends MaestroBaseTest {
@@ -32,6 +33,52 @@ public class StepSelectionTest extends MaestroBaseTest {
                 ? null
                 : StepSelector.builder().stepIdPattern(excludePattern).build())
         .build();
+  }
+
+  @Test
+  public void testStepIdsMatchExactly() {
+    StepSelection selection =
+        StepSelection.builder()
+            .include(StepSelector.builder().stepIds(Set.of("load_users", "transform")).build())
+            .build();
+    assertFalse(selection.isSkipped("load_users"));
+    assertFalse(selection.isSkipped("transform"));
+    assertTrue(selection.isSkipped("load_orders"));
+    assertTrue(selection.isSkipped("load_users_extra"));
+  }
+
+  @Test
+  public void testStepIdsAndPatternBothApply() {
+    StepSelection selection =
+        StepSelection.builder()
+            .include(
+                StepSelector.builder()
+                    .stepIds(Set.of("transform"))
+                    .stepIdPattern("load_.*")
+                    .build())
+            .build();
+    assertFalse(selection.isSkipped("transform"));
+    assertFalse(selection.isSkipped("load_users"));
+    assertTrue(selection.isSkipped("publish"));
+  }
+
+  @Test
+  public void testStepIdsInExcludeAndExcludeStillWins() {
+    StepSelection selection =
+        StepSelection.builder()
+            .include(StepSelector.builder().stepIdPattern("load_.*").build())
+            .exclude(StepSelector.builder().stepIds(Set.of("load_expensive")).build())
+            .build();
+    assertFalse(selection.isSkipped("load_users"));
+    assertTrue(selection.isSkipped("load_expensive"));
+    assertTrue(selection.isSkipped("publish"));
+  }
+
+  @Test
+  public void testEmptyStepIdsMatchNothing() {
+    StepSelector selector = StepSelector.builder().stepIds(Set.of()).build();
+    assertTrue(selector.isEmpty());
+    assertFalse(selector.matches("load_users"));
   }
 
   @Test
@@ -93,13 +140,14 @@ public class StepSelectionTest extends MaestroBaseTest {
         MAPPER.readValue(
             """
             {
-              "include": {"step_id_pattern": "load_.*"},
-              "exclude": {"step_id_pattern": "load_expensive"}
+              "include": {"step_ids": ["transform"], "step_id_pattern": "load_.*"},
+              "exclude": {"step_ids": ["load_expensive"]}
             }
             """,
             StepSelection.class);
+    assertEquals(Set.of("transform"), selection.getInclude().getStepIds());
     assertEquals("load_.*", selection.getInclude().getStepIdPattern());
-    assertEquals("load_expensive", selection.getExclude().getStepIdPattern());
+    assertEquals(Set.of("load_expensive"), selection.getExclude().getStepIds());
     assertFalse(selection.isEmpty());
   }
 }

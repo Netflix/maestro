@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.netflix.maestro.annotations.Nullable;
+import com.netflix.maestro.validations.StepSelectorConstraint;
 import jakarta.validation.Valid;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -51,10 +52,10 @@ import lombok.ToString;
 @ToString
 public class StepSelection {
   /** Steps to run. Unset or empty means every step. */
-  @Nullable @Valid private final StepSelector include;
+  @Nullable @Valid @StepSelectorConstraint private final StepSelector include;
 
   /** Steps to skip. Applied after {@link #include} and overrides it. */
-  @Nullable @Valid private final StepSelector exclude;
+  @Nullable @Valid @StepSelectorConstraint private final StepSelector exclude;
 
   /** Whether the given step id should be skipped under this selection. */
   @JsonIgnore
