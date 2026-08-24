@@ -60,11 +60,10 @@ public class WorkflowInstanceRestartRequest {
    * Step selection for this new run.
    *
    * <ul>
-   *   <li>{@code null}: inherit the baseline run's selection, so the steps it skipped stay skipped.
-   *   <li>set: use this selection instead of the baseline run's.
+   *   <li>{@code null}: the new run inherits the selection of the restarted run, so the steps it
+   *       skipped stay skipped.
+   *   <li>set: the new run applies this selection and discards the inherited one.
    * </ul>
-   *
-   * <p>To run every step, start a new instance rather than restarting this one.
    */
   @Valid @StepSelectionConstraint private StepSelection stepSelection;
 

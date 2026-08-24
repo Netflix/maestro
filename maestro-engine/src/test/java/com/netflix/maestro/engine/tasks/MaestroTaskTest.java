@@ -286,10 +286,6 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
     // no selection at all leaves the step alone
     Assert.assertFalse(maestroTask.isStepSkipped(summary, runtimeSummary));
 
-    // an empty selection leaves the step alone
-    summary.setStepSelection(StepSelection.builder().build());
-    Assert.assertFalse(maestroTask.isStepSkipped(summary, runtimeSummary));
-
     // included and not excluded, so it runs
     summary.setStepSelection(
         StepSelection.builder()

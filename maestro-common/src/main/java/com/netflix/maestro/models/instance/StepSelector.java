@@ -42,19 +42,21 @@ import lombok.Getter;
 @Getter
 @EqualsAndHashCode
 public class StepSelector {
-  /** Exact step ids. */
+  /** Matches a step id in full. */
   @Nullable private final Set<@NotBlank String> stepIds;
 
-  /** Step ids starting with any of these. */
+  /** Matches a step id that starts with any of these. */
   @Nullable private final Set<@NotBlank String> stepIdPrefixes;
 
-  /** Step ids containing any of these. */
+  /** Matches a step id that contains any of these. */
   @Nullable private final Set<@NotBlank String> stepIdInfixes;
 
-  /** Step ids ending with any of these. */
+  /** Matches a step id that ends with any of these. */
   @Nullable private final Set<@NotBlank String> stepIdSuffixes;
 
-  /** Whether the step id matches any criterion here. An empty selector matches nothing. */
+  /**
+   * Returns true if the step id matches any criterion. A selector with no criteria matches none.
+   */
   @JsonIgnore
   public boolean matches(String stepId) {
     return (stepIds != null && stepIds.contains(stepId))
@@ -73,8 +75,8 @@ public class StepSelector {
   }
 
   /**
-   * Lists the criteria this selector carries, e.g. {@code ids [a, b], prefixes [load_]}. Unset
-   * criteria are left out and values are sorted, so the text is stable.
+   * Returns the criteria this selector carries, e.g. {@code ids [s1, s2], prefixes [s]}. It omits
+   * the unset criteria and sorts the values, so equal selectors return identical text.
    */
   @JsonIgnore
   public String describe() {

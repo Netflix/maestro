@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.netflix.maestro.annotations.Nullable;
+import com.netflix.maestro.utils.Checks;
 import jakarta.validation.Valid;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,10 +33,9 @@ import lombok.Getter;
  * {@code exclude} does not; every other step is marked {@link StepInstance.Status#SKIPPED} while
  * the DAG itself is left intact, so successors still evaluate their conditions against it.
  *
- * <p>An unset {@code include} matches every step, so specifying only {@code exclude} skips just the
- * matched steps. Specifying only {@code include} skips everything it does not match. {@code
- * exclude} always wins over {@code include}. A side that is set has to carry criteria; requests
- * that set one without any are rejected.
+ * <p>With only {@code include} set, the run skips every step it does not match. With only {@code
+ * exclude} set, the run skips only the steps it matches. With both set, {@code exclude} wins. Each
+ * selector that is set carries at least one criterion.
  *
  * <p>The selection applies at every level of a run, including the inline workflows created by
  * foreach steps and the workflows started by subworkflow steps, and is matched against the step ids
@@ -51,11 +51,18 @@ import lombok.Getter;
 @Getter
 @EqualsAndHashCode
 public class StepSelection {
-  /** Steps to run. Unset means every step. */
+  /** Steps to run. When null, only {@link #exclude} skips steps. */
   @Nullable @Valid private final StepSelector include;
 
-  /** Steps to skip. Applied after {@link #include} and overrides it. */
+  /** Steps to skip. This overrides {@link #include}. */
   @Nullable @Valid private final StepSelector exclude;
+
+  StepSelection(@Nullable StepSelector include, @Nullable StepSelector exclude) {
+    Checks.checkTrue(
+        include != null || exclude != null, "Step selection must set include or exclude or both");
+    this.include = include;
+    this.exclude = exclude;
+  }
 
   /** Whether the given step id should be skipped under this selection. */
   @JsonIgnore
@@ -66,8 +73,8 @@ public class StepSelection {
   }
 
   /**
-   * Describes what this selection does, e.g. {@code excludes steps matching ids [load_expensive]}.
-   * Only the criteria that are set are named.
+   * Returns a sentence for the run timeline, e.g. {@code excludes steps matching ids [s1]}. It
+   * names only the criteria that are set.
    */
   @JsonIgnore
   public String describe() {

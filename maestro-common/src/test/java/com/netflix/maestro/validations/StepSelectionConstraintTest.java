@@ -16,6 +16,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.models.instance.StepSelection;
 import com.netflix.maestro.models.instance.StepSelector;
 import jakarta.validation.ConstraintViolation;
@@ -60,12 +61,12 @@ public class StepSelectionConstraintTest extends BaseConstraintTest {
   }
 
   @Test
-  public void testSelectionWithNeitherSideRejected() {
-    Set<ConstraintViolation<TestSelection>> violations = validate(StepSelection.builder().build());
-    assertEquals(1, violations.size());
-    assertEquals(
-        "[step selection] must set include or exclude, or be left unset entirely",
-        violations.iterator().next().getMessage());
+  public void testSelectionWithNeitherSideCannotBeBuilt() {
+    AssertHelper.assertThrows(
+        "a selection has to carry a side",
+        IllegalArgumentException.class,
+        "Step selection must set include or exclude or both",
+        () -> StepSelection.builder().build());
   }
 
   @Test
@@ -74,7 +75,7 @@ public class StepSelectionConstraintTest extends BaseConstraintTest {
         validate(StepSelection.builder().include(StepSelector.builder().build()).build());
     assertEquals(1, violations.size());
     assertEquals(
-        "[step selection] include is set but carries no step ids, prefixes, infixes or suffixes",
+        "[step selection] include must set at least one step id, prefix, infix or suffix",
         violations.iterator().next().getMessage());
   }
 
@@ -115,7 +116,7 @@ public class StepSelectionConstraintTest extends BaseConstraintTest {
                 .build());
     assertEquals(1, violations.size());
     assertEquals(
-        "[step selection] exclude is set but carries no step ids, prefixes, infixes or suffixes",
+        "[step selection] exclude must set at least one step id, prefix, infix or suffix",
         violations.iterator().next().getMessage());
   }
 }

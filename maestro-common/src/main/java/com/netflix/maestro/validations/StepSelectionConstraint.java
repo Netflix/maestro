@@ -25,9 +25,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Step selection validation. A selection describes which steps to run, so every part of it has to
- * carry criteria. An empty part describes nothing and would otherwise have to be read as either
- * every step or no step, so it is rejected and callers leave it unset instead.
+ * Rejects an {@code include} or {@code exclude} that carries no criteria, as such a selector is
+ * ambiguous between every step and no step. Callers omit the field instead.
  */
 @Documented
 @Constraint(validatedBy = StepSelectionConstraint.StepSelectionValidator.class)
@@ -55,10 +54,6 @@ public @interface StepSelectionConstraint {
       if (selection == null) {
         return true;
       }
-      if (selection.getInclude() == null && selection.getExclude() == null) {
-        return reject(
-            context, "[step selection] must set include or exclude, or be left unset entirely");
-      }
       return isSelectorValid(selection.getInclude(), "include", context)
           && isSelectorValid(selection.getExclude(), "exclude", context);
     }
@@ -70,7 +65,7 @@ public @interface StepSelectionConstraint {
             context,
             "[step selection] "
                 + field
-                + " is set but carries no step ids, prefixes, infixes or suffixes");
+                + " must set at least one step id, prefix, infix or suffix");
       }
       return true;
     }
