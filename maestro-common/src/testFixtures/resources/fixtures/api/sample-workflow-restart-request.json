@@ -14,5 +14,15 @@
     "bbb": {
       "expression": "1 + 1;", "type": "LONG", "validator": "@Positive", "mode": "mutable_on_start"
     }
+  },
+  "step_selection": {
+    "include": {
+      "step_id_prefixes": ["load_"]
+    },
+    "exclude": {
+      "step_ids": ["load_expensive"],
+      "step_id_infixes": ["region"],
+      "step_id_suffixes": ["_child"]
+    }
   }
 }

@@ -80,13 +80,13 @@ public class WorkflowActionController {
   private RunRequest toRunRequest(WorkflowStartRequest request, User caller) {
     request.getInitiator().setCaller(caller);
     StepSelection selection = request.getStepSelection();
-    boolean customized = selection != null && !selection.isEmpty();
     return RunRequest.builder()
         .initiator(request.getInitiator())
         .requestTime(request.getRequestTime())
         .requestId(request.getRequestId())
-        .currentPolicy(customized ? RunPolicy.START_CUSTOMIZED_RUN : RunPolicy.START_FRESH_NEW_RUN)
-        .stepSelection(customized ? selection : null)
+        .currentPolicy(
+            selection == null ? RunPolicy.START_FRESH_NEW_RUN : RunPolicy.START_CUSTOMIZED_RUN)
+        .stepSelection(selection)
         .runParams(ObjectHelper.valueOrDefault(request.getRunParams(), new LinkedHashMap<>()))
         .persistFailedRun(request.isPersistFailedRun())
         .runtimeTags(request.getRuntimeTags())

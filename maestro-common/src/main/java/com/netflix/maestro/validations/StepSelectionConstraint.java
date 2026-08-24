@@ -70,7 +70,7 @@ public @interface StepSelectionConstraint {
             context,
             "[step selection] "
                 + field
-                + " is set but carries no step ids, prefixes, infixes or postfixes");
+                + " is set but carries no step ids, prefixes, infixes or suffixes");
       }
       return true;
     }

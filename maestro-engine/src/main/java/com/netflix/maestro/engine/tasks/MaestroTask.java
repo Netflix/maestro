@@ -533,7 +533,7 @@ public final class MaestroTask implements FlowTask {
     }
 
     StepSelection selection = workflowSummary.getStepSelection();
-    if (selection == null || selection.isEmpty()) {
+    if (selection == null) {
       return false;
     }
     String stepId = runtimeSummary.getStepId();
@@ -543,8 +543,8 @@ public final class MaestroTask implements FlowTask {
     StepSelector exclude = selection.getExclude();
     String reason =
         exclude != null && exclude.matches(stepId)
-            ? "it matches the excluded " + exclude
-            : "it does not match the included " + selection.getInclude();
+            ? "it matches the excluded " + exclude.describe()
+            : "it does not match the included " + selection.getInclude().describe();
     LOG.info(
         "workflow {}'s step {} is skipped because {}.",
         workflowSummary.getIdentity(),

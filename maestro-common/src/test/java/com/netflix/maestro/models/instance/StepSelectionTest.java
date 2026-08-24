@@ -104,19 +104,46 @@ public class StepSelectionTest extends MaestroBaseTest {
   }
 
   @Test
-  public void testEmptySelectionSkipsNothing() {
-    assertTrue(StepSelection.builder().build().isEmpty());
-    assertFalse(StepSelection.builder().build().isSkipped("load_users"));
-    StepSelection blank = selection(null, null);
-    assertTrue(blank.isEmpty());
-    assertFalse(blank.isSkipped("load_users"));
-    StepSelection blankSelectors =
+  public void testInfixMatchesAnywhereInTheStepId() {
+    StepSelection selection =
         StepSelection.builder()
-            .include(StepSelector.builder().build())
-            .exclude(StepSelector.builder().build())
+            .include(StepSelector.builder().stepIdInfixes(Set.of("region")).build())
             .build();
-    assertTrue(blankSelectors.isEmpty());
-    assertFalse(blankSelectors.isSkipped("load_users"));
+    assertFalse(selection.isSkipped("load_region"));
+    assertFalse(selection.isSkipped("region_report"));
+    assertFalse(selection.isSkipped("loop_regions"));
+    assertTrue(selection.isSkipped("load_users"));
+  }
+
+  @Test
+  public void testSuffixMatchesTheEndOnly() {
+    StepSelection selection =
+        StepSelection.builder()
+            .exclude(StepSelector.builder().stepIdSuffixes(Set.of("_child")).build())
+            .build();
+    assertTrue(selection.isSkipped("load_child"));
+    assertTrue(selection.isSkipped("fanout_child"));
+    assertFalse(selection.isSkipped("child_loader"));
+    assertFalse(selection.isSkipped("load_users"));
+  }
+
+  @Test
+  public void testEachCriterionMatchesOnItsOwnRule() {
+    StepSelector selector =
+        StepSelector.builder()
+            .stepIds(Set.of("exact"))
+            .stepIdPrefixes(Set.of("pre_"))
+            .stepIdInfixes(Set.of("_mid_"))
+            .stepIdSuffixes(Set.of("_post"))
+            .build();
+    assertTrue(selector.matches("exact"));
+    assertTrue(selector.matches("pre_anything"));
+    assertTrue(selector.matches("a_mid_b"));
+    assertTrue(selector.matches("anything_post"));
+    assertFalse(selector.matches("exact_but_longer"));
+    assertFalse(selector.matches("not_pre_at_start"));
+    assertFalse(selector.matches("_post_is_not_at_the_end"));
+    assertFalse(selector.matches("unrelated"));
   }
 
   @Test
@@ -131,16 +158,16 @@ public class StepSelectionTest extends MaestroBaseTest {
   public void testSelectorDescribesOnlyTheCriteriaItCarries() {
     assertEquals(
         "ids [load_expensive]",
-        StepSelector.builder().stepIds(Set.of("load_expensive")).build().toString());
+        StepSelector.builder().stepIds(Set.of("load_expensive")).build().describe());
     assertEquals(
         "prefixes [load_]",
-        StepSelector.builder().stepIdPrefixes(Set.of("load_")).build().toString());
+        StepSelector.builder().stepIdPrefixes(Set.of("load_")).build().describe());
     assertEquals(
         "infixes [region]",
-        StepSelector.builder().stepIdInfixes(Set.of("region")).build().toString());
+        StepSelector.builder().stepIdInfixes(Set.of("region")).build().describe());
     assertEquals(
-        "postfixes [_child]",
-        StepSelector.builder().stepIdPostfixes(Set.of("_child")).build().toString());
+        "suffixes [_child]",
+        StepSelector.builder().stepIdSuffixes(Set.of("_child")).build().describe());
   }
 
   @Test
@@ -150,34 +177,32 @@ public class StepSelectionTest extends MaestroBaseTest {
             .stepIds(Set.of("b", "a"))
             .stepIdPrefixes(Set.of("load_"))
             .stepIdInfixes(Set.of("region"))
-            .stepIdPostfixes(Set.of("_child"))
+            .stepIdSuffixes(Set.of("_child"))
             .build();
     assertEquals(
-        "ids [a, b], prefixes [load_], infixes [region], postfixes [_child]", selector.toString());
+        "ids [a, b], prefixes [load_], infixes [region], suffixes [_child]", selector.describe());
   }
 
   @Test
   public void testSelectionDescribesWhatItDoes() {
     assertEquals(
-        "includes only steps matching prefixes [load_]", selection("load_", null).toString());
+        "includes only steps matching prefixes [load_]", selection("load_", null).describe());
     assertEquals(
-        "excludes steps matching prefixes [report_]", selection(null, "report_").toString());
+        "excludes steps matching prefixes [report_]", selection(null, "report_").describe());
     assertEquals(
         "includes only steps matching prefixes [load_], and excludes steps matching prefixes"
             + " [load_expensive]",
-        selection("load_", "load_expensive").toString());
-    assertEquals("selects every step", StepSelection.builder().build().toString());
+        selection("load_", "load_expensive").describe());
   }
 
   @Test
   public void testDescriptionsNeverRenderNull() {
     for (String rendered :
         new String[] {
-          StepSelector.builder().stepIds(Set.of("a")).build().toString(),
-          selection("load_", null).toString(),
-          selection(null, "report_").toString(),
-          selection("load_", "report_").toString(),
-          StepSelection.builder().build().toString()
+          StepSelector.builder().stepIds(Set.of("a")).build().describe(),
+          selection("load_", null).describe(),
+          selection(null, "report_").describe(),
+          selection("load_", "report_").describe()
         }) {
       assertFalse("rendered null in [" + rendered + "]", rendered.contains("null"));
       assertFalse("leaked a class name in [" + rendered + "]", rendered.contains("StepSelect"));
@@ -201,7 +226,7 @@ public class StepSelectionTest extends MaestroBaseTest {
                 "step_ids": ["transform"],
                 "step_id_prefixes": ["load_"],
                 "step_id_infixes": ["region"],
-                "step_id_postfixes": ["_child"]
+                "step_id_suffixes": ["_child"]
               },
               "exclude": {"step_ids": ["load_expensive"]}
             }
@@ -210,8 +235,7 @@ public class StepSelectionTest extends MaestroBaseTest {
     assertEquals(Set.of("transform"), selection.getInclude().getStepIds());
     assertEquals(Set.of("load_"), selection.getInclude().getStepIdPrefixes());
     assertEquals(Set.of("region"), selection.getInclude().getStepIdInfixes());
-    assertEquals(Set.of("_child"), selection.getInclude().getStepIdPostfixes());
+    assertEquals(Set.of("_child"), selection.getInclude().getStepIdSuffixes());
     assertEquals(Set.of("load_expensive"), selection.getExclude().getStepIds());
-    assertFalse(selection.isEmpty());
   }
 }

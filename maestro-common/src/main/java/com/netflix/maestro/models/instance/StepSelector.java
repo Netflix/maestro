@@ -33,9 +33,9 @@ import lombok.Getter;
 
 /** Matches a subset of a workflow's steps. Used by {@link StepSelection}. */
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 @JsonPropertyOrder(
-    value = {"step_ids", "step_id_prefixes", "step_id_infixes", "step_id_postfixes"},
+    value = {"step_ids", "step_id_prefixes", "step_id_infixes", "step_id_suffixes"},
     alphabetic = true)
 @JsonDeserialize(builder = StepSelector.StepSelectorBuilder.class)
 @Builder(toBuilder = true)
@@ -52,7 +52,7 @@ public class StepSelector {
   @Nullable private final Set<@NotBlank String> stepIdInfixes;
 
   /** Step ids ending with any of these. */
-  @Nullable private final Set<@NotBlank String> stepIdPostfixes;
+  @Nullable private final Set<@NotBlank String> stepIdSuffixes;
 
   /** Whether the step id matches any criterion here. An empty selector matches nothing. */
   @JsonIgnore
@@ -60,7 +60,7 @@ public class StepSelector {
     return (stepIds != null && stepIds.contains(stepId))
         || (stepIdPrefixes != null && stepIdPrefixes.stream().anyMatch(stepId::startsWith))
         || (stepIdInfixes != null && stepIdInfixes.stream().anyMatch(stepId::contains))
-        || (stepIdPostfixes != null && stepIdPostfixes.stream().anyMatch(stepId::endsWith));
+        || (stepIdSuffixes != null && stepIdSuffixes.stream().anyMatch(stepId::endsWith));
   }
 
   /** Whether this selector carries no criteria, in which case it matches nothing. */
@@ -69,21 +69,20 @@ public class StepSelector {
     return (stepIds == null || stepIds.isEmpty())
         && (stepIdPrefixes == null || stepIdPrefixes.isEmpty())
         && (stepIdInfixes == null || stepIdInfixes.isEmpty())
-        && (stepIdPostfixes == null || stepIdPostfixes.isEmpty());
+        && (stepIdSuffixes == null || stepIdSuffixes.isEmpty());
   }
 
   /**
-   * Lists the criteria this selector actually carries, e.g. {@code ids [a, b], prefixes [load_]},
-   * so it can be shown to users. Criteria that are unset are left out rather than rendered as null,
-   * and values are sorted so the text is stable.
+   * Lists the criteria this selector carries, e.g. {@code ids [a, b], prefixes [load_]}. Unset
+   * criteria are left out and values are sorted, so the text is stable.
    */
-  @Override
-  public String toString() {
+  @JsonIgnore
+  public String describe() {
     return Stream.of(
             Map.entry("ids", orEmpty(stepIds)),
             Map.entry("prefixes", orEmpty(stepIdPrefixes)),
             Map.entry("infixes", orEmpty(stepIdInfixes)),
-            Map.entry("postfixes", orEmpty(stepIdPostfixes)))
+            Map.entry("suffixes", orEmpty(stepIdSuffixes)))
         .filter(entry -> !entry.getValue().isEmpty())
         .map(entry -> entry.getKey() + " " + new TreeSet<>(entry.getValue()))
         .collect(Collectors.joining(", "));

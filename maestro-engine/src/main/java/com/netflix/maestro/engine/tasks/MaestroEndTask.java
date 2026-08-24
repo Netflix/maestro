@@ -213,8 +213,8 @@ public final class MaestroEndTask implements FlowTask {
       emitWorkflowDelayMetricWithTimeline(runtimeSummary, summary, getDequeueTime(flow));
 
       StepSelection selection = summary.getStepSelection();
-      if (selection != null && !selection.isEmpty()) {
-        runtimeSummary.addTimeline(TimelineLogEvent.info("Run %s.", selection));
+      if (selection != null) {
+        runtimeSummary.addTimeline(TimelineLogEvent.info("Run %s.", selection.describe()));
       }
 
       return Optional.of(

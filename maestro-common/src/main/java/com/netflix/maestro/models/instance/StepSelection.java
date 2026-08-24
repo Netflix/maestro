@@ -21,6 +21,8 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.netflix.maestro.annotations.Nullable;
 import jakarta.validation.Valid;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -49,8 +51,6 @@ import lombok.Getter;
 @Getter
 @EqualsAndHashCode
 public class StepSelection {
-  private static final String INCLUDES = "includes only steps matching ";
-
   /** Steps to run. Unset means every step. */
   @Nullable @Valid private final StepSelector include;
 
@@ -60,35 +60,25 @@ public class StepSelection {
   /** Whether the given step id should be skipped under this selection. */
   @JsonIgnore
   public boolean isSkipped(String stepId) {
-    boolean included = include == null || include.isEmpty() || include.matches(stepId);
+    boolean included = include == null || include.matches(stepId);
     boolean excluded = exclude != null && exclude.matches(stepId);
     return !included || excluded;
   }
 
-  /** Whether this selection carries no criteria and therefore skips nothing. */
-  @JsonIgnore
-  public boolean isEmpty() {
-    return (include == null || include.isEmpty()) && (exclude == null || exclude.isEmpty());
-  }
-
   /**
-   * Describes what this selection does, e.g. {@code excludes steps matching ids [load_expensive]},
-   * so it can be shown to users. Only the criteria that are set are named.
+   * Describes what this selection does, e.g. {@code excludes steps matching ids [load_expensive]}.
+   * Only the criteria that are set are named.
    */
-  @Override
-  public String toString() {
-    boolean including = include != null && !include.isEmpty();
-    boolean excluding = exclude != null && !exclude.isEmpty();
-    if (including && excluding) {
-      return INCLUDES + include + ", and excludes steps matching " + exclude;
+  @JsonIgnore
+  public String describe() {
+    List<String> clauses = new ArrayList<>();
+    if (include != null) {
+      clauses.add("includes only steps matching " + include.describe());
     }
-    if (including) {
-      return INCLUDES + include;
+    if (exclude != null) {
+      clauses.add("excludes steps matching " + exclude.describe());
     }
-    if (excluding) {
-      return "excludes steps matching " + exclude;
-    }
-    return "selects every step";
+    return String.join(", and ", clauses);
   }
 
   /** builder class for lombok and jackson. */

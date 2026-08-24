@@ -74,7 +74,7 @@ public class StepSelectionConstraintTest extends BaseConstraintTest {
         validate(StepSelection.builder().include(StepSelector.builder().build()).build());
     assertEquals(1, violations.size());
     assertEquals(
-        "[step selection] include is set but carries no step ids, prefixes, infixes or postfixes",
+        "[step selection] include is set but carries no step ids, prefixes, infixes or suffixes",
         violations.iterator().next().getMessage());
   }
 
@@ -115,7 +115,7 @@ public class StepSelectionConstraintTest extends BaseConstraintTest {
                 .build());
     assertEquals(1, violations.size());
     assertEquals(
-        "[step selection] exclude is set but carries no step ids, prefixes, infixes or postfixes",
+        "[step selection] exclude is set but carries no step ids, prefixes, infixes or suffixes",
         violations.iterator().next().getMessage());
   }
 }

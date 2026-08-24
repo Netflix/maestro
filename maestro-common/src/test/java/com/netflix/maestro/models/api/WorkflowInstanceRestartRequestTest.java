@@ -15,6 +15,8 @@ package com.netflix.maestro.models.api;
 import static org.junit.Assert.assertEquals;
 
 import com.netflix.maestro.MaestroBaseTest;
+import com.netflix.maestro.models.instance.StepSelector;
+import java.util.Set;
 import org.junit.Test;
 
 public class WorkflowInstanceRestartRequestTest extends MaestroBaseTest {
@@ -27,5 +29,19 @@ public class WorkflowInstanceRestartRequestTest extends MaestroBaseTest {
     assertEquals(
         request,
         MAPPER.readValue(MAPPER.writeValueAsString(request), WorkflowInstanceRestartRequest.class));
+  }
+
+  @Test
+  public void testStepSelectionFromJson() throws Exception {
+    WorkflowInstanceRestartRequest request =
+        loadObject(
+            "fixtures/api/sample-workflow-restart-request.json",
+            WorkflowInstanceRestartRequest.class);
+    StepSelector include = request.getStepSelection().getInclude();
+    StepSelector exclude = request.getStepSelection().getExclude();
+    assertEquals(Set.of("load_"), include.getStepIdPrefixes());
+    assertEquals(Set.of("load_expensive"), exclude.getStepIds());
+    assertEquals(Set.of("region"), exclude.getStepIdInfixes());
+    assertEquals(Set.of("_child"), exclude.getStepIdSuffixes());
   }
 }
