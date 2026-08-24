@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.models.instance.StepSelection;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.validations.RunParamsConstraint;
+import com.netflix.maestro.validations.StepSelectionConstraint;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.util.Map;
@@ -60,11 +61,12 @@ public class WorkflowInstanceRestartRequest {
    *
    * <ul>
    *   <li>{@code null}: inherit the baseline run's selection, so the steps it skipped stay skipped.
-   *   <li>Non-empty: use this selection instead of the baseline run's.
-   *   <li>Empty: discard the inherited selection and run every step.
+   *   <li>set: use this selection instead of the baseline run's.
    * </ul>
+   *
+   * <p>To run every step, start a new instance rather than restarting this one.
    */
-  @Valid private StepSelection stepSelection;
+  @Valid @StepSelectionConstraint private StepSelection stepSelection;
 
   /** set runParams. */
   public void setRunParams(Map<String, ParamDefinition> input) {

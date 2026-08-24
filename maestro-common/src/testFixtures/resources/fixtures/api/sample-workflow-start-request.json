@@ -19,10 +19,10 @@
   },
   "step_selection": {
     "include": {
-      "step_id_pattern": "load_.*"
+      "step_id_prefixes": ["load_"]
     },
     "exclude": {
-      "step_id_pattern": "load_expensive"
+      "step_ids": ["load_expensive"]
     }
   },
   "persist_failed_run": true

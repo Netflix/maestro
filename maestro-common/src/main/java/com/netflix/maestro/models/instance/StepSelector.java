@@ -20,54 +20,77 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.netflix.maestro.annotations.Nullable;
+import jakarta.validation.constraints.NotBlank;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
-import java.util.regex.Pattern;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.ToString;
 
 /** Matches a subset of a workflow's steps. Used by {@link StepSelection}. */
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(
-    value = {"step_ids", "step_id_pattern"},
+    value = {"step_ids", "step_id_prefixes", "step_id_infixes", "step_id_postfixes"},
     alphabetic = true)
 @JsonDeserialize(builder = StepSelector.StepSelectorBuilder.class)
 @Builder(toBuilder = true)
 @Getter
 @EqualsAndHashCode
-@ToString
 public class StepSelector {
-  /**
-   * Exact step ids. Preferred over {@link #stepIdPattern} when the ids are known, since they are
-   * validated against the workflow definition and cannot be written in a way that backtracks.
-   */
-  @Nullable private final Set<String> stepIds;
+  /** Exact step ids. */
+  @Nullable private final Set<@NotBlank String> stepIds;
 
-  /**
-   * Regular expression matched against a step id in full, so {@code load} matches only the step
-   * named {@code load} and {@code load.*} is needed to match {@code load_users}. Needed for steps
-   * whose ids are not known when the request is made, such as those inside a foreach.
-   */
-  @Nullable private final String stepIdPattern;
+  /** Step ids starting with any of these. */
+  @Nullable private final Set<@NotBlank String> stepIdPrefixes;
 
-  /**
-   * Whether the given step id matches this selector, by being one of {@link #stepIds} or matching
-   * {@link #stepIdPattern}. An empty selector matches nothing.
-   */
+  /** Step ids containing any of these. */
+  @Nullable private final Set<@NotBlank String> stepIdInfixes;
+
+  /** Step ids ending with any of these. */
+  @Nullable private final Set<@NotBlank String> stepIdPostfixes;
+
+  /** Whether the step id matches any criterion here. An empty selector matches nothing. */
   @JsonIgnore
   public boolean matches(String stepId) {
-    if (stepIds != null && stepIds.contains(stepId)) {
-      return true;
-    }
-    return stepIdPattern != null && Pattern.matches(stepIdPattern, stepId);
+    return (stepIds != null && stepIds.contains(stepId))
+        || (stepIdPrefixes != null && stepIdPrefixes.stream().anyMatch(stepId::startsWith))
+        || (stepIdInfixes != null && stepIdInfixes.stream().anyMatch(stepId::contains))
+        || (stepIdPostfixes != null && stepIdPostfixes.stream().anyMatch(stepId::endsWith));
   }
 
   /** Whether this selector carries no criteria, in which case it matches nothing. */
   @JsonIgnore
   public boolean isEmpty() {
-    return (stepIds == null || stepIds.isEmpty()) && stepIdPattern == null;
+    return (stepIds == null || stepIds.isEmpty())
+        && (stepIdPrefixes == null || stepIdPrefixes.isEmpty())
+        && (stepIdInfixes == null || stepIdInfixes.isEmpty())
+        && (stepIdPostfixes == null || stepIdPostfixes.isEmpty());
+  }
+
+  /**
+   * Lists the criteria this selector actually carries, e.g. {@code ids [a, b], prefixes [load_]},
+   * so it can be shown to users. Criteria that are unset are left out rather than rendered as null,
+   * and values are sorted so the text is stable.
+   */
+  @Override
+  public String toString() {
+    return Stream.of(
+            Map.entry("ids", orEmpty(stepIds)),
+            Map.entry("prefixes", orEmpty(stepIdPrefixes)),
+            Map.entry("infixes", orEmpty(stepIdInfixes)),
+            Map.entry("postfixes", orEmpty(stepIdPostfixes)))
+        .filter(entry -> !entry.getValue().isEmpty())
+        .map(entry -> entry.getKey() + " " + new TreeSet<>(entry.getValue()))
+        .collect(Collectors.joining(", "));
+  }
+
+  private static Set<String> orEmpty(@Nullable Set<String> values) {
+    return values == null ? Collections.emptySet() : values;
   }
 
   /** builder class for lombok and jackson. */

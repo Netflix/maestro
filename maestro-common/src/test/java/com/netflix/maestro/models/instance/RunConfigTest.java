@@ -15,6 +15,7 @@ package com.netflix.maestro.models.instance;
 import static org.junit.Assert.assertEquals;
 
 import com.netflix.maestro.MaestroBaseTest;
+import java.util.Set;
 import org.junit.Test;
 
 public class RunConfigTest extends MaestroBaseTest {
@@ -27,7 +28,7 @@ public class RunConfigTest extends MaestroBaseTest {
   @Test
   public void testStepSelectionFromJson() throws Exception {
     RunConfig config = loadObject("fixtures/instances/sample-run-config.json", RunConfig.class);
-    assertEquals("load_.*", config.getStepSelection().getInclude().getStepIdPattern());
-    assertEquals("load_expensive", config.getStepSelection().getExclude().getStepIdPattern());
+    assertEquals(Set.of("load_"), config.getStepSelection().getInclude().getStepIdPrefixes());
+    assertEquals(Set.of("load_expensive"), config.getStepSelection().getExclude().getStepIds());
   }
 }

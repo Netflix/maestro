@@ -194,8 +194,6 @@ public class RunRequest {
     runConfig.setCorrelationId(this.correlationId);
     runConfig.setPolicy(this.currentPolicy);
     runConfig.setRestartConfig(this.restartConfig);
-    // kept even when empty so a restart can distinguish "not supplied", which inherits the baseline
-    // run's selection, from "supplied but empty", which clears it so every step runs
     runConfig.setStepSelection(this.stepSelection);
     return runConfig;
   }

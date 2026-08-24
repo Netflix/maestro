@@ -20,21 +20,20 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.netflix.maestro.annotations.Nullable;
-import com.netflix.maestro.validations.StepSelectorConstraint;
 import jakarta.validation.Valid;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.ToString;
 
 /**
  * Chooses which steps of a run actually execute. A step runs when {@code include} matches it and
  * {@code exclude} does not; every other step is marked {@link StepInstance.Status#SKIPPED} while
  * the DAG itself is left intact, so successors still evaluate their conditions against it.
  *
- * <p>An unset or empty {@code include} matches every step, so specifying only {@code exclude} skips
- * just the matched steps. Specifying only {@code include} skips everything it does not match.
- * {@code exclude} always wins over {@code include}.
+ * <p>An unset {@code include} matches every step, so specifying only {@code exclude} skips just the
+ * matched steps. Specifying only {@code include} skips everything it does not match. {@code
+ * exclude} always wins over {@code include}. A side that is set has to carry criteria; requests
+ * that set one without any are rejected.
  *
  * <p>The selection applies at every level of a run, including the inline workflows created by
  * foreach steps and the workflows started by subworkflow steps, and is matched against the step ids
@@ -49,13 +48,14 @@ import lombok.ToString;
 @Builder(toBuilder = true)
 @Getter
 @EqualsAndHashCode
-@ToString
 public class StepSelection {
-  /** Steps to run. Unset or empty means every step. */
-  @Nullable @Valid @StepSelectorConstraint private final StepSelector include;
+  private static final String INCLUDES = "includes only steps matching ";
+
+  /** Steps to run. Unset means every step. */
+  @Nullable @Valid private final StepSelector include;
 
   /** Steps to skip. Applied after {@link #include} and overrides it. */
-  @Nullable @Valid @StepSelectorConstraint private final StepSelector exclude;
+  @Nullable @Valid private final StepSelector exclude;
 
   /** Whether the given step id should be skipped under this selection. */
   @JsonIgnore
@@ -69,6 +69,26 @@ public class StepSelection {
   @JsonIgnore
   public boolean isEmpty() {
     return (include == null || include.isEmpty()) && (exclude == null || exclude.isEmpty());
+  }
+
+  /**
+   * Describes what this selection does, e.g. {@code excludes steps matching ids [load_expensive]},
+   * so it can be shown to users. Only the criteria that are set are named.
+   */
+  @Override
+  public String toString() {
+    boolean including = include != null && !include.isEmpty();
+    boolean excluding = exclude != null && !exclude.isEmpty();
+    if (including && excluding) {
+      return INCLUDES + include + ", and excludes steps matching " + exclude;
+    }
+    if (including) {
+      return INCLUDES + include;
+    }
+    if (excluding) {
+      return "excludes steps matching " + exclude;
+    }
+    return "selects every step";
   }
 
   /** builder class for lombok and jackson. */

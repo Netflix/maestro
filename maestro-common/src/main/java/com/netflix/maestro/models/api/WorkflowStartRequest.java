@@ -22,6 +22,7 @@ import com.netflix.maestro.models.initiator.Initiator;
 import com.netflix.maestro.models.instance.StepSelection;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.validations.RunParamsConstraint;
+import com.netflix.maestro.validations.StepSelectionConstraint;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
@@ -70,7 +71,7 @@ public class WorkflowStartRequest {
   }
 
   // when set, only the selected steps run and the rest are skipped
-  @Valid private StepSelection stepSelection;
+  @Valid @StepSelectionConstraint private StepSelection stepSelection;
 
   @JsonInclude(JsonInclude.Include.NON_EMPTY)
   @Valid

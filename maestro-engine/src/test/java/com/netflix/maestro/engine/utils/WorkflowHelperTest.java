@@ -15,7 +15,6 @@ package com.netflix.maestro.engine.utils;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 
 import com.netflix.maestro.AssertHelper;
@@ -46,6 +45,7 @@ import com.netflix.maestro.models.parameter.ParamDefinition;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.Before;
 import org.junit.Test;
@@ -326,7 +326,7 @@ public class WorkflowHelperTest extends MaestroEngineBaseTest {
   public void testRestartInheritsStepSelectionUnlessSupplied() {
     StepSelection baseline =
         StepSelection.builder()
-            .exclude(StepSelector.builder().stepIdPattern("report_.*").build())
+            .exclude(StepSelector.builder().stepIdPrefixes(Set.of("report_")).build())
             .build();
     Workflow workflow = definition.getWorkflow();
     WorkflowInstance instance =
@@ -356,7 +356,7 @@ public class WorkflowHelperTest extends MaestroEngineBaseTest {
     // a restart that supplies its own selection replaces the baseline one
     StepSelection replacement =
         StepSelection.builder()
-            .include(StepSelector.builder().stepIdPattern("load_.*").build())
+            .include(StepSelector.builder().stepIdPrefixes(Set.of("load_")).build())
             .build();
     workflowHelper.updateWorkflowInstance(
         instance,
@@ -367,17 +367,6 @@ public class WorkflowHelperTest extends MaestroEngineBaseTest {
             .runParams(Collections.emptyMap())
             .build());
     assertEquals(replacement, instance.getRunConfig().getStepSelection());
-
-    // a restart that supplies an empty selection clears it, so every step runs
-    workflowHelper.updateWorkflowInstance(
-        instance,
-        RunRequest.builder()
-            .initiator(new ManualInitiator())
-            .currentPolicy(RunPolicy.RESTART_FROM_BEGINNING)
-            .stepSelection(StepSelection.builder().build())
-            .runParams(Collections.emptyMap())
-            .build());
-    assertTrue(instance.getRunConfig().getStepSelection().isEmpty());
   }
 
   @Test
