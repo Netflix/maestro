@@ -55,7 +55,7 @@ public class StepSelectionConstraintTest extends BaseConstraintTest {
     assertTrue(
         validate(
                 StepSelection.builder()
-                    .exclude(StepSelector.builder().stepIdPrefixes(Set.of("report_")).build())
+                    .exclude(StepSelector.builder().stepIdStartsWith(Set.of("report_")).build())
                     .build())
             .isEmpty());
   }
@@ -75,7 +75,7 @@ public class StepSelectionConstraintTest extends BaseConstraintTest {
         validate(StepSelection.builder().include(StepSelector.builder().build()).build());
     assertEquals(1, violations.size());
     assertEquals(
-        "[step selection] include must set at least one step id, prefix, infix or suffix",
+        "[step selection] include must set at least one step id, starts_with, contains or ends_with",
         violations.iterator().next().getMessage());
   }
 
@@ -86,7 +86,7 @@ public class StepSelectionConstraintTest extends BaseConstraintTest {
             StepSelection.builder()
                 .include(
                     StepSelector.builder()
-                        .stepIdPrefixes(new HashSet<>(Collections.singletonList(null)))
+                        .stepIdStartsWith(new HashSet<>(Collections.singletonList(null)))
                         .build())
                 .build());
     assertBlankCriterion(violations);
@@ -97,7 +97,7 @@ public class StepSelectionConstraintTest extends BaseConstraintTest {
     Set<ConstraintViolation<TestSelection>> violations =
         validate(
             StepSelection.builder()
-                .exclude(StepSelector.builder().stepIdInfixes(Set.of(" ")).build())
+                .exclude(StepSelector.builder().stepIdContains(Set.of(" ")).build())
                 .build());
     assertBlankCriterion(violations);
   }
@@ -116,7 +116,7 @@ public class StepSelectionConstraintTest extends BaseConstraintTest {
                 .build());
     assertEquals(1, violations.size());
     assertEquals(
-        "[step selection] exclude must set at least one step id, prefix, infix or suffix",
+        "[step selection] exclude must set at least one step id, starts_with, contains or ends_with",
         violations.iterator().next().getMessage());
   }
 }

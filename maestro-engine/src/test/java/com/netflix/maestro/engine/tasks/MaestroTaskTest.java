@@ -289,14 +289,14 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
     // included and not excluded, so it runs
     summary.setStepSelection(
         StepSelection.builder()
-            .include(StepSelector.builder().stepIdPrefixes(Set.of("load_")).build())
+            .include(StepSelector.builder().stepIdStartsWith(Set.of("load_")).build())
             .build());
     Assert.assertFalse(maestroTask.isStepSkipped(summary, runtimeSummary));
 
     // exclude overrides include
     summary.setStepSelection(
         StepSelection.builder()
-            .include(StepSelector.builder().stepIdPrefixes(Set.of("load_")).build())
+            .include(StepSelector.builder().stepIdStartsWith(Set.of("load_")).build())
             .exclude(StepSelector.builder().stepIds(Set.of("load_expensive")).build())
             .build());
     Assert.assertTrue(maestroTask.isStepSkipped(summary, runtimeSummary));
@@ -317,7 +317,7 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
     summary.setWorkflowRunId(1L);
     summary.setStepSelection(
         StepSelection.builder()
-            .include(StepSelector.builder().stepIdPrefixes(Set.of("load_")).build())
+            .include(StepSelector.builder().stepIdStartsWith(Set.of("load_")).build())
             .build());
 
     StepRuntimeState runtimeState = new StepRuntimeState();
@@ -340,7 +340,7 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
         .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
         .contains(
             TimelineLogEvent.info(
-                "Step is skipped because it does not match the included prefixes [load_]."));
+                "Step is skipped because it does not match the included starts_with [load_]."));
   }
 
   @Test

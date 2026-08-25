@@ -46,7 +46,7 @@
   },
   "step_selection": {
     "include": {
-      "step_id_prefixes": ["load_"]
+      "step_id_starts_with": ["load_"]
     },
     "exclude": {
       "step_ids": ["load_expensive"]

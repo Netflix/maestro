@@ -39,9 +39,9 @@ public class WorkflowInstanceRestartRequestTest extends MaestroBaseTest {
             WorkflowInstanceRestartRequest.class);
     StepSelector include = request.getStepSelection().getInclude();
     StepSelector exclude = request.getStepSelection().getExclude();
-    assertEquals(Set.of("load_"), include.getStepIdPrefixes());
+    assertEquals(Set.of("load_"), include.getStepIdStartsWith());
     assertEquals(Set.of("load_expensive"), exclude.getStepIds());
-    assertEquals(Set.of("region"), exclude.getStepIdInfixes());
-    assertEquals(Set.of("_child"), exclude.getStepIdSuffixes());
+    assertEquals(Set.of("region"), exclude.getStepIdContains());
+    assertEquals(Set.of("_child"), exclude.getStepIdEndsWith());
   }
 }

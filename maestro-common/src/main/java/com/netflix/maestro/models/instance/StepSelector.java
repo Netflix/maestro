@@ -35,7 +35,7 @@ import lombok.Getter;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @JsonPropertyOrder(
-    value = {"step_ids", "step_id_prefixes", "step_id_infixes", "step_id_suffixes"},
+    value = {"step_ids", "step_id_starts_with", "step_id_contains", "step_id_ends_with"},
     alphabetic = true)
 @JsonDeserialize(builder = StepSelector.StepSelectorBuilder.class)
 @Builder(toBuilder = true)
@@ -46,13 +46,13 @@ public class StepSelector {
   @Nullable private final Set<@NotBlank String> stepIds;
 
   /** Matches a step id that starts with any of these. */
-  @Nullable private final Set<@NotBlank String> stepIdPrefixes;
+  @Nullable private final Set<@NotBlank String> stepIdStartsWith;
 
   /** Matches a step id that contains any of these. */
-  @Nullable private final Set<@NotBlank String> stepIdInfixes;
+  @Nullable private final Set<@NotBlank String> stepIdContains;
 
   /** Matches a step id that ends with any of these. */
-  @Nullable private final Set<@NotBlank String> stepIdSuffixes;
+  @Nullable private final Set<@NotBlank String> stepIdEndsWith;
 
   /**
    * Returns true if the step id matches any criterion. A selector with no criteria matches none.
@@ -60,31 +60,31 @@ public class StepSelector {
   @JsonIgnore
   public boolean matches(String stepId) {
     return (stepIds != null && stepIds.contains(stepId))
-        || (stepIdPrefixes != null && stepIdPrefixes.stream().anyMatch(stepId::startsWith))
-        || (stepIdInfixes != null && stepIdInfixes.stream().anyMatch(stepId::contains))
-        || (stepIdSuffixes != null && stepIdSuffixes.stream().anyMatch(stepId::endsWith));
+        || (stepIdStartsWith != null && stepIdStartsWith.stream().anyMatch(stepId::startsWith))
+        || (stepIdContains != null && stepIdContains.stream().anyMatch(stepId::contains))
+        || (stepIdEndsWith != null && stepIdEndsWith.stream().anyMatch(stepId::endsWith));
   }
 
   /** Whether this selector carries no criteria, in which case it matches nothing. */
   @JsonIgnore
   public boolean isEmpty() {
     return (stepIds == null || stepIds.isEmpty())
-        && (stepIdPrefixes == null || stepIdPrefixes.isEmpty())
-        && (stepIdInfixes == null || stepIdInfixes.isEmpty())
-        && (stepIdSuffixes == null || stepIdSuffixes.isEmpty());
+        && (stepIdStartsWith == null || stepIdStartsWith.isEmpty())
+        && (stepIdContains == null || stepIdContains.isEmpty())
+        && (stepIdEndsWith == null || stepIdEndsWith.isEmpty());
   }
 
   /**
-   * Returns the criteria this selector carries, e.g. {@code ids [s1, s2], prefixes [s]}. It omits
-   * the unset criteria and sorts the values, so equal selectors return identical text.
+   * Returns the criteria this selector carries, e.g. {@code ids [s1, s2], starts_with [s]}. It
+   * omits the unset criteria and sorts the values, so equal selectors return identical text.
    */
   @JsonIgnore
   public String describe() {
     return Stream.of(
             Map.entry("ids", orEmpty(stepIds)),
-            Map.entry("prefixes", orEmpty(stepIdPrefixes)),
-            Map.entry("infixes", orEmpty(stepIdInfixes)),
-            Map.entry("suffixes", orEmpty(stepIdSuffixes)))
+            Map.entry("starts_with", orEmpty(stepIdStartsWith)),
+            Map.entry("contains", orEmpty(stepIdContains)),
+            Map.entry("ends_with", orEmpty(stepIdEndsWith)))
         .filter(entry -> !entry.getValue().isEmpty())
         .map(entry -> entry.getKey() + " " + new TreeSet<>(entry.getValue()))
         .collect(Collectors.joining(", "));

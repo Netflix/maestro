@@ -326,7 +326,7 @@ public class WorkflowHelperTest extends MaestroEngineBaseTest {
   public void testRestartInheritsStepSelectionUnlessSupplied() {
     StepSelection baseline =
         StepSelection.builder()
-            .exclude(StepSelector.builder().stepIdPrefixes(Set.of("report_")).build())
+            .exclude(StepSelector.builder().stepIdStartsWith(Set.of("report_")).build())
             .build();
     Workflow workflow = definition.getWorkflow();
     WorkflowInstance instance =
@@ -356,7 +356,7 @@ public class WorkflowHelperTest extends MaestroEngineBaseTest {
     // a restart that supplies its own selection replaces the baseline one
     StepSelection replacement =
         StepSelection.builder()
-            .include(StepSelector.builder().stepIdPrefixes(Set.of("load_")).build())
+            .include(StepSelector.builder().stepIdStartsWith(Set.of("load_")).build())
             .build();
     workflowHelper.updateWorkflowInstance(
         instance,

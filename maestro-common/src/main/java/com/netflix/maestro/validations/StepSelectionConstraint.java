@@ -65,7 +65,7 @@ public @interface StepSelectionConstraint {
             context,
             "[step selection] "
                 + field
-                + " must set at least one step id, prefix, infix or suffix");
+                + " must set at least one step id, starts_with, contains or ends_with");
       }
       return true;
     }

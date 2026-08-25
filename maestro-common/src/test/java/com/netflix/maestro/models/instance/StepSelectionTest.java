@@ -27,11 +27,11 @@ public class StepSelectionTest extends MaestroBaseTest {
         .include(
             includePrefix == null
                 ? null
-                : StepSelector.builder().stepIdPrefixes(Set.of(includePrefix)).build())
+                : StepSelector.builder().stepIdStartsWith(Set.of(includePrefix)).build())
         .exclude(
             excludePrefix == null
                 ? null
-                : StepSelector.builder().stepIdPrefixes(Set.of(excludePrefix)).build())
+                : StepSelector.builder().stepIdStartsWith(Set.of(excludePrefix)).build())
         .build();
   }
 
@@ -54,7 +54,7 @@ public class StepSelectionTest extends MaestroBaseTest {
             .include(
                 StepSelector.builder()
                     .stepIds(Set.of("transform"))
-                    .stepIdPrefixes(Set.of("load_"))
+                    .stepIdStartsWith(Set.of("load_"))
                     .build())
             .build();
     assertFalse(selection.isSkipped("transform"));
@@ -66,7 +66,7 @@ public class StepSelectionTest extends MaestroBaseTest {
   public void testStepIdsInExcludeAndExcludeStillWins() {
     StepSelection selection =
         StepSelection.builder()
-            .include(StepSelector.builder().stepIdPrefixes(Set.of("load_")).build())
+            .include(StepSelector.builder().stepIdStartsWith(Set.of("load_")).build())
             .exclude(StepSelector.builder().stepIds(Set.of("load_expensive")).build())
             .build();
     assertFalse(selection.isSkipped("load_users"));
@@ -107,7 +107,7 @@ public class StepSelectionTest extends MaestroBaseTest {
   public void testInfixMatchesAnywhereInTheStepId() {
     StepSelection selection =
         StepSelection.builder()
-            .include(StepSelector.builder().stepIdInfixes(Set.of("region")).build())
+            .include(StepSelector.builder().stepIdContains(Set.of("region")).build())
             .build();
     assertFalse(selection.isSkipped("load_region"));
     assertFalse(selection.isSkipped("region_report"));
@@ -119,7 +119,7 @@ public class StepSelectionTest extends MaestroBaseTest {
   public void testSuffixMatchesTheEndOnly() {
     StepSelection selection =
         StepSelection.builder()
-            .exclude(StepSelector.builder().stepIdSuffixes(Set.of("_child")).build())
+            .exclude(StepSelector.builder().stepIdEndsWith(Set.of("_child")).build())
             .build();
     assertTrue(selection.isSkipped("load_child"));
     assertTrue(selection.isSkipped("fanout_child"));
@@ -132,9 +132,9 @@ public class StepSelectionTest extends MaestroBaseTest {
     StepSelector selector =
         StepSelector.builder()
             .stepIds(Set.of("exact"))
-            .stepIdPrefixes(Set.of("pre_"))
-            .stepIdInfixes(Set.of("_mid_"))
-            .stepIdSuffixes(Set.of("_post"))
+            .stepIdStartsWith(Set.of("pre_"))
+            .stepIdContains(Set.of("_mid_"))
+            .stepIdEndsWith(Set.of("_post"))
             .build();
     assertTrue(selector.matches("exact"));
     assertTrue(selector.matches("pre_anything"));
@@ -160,14 +160,14 @@ public class StepSelectionTest extends MaestroBaseTest {
         "ids [load_expensive]",
         StepSelector.builder().stepIds(Set.of("load_expensive")).build().describe());
     assertEquals(
-        "prefixes [load_]",
-        StepSelector.builder().stepIdPrefixes(Set.of("load_")).build().describe());
+        "starts_with [load_]",
+        StepSelector.builder().stepIdStartsWith(Set.of("load_")).build().describe());
     assertEquals(
-        "infixes [region]",
-        StepSelector.builder().stepIdInfixes(Set.of("region")).build().describe());
+        "contains [region]",
+        StepSelector.builder().stepIdContains(Set.of("region")).build().describe());
     assertEquals(
-        "suffixes [_child]",
-        StepSelector.builder().stepIdSuffixes(Set.of("_child")).build().describe());
+        "ends_with [_child]",
+        StepSelector.builder().stepIdEndsWith(Set.of("_child")).build().describe());
   }
 
   @Test
@@ -175,22 +175,23 @@ public class StepSelectionTest extends MaestroBaseTest {
     StepSelector selector =
         StepSelector.builder()
             .stepIds(Set.of("b", "a"))
-            .stepIdPrefixes(Set.of("load_"))
-            .stepIdInfixes(Set.of("region"))
-            .stepIdSuffixes(Set.of("_child"))
+            .stepIdStartsWith(Set.of("load_"))
+            .stepIdContains(Set.of("region"))
+            .stepIdEndsWith(Set.of("_child"))
             .build();
     assertEquals(
-        "ids [a, b], prefixes [load_], infixes [region], suffixes [_child]", selector.describe());
+        "ids [a, b], starts_with [load_], contains [region], ends_with [_child]",
+        selector.describe());
   }
 
   @Test
   public void testSelectionDescribesWhatItDoes() {
     assertEquals(
-        "includes only steps matching prefixes [load_]", selection("load_", null).describe());
+        "includes only steps matching starts_with [load_]", selection("load_", null).describe());
     assertEquals(
-        "excludes steps matching prefixes [report_]", selection(null, "report_").describe());
+        "excludes steps matching starts_with [report_]", selection(null, "report_").describe());
     assertEquals(
-        "includes only steps matching prefixes [load_], and excludes steps matching prefixes"
+        "includes only steps matching starts_with [load_], and excludes steps matching starts_with"
             + " [load_expensive]",
         selection("load_", "load_expensive").describe());
   }
@@ -224,18 +225,18 @@ public class StepSelectionTest extends MaestroBaseTest {
             {
               "include": {
                 "step_ids": ["transform"],
-                "step_id_prefixes": ["load_"],
-                "step_id_infixes": ["region"],
-                "step_id_suffixes": ["_child"]
+                "step_id_starts_with": ["load_"],
+                "step_id_contains": ["region"],
+                "step_id_ends_with": ["_child"]
               },
               "exclude": {"step_ids": ["load_expensive"]}
             }
             """,
             StepSelection.class);
     assertEquals(Set.of("transform"), selection.getInclude().getStepIds());
-    assertEquals(Set.of("load_"), selection.getInclude().getStepIdPrefixes());
-    assertEquals(Set.of("region"), selection.getInclude().getStepIdInfixes());
-    assertEquals(Set.of("_child"), selection.getInclude().getStepIdSuffixes());
+    assertEquals(Set.of("load_"), selection.getInclude().getStepIdStartsWith());
+    assertEquals(Set.of("region"), selection.getInclude().getStepIdContains());
+    assertEquals(Set.of("_child"), selection.getInclude().getStepIdEndsWith());
     assertEquals(Set.of("load_expensive"), selection.getExclude().getStepIds());
   }
 }
