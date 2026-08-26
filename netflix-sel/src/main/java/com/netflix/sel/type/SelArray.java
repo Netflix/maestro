@@ -160,6 +160,29 @@ public final class SelArray extends AbstractSelType {
   }
 
   @Override
+  public SelType call(String methodName, SelType[] args) {
+    if ("contains".equals(methodName) && args.length == 1) {
+      return contains(args[0]);
+    }
+    throw new UnsupportedOperationException(
+        type()
+            + " DO NOT support calling method: "
+            + methodName
+            + " with args: "
+            + Arrays.toString(args));
+  }
+
+  private SelBoolean contains(SelType element) {
+    for (SelType item : val) {
+      SelBoolean isEqual = (SelBoolean) item.binaryOps(SelOp.EQUAL, element);
+      if (isEqual.booleanVal()) {
+        return SelBoolean.of(true);
+      }
+    }
+    return SelBoolean.of(false);
+  }
+
+  @Override
   public String toString() {
     return Arrays.toString(val);
   }
