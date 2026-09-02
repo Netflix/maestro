@@ -228,6 +228,17 @@ return params.getFromForeach('foreach-job1', 'foreach-step1', 'param1');    // r
 return params.getFromSubworkflow('subworkflow-job1', 'sub-step1', 'param1');
 ```
 
+* `Object getFromTemplate(String, String, String)`
+```sel
+/*
+ 'template-job1': the step id of template step (in parent workflow), which launches the template inline workflow instance.
+ 'template-step1': the step id of step in the registered template step list.
+ 'param1': the param from template-step1 in the template inline workflow instance.
+ returns parameter param1's value from the template inline workflow instance's template-step1 step's latest attempt.
+*/
+return params.getFromTemplate('template-job1', 'template-step1', 'param1');
+```
+
 * `long nextUniqueId()`
 ```sel
 return params.nextUniqueId();    // generate a random unique id.

@@ -1,0 +1,71 @@
+{
+  "metadata": {
+    "owner": "tester",
+    "version_author": "tester",
+    "status": "alpha",
+    "support": "support-team",
+    "create_time": 1660751501925
+  },
+  "definition": {
+    "job_type": "write_audit_publish",
+    "step_type": "template",
+    "version": "v3",
+    "description": "Write into a snapshot, run checks against it, publish it.",
+    "params": {
+      "target_table": {
+        "value": "core.trips",
+        "type": "STRING",
+        "mode": "IMMUTABLE",
+        "internal_mode": "REQUIRED"
+      },
+      "snapshot_id": {
+        "expression": "return UUID.randomUUID().toString();",
+        "type": "STRING",
+        "mode": "IMMUTABLE",
+        "internal_mode": "REQUIRED"
+      }
+    },
+    "steps": [
+      {
+        "step": {
+          "id": "write",
+          "type": "NoOp",
+          "transition": {
+            "successors": {
+              "audit": "true"
+            }
+          }
+        }
+      },
+      {
+        "step": {
+          "id": "audit",
+          "type": "NoOp",
+          "transition": {
+            "successors": {
+              "publish_snapshot": "true"
+            }
+          },
+          "params": {
+            "table": {
+              "expression": "target_table;",
+              "type": "STRING"
+            }
+          }
+        }
+      },
+      {
+        "step": {
+          "id": "publish_snapshot",
+          "type": "NoOp",
+          "params": {
+            "snapshot": {
+              "expression": "snapshot_id;",
+              "type": "STRING"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

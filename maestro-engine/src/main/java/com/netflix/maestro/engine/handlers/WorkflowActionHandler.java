@@ -28,6 +28,7 @@ import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.api.WorkflowActionResponse;
 import com.netflix.maestro.models.api.WorkflowCreateRequest;
 import com.netflix.maestro.models.artifact.ForeachArtifact;
+import com.netflix.maestro.models.artifact.TemplateArtifact;
 import com.netflix.maestro.models.artifact.WhileArtifact;
 import com.netflix.maestro.models.definition.RunStrategy;
 import com.netflix.maestro.models.definition.User;
@@ -221,6 +222,45 @@ public class WorkflowActionHandler {
     }
     instance.setWorkflowInstanceId(instanceId);
     instance.setWorkflowRunId(artifact.getLoopRunId());
+    return instanceDao.runWorkflowInstances(workflow.getId(), List.of(instance));
+  }
+
+  /**
+   * Run the template inline workflow instance for a template step. It bypasses the run strategy
+   * manager as the template step manages its own inline workflow instance. The first run creates a
+   * new instance. A later run restarts the previous run of the same instance with the run request.
+   *
+   * @param workflow the inline workflow built from the registered template steps
+   * @param internalId the parent workflow internal id
+   * @param workflowVersionId the parent workflow version id
+   * @param runProperties run properties
+   * @param templateStepId template step id
+   * @param artifact template step artifact with the instance id and run id to run
+   * @param runRequest run request
+   * @return the details if failing to run the template inline workflow instance
+   */
+  public Optional<Details> runTemplateInstance(
+      Workflow workflow,
+      Long internalId,
+      long workflowVersionId,
+      RunProperties runProperties,
+      String templateStepId,
+      TemplateArtifact artifact,
+      RunRequest runRequest) {
+    WorkflowInstance instance;
+    if (runRequest.isFreshRun()) {
+      instance =
+          workflowHelper.createWorkflowInstance(
+              workflow, internalId, workflowVersionId, runProperties, runRequest);
+    } else {
+      instance =
+          instanceDao.getWorkflowInstanceRun(
+              workflow.getId(), artifact.getTemplateInstanceId(), artifact.getTemplateRunId() - 1);
+      runRequest.updateForDownstreamIfNeeded(templateStepId, instance);
+      workflowHelper.updateWorkflowInstance(instance, runRequest);
+    }
+    instance.setWorkflowInstanceId(artifact.getTemplateInstanceId());
+    instance.setWorkflowRunId(artifact.getTemplateRunId());
     return instanceDao.runWorkflowInstances(workflow.getId(), List.of(instance));
   }
 

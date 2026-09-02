@@ -18,6 +18,7 @@ import static org.junit.Assert.assertNull;
 import com.netflix.maestro.models.Constants;
 import jakarta.validation.ConstraintViolation;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import org.junit.Test;
 
@@ -106,6 +107,19 @@ public class MaestroIdConstraintTest extends BaseConstraintTest {
     assertEquals(
         "[maestro id] cannot start with reserved prefix: maestro_ - rejected value is [maestro_foo]",
         violation.getMessage());
+  }
+
+  @Test
+  public void isIdUsingInlineWorkflowPrefix() {
+    for (String id : List.of("maestro_foreach_x", "maestro_while_x", "maestro_template_x")) {
+      Set<ConstraintViolation<TestId>> violations = validator.validate(new TestId(id));
+      assertEquals(1, violations.size());
+      assertEquals(
+          String.format(
+              "[maestro id] cannot start with reserved prefix: maestro_ - rejected value is [%s]",
+              id),
+          violations.iterator().next().getMessage());
+    }
   }
 
   @Test

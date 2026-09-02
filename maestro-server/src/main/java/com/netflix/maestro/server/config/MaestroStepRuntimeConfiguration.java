@@ -46,6 +46,7 @@ import com.netflix.maestro.engine.steps.NoOpStepRuntime;
 import com.netflix.maestro.engine.steps.SleepStepRuntime;
 import com.netflix.maestro.engine.steps.StepRuntime;
 import com.netflix.maestro.engine.steps.SubworkflowStepRuntime;
+import com.netflix.maestro.engine.steps.TemplateStepRuntime;
 import com.netflix.maestro.engine.steps.WhileStepRuntime;
 import com.netflix.maestro.engine.templates.JobTemplateManager;
 import com.netflix.maestro.engine.tracing.MaestroTracingManager;
@@ -314,6 +315,28 @@ public class MaestroStepRuntimeConfiguration {
             instanceStepConcurrencyHandler,
             paramEvaluator);
     stepRuntimeMap.put(StepType.WHILE, step);
+    return step;
+  }
+
+  @Bean
+  public TemplateStepRuntime template(
+      @Qualifier(STEP_RUNTIME_QUALIFIER) Map<StepType, StepRuntime> stepRuntimeMap,
+      WorkflowActionHandler actionHandler,
+      MaestroWorkflowInstanceDao instanceDao,
+      MaestroStepInstanceDao stepInstanceDao,
+      MaestroQueueSystem queueSystem,
+      InstanceStepConcurrencyHandler instanceStepConcurrencyHandler,
+      JobTemplateManager jobTemplateManager) {
+    LOG.info("Creating Template step within Spring boot...");
+    TemplateStepRuntime step =
+        new TemplateStepRuntime(
+            actionHandler,
+            instanceDao,
+            stepInstanceDao,
+            queueSystem,
+            instanceStepConcurrencyHandler,
+            jobTemplateManager);
+    stepRuntimeMap.put(StepType.TEMPLATE, step);
     return step;
   }
 

@@ -33,6 +33,7 @@ import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.artifact.ForeachArtifact;
 import com.netflix.maestro.models.artifact.SubworkflowArtifact;
+import com.netflix.maestro.models.artifact.TemplateArtifact;
 import com.netflix.maestro.models.artifact.WhileArtifact;
 import com.netflix.maestro.models.definition.TagList;
 import com.netflix.maestro.models.instance.RunPolicy;
@@ -464,6 +465,26 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
     assertEquals(1, artifact.getFirstIteration());
     assertEquals(5, artifact.getLastIteration());
     assertEquals(si.getArtifacts().get("maestro_while"), artifact);
+  }
+
+  @Test
+  public void testGetLatestTemplateArtifactForRuns() throws Exception {
+    TemplateArtifact artifact =
+        stepDao.getLatestTemplateArtifact("sample-template-wf", 1L, "template-step1");
+    assertNull(artifact);
+    si =
+        loadObject(
+            "fixtures/instances/sample-template-step-instance-running.json", StepInstance.class);
+    stepDao.insertOrUpsertStepInstance(si, true, null);
+    artifact = stepDao.getLatestTemplateArtifact("sample-template-wf", 1L, "template-step1");
+    assertEquals(
+        "maestro_template_Ib2_11_0f6a4c2e9b7d4a3c8e1f2b5d6c7a8e9f",
+        artifact.getTemplateWorkflowId());
+    assertEquals(1L, artifact.getTemplateInstanceId());
+    assertEquals(2L, artifact.getTemplateRunId());
+    assertEquals("write_audit_publish", artifact.getJobType());
+    assertEquals("v3", artifact.getTemplateVersion());
+    assertEquals(si.getArtifacts().get("maestro_template"), artifact);
   }
 
   @Test

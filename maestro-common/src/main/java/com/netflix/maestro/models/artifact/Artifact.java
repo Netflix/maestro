@@ -28,6 +28,7 @@ import com.netflix.maestro.models.Constants;
   @JsonSubTypes.Type(name = "SUBWORKFLOW", value = SubworkflowArtifact.class),
   @JsonSubTypes.Type(name = "FOREACH", value = ForeachArtifact.class),
   @JsonSubTypes.Type(name = "WHILE", value = WhileArtifact.class),
+  @JsonSubTypes.Type(name = "TEMPLATE", value = TemplateArtifact.class),
   @JsonSubTypes.Type(name = "TITUS", value = TitusArtifact.class),
   @JsonSubTypes.Type(name = "NOTEBOOK", value = NotebookArtifact.class),
   @JsonSubTypes.Type(name = "DYNAMIC_OUTPUT", value = DynamicOutputArtifact.class),
@@ -50,6 +51,8 @@ public interface Artifact {
     FOREACH(Constants.MAESTRO_PREFIX + "foreach"),
     /** while artifact. */
     WHILE(Constants.MAESTRO_PREFIX + "while"),
+    /** template artifact. */
+    TEMPLATE(Constants.MAESTRO_PREFIX + "template"),
     /** titus artifact. */
     TITUS(Constants.MAESTRO_PREFIX + "titus"),
     /** notebook artifact. */
@@ -108,6 +111,15 @@ public interface Artifact {
    */
   default WhileArtifact asWhile() {
     throw new MaestroInternalError("Artifact type [%s] cannot be used as WHILE", getType());
+  }
+
+  /**
+   * get TemplateArtifact type artifact.
+   *
+   * @return concrete artifact object.
+   */
+  default TemplateArtifact asTemplate() {
+    throw new MaestroInternalError("Artifact type [%s] cannot be used as TEMPLATE", getType());
   }
 
   /**

@@ -157,6 +157,7 @@ public class IdHelperTest {
   public void testIsInlineWorkflowId() {
     Assert.assertTrue(IdHelper.isInlineWorkflowId("maestro_foreach_abc123_test"));
     Assert.assertTrue(IdHelper.isInlineWorkflowId("maestro_while_def456_test"));
+    Assert.assertTrue(IdHelper.isInlineWorkflowId("maestro_template_E7W_test"));
     Assert.assertFalse(IdHelper.isInlineWorkflowId("test-workflow-id"));
   }
 }

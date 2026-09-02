@@ -51,6 +51,7 @@ import com.netflix.maestro.models.Defaults;
 import com.netflix.maestro.models.api.WorkflowActionResponse;
 import com.netflix.maestro.models.api.WorkflowCreateRequest;
 import com.netflix.maestro.models.artifact.ForeachArtifact;
+import com.netflix.maestro.models.artifact.TemplateArtifact;
 import com.netflix.maestro.models.artifact.WhileArtifact;
 import com.netflix.maestro.models.definition.PropertiesSnapshot;
 import com.netflix.maestro.models.definition.RunStrategy;
@@ -832,6 +833,55 @@ public class WorkflowActionHandlerTest extends MaestroEngineBaseTest {
             request,
             instanceId);
     assertFalse(result.isPresent());
+  }
+
+  private TemplateArtifact runTemplateInstance(RunPolicy runPolicy, long runId) {
+    TemplateArtifact artifact = new TemplateArtifact();
+    artifact.setTemplateWorkflowId(definition.getWorkflow().getId());
+    artifact.setTemplateInstanceId(1L);
+    artifact.setTemplateRunId(runId);
+
+    RunRequest request =
+        RunRequest.builder()
+            .initiator(new ManualInitiator())
+            .currentPolicy(runPolicy)
+            .requestId(IdHelper.createUuid("foo"))
+            .build();
+
+    Optional<Details> result =
+        actionHandler.runTemplateInstance(
+            definition.getWorkflow(),
+            123L,
+            1L,
+            new RunProperties(),
+            "template-step",
+            artifact,
+            request);
+    assertFalse(result.isPresent());
+    return artifact;
+  }
+
+  @Test
+  public void testRunTemplateInstanceFreshRun() {
+    runTemplateInstance(RunPolicy.START_FRESH_NEW_RUN, 1L);
+    verify(instanceDao, times(1)).runWorkflowInstances(any(), any());
+    verify(workflowHelper, times(1)).createWorkflowInstance(any(), any(), anyLong(), any(), any());
+    verify(instanceDao, times(0)).getWorkflowInstanceRun(anyString(), anyLong(), anyLong());
+  }
+
+  @Test
+  public void testRunTemplateInstanceRestart() {
+    doNothing().when(workflowHelper).updateWorkflowInstance(any(), any());
+    when(instanceDao.getWorkflowInstanceRun(anyString(), anyLong(), anyLong()))
+        .thenReturn(instance);
+
+    runTemplateInstance(RunPolicy.RESTART_FROM_INCOMPLETE, 3L);
+    verify(instanceDao, times(1)).runWorkflowInstances(any(), any());
+    verify(instanceDao, times(1)).getWorkflowInstanceRun(definition.getWorkflow().getId(), 1L, 2L);
+    verify(workflowHelper, times(1)).updateWorkflowInstance(any(), any());
+    verify(workflowHelper, times(0)).createWorkflowInstance(any(), any(), anyLong(), any(), any());
+    assertEquals(1L, instance.getWorkflowInstanceId());
+    assertEquals(3L, instance.getWorkflowRunId());
   }
 
   @Test
