@@ -30,15 +30,31 @@ import lombok.ToString;
  */
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder(alphabetic = true)
+@JsonPropertyOrder(
+    value = {
+      "id",
+      "name",
+      "description",
+      "transition",
+      "sub_type",
+      "sub_type_version",
+      "failure_mode",
+      "tags",
+      "timeout",
+      "signal_dependencies",
+      "signal_outputs",
+      "params"
+    },
+    alphabetic = true)
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public final class TemplateStep extends AbstractStep {
-  // todo: placeholder and add fields when supporting template
+  @Getter(onMethod = @__({@Override}))
+  private String subType; // job type of the registered template
 
   @Getter(onMethod = @__({@Override}))
-  private String subType; // optional
+  private String subTypeVersion; // optional
 
   @JsonIgnore
   @Override

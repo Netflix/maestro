@@ -85,6 +85,10 @@ public final class Constants {
   public static final String WHILE_INLINE_WORKFLOW_PREFIX =
       MAESTRO_PREFIX + StepType.WHILE.getType();
 
+  /** Maestro template inline workflow prefix. */
+  public static final String TEMPLATE_INLINE_WORKFLOW_PREFIX =
+      MAESTRO_PREFIX + StepType.TEMPLATE.getType();
+
   /** Maximum limit for step concurrency. */
   public static final long STEP_CONCURRENCY_MAX_LIMIT = 1000L;
 

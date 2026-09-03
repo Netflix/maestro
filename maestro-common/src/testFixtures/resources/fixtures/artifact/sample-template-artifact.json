@@ -1,0 +1,27 @@
+{
+  "template_workflow_id": "maestro_template_E7W_2G7_8375dda31ebbddc3be29e95e72ea9bc9",
+  "template_instance_id": 1,
+  "template_run_id": 2,
+  "template_uuid": "foo-bar",
+  "job_type": "write_audit_publish",
+  "template_version": "v3",
+  "template_overview": {
+    "total_step_count": 3,
+    "step_overview": {
+      "RUNNING": 1,
+      "SUCCEEDED": 2
+    },
+    "rollup_overview": {
+      "total_leaf_count": 3,
+      "overview": {
+        "RUNNING": {
+          "cnt": 1
+        },
+        "SUCCEEDED": {
+          "cnt": 2
+        }
+      }
+    }
+  },
+  "type": "TEMPLATE"
+}

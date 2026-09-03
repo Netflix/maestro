@@ -1,0 +1,22 @@
+{
+  "template": {
+    "id": "publish",
+    "sub_type": "write_audit_publish",
+    "sub_type_version": "v3",
+    "transition": {
+      "successors": {
+        "notify": "true"
+      }
+    },
+    "params": {
+      "target_table": {
+        "value": "core.trips",
+        "type": "STRING"
+      },
+      "snapshot_id": {
+        "expression": "return UUID.randomUUID().toString();",
+        "type": "STRING"
+      }
+    }
+  }
+}

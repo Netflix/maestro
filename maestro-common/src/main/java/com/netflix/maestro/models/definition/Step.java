@@ -58,6 +58,11 @@ public interface Step {
     return null;
   }
 
+  /** Get step subtype version, used for job template versioning. */
+  default String getSubTypeVersion() {
+    return null;
+  }
+
   /** Get step failure mode. */
   FailureMode getFailureMode();
 
