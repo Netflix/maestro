@@ -1,7 +1,11 @@
 {
   "app_name": "maestro",
   "cpu": "0.5",
+  "cpu_request": "0.25",
   "disk": "1G",
+  "disk_request": "512M",
+  "memory": "2G",
+  "memory_request": "1G",
   "image": "test-image",
   "entrypoint": "echo hello world",
   "env": {

@@ -34,9 +34,12 @@ import lombok.ToString;
       "args",
       "command",
       "cpu",
+      "cpu_request",
       "disk",
+      "disk_request",
       "gpu",
       "memory",
+      "memory_request",
       "image",
       "entrypoint",
       "env",
@@ -57,6 +60,9 @@ public class KubernetesCommand {
   private final String disk;
   private final String gpu;
   private final String memory;
+  private final String cpuRequest;
+  private final String diskRequest;
+  private final String memoryRequest;
   private final String image;
 
   /**

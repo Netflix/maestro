@@ -55,6 +55,10 @@ public class Fabric8RuntimeExecutor implements KubernetesRuntimeExecutor {
   private static final String MAESTRO_OUTPUT_START_TOKEN = "MAESTRO_OUTPUT_START_TOKEN";
   private static final String MAESTRO_OUTPUT_END_ENV = "MAESTRO_OUTPUT_END";
   private static final String MAESTRO_OUTPUT_END_TOKEN = "MAESTRO_OUTPUT_END_TOKEN";
+  private static final String CPU_RESOURCE = "cpu";
+  private static final String MEMORY_RESOURCE = "memory";
+  private static final String DISK_RESOURCE = "ephemeral-storage";
+  private static final String GPU_RESOURCE = "nvidia.com/gpu";
 
   private final KubernetesClient client;
 
@@ -130,10 +134,13 @@ public class Fabric8RuntimeExecutor implements KubernetesRuntimeExecutor {
     List<EnvVar> envVars = buildEnvs(command);
 
     ResourceRequirementsBuilder resourceBuilder = new ResourceRequirementsBuilder();
-    setLimitIfNotNull(resourceBuilder, "cpu", command.getCpu());
-    setLimitIfNotNull(resourceBuilder, "memory", command.getMemory());
-    setLimitIfNotNull(resourceBuilder, "ephemeral-storage", command.getDisk());
-    setLimitIfNotNull(resourceBuilder, "nvidia.com/gpu", command.getGpu());
+    setLimitIfNotNull(resourceBuilder, CPU_RESOURCE, command.getCpu());
+    setLimitIfNotNull(resourceBuilder, MEMORY_RESOURCE, command.getMemory());
+    setLimitIfNotNull(resourceBuilder, DISK_RESOURCE, command.getDisk());
+    setLimitIfNotNull(resourceBuilder, GPU_RESOURCE, command.getGpu());
+    setRequestIfNotNull(resourceBuilder, CPU_RESOURCE, command.getCpuRequest());
+    setRequestIfNotNull(resourceBuilder, MEMORY_RESOURCE, command.getMemoryRequest());
+    setRequestIfNotNull(resourceBuilder, DISK_RESOURCE, command.getDiskRequest());
 
     return new PodBuilder()
         .withNewMetadata()
@@ -201,6 +208,12 @@ public class Fabric8RuntimeExecutor implements KubernetesRuntimeExecutor {
   private void setLimitIfNotNull(ResourceRequirementsBuilder builder, String key, String value) {
     if (value != null) {
       builder.addToLimits(key, new Quantity(value));
+    }
+  }
+
+  private void setRequestIfNotNull(ResourceRequirementsBuilder builder, String key, String value) {
+    if (value != null) {
+      builder.addToRequests(key, new Quantity(value));
     }
   }
 }

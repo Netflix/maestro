@@ -43,20 +43,20 @@ public class KubernetesCommandGeneratorTest extends MaestroBaseTest {
             "kubernetes",
             MapParameter.builder()
                 .evaluatedResult(
-                    Map.of(
-                        "app_name", "test-app",
-                        "cpu", "0.5",
-                        "disk", "1G",
-                        "gpu", "0",
-                        "memory", "1G",
-                        "image", "test-image",
-                        "entrypoint", "test-entrypoint",
-                        "env",
-                            Map.of(
-                                "key1", "value1",
-                                "key2", "value2"),
-                        "job_deduplication_key", "job_deduplication_key",
-                        "owner_email", "owner_email"))
+                    Map.ofEntries(
+                        Map.entry("app_name", "test-app"),
+                        Map.entry("cpu", "0.5"),
+                        Map.entry("cpu_request", "0.25"),
+                        Map.entry("disk", "1G"),
+                        Map.entry("disk_request", "512M"),
+                        Map.entry("gpu", "0"),
+                        Map.entry("memory", "1G"),
+                        Map.entry("memory_request", "512M"),
+                        Map.entry("image", "test-image"),
+                        Map.entry("entrypoint", "test-entrypoint"),
+                        Map.entry("env", Map.of("key1", "value1", "key2", "value2")),
+                        Map.entry("job_deduplication_key", "job_deduplication_key"),
+                        Map.entry("owner_email", "owner_email")))
                 .evaluatedTime(12345L)
                 .build());
   }
@@ -69,9 +69,12 @@ public class KubernetesCommandGeneratorTest extends MaestroBaseTest {
     KubernetesCommand command = generator.generate(context);
     assertEquals("test-app", command.getAppName());
     assertEquals("0.5", command.getCpu());
+    assertEquals("0.25", command.getCpuRequest());
     assertEquals("1G", command.getDisk());
+    assertEquals("512M", command.getDiskRequest());
     assertEquals("0", command.getGpu());
     assertEquals("1G", command.getMemory());
+    assertEquals("512M", command.getMemoryRequest());
     assertEquals("test-image", command.getImage());
     assertArrayEquals(new String[] {"/bin/sh", "-c"}, command.getCommand());
     assertArrayEquals(new String[] {"test-entrypoint"}, command.getArgs());

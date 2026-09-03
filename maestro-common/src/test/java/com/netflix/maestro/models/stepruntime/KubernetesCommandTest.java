@@ -30,6 +30,18 @@ public class KubernetesCommandTest extends MaestroBaseTest {
   }
 
   @Test
+  public void testDeserializeResourceLimitsAndRequests() throws Exception {
+    KubernetesCommand command =
+        loadObject("fixtures/stepruntime/kubernetes_command.json", KubernetesCommand.class);
+    assertEquals("0.5", command.getCpu());
+    assertEquals("0.25", command.getCpuRequest());
+    assertEquals("1G", command.getDisk());
+    assertEquals("512M", command.getDiskRequest());
+    assertEquals("2G", command.getMemory());
+    assertEquals("1G", command.getMemoryRequest());
+  }
+
+  @Test
   public void testRoundTripSerdeExecForm() throws Exception {
     KubernetesCommand expected =
         loadObject("fixtures/stepruntime/kubernetes_command_exec.json", KubernetesCommand.class);
