@@ -696,7 +696,9 @@ public class MaestroStepInstanceActionDaoTest extends MaestroDaoBaseTest {
 
     Thread.ofVirtual().start(() -> spyDao.bypassStepDependencies(instance, "job1", user, true));
     verify(queueSystem, timeout(30000).times(1)).enqueue(any(), any(InstanceActionJobEvent.class));
-    verify(queueSystem, times(3)).notify(any());
+    // the action runs on a virtual thread, so the third notify can land after the enqueue
+    // verification above; wait for it instead of racing it
+    verify(queueSystem, timeout(30000).times(3)).notify(any());
     // assert that the action was saved
     Assert.assertTrue(actionDao.tryGetAction(summary, "job1").isPresent());
     Assert.assertEquals(
