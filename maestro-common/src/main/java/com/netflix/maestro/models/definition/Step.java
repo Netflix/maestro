@@ -50,6 +50,9 @@ public interface Step {
   /** Get step timeout in seconds. */
   ParsableLong getTimeout();
 
+  /** Get per-phase step timeouts. */
+  StepTimeouts getTimeouts();
+
   /** Get step type. */
   StepType getType();
 

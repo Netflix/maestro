@@ -29,6 +29,7 @@ import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.Tag;
 import com.netflix.maestro.models.definition.TagList;
+import com.netflix.maestro.models.definition.TimeoutPhase;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.error.Details;
 import com.netflix.maestro.models.instance.RestartConfig;
@@ -53,6 +54,7 @@ import com.netflix.maestro.validations.TagListConstraint;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,6 +82,7 @@ import lombok.ToString;
       "transition",
       "step_retry",
       "timeout_in_millis",
+      "timeouts_in_millis",
       "synced",
       "db_ops",
       "runtime_state",
@@ -110,6 +113,7 @@ public final class StepRuntimeSummary {
   @Valid private final StepInstanceTransition transition;
   @NotNull @Valid private final StepInstance.StepRetry stepRetry;
   @Nullable @Setter private Long timeoutInMillis;
+  @Nullable @Setter private Map<TimeoutPhase, Long> timeoutsInMillis;
 
   private boolean synced;
   private DbOperation dbOperation;
@@ -159,6 +163,7 @@ public final class StepRuntimeSummary {
       @Valid @NotNull StepInstanceTransition transition,
       @Valid @NotNull StepInstance.StepRetry stepRetry,
       Long timeoutInMillis,
+      Map<TimeoutPhase, Long> timeoutsInMillis,
       boolean synced,
       @NotNull DbOperation dbOperation,
       StepRuntimeState runtimeState,
@@ -182,6 +187,7 @@ public final class StepRuntimeSummary {
     this.transition = transition;
     this.stepRetry = stepRetry;
     this.timeoutInMillis = timeoutInMillis;
+    this.timeoutsInMillis = timeoutsInMillis;
     this.dbOperation = dbOperation; // never be null
     this.synced = synced;
     this.runtimeState = runtimeState == null ? new StepRuntimeState() : runtimeState;
@@ -398,6 +404,23 @@ public final class StepRuntimeSummary {
       tracingManager.handleStepStatus(tracingContext, nextStatus);
     }
     return markTime;
+  }
+
+  /**
+   * Return the timeout limit per phase. An explicit per-phase limit wins over the default one. A
+   * summary carrying only the single timeout applies it to the default phase. A phase absent from
+   * the returned map is unbounded.
+   */
+  public Map<TimeoutPhase, Long> resolveTimeoutsInMillis(
+      TimeoutPhase defaultPhase, Map<TimeoutPhase, Long> defaultTimeoutsInMillis) {
+    Map<TimeoutPhase, Long> limits = new EnumMap<>(TimeoutPhase.class);
+    limits.putAll(defaultTimeoutsInMillis);
+    if (timeoutsInMillis != null) {
+      limits.putAll(timeoutsInMillis);
+    } else if (timeoutInMillis != null) {
+      limits.put(defaultPhase, timeoutInMillis);
+    }
+    return limits;
   }
 
   /** return step runtime identity info. */

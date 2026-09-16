@@ -53,6 +53,7 @@ import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.queue.MaestroQueueSystem;
 import com.netflix.maestro.server.properties.MaestroEngineProperties;
+import com.netflix.maestro.server.properties.MaestroProperties;
 import com.netflix.maestro.server.properties.StepRuntimeProperties;
 import com.netflix.maestro.signal.dao.MaestroSignalBrokerDao;
 import com.netflix.maestro.signal.handler.MaestroSignalHandler;
@@ -136,6 +137,7 @@ public class MaestroWorkflowConfiguration {
       TagPermitManager tagPermitAcquirer,
       InstanceStepConcurrencyHandler instanceStepConcurrencyHandler,
       StepRuntimeCallbackDelayPolicy stepRuntimeCallbackDelayPolicy,
+      MaestroProperties maestroProperties,
       MaestroMetrics metricRepo,
       MaestroTracingManager tracingManager,
       MaestroParamExtensionRepo extensionRepo) {
@@ -152,6 +154,7 @@ public class MaestroWorkflowConfiguration {
         tagPermitAcquirer,
         instanceStepConcurrencyHandler,
         stepRuntimeCallbackDelayPolicy,
+        maestroProperties.getStepTimeout(),
         metricRepo,
         tracingManager,
         extensionRepo);

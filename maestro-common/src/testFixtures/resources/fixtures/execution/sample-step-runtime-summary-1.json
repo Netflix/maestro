@@ -20,6 +20,10 @@
       "evaluated_time": 1608171805392
     }
   },
+  "timeouts_in_millis": {
+    "STEP": 86400000,
+    "WAITING_FOR_SIGNALS": 14400000
+  },
   "synced": true,
   "runtime_state": {
     "status": "SUCCEEDED",

@@ -282,6 +282,7 @@ public class MaestroExecutionPreparer implements ExecutionPreparer {
             .stepRetry(stepInstance.getStepRetry())
             .timeoutInMillis(
                 stepInstance.getTimeoutInMillis()) // actors will re-calc timeout offset
+            .timeoutsInMillis(stepInstance.getTimeoutsInMillis())
             .synced(true)
             .runtimeState(stepInstance.getRuntimeState())
             .signalDependencies(stepInstance.getSignalDependencies())

@@ -33,6 +33,7 @@ import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.artifact.DefaultArtifact;
 import com.netflix.maestro.models.artifact.ForeachArtifact;
 import com.netflix.maestro.models.artifact.SubworkflowArtifact;
+import com.netflix.maestro.models.definition.TimeoutPhase;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.instance.ForeachStepOverview;
 import com.netflix.maestro.models.instance.StepDependencyMatchStatus;
@@ -179,6 +180,52 @@ public class StepRuntimeSummaryTest extends MaestroEngineBaseTest {
     assertEquals("bar", artifact1.getField("foo"));
     assertEquals(true, artifact1.getField("bar"));
     assertEquals(123L, artifact1.getField("baz"));
+  }
+
+  @Test
+  public void testTimeoutsInMillisDeserialization() throws Exception {
+    StepRuntimeSummary summary =
+        loadObject(
+            "fixtures/execution/sample-step-runtime-summary-1.json", StepRuntimeSummary.class);
+    assertNull(summary.getTimeoutInMillis());
+    assertEquals(
+        Map.of(TimeoutPhase.STEP, 86400000L, TimeoutPhase.WAITING_FOR_SIGNALS, 14400000L),
+        summary.getTimeoutsInMillis());
+    String ser1 = MAPPER.writeValueAsString(summary);
+    StepRuntimeSummary actual = MAPPER.readValue(ser1, StepRuntimeSummary.class);
+    assertEquals(summary.getTimeoutsInMillis(), actual.getTimeoutsInMillis());
+    assertEquals(ser1, MAPPER.writeValueAsString(actual));
+  }
+
+  @Test
+  public void testResolveTimeoutsInMillis() throws Exception {
+    StepRuntimeSummary summary =
+        loadObject("fixtures/execution/sample-step-runtime-summary.json", StepRuntimeSummary.class);
+    assertNull(summary.getTimeoutInMillis());
+    assertNull(summary.getTimeoutsInMillis());
+    Map<TimeoutPhase, Long> defaults =
+        Map.of(TimeoutPhase.RUNNING, 864000000L, TimeoutPhase.WAITING_FOR_SIGNALS, 14400000L);
+    assertEquals(Map.of(), summary.resolveTimeoutsInMillis(TimeoutPhase.RUNNING, Map.of()));
+    assertEquals(defaults, summary.resolveTimeoutsInMillis(TimeoutPhase.RUNNING, defaults));
+
+    summary.setTimeoutInMillis(600000L);
+    assertEquals(
+        Map.of(TimeoutPhase.RUNNING, 600000L, TimeoutPhase.WAITING_FOR_SIGNALS, 14400000L),
+        summary.resolveTimeoutsInMillis(TimeoutPhase.RUNNING, defaults));
+    assertEquals(
+        Map.of(
+            TimeoutPhase.STEP,
+            600000L,
+            TimeoutPhase.RUNNING,
+            864000000L,
+            TimeoutPhase.WAITING_FOR_SIGNALS,
+            14400000L),
+        summary.resolveTimeoutsInMillis(TimeoutPhase.STEP, defaults));
+
+    summary.setTimeoutsInMillis(Map.of(TimeoutPhase.WAITING_FOR_SIGNALS, 3600000L));
+    assertEquals(
+        Map.of(TimeoutPhase.RUNNING, 864000000L, TimeoutPhase.WAITING_FOR_SIGNALS, 3600000L),
+        summary.resolveTimeoutsInMillis(TimeoutPhase.RUNNING, defaults));
   }
 
   @Test

@@ -47,6 +47,9 @@ workflow:
                     id: process_data
                     name: Process Data from Source
                     type: shell
+                    timeouts:
+                      step: 2h
+                      running: 1h
                     transition:
                       - IF foo == 'bar' THEN validation_workflow
                 - subworkflow:

@@ -33,6 +33,7 @@ import com.netflix.maestro.engine.handlers.SignalHandler;
 import com.netflix.maestro.engine.metrics.MetricConstants;
 import com.netflix.maestro.engine.params.OutputDataManager;
 import com.netflix.maestro.engine.params.ParamsManager;
+import com.netflix.maestro.engine.properties.StepTimeoutProperties;
 import com.netflix.maestro.engine.tracing.MaestroTracingContext;
 import com.netflix.maestro.engine.tracing.MaestroTracingManager;
 import com.netflix.maestro.engine.transformation.Translator;
@@ -48,24 +49,26 @@ import com.netflix.maestro.flow.runtime.FlowTask;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.Actions;
 import com.netflix.maestro.models.Constants;
-import com.netflix.maestro.models.Defaults;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.definition.FailureMode;
 import com.netflix.maestro.models.definition.RetryPolicy;
 import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.definition.Tag;
+import com.netflix.maestro.models.definition.TimeoutPhase;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.error.Details;
 import com.netflix.maestro.models.instance.RestartConfig;
 import com.netflix.maestro.models.instance.RunPolicy;
 import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.StepInstanceTransition;
+import com.netflix.maestro.models.instance.StepRuntimeState;
 import com.netflix.maestro.models.instance.StepSelection;
 import com.netflix.maestro.models.instance.StepSelector;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.instance.WorkflowRuntimeOverview;
 import com.netflix.maestro.models.parameter.BooleanParameter;
 import com.netflix.maestro.models.parameter.MapParameter;
+import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.models.signal.SignalDependencies;
 import com.netflix.maestro.models.signal.SignalOutputsDefinition;
@@ -78,12 +81,14 @@ import com.netflix.maestro.utils.RetryPolicyParser;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -113,6 +118,7 @@ public final class MaestroTask implements FlowTask {
   private final TagPermitManager tagPermitAcquirer;
   private final InstanceStepConcurrencyHandler instanceStepConcurrencyHandler;
   private final StepRuntimeCallbackDelayPolicy stepRuntimeCallbackDelayPolicy;
+  private final StepTimeoutProperties timeoutProperties;
   private final MaestroMetrics metrics;
   private final MaestroTracingManager tracingManager;
   private final MaestroParamExtensionRepo paramExtensionRepo;
@@ -130,6 +136,7 @@ public final class MaestroTask implements FlowTask {
       TagPermitManager tagPermitAcquirer,
       InstanceStepConcurrencyHandler instanceStepConcurrencyHandler,
       StepRuntimeCallbackDelayPolicy stepRuntimeCallbackDelayPolicy,
+      StepTimeoutProperties timeoutProperties,
       MaestroMetrics metricRepo,
       @Nullable MaestroTracingManager tracingManager,
       @Nullable MaestroParamExtensionRepo extensionRepo) {
@@ -144,6 +151,7 @@ public final class MaestroTask implements FlowTask {
     this.tagPermitAcquirer = tagPermitAcquirer;
     this.instanceStepConcurrencyHandler = instanceStepConcurrencyHandler;
     this.stepRuntimeCallbackDelayPolicy = stepRuntimeCallbackDelayPolicy;
+    this.timeoutProperties = timeoutProperties;
     this.metrics = metricRepo;
     this.tracingManager = tracingManager;
     if (tracingManager == null) {
@@ -437,16 +445,30 @@ public final class MaestroTask implements FlowTask {
   }
 
   // only support workflow level params in timeout
-  private void initializeTimeout(
+  @VisibleForTesting
+  void initializeTimeout(
       Step stepDefinition, WorkflowSummary workflowSummary, StepRuntimeSummary runtimeSummary) {
-    if (stepDefinition.getTimeout() != null) {
+    Function<ParamDefinition, Parameter> paramParser =
+        p ->
+            paramEvaluator.parseAttribute(
+                p, workflowSummary.getParams(), workflowSummary.getIdentity(), false);
+    Map<TimeoutPhase, Long> timeouts = new EnumMap<>(TimeoutPhase.class);
+    if (stepDefinition.getTimeouts() != null) {
+      stepDefinition
+          .getTimeouts()
+          .toMap()
+          .forEach(
+              (phase, duration) ->
+                  timeouts.put(
+                      phase, DurationParser.getTimeoutWithParamInMillis(duration, paramParser)));
+    } else if (stepDefinition.getTimeout() != null) {
       Long timeout =
-          DurationParser.getTimeoutWithParamInMillis(
-              stepDefinition.getTimeout(),
-              p ->
-                  paramEvaluator.parseAttribute(
-                      p, workflowSummary.getParams(), workflowSummary.getIdentity(), false));
+          DurationParser.getTimeoutWithParamInMillis(stepDefinition.getTimeout(), paramParser);
       runtimeSummary.setTimeoutInMillis(timeout);
+      timeouts.put(timeoutProperties.getDefaultTimeoutPhase(), timeout);
+    }
+    if (!timeouts.isEmpty()) {
+      runtimeSummary.setTimeoutsInMillis(timeouts);
     }
   }
 
@@ -591,21 +613,45 @@ public final class MaestroTask implements FlowTask {
     return satisfied;
   }
 
-  /** Check if the execution is timed out, which is based on step start time. */
+  /**
+   * Check if the execution is timed out. A started step already in a timeout status stays timed
+   * out; otherwise every phase clock is compared against its limit.
+   */
   private boolean isTimeout(StepRuntimeSummary runtimeSummary) {
-    if (runtimeSummary.getRuntimeState() != null
-        && runtimeSummary.getRuntimeState().getStartTime() != null) {
-      if (runtimeSummary.getRuntimeState().getStatus() == StepInstance.Status.TIMED_OUT
-          || runtimeSummary.getRuntimeState().getStatus() == StepInstance.Status.TIMEOUT_FAILED) {
-        return true;
-      }
-      long timeoutInMillis =
-          ObjectHelper.valueOrDefault(
-              runtimeSummary.getTimeoutInMillis(), Defaults.DEFAULT_TIME_OUT_LIMIT_IN_MILLIS);
-      return System.currentTimeMillis() - runtimeSummary.getRuntimeState().getStartTime()
-          >= timeoutInMillis;
+    StepRuntimeState state = runtimeSummary.getRuntimeState();
+    if (state == null) {
+      return false;
     }
-    return false;
+    if (state.getStartTime() != null
+        && (state.getStatus() == StepInstance.Status.TIMED_OUT
+            || state.getStatus() == StepInstance.Status.TIMEOUT_FAILED)) {
+      return true;
+    }
+    return findTimedOutPhase(runtimeSummary, resolveTimeoutLimits(runtimeSummary)).isPresent();
+  }
+
+  /** Returns the timeout limit in millis per phase; a phase absent from the map is unbounded. */
+  private Map<TimeoutPhase, Long> resolveTimeoutLimits(StepRuntimeSummary runtimeSummary) {
+    return runtimeSummary.resolveTimeoutsInMillis(
+        timeoutProperties.getDefaultTimeoutPhase(), timeoutProperties.getDefaultTimeoutsInMillis());
+  }
+
+  /** Returns the first phase whose clock has run past its limit in the current status. */
+  private Optional<TimeoutPhase> findTimedOutPhase(
+      StepRuntimeSummary runtimeSummary, Map<TimeoutPhase, Long> limits) {
+    StepRuntimeState state = runtimeSummary.getRuntimeState();
+    long now = System.currentTimeMillis();
+    for (TimeoutPhase phase : TimeoutPhase.values()) {
+      Long clockStart = phase.getClockStart(state);
+      Long limit = limits.get(phase);
+      if (phase.appliesTo(state.getStatus())
+          && clockStart != null
+          && limit != null
+          && now - clockStart >= limit) {
+        return Optional.of(phase);
+      }
+    }
+    return Optional.empty();
   }
 
   /** If there is an action, update runtime data based on the action. */
@@ -758,13 +804,24 @@ public final class MaestroTask implements FlowTask {
 
   private void handleTimeoutError(
       WorkflowSummary workflowSummary, StepRuntimeSummary runtimeSummary) {
+    Map<TimeoutPhase, Long> limits = resolveTimeoutLimits(runtimeSummary);
+    String reason =
+        findTimedOutPhase(runtimeSummary, limits)
+            .map(
+                phase ->
+                    String.format(
+                        "Step instance is timed out in phase [%s] after [%s].",
+                        phase,
+                        DurationHelper.humanReadableFormat(Duration.ofMillis(limits.get(phase)))))
+            .orElse("Step instance is timed out.");
     LOG.info(
-        "Workflow instance {}'s step {} is timed out.",
+        "Workflow instance {}'s step {}: {}",
         workflowSummary.getIdentity(),
-        runtimeSummary.getIdentity());
+        runtimeSummary.getIdentity(),
+        reason);
     if (runtimeSummary.getStepRetry().hasReachedTimeoutRetryLimit()) {
       terminate(workflowSummary, runtimeSummary, StepInstance.Status.TIMED_OUT);
-      runtimeSummary.addTimeline(TimelineLogEvent.info("Step instance is timed out."));
+      runtimeSummary.addTimeline(TimelineLogEvent.info(reason));
     } else {
       runtimeSummary.markTerminated(StepInstance.Status.TIMEOUT_FAILED, tracingManager);
     }
@@ -1076,6 +1133,7 @@ public final class MaestroTask implements FlowTask {
       stepInstance.setTransition(stepSummary.getTransition());
       stepInstance.setStepRetry(stepSummary.getStepRetry());
       stepInstance.setTimeoutInMillis(stepSummary.getTimeoutInMillis());
+      stepInstance.setTimeoutsInMillis(stepSummary.getTimeoutsInMillis());
       stepInstance.setRuntimeState(stepSummary.getRuntimeState());
       stepInstance.setSignalDependencies(stepSummary.getSignalDependencies());
       stepInstance.setSignalOutputs(stepSummary.getSignalOutputs());

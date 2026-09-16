@@ -1,0 +1,6 @@
+{
+  "step": "24h",
+  "waiting_for_signals": "4 hours",
+  "waiting_for_permits": 7200,
+  "running": "8h"
+}

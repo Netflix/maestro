@@ -26,6 +26,7 @@ import com.netflix.maestro.validations.MaestroNameSizeConstraint;
 import com.netflix.maestro.validations.MaestroReferenceIdConstraint;
 import com.netflix.maestro.validations.SignalDependenciesDefinitionConstraint;
 import com.netflix.maestro.validations.SignalOutputsDefinitionConstraint;
+import com.netflix.maestro.validations.StepTimeoutConstraint;
 import com.netflix.maestro.validations.TagListConstraint;
 import com.netflix.maestro.validations.TimeoutConstraint;
 import jakarta.validation.Valid;
@@ -38,6 +39,7 @@ import lombok.Getter;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(alphabetic = true)
+@StepTimeoutConstraint
 @Data
 public abstract class AbstractStep implements Step {
   @Getter(onMethod = @__({@Override}))
@@ -67,6 +69,10 @@ public abstract class AbstractStep implements Step {
   @Getter(onMethod = @__({@Override}))
   @TimeoutConstraint
   private ParsableLong timeout;
+
+  @Getter(onMethod = @__({@Override}))
+  @Valid
+  private StepTimeouts timeouts;
 
   @Valid @SignalDependenciesDefinitionConstraint
   private SignalDependenciesDefinition signalDependencies;
