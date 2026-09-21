@@ -1,0 +1,24 @@
+{
+  "step": {
+    "id": "job1",
+    "transition": {
+      "successors": {
+        "job.2": "true",
+        "job3": "true"
+      }
+    },
+    "type": "Sleep",
+    "timeouts": {
+      "step": "24h",
+      "waiting_for_signals": "4 hours",
+      "waiting_for_permits": 7200,
+      "running": "8h"
+    },
+    "params": {
+      "sleep_seconds": {
+        "value": 15,
+        "type": "LONG"
+      }
+    }
+  }
+}

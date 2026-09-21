@@ -279,6 +279,7 @@ public class WorkflowParser {
     if (baseJob.getTimeout() != null) {
       step.setTimeout(ParsableLong.of(baseJob.getTimeout()));
     }
+    step.setTimeouts(baseJob.getTimeouts());
     step.setParams(ParamParser.parse(baseJob.getJobParams()));
     if (!ObjectHelper.isCollectionEmptyOrNull(baseJob.getTransition())) {
       step.setTransition(TransitionParser.parse(baseJob.getTransition()));

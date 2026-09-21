@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.models.definition.FailureMode;
+import com.netflix.maestro.models.definition.StepTimeouts;
 import com.netflix.maestro.utils.Checks;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -26,6 +27,7 @@ public abstract class BaseJob implements Job {
           "failure_mode",
           "tags",
           "timeout",
+          "timeouts",
           "transition",
           "job_params");
 
@@ -35,6 +37,7 @@ public abstract class BaseJob implements Job {
   private FailureMode failureMode;
   private List<String> tags;
   private String timeout;
+  private StepTimeouts timeouts;
   private List<String> transition;
 
   private Map<String, Object> jobParams = new LinkedHashMap<>();

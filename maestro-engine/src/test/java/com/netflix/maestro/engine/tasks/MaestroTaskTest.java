@@ -17,6 +17,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -30,6 +31,7 @@ import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
 import com.netflix.maestro.engine.handlers.SignalHandler;
 import com.netflix.maestro.engine.params.OutputDataManager;
+import com.netflix.maestro.engine.properties.StepTimeoutProperties;
 import com.netflix.maestro.flow.models.Flow;
 import com.netflix.maestro.flow.models.Task;
 import com.netflix.maestro.models.Actions;
@@ -38,6 +40,7 @@ import com.netflix.maestro.models.Defaults;
 import com.netflix.maestro.models.definition.ParsableLong;
 import com.netflix.maestro.models.definition.RetryPolicy;
 import com.netflix.maestro.models.definition.Step;
+import com.netflix.maestro.models.definition.TimeoutPhase;
 import com.netflix.maestro.models.instance.RestartConfig;
 import com.netflix.maestro.models.instance.RunPolicy;
 import com.netflix.maestro.models.instance.StepInstance;
@@ -51,6 +54,7 @@ import com.netflix.maestro.models.timeline.TimelineLogEvent;
 import com.netflix.maestro.queue.jobevents.StepInstanceUpdateJobEvent;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -63,15 +67,18 @@ import org.junit.Test;
 import org.mockito.Mock;
 
 public class MaestroTaskTest extends MaestroEngineBaseTest {
+  private static final long TEN_MINUTES_IN_MILLIS = 600000L;
 
   @Mock private MaestroStepInstanceActionDao actionDao;
   @Mock private StepRuntimeManager stepRuntimeManager;
   @Mock private MaestroTask maestroTask;
+  private StepTimeoutProperties timeoutProperties;
 
   @Before
   public void setup() {
     doCallRealMethod().when(maestroTask).updateRetryDelayTimeToTimeline(any());
     when(maestroTask.isStepSkipped(any(), any())).thenCallRealMethod();
+    timeoutProperties = new StepTimeoutProperties();
   }
 
   @Test
@@ -470,6 +477,7 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
             null,
             null,
             mock(StepRuntimeCallbackDelayPolicy.class),
+            timeoutProperties,
             metricRepo,
             null,
             paramExtensionRepo);
@@ -591,6 +599,210 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
     createAndRunMaestroTask(2, flowStatus, stepDefinition, runtimeSummary, workflowSummary);
 
     verify(stepRuntimeManager).terminate(eq(workflowSummary), eq(runtimeSummary), eq(stepStatus));
+  }
+
+  @Test
+  public void testInitializeTimeoutWithPhases() throws Exception {
+    Step stepDef =
+        loadObject("fixtures/typedsteps/sample-typed-step-with-timeouts.json", Step.class);
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+    StepRuntimeSummary runtimeSummary =
+        createAndRunMaestroTask(0, null, stepDef, null, workflowSummary);
+
+    maestroTask.initializeTimeout(stepDef, workflowSummary, runtimeSummary);
+
+    Assert.assertNull(runtimeSummary.getTimeoutInMillis());
+    Map<TimeoutPhase, Long> expected = new EnumMap<>(TimeoutPhase.class);
+    expected.put(TimeoutPhase.STEP, 86400000L);
+    expected.put(TimeoutPhase.WAITING_FOR_SIGNALS, 14400000L);
+    expected.put(TimeoutPhase.WAITING_FOR_PERMITS, 7200000L);
+    expected.put(TimeoutPhase.RUNNING, 28800000L);
+    Assert.assertEquals(expected, runtimeSummary.getTimeoutsInMillis());
+  }
+
+  @Test
+  public void testInitializeTimeoutFillsDefaultPhaseFromSingleTimeout() throws Exception {
+    Step stepDef = loadObject("fixtures/typedsteps/sample-typed-step.json", Step.class);
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+    StepRuntimeSummary runtimeSummary =
+        createAndRunMaestroTask(0, null, stepDef, null, workflowSummary);
+
+    maestroTask.initializeTimeout(stepDef, workflowSummary, runtimeSummary);
+    Assert.assertEquals(TEN_MINUTES_IN_MILLIS, runtimeSummary.getTimeoutInMillis().longValue());
+    Assert.assertEquals(
+        Map.of(TimeoutPhase.RUNNING, TEN_MINUTES_IN_MILLIS), runtimeSummary.getTimeoutsInMillis());
+
+    timeoutProperties.setDefaultTimeoutPhase(TimeoutPhase.STEP);
+    runtimeSummary = createAndRunMaestroTask(0, null, stepDef, null, workflowSummary);
+    maestroTask.initializeTimeout(stepDef, workflowSummary, runtimeSummary);
+    Assert.assertEquals(TEN_MINUTES_IN_MILLIS, runtimeSummary.getTimeoutInMillis().longValue());
+    Assert.assertEquals(
+        Map.of(TimeoutPhase.STEP, TEN_MINUTES_IN_MILLIS), runtimeSummary.getTimeoutsInMillis());
+  }
+
+  @Test
+  public void testInitializeTimeoutWithoutAnyTimeout() throws Exception {
+    Step stepDef = loadObject("fixtures/typedsteps/sample-while-step.json", Step.class);
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+    StepRuntimeSummary runtimeSummary =
+        createAndRunMaestroTask(0, null, stepDef, null, workflowSummary);
+
+    maestroTask.initializeTimeout(stepDef, workflowSummary, runtimeSummary);
+    Assert.assertNull(runtimeSummary.getTimeoutInMillis());
+    Assert.assertNull(runtimeSummary.getTimeoutsInMillis());
+  }
+
+  @Test
+  public void testExecuteTimedOutInRunningPhase() throws Exception {
+    StepRuntimeSummary runtimeSummary = loadTimeoutRuntimeSummary(StepInstance.Status.FINISHING);
+    long now = System.currentTimeMillis();
+    runtimeSummary.getRuntimeState().setCreateTime(now - TEN_MINUTES_IN_MILLIS - 1000);
+    runtimeSummary.getRuntimeState().setStartTime(now - TEN_MINUTES_IN_MILLIS - 1000);
+    runtimeSummary.setTimeoutsInMillis(Map.of(TimeoutPhase.RUNNING, TEN_MINUTES_IN_MILLIS));
+
+    assertTimedOut(runtimeSummary, TimeoutPhase.RUNNING);
+  }
+
+  @Test
+  public void testExecuteTimedOutInStepPhase() throws Exception {
+    StepRuntimeSummary runtimeSummary = loadTimeoutRuntimeSummary(StepInstance.Status.FINISHING);
+    long now = System.currentTimeMillis();
+    runtimeSummary.getRuntimeState().setCreateTime(now - TEN_MINUTES_IN_MILLIS - 1000);
+    runtimeSummary.getRuntimeState().setStartTime(now - 1000);
+    runtimeSummary.setTimeoutsInMillis(Map.of(TimeoutPhase.STEP, TEN_MINUTES_IN_MILLIS));
+
+    assertTimedOut(runtimeSummary, TimeoutPhase.STEP);
+  }
+
+  @Test
+  public void testExecuteTimedOutWaitingForSignals() throws Exception {
+    StepRuntimeSummary runtimeSummary =
+        loadTimeoutRuntimeSummary(StepInstance.Status.WAITING_FOR_SIGNALS);
+    long now = System.currentTimeMillis();
+    runtimeSummary.getRuntimeState().setCreateTime(now - TEN_MINUTES_IN_MILLIS - 1000);
+    runtimeSummary.getRuntimeState().setWaitSignalTime(now - TEN_MINUTES_IN_MILLIS - 1000);
+    runtimeSummary.setTimeoutsInMillis(
+        Map.of(TimeoutPhase.WAITING_FOR_SIGNALS, TEN_MINUTES_IN_MILLIS));
+
+    assertTimedOut(runtimeSummary, TimeoutPhase.WAITING_FOR_SIGNALS);
+  }
+
+  @Test
+  public void testExecuteTimedOutWaitingForPermits() throws Exception {
+    StepRuntimeSummary runtimeSummary =
+        loadTimeoutRuntimeSummary(StepInstance.Status.WAITING_FOR_PERMITS);
+    long now = System.currentTimeMillis();
+    runtimeSummary.getRuntimeState().setCreateTime(now - TEN_MINUTES_IN_MILLIS - 1000);
+    runtimeSummary.getRuntimeState().setWaitPermitTime(now - TEN_MINUTES_IN_MILLIS - 1000);
+    runtimeSummary.setTimeoutsInMillis(
+        Map.of(TimeoutPhase.WAITING_FOR_PERMITS, TEN_MINUTES_IN_MILLIS));
+
+    assertTimedOut(runtimeSummary, TimeoutPhase.WAITING_FOR_PERMITS);
+  }
+
+  @Test
+  public void testExecuteWaitingPhaseTimeoutIgnoredInOtherStatus() throws Exception {
+    StepRuntimeSummary runtimeSummary = loadTimeoutRuntimeSummary(StepInstance.Status.FINISHING);
+    long now = System.currentTimeMillis();
+    runtimeSummary.getRuntimeState().setCreateTime(now - TEN_MINUTES_IN_MILLIS - 1000);
+    runtimeSummary.getRuntimeState().setWaitSignalTime(now - TEN_MINUTES_IN_MILLIS - 1000);
+    runtimeSummary.getRuntimeState().setWaitPermitTime(now - TEN_MINUTES_IN_MILLIS - 1000);
+    runtimeSummary.getRuntimeState().setStartTime(now - 1000);
+    runtimeSummary.setTimeoutsInMillis(
+        Map.of(
+            TimeoutPhase.WAITING_FOR_SIGNALS, TEN_MINUTES_IN_MILLIS,
+            TimeoutPhase.WAITING_FOR_PERMITS, TEN_MINUTES_IN_MILLIS));
+
+    assertNotTimedOut(runtimeSummary);
+  }
+
+  @Test
+  public void testExecuteTimedOutWithSingleTimeoutOnly() throws Exception {
+    StepRuntimeSummary runtimeSummary = loadTimeoutRuntimeSummary(StepInstance.Status.FINISHING);
+    long now = System.currentTimeMillis();
+    runtimeSummary.getRuntimeState().setCreateTime(now - TEN_MINUTES_IN_MILLIS - 1000);
+    runtimeSummary.getRuntimeState().setStartTime(now - TEN_MINUTES_IN_MILLIS - 1000);
+    runtimeSummary.setTimeoutInMillis(TEN_MINUTES_IN_MILLIS);
+
+    assertTimedOut(runtimeSummary, TimeoutPhase.RUNNING);
+  }
+
+  @Test
+  public void testExecuteNotTimedOutWithinDefaultRunningTimeout() throws Exception {
+    StepRuntimeSummary runtimeSummary = loadTimeoutRuntimeSummary(StepInstance.Status.FINISHING);
+    long now = System.currentTimeMillis();
+    runtimeSummary.getRuntimeState().setCreateTime(now - TEN_MINUTES_IN_MILLIS - 1000);
+    runtimeSummary.getRuntimeState().setStartTime(now - TEN_MINUTES_IN_MILLIS - 1000);
+
+    assertNotTimedOut(runtimeSummary);
+  }
+
+  @Test
+  public void testExecuteTimedOutByDefaultStepTimeout() throws Exception {
+    timeoutProperties.setDefaultStepTimeoutInMillis(TEN_MINUTES_IN_MILLIS);
+    StepRuntimeSummary runtimeSummary = loadTimeoutRuntimeSummary(StepInstance.Status.FINISHING);
+    long now = System.currentTimeMillis();
+    runtimeSummary.getRuntimeState().setCreateTime(now - TEN_MINUTES_IN_MILLIS - 1000);
+    runtimeSummary.getRuntimeState().setStartTime(now - 1000);
+
+    assertTimedOut(runtimeSummary, TimeoutPhase.STEP);
+  }
+
+  @Test
+  public void testExecuteTimedOutByDefaultWaitingForSignalsTimeout() throws Exception {
+    timeoutProperties.setDefaultWaitingForSignalsTimeoutInMillis(TEN_MINUTES_IN_MILLIS);
+    StepRuntimeSummary runtimeSummary =
+        loadTimeoutRuntimeSummary(StepInstance.Status.WAITING_FOR_SIGNALS);
+    long now = System.currentTimeMillis();
+    runtimeSummary.getRuntimeState().setCreateTime(now - TEN_MINUTES_IN_MILLIS - 1000);
+    runtimeSummary.getRuntimeState().setWaitSignalTime(now - TEN_MINUTES_IN_MILLIS - 1000);
+
+    assertTimedOut(runtimeSummary, TimeoutPhase.WAITING_FOR_SIGNALS);
+  }
+
+  @Test
+  public void testExecuteTimedOutByDefaultWaitingForPermitsTimeout() throws Exception {
+    timeoutProperties.setDefaultWaitingForPermitsTimeoutInMillis(TEN_MINUTES_IN_MILLIS);
+    StepRuntimeSummary runtimeSummary =
+        loadTimeoutRuntimeSummary(StepInstance.Status.WAITING_FOR_PERMITS);
+    long now = System.currentTimeMillis();
+    runtimeSummary.getRuntimeState().setCreateTime(now - TEN_MINUTES_IN_MILLIS - 1000);
+    runtimeSummary.getRuntimeState().setWaitPermitTime(now - TEN_MINUTES_IN_MILLIS - 1000);
+
+    assertTimedOut(runtimeSummary, TimeoutPhase.WAITING_FOR_PERMITS);
+  }
+
+  private StepRuntimeSummary loadTimeoutRuntimeSummary(StepInstance.Status status)
+      throws Exception {
+    StepRuntimeSummary runtimeSummary =
+        loadObject("fixtures/execution/sample-step-runtime-summary.json", StepRuntimeSummary.class);
+    runtimeSummary.getRuntimeState().setStatus(status);
+    return runtimeSummary;
+  }
+
+  private void assertTimedOut(StepRuntimeSummary runtimeSummary, TimeoutPhase phase)
+      throws Exception {
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+    Step stepDef = loadObject("fixtures/typedsteps/sample-typed-step.json", Step.class);
+
+    createAndRunMaestroTask(1, Flow.Status.RUNNING, stepDef, runtimeSummary, workflowSummary);
+
+    verify(stepRuntimeManager)
+        .terminate(eq(workflowSummary), eq(runtimeSummary), eq(StepInstance.Status.TIMED_OUT));
+    assertThat(runtimeSummary.getTimeline().getTimelineEvents())
+        .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
+        .contains(
+            TimelineLogEvent.info(
+                "Step instance is timed out in phase [%s] after [10m].", phase.name()));
+  }
+
+  private void assertNotTimedOut(StepRuntimeSummary runtimeSummary) throws Exception {
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+    Step stepDef = loadObject("fixtures/typedsteps/sample-typed-step.json", Step.class);
+
+    createAndRunMaestroTask(1, Flow.Status.RUNNING, stepDef, runtimeSummary, workflowSummary);
+
+    verify(stepRuntimeManager, never()).terminate(any(), any(), any());
   }
 
   @Test
