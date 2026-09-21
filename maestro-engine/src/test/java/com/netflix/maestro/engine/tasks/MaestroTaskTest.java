@@ -15,6 +15,7 @@ package com.netflix.maestro.engine.tasks;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -61,18 +62,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
 public class MaestroTaskTest extends MaestroEngineBaseTest {
   private static final long TEN_MINUTES_IN_MILLIS = 600000L;
+  private static final long ONE_MINUTE_IN_MILLIS = 60000L;
+  private static final long THIRTY_MINUTES_IN_SECS = 1800L;
+  private static final long FIVE_SECS = 5L;
 
   @Mock private MaestroStepInstanceActionDao actionDao;
   @Mock private StepRuntimeManager stepRuntimeManager;
   @Mock private MaestroTask maestroTask;
+  @Mock private StepRuntimeCallbackDelayPolicy callbackDelayPolicy;
   private StepTimeoutProperties timeoutProperties;
+  private Task task;
 
   @Before
   public void setup() {
@@ -476,12 +484,12 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
             actionDao,
             null,
             null,
-            mock(StepRuntimeCallbackDelayPolicy.class),
+            callbackDelayPolicy,
             timeoutProperties,
             metricRepo,
             null,
             paramExtensionRepo);
-    Task task = mock(Task.class);
+    task = mock(Task.class);
     when(task.referenceTaskName()).thenReturn("job1");
     Map<String, Object> runtimeSummaryMap = new HashMap<>();
     runtimeSummaryMap.put(Constants.STEP_RUNTIME_SUMMARY_FIELD, input);
@@ -500,8 +508,10 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
       maestroTask.start(flow, task);
     } else if (runCode == 1) { // execute
       Assert.assertTrue(maestroTask.execute(flow, task));
-    } else { // cancel
+    } else if (runCode == 2) { // cancel
       maestroTask.cancel(flow, task);
+    } else { // execute without asserting on the returned sync flag
+      maestroTask.execute(flow, task);
     }
     return (StepRuntimeSummary) runtimeSummaryMap.get(Constants.STEP_RUNTIME_SUMMARY_FIELD);
   }
@@ -770,6 +780,78 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
     runtimeSummary.getRuntimeState().setWaitPermitTime(now - TEN_MINUTES_IN_MILLIS - 1000);
 
     assertTimedOut(runtimeSummary, TimeoutPhase.WAITING_FOR_PERMITS);
+  }
+
+  @Test
+  public void testPollDelayCappedByWaitingForSignalsTimeout() throws Exception {
+    when(callbackDelayPolicy.getCallBackDelayInSecs(any())).thenReturn(THIRTY_MINUTES_IN_SECS);
+    StepRuntimeSummary runtimeSummary =
+        loadTimeoutRuntimeSummary(StepInstance.Status.WAITING_FOR_SIGNALS);
+    long now = System.currentTimeMillis();
+    runtimeSummary
+        .getRuntimeState()
+        .setCreateTime(now - TEN_MINUTES_IN_MILLIS + ONE_MINUTE_IN_MILLIS);
+    runtimeSummary
+        .getRuntimeState()
+        .setWaitSignalTime(now - TEN_MINUTES_IN_MILLIS + ONE_MINUTE_IN_MILLIS);
+    runtimeSummary.setTimeoutsInMillis(
+        Map.of(TimeoutPhase.WAITING_FOR_SIGNALS, TEN_MINUTES_IN_MILLIS));
+
+    assertFirstStartDelayWithin(runtimeSummary, 0, ONE_MINUTE_IN_MILLIS);
+  }
+
+  @Test
+  public void testPollDelayCappedByRunningTimeout() throws Exception {
+    when(callbackDelayPolicy.getCallBackDelayInSecs(any())).thenReturn(THIRTY_MINUTES_IN_SECS);
+    StepRuntimeSummary runtimeSummary = loadTimeoutRuntimeSummary(StepInstance.Status.FINISHING);
+    long now = System.currentTimeMillis();
+    runtimeSummary
+        .getRuntimeState()
+        .setCreateTime(now - TEN_MINUTES_IN_MILLIS + ONE_MINUTE_IN_MILLIS);
+    runtimeSummary
+        .getRuntimeState()
+        .setStartTime(now - TEN_MINUTES_IN_MILLIS + ONE_MINUTE_IN_MILLIS);
+    runtimeSummary.setTimeoutsInMillis(Map.of(TimeoutPhase.RUNNING, TEN_MINUTES_IN_MILLIS));
+
+    assertFirstStartDelayWithin(runtimeSummary, 0, ONE_MINUTE_IN_MILLIS);
+  }
+
+  @Test
+  public void testPollDelayUnchangedWhenTimeoutIsFurtherAway() throws Exception {
+    when(callbackDelayPolicy.getCallBackDelayInSecs(any())).thenReturn(FIVE_SECS);
+    StepRuntimeSummary runtimeSummary = loadTimeoutRuntimeSummary(StepInstance.Status.FINISHING);
+    long now = System.currentTimeMillis();
+    runtimeSummary.getRuntimeState().setCreateTime(now - ONE_MINUTE_IN_MILLIS);
+    runtimeSummary.getRuntimeState().setStartTime(now - ONE_MINUTE_IN_MILLIS);
+    runtimeSummary.setTimeoutsInMillis(Map.of(TimeoutPhase.RUNNING, TEN_MINUTES_IN_MILLIS));
+
+    assertFirstStartDelayWithin(
+        runtimeSummary, TimeUnit.SECONDS.toMillis(FIVE_SECS), TimeUnit.SECONDS.toMillis(FIVE_SECS));
+  }
+
+  @Test
+  public void testPollDelayIsZeroWhenAlreadyTimedOut() throws Exception {
+    when(callbackDelayPolicy.getCallBackDelayInSecs(any())).thenReturn(THIRTY_MINUTES_IN_SECS);
+    StepRuntimeSummary runtimeSummary = loadTimeoutRuntimeSummary(StepInstance.Status.FINISHING);
+    long now = System.currentTimeMillis();
+    runtimeSummary.getRuntimeState().setCreateTime(now - TEN_MINUTES_IN_MILLIS - 1000);
+    runtimeSummary.getRuntimeState().setStartTime(now - TEN_MINUTES_IN_MILLIS - 1000);
+    runtimeSummary.setTimeoutsInMillis(Map.of(TimeoutPhase.RUNNING, TEN_MINUTES_IN_MILLIS));
+
+    assertFirstStartDelayWithin(runtimeSummary, 0, 0);
+  }
+
+  private void assertFirstStartDelayWithin(
+      StepRuntimeSummary runtimeSummary, long minInclusive, long maxInclusive) throws Exception {
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+    Step stepDef = loadObject("fixtures/typedsteps/sample-typed-step.json", Step.class);
+
+    createAndRunMaestroTask(3, Flow.Status.RUNNING, stepDef, runtimeSummary, workflowSummary);
+
+    ArgumentCaptor<Long> delay = ArgumentCaptor.forClass(Long.class);
+    verify(task, atLeastOnce()).setStartDelayInMillis(delay.capture());
+    long firstDelay = delay.getAllValues().get(0);
+    assertThat(firstDelay).isBetween(minInclusive, maxInclusive);
   }
 
   private StepRuntimeSummary loadTimeoutRuntimeSummary(StepInstance.Status status)
