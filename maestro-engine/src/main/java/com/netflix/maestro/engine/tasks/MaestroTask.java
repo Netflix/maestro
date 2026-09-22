@@ -654,6 +654,25 @@ public final class MaestroTask implements FlowTask {
     return Optional.empty();
   }
 
+  /**
+   * Returns the poll delay lowered to the time left before the earliest timeout, so a phase that
+   * applies to the current status never waits for the next poll to time out.
+   */
+  private long capDelayByNextTimeout(long delayInMillis, StepRuntimeSummary runtimeSummary) {
+    Map<TimeoutPhase, Long> limits = resolveTimeoutLimits(runtimeSummary);
+    StepRuntimeState state = runtimeSummary.getRuntimeState();
+    long now = System.currentTimeMillis();
+    long delay = delayInMillis;
+    for (TimeoutPhase phase : TimeoutPhase.values()) {
+      Long clockStart = phase.getClockStart(state);
+      Long limit = limits.get(phase);
+      if (phase.appliesTo(state.getStatus()) && clockStart != null && limit != null) {
+        delay = Math.min(delay, Math.max(0, limit - (now - clockStart)));
+      }
+    }
+    return delay;
+  }
+
   /** If there is an action, update runtime data based on the action. */
   private void tryUpdateByAction(
       WorkflowSummary workflowSummary, Step stepDefinition, StepRuntimeSummary runtimeSummary) {
@@ -791,6 +810,7 @@ public final class MaestroTask implements FlowTask {
       delayInMillis = delay == null ? null : TimeUnit.SECONDS.toMillis(delay);
     }
     if (delayInMillis != null) {
+      delayInMillis = capDelayByNextTimeout(delayInMillis, runtimeSummary);
       LOG.trace(
           "Set an initial customized callback [{}] in seconds for step [{}] with an initial status [{}]",
           delayInMillis,
