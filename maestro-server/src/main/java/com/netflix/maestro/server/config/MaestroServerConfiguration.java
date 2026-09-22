@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.server.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.engine.concurrency.InstanceStepConcurrencyHandler;
 import com.netflix.maestro.engine.concurrency.TagPermitManager;
 import com.netflix.maestro.engine.dao.MaestroRunStrategyDao;
@@ -29,8 +30,10 @@ import com.netflix.maestro.engine.processors.TerminateThenRunJobEventProcessor;
 import com.netflix.maestro.engine.processors.UpdateJobEventProcessor;
 import com.netflix.maestro.engine.publisher.MaestroNotificationPublisher;
 import com.netflix.maestro.engine.publisher.NoOpMaestroNotificationPublisher;
+import com.netflix.maestro.engine.publisher.WebhookNotificationPublisher;
 import com.netflix.maestro.flow.runtime.FlowOperation;
 import com.netflix.maestro.metrics.MaestroMetrics;
+import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.queue.MaestroQueueSystem;
 import com.netflix.maestro.queue.dao.MaestroQueueDao;
@@ -41,6 +44,9 @@ import com.netflix.maestro.queue.processors.MaestroJobEventDispatcher;
 import com.netflix.maestro.queue.worker.MaestroQueueWorkerService;
 import com.netflix.maestro.server.interceptor.UserInfoInterceptor;
 import com.netflix.maestro.server.properties.MaestroProperties;
+import com.netflix.maestro.server.properties.WebhookNotifierProperties;
+import java.net.http.HttpClient;
+import java.time.Duration;
 import java.util.EnumMap;
 import java.util.concurrent.BlockingQueue;
 import lombok.extern.slf4j.Slf4j;
@@ -54,7 +60,7 @@ import org.springframework.context.annotation.Configuration;
 /** beans for maestro server related classes. */
 @Configuration
 @Slf4j
-@EnableConfigurationProperties(MaestroProperties.class)
+@EnableConfigurationProperties({MaestroProperties.class, WebhookNotifierProperties.class})
 @SuppressWarnings("PMD.LooseCoupling")
 public class MaestroServerConfiguration {
   private static final String EVENT_QUEUES_QUALIFIER = "EventQueues";
@@ -73,6 +79,25 @@ public class MaestroServerConfiguration {
   public MaestroNotificationPublisher notificationPublisher() {
     LOG.info("Creating NoOp MaestroNotificationPublisher within Spring boot...");
     return new NoOpMaestroNotificationPublisher();
+  }
+
+  @ConditionalOnProperty(value = "maestro.notifier.type", havingValue = "webhook")
+  @Bean
+  public MaestroNotificationPublisher webhookNotificationPublisher(
+      WebhookNotifierProperties props,
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper) {
+    LOG.info(
+        "Creating Webhook MaestroNotificationPublisher within Spring boot for url [{}]...",
+        props.getUrl());
+    return new WebhookNotificationPublisher(
+        HttpClient.newBuilder()
+            .connectTimeout(Duration.ofMillis(props.getRequestTimeoutMs()))
+            .build(),
+        props.getUrl(),
+        props.getEventTypes(),
+        Duration.ofMillis(props.getRequestTimeoutMs()),
+        props.getSigningSecret(),
+        objectMapper);
   }
 
   // below are beans for internal queue and processors.
