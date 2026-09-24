@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.dsl.parsers.WorkflowParser;
 import com.netflix.maestro.engine.concurrency.InstanceStepConcurrencyHandler;
 import com.netflix.maestro.engine.dao.MaestroJobTemplateDao;
+import com.netflix.maestro.engine.dao.MaestroStepBreakpointDao;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceActionDao;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
@@ -301,6 +302,7 @@ public class MaestroStepRuntimeConfiguration {
       WorkflowActionHandler actionHandler,
       MaestroWorkflowInstanceDao instanceDao,
       MaestroStepInstanceDao stepInstanceDao,
+      MaestroStepBreakpointDao stepBreakpointDao,
       MaestroQueueSystem queueSystem,
       InstanceStepConcurrencyHandler instanceStepConcurrencyHandler,
       ParamEvaluator paramEvaluator) {
@@ -310,6 +312,7 @@ public class MaestroStepRuntimeConfiguration {
             actionHandler,
             instanceDao,
             stepInstanceDao,
+            stepBreakpointDao,
             queueSystem,
             instanceStepConcurrencyHandler,
             paramEvaluator);
