@@ -537,6 +537,12 @@ public class MaestroParamExtension extends AbstractParamExtension {
         return stepInstanceAttributes.getStepRetry().getErrorRetries();
       case Constants.STEP_STATUS_PARAM:
         return stepInstanceAttributes.getStatus().name();
+      case Constants.STEP_END_TIME_PARAM:
+        return Checks.notNull(
+            stepInstanceAttributes.getEndTime(),
+            "ERROR: current step [%s]'s [%s] is not set yet.",
+            stepInstanceAttributes.getStepId(),
+            fieldName);
       default:
         throw new MaestroValidationException(
             "Invalid field name [%s] for getFromStep call", fieldName);

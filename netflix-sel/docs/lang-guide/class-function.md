@@ -194,6 +194,8 @@ return params.getFromStep('MAESTRO_STEP_STATUS');    // returns the status of th
 
 return params.getFromStep('MAESTRO_STEP_STATUS') == 'COMPLETED_WITH_ERROR';    // branch taken only when the current step failed.
 
+return params.getFromStep('MAESTRO_STEP_END_TIME');    // returns the end time of the current step.
+
 return params.getFromStep('step_id');    // also supports step_id, step_instance_id, step_instance_uuid, step_attempt_id, step_type_info and MAESTRO_STEP_ERROR_RETRIES.
 ```
 
