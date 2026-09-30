@@ -98,8 +98,11 @@ public class MaestroForeachFlattenedDao extends AbstractDatabaseDao {
           + "  and workflow_run_id <= ? "
           + "  and run_id_validity_end > ? ";
   private static final String ALWAYS_TRUE = "and 1=1";
-  private static final String LOOP_PARAMETER_FILTER_TEMPLATE = "and loop_parameters->>'%s' = '%s'";
-  private static final String STATUS_FILTER_TEMPLATE = "and step_status in (%s)";
+  // Filter fragments only contribute placeholders. Caller-supplied names and values are always
+  // bound, never inlined, so they cannot alter the query structure.
+  private static final String LOOP_PARAMETER_FILTER_TEMPLATE =
+      " and loop_parameters->>CAST(? AS TEXT) = ? ";
+  private static final String STATUS_FILTER_TEMPLATE = "and step_status = ANY(?)";
 
   private static final String STEP_ITERATION_QUERY =
       "select workflow_run_id, iteration_rank, loop_parameters, step_attempt_seq, step_runtime_state, instance->>'leaf_workflow_id' as leaf_workflow_id"
@@ -124,8 +127,6 @@ public class MaestroForeachFlattenedDao extends AbstractDatabaseDao {
           + "order by iteration_rank COLLATE \"C\" asc limit 100"; // only 100 items needed for the
   // sampling
 
-  private static final String QUOTE = "'";
-  private static final String DELIMITER = "','";
   private static final String LOOP_PARAMETERS = "loop_parameters";
   private static final String MIMIMUM_ITERATION_RANK = "0";
   private static final String LARGEST_ITERATION_RANK = "~"; // last ASCII normal character.
@@ -298,21 +299,16 @@ public class MaestroForeachFlattenedDao extends AbstractDatabaseDao {
       boolean isForward,
       Map<String, String> loopParamsFilter,
       List<String> statuses) {
-    String scanQueryTemplate = getScanQueryTemplate();
+    List<String> loopParamBinds = new ArrayList<>();
+    String loopParamQuery = getLoopParamQuery(loopParamsFilter, loopParamBinds);
+    boolean hasStatusFilter = statuses != null && !statuses.isEmpty();
     String query =
-        isForward
-            ? String.format(
-                scanQueryTemplate,
-                ">",
-                getLoopParamQuery(loopParamsFilter),
-                getStatusQuery(statuses),
-                "ASC")
-            : String.format(
-                scanQueryTemplate,
-                "<",
-                getLoopParamQuery(loopParamsFilter),
-                getStatusQuery(statuses),
-                "DESC");
+        String.format(
+            getScanQueryTemplate(),
+            isForward ? ">" : "<",
+            loopParamQuery,
+            getStatusQuery(statuses),
+            isForward ? "ASC" : "DESC");
     List<StepIteration> ret = new ArrayList<>();
     return withMetricLogError(
         () ->
@@ -330,6 +326,14 @@ public class MaestroForeachFlattenedDao extends AbstractDatabaseDao {
                           ++idx, isForward ? MIMIMUM_ITERATION_RANK : LARGEST_ITERATION_RANK);
                     } else {
                       ps.setString(++idx, iterationRank);
+                    }
+                    for (String bind : loopParamBinds) {
+                      ps.setString(++idx, bind);
+                    }
+                    if (hasStatusFilter) {
+                      ps.setArray(
+                          ++idx,
+                          conn.createArrayOf(ARRAY_TYPE_NAME, statuses.toArray(new String[0])));
                     }
                     ps.setLong(++idx, limit);
 
@@ -501,13 +505,22 @@ public class MaestroForeachFlattenedDao extends AbstractDatabaseDao {
         + " order by iteration_rank COLLATE \"C\" asc";
   }
 
+  /**
+   * Returns the loop param filter fragment and appends, to {@code bindsToFill}, the values to bind
+   * to its placeholders in the order they appear.
+   */
   @VisibleForTesting
-  String getLoopParamQuery(Map<String, String> loopParams) {
+  String getLoopParamQuery(Map<String, String> loopParams, List<String> bindsToFill) {
     if (loopParams == null || loopParams.isEmpty()) {
       return ALWAYS_TRUE; // always true condition
     }
     StringBuilder ret = new StringBuilder();
-    loopParams.forEach((k, v) -> ret.append(String.format(LOOP_PARAMETER_FILTER_TEMPLATE, k, v)));
+    loopParams.forEach(
+        (name, value) -> {
+          ret.append(LOOP_PARAMETER_FILTER_TEMPLATE);
+          bindsToFill.add(name);
+          bindsToFill.add(value);
+        });
     return ret.toString();
   }
 
@@ -515,8 +528,6 @@ public class MaestroForeachFlattenedDao extends AbstractDatabaseDao {
     if (statuses == null || statuses.isEmpty()) {
       return ALWAYS_TRUE;
     }
-    return String.format(
-        STATUS_FILTER_TEMPLATE,
-        new StringBuilder(QUOTE).append(String.join(DELIMITER, statuses)).append(QUOTE));
+    return STATUS_FILTER_TEMPLATE;
   }
 }

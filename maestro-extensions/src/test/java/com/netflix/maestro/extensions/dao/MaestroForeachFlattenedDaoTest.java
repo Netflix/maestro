@@ -40,6 +40,7 @@ public class MaestroForeachFlattenedDaoTest extends ExtensionsDaoBaseTest {
   private static final String STEP_ID = "step-id";
   private static final String ITERATION_RANK = "14-13-11-12";
   private static final String LEAF_WORKFLOW_ID = "maestro_foreach_leaf_inline_id";
+  private static final String BATCH_PARAM = "batches_0";
 
   private MaestroForeachFlattenedDao foreachFlattenedDao;
   private static final TypeReference<List<Map<String, Object>>> REF = new TypeReference<>() {};
@@ -477,6 +478,91 @@ public class MaestroForeachFlattenedDaoTest extends ExtensionsDaoBaseTest {
   }
 
   @Test
+  public void testScanStepIterationsWithQuotedLoopParamValue() {
+    String stepId = "quoted-param-step";
+    String algoBatch = "{'combo_name': 'algo'}";
+    insertIteration(stepId, "11", Collections.singletonMap(BATCH_PARAM, algoBatch));
+    insertIteration(
+        stepId, "12", Collections.singletonMap(BATCH_PARAM, "{'combo_name': 'chronos'}"));
+    insertIteration(stepId, "13", Collections.singletonMap(BATCH_PARAM, algoBatch));
+
+    List<StepIteration> stepIterations =
+        foreachFlattenedDao.scanStepIterations(
+            WORKFLOW_ID,
+            1,
+            1,
+            stepId,
+            null,
+            200,
+            true,
+            Collections.singletonMap(BATCH_PARAM, algoBatch),
+            Collections.EMPTY_LIST);
+
+    Assert.assertEquals(2, stepIterations.size());
+    Assert.assertEquals(algoBatch, stepIterations.get(0).getLoopParams().get(BATCH_PARAM));
+    Assert.assertEquals(algoBatch, stepIterations.get(1).getLoopParams().get(BATCH_PARAM));
+  }
+
+  @Test
+  public void testScanStepIterationsLoopParamWithSpecialCharacters() {
+    String stepId = "special-char-param-step";
+    String quotedName = "batch's_0";
+    insertIteration(stepId, "11", Collections.singletonMap(quotedName, "it's"));
+    insertIteration(stepId, "12", Collections.singletonMap(quotedName, "its"));
+
+    // Quotes in the param name and value are matched literally.
+    List<StepIteration> stepIterations =
+        foreachFlattenedDao.scanStepIterations(
+            WORKFLOW_ID,
+            1,
+            1,
+            stepId,
+            null,
+            200,
+            true,
+            Collections.singletonMap(quotedName, "it's"),
+            Collections.EMPTY_LIST);
+    Assert.assertEquals(1, stepIterations.size());
+    Assert.assertEquals("it's", stepIterations.get(0).getLoopParams().get(quotedName));
+  }
+
+  @Test
+  public void testScanStepIterationsStatusWithSpecialCharacters() {
+    String stepId = "special-char-status-step";
+    insertIteration(stepId, "11", Collections.singletonMap(BATCH_PARAM, "value1"));
+
+    Assert.assertEquals(
+        1,
+        foreachFlattenedDao
+            .scanStepIterations(
+                WORKFLOW_ID,
+                1,
+                1,
+                stepId,
+                null,
+                200,
+                true,
+                Collections.emptyMap(),
+                Arrays.asList("SUCCEEDED"))
+            .size());
+
+    // A status containing a quote is just an unknown status and matches nothing.
+    Assert.assertTrue(
+        foreachFlattenedDao
+            .scanStepIterations(
+                WORKFLOW_ID,
+                1,
+                1,
+                stepId,
+                null,
+                200,
+                true,
+                Collections.emptyMap(),
+                Arrays.asList("SUCCEEDED's"))
+            .isEmpty());
+  }
+
+  @Test
   public void testSummary() {
     StepIterationsSummary stepIterationsSummary =
         foreachFlattenedDao.getStepIterationsSummary(
@@ -603,6 +689,24 @@ public class MaestroForeachFlattenedDaoTest extends ExtensionsDaoBaseTest {
     Assert.assertEquals(
         new StepInstanceReference(LEAF_WORKFLOW_ID, 2, 1, STEP_ID, 9),
         iteration.getLeafStepInstanceRef());
+  }
+
+  private void insertIteration(
+      String stepId, String iterationRank, Map<String, Object> loopParams) {
+    StepRuntimeState stepRuntimeState = new StepRuntimeState();
+    stepRuntimeState.setStatus(Status.SUCCEEDED);
+    ForeachFlattenedInstance instance =
+        new ForeachFlattenedInstance(
+            WORKFLOW_ID, 1, 1, stepId, iterationRank, System.currentTimeMillis(), LEAF_WORKFLOW_ID);
+    foreachFlattenedDao.insertOrUpdateForeachFlattenedModel(
+        new ForeachFlattenedModel(
+            instance,
+            Long.MAX_VALUE,
+            StepInstanceStatusEncoder.encode(Status.SUCCEEDED),
+            StepInstanceStatusEncoder.getPriority(Status.SUCCEEDED),
+            stepRuntimeState,
+            "11-11",
+            loopParams));
   }
 
   private static ForeachFlattenedModel getForeachFlattenedModel(
