@@ -13,12 +13,15 @@
 package com.netflix.maestro.models.definition;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.netflix.maestro.models.definition.alerting.Action;
 import com.netflix.maestro.models.definition.alerting.AlertType;
 import com.netflix.maestro.models.definition.alerting.AlertingTypeConfig;
 import com.netflix.maestro.models.definition.alerting.BypassDigestConfig;
@@ -42,6 +45,7 @@ import lombok.Getter;
 @JsonPropertyOrder(
     value = {
       "emails",
+      "actions",
       "pagerduties",
       "slack",
       "bypass_digest_config",
@@ -55,6 +59,8 @@ public class DefaultAlerting implements Alerting {
 
   private Set<String> emails;
   private Set<String> pagerduties;
+
+  @JsonIgnore private Set<Action> actions;
 
   @JsonProperty("slack")
   private SlackConfig slackConfig;
@@ -134,6 +140,22 @@ public class DefaultAlerting implements Alerting {
         return Severity.valueOf(name.toUpperCase(Locale.US));
       }
     }
+  }
+
+  /** Serialize {@link Action} collection. */
+  @JsonGetter("actions")
+  public Set<String> serializeActions() {
+    return Action.serialize(actions);
+  }
+
+  /**
+   * Deserialize action collection into {@link Action} enum.
+   *
+   * @param actionsStr a set of action strings
+   */
+  @JsonSetter("actions")
+  public void deserializeActions(final Set<String> actionsStr) {
+    actions = Action.deserialize(actionsStr);
   }
 
   @Override

@@ -24,8 +24,6 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.models.definition.Alerting;
 import com.netflix.maestro.models.definition.DefaultAlerting;
 import java.io.Serializable;
-import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 import lombok.Data;
@@ -54,12 +52,7 @@ public class AlertingTypeConfig implements Serializable {
   /** Serialize {@link Action} collection. */
   @JsonGetter("actions")
   public Set<String> serializeActions() {
-    if (actions == null || actions.isEmpty()) {
-      return null;
-    }
-    final Set<String> ret = new HashSet<>();
-    actions.forEach(a -> ret.add(a.name().toLowerCase(Locale.US)));
-    return ret;
+    return Action.serialize(actions);
   }
 
   /**
@@ -69,25 +62,7 @@ public class AlertingTypeConfig implements Serializable {
    */
   @JsonSetter("actions")
   public void deserializeActions(final Set<String> actionsStr) {
-    if (actionsStr != null && !actionsStr.isEmpty()) {
-      actions = EnumSet.noneOf(Action.class);
-      actionsStr.forEach(s -> actions.add(Action.valueOf(s.toUpperCase(Locale.US))));
-    }
-  }
-
-  /** Supported actions. */
-  public enum Action {
-    /** email action, to send alert via email. */
-    EMAIL,
-
-    /** page action, to send alert via pagerduty. */
-    PAGE,
-
-    /** slack action, to send alert via slack. */
-    SLACK,
-
-    /** cancel action, stop a workflow run. */
-    CANCEL
+    actions = Action.deserialize(actionsStr);
   }
 
   /** Granularity of alerts. */
