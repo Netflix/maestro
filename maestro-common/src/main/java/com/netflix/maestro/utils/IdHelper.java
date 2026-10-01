@@ -97,7 +97,8 @@ public final class IdHelper {
   /** determine if the given workflow id is for an inline workflow. */
   public static boolean isInlineWorkflowId(String workflowId) {
     return workflowId.startsWith(Constants.FOREACH_INLINE_WORKFLOW_PREFIX)
-        || workflowId.startsWith(Constants.WHILE_INLINE_WORKFLOW_PREFIX);
+        || workflowId.startsWith(Constants.WHILE_INLINE_WORKFLOW_PREFIX)
+        || workflowId.startsWith(Constants.TEMPLATE_INLINE_WORKFLOW_PREFIX);
   }
 
   /**

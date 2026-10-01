@@ -1,0 +1,84 @@
+{
+  "step_id": "foo",
+  "step_name": "step1",
+  "step_instance_id": 123,
+  "step_attempt_id": 2,
+  "step_instance_uuid": "bar",
+  "type": "template",
+  "step_run_params": {
+    "foo": {
+      "value": "bar",
+      "type": "STRING",
+      "mode": "mutable"
+    }
+  },
+  "params": {
+    "param1": {
+      "value": "foo",
+      "type": "STRING",
+      "evaluated_result": "foo",
+      "evaluated_time": 1608171805392
+    }
+  },
+  "synced": true,
+  "runtime_state": {
+    "status": "SUCCEEDED",
+    "end_time": 1608171805401,
+    "modify_time": 1608171805401
+  },
+  "timeline": [
+    {
+      "timestamp": 1609272999666,
+      "type": "LOG",
+      "level": "INFO",
+      "message": "hello"
+    }
+  ],
+  "pending_records": [
+    {
+      "event_time": 1608171805401,
+      "new_status": "SUCCEEDED",
+      "old_status": "NOT_CREATED"
+    }
+  ],
+  "artifacts": {
+    "artifact1": {
+      "value": 1,
+      "foo": "bar"
+    },
+    "maestro_template": {
+      "template_workflow_id": "maestro_template_Ib2_11_0f6a4c2e9b7d4a3c8e1f2b5d6c7a8e9f",
+      "template_instance_id": 1,
+      "template_run_id": 1,
+      "template_uuid": "foo-bar",
+      "job_type": "write_audit_publish",
+      "template_version": "v3",
+      "template_overview": {
+        "step_overview": {
+          "SUCCEEDED": 1
+        },
+        "total_step_count": 1
+      },
+      "type": "TEMPLATE"
+    }
+  },
+  "signal_dependencies": {
+    "dependencies": [
+      {
+        "name": "signal/a/1",
+        "status": "MATCHED",
+        "match_params": {
+          "_step_dependency_sub_type": {
+            "value": "input_signal",
+            "operator": "="
+          },
+          "foo": {
+            "value": "bar",
+            "operator": "="
+          }
+        },
+        "signal_id": 849086
+      }
+    ]
+  }
+}

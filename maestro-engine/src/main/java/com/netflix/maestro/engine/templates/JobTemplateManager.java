@@ -21,7 +21,6 @@ import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.Tag;
-import com.netflix.maestro.models.definition.TypedStep;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.ParamSource;
 import com.netflix.maestro.models.parameter.Parameter;
@@ -90,9 +89,17 @@ public class JobTemplateManager {
     return Map.copyOf(allParams);
   }
 
-  private String getJobTemplateVersion(WorkflowSummary workflowSummary, Step step) {
+  /**
+   * Resolve the job template version for a step. The step's subtype version wins, then the
+   * workflow's job_template_version param, then the default version.
+   *
+   * @param workflowSummary workflow summary
+   * @param step step definition
+   * @return the job template version to use
+   */
+  public String getJobTemplateVersion(WorkflowSummary workflowSummary, Step step) {
     // subtype version is used for job template versioning if present.
-    String version = ((TypedStep) step).getSubTypeVersion();
+    String version = step.getSubTypeVersion();
     if (version == null
         && workflowSummary.getParams() != null
         && workflowSummary.getParams().containsKey(Constants.JOB_TEMPLATE_VERSION_PARAM)) {
@@ -128,6 +135,39 @@ public class JobTemplateManager {
   }
 
   /**
+   * Load the registered step list of the job template for a template step. The step list comes from
+   * the job template of the step's subtype only and is not merged from inherit_from templates.
+   *
+   * @param step template step definition
+   * @param version job template version
+   * @return the registered step list to run as an inline workflow
+   */
+  public List<Step> loadSteps(Step step, String version) {
+    var jobTemplateDef =
+        Checks.notNull(
+            loadJobTemplateSchema(step.getSubType(), version),
+            "Cannot find the job template [%s][%s] for the template step [%s]",
+            step.getSubType(),
+            version,
+            step.getId());
+    checkStepType(jobTemplateDef, step);
+    return Checks.notNull(
+        jobTemplateDef.getSteps(),
+        "Job template [%s][%s] does not define any steps for the template step [%s]",
+        step.getSubType(),
+        version,
+        step.getId());
+  }
+
+  private void checkStepType(JobTemplate.Definition jobTemplateDef, Step step) {
+    Checks.checkTrue(
+        jobTemplateDef.getStepType() == step.getType(),
+        "Job template definition step type [%s] does not match the current step type [%s]",
+        jobTemplateDef.getStepType(),
+        step.getType());
+  }
+
+  /**
    * Load job type's corresponding step type.
    *
    * @param jobType job type id
@@ -156,11 +196,7 @@ public class JobTemplateManager {
     List<JobTemplate.Definition> parentTemplates = new ArrayList<>();
     var jobTemplateDef = loadJobTemplateSchema(step.getSubType(), version);
     if (jobTemplateDef != null) {
-      Checks.checkTrue(
-          jobTemplateDef.getStepType() == step.getType(),
-          "Job template definition step type [%s] does not match the current step type [%s]",
-          jobTemplateDef.getStepType(),
-          step.getType());
+      checkStepType(jobTemplateDef, step);
 
       if (jobTemplateDef.getInheritFrom() != null) {
         Set<String> visited = new HashSet<>();

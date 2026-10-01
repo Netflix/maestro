@@ -20,11 +20,13 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.GitInfo;
+import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.Tag;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.utils.Checks;
+import com.netflix.maestro.validations.JobTemplateDefinitionConstraint;
 import com.netflix.maestro.validations.MaestroReferenceIdConstraint;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -46,7 +48,7 @@ import lombok.Data;
 @Data
 public class JobTemplate {
   @Valid @NotNull private Metadata metadata;
-  @Valid @NotNull private Definition definition;
+  @Valid @NotNull @JobTemplateDefinitionConstraint private Definition definition;
 
   @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
   @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -112,7 +114,16 @@ public class JobTemplate {
   @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
   @JsonInclude(JsonInclude.Include.NON_NULL)
   @JsonPropertyOrder(
-      value = {"job_type", "step_type", "version", "description", "tags", "inherit_from", "params"},
+      value = {
+        "job_type",
+        "step_type",
+        "version",
+        "description",
+        "tags",
+        "inherit_from",
+        "params",
+        "steps"
+      },
       alphabetic = true)
   @Data
   public static class Definition {
@@ -128,6 +139,9 @@ public class JobTemplate {
     @Valid private Map<String, String> inheritFrom;
 
     @Valid private Map<String, ParamDefinition> params;
+
+    // step list run as an inline workflow by a template step, only for the template step type
+    @Valid private List<Step> steps;
 
     /** set params. */
     public void setParams(Map<String, ParamDefinition> input) {

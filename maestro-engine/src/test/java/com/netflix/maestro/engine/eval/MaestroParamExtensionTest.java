@@ -57,6 +57,8 @@ public class MaestroParamExtensionTest extends MaestroEngineBaseTest {
       "fixtures/execution/sample-step-runtime-summary-2.json";
   private static final String TEST_SUBWORKFLOW_STEP_RUNTIME_SUMMARY =
       "fixtures/execution/sample-step-runtime-summary-1.json";
+  private static final String TEST_TEMPLATE_STEP_RUNTIME_SUMMARY =
+      "fixtures/execution/sample-template-step-runtime-summary.json";
   private static final String TEST_STEP_INSTANCE =
       "fixtures/instances/sample-step-instance-succeeded.json";
 
@@ -166,6 +168,50 @@ public class MaestroParamExtensionTest extends MaestroEngineBaseTest {
         .thenReturn(stepInSubworkflow);
     long res = (Long) paramExtension.getFromSubworkflow("foo", "job1", "sleep_seconds");
     assertEquals(15, res);
+  }
+
+  @Test
+  public void testGetFromTemplate() throws Exception {
+    StepRuntimeSummary summary =
+        loadObject(TEST_TEMPLATE_STEP_RUNTIME_SUMMARY, StepRuntimeSummary.class);
+    when(allStepOutputData.get("foo"))
+        .thenReturn(Collections.singletonMap("maestro_step_runtime_summary", summary));
+    StepInstance stepInTemplate = loadObject(TEST_STEP_INSTANCE, StepInstance.class);
+    when(stepInstanceDao.getStepInstanceView(
+            "maestro_template_Ib2_11_0f6a4c2e9b7d4a3c8e1f2b5d6c7a8e9f", 1L, "job1"))
+        .thenReturn(stepInTemplate);
+    long res = (Long) paramExtension.getFromTemplate("foo", "job1", "sleep_seconds");
+    assertEquals(15, res);
+  }
+
+  @Test
+  public void testInvalidGetFromTemplate() throws Exception {
+    AssertHelper.assertThrows(
+        "Cannot find the referenced step id",
+        MaestroInternalError.class,
+        "getFromTemplate throws an exception",
+        () -> paramExtension.getFromTemplate("non-existing-job", "job1", "sleep_seconds"));
+
+    StepRuntimeSummary summary =
+        loadObject(TEST_SUBWORKFLOW_STEP_RUNTIME_SUMMARY, StepRuntimeSummary.class);
+    when(allStepOutputData.get("foo"))
+        .thenReturn(Collections.singletonMap("maestro_step_runtime_summary", summary));
+    AssertHelper.assertThrows(
+        "step type is not template",
+        MaestroInternalError.class,
+        "getFromTemplate throws an exception",
+        () -> paramExtension.getFromTemplate("foo", "job1", "sleep_seconds"));
+
+    summary = loadObject(TEST_TEMPLATE_STEP_RUNTIME_SUMMARY, StepRuntimeSummary.class);
+    when(allStepOutputData.get("foo"))
+        .thenReturn(Collections.singletonMap("maestro_step_runtime_summary", summary));
+    StepInstance stepInTemplate = loadObject(TEST_STEP_INSTANCE, StepInstance.class);
+    when(stepInstanceDao.getStepInstanceView(any(), anyLong(), any())).thenReturn(stepInTemplate);
+    AssertHelper.assertThrows(
+        "param name does not exist",
+        MaestroInternalError.class,
+        "getFromTemplate throws an exception",
+        () -> paramExtension.getFromTemplate("foo", "job1", "not-existing"));
   }
 
   @Test
