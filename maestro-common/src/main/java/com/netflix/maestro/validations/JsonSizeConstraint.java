@@ -28,8 +28,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Json size validator, can use like @JsonSizeConstraint(50) for 50 Bytes limit,
- * or @JsonSizeConstraint(110.5KB) for 110.5 Kilobytes limit. Supports MB, GB as well.
+ * JSON size validator. For example, {@code @JsonSizeConstraint("50")} sets a 50-byte limit and
+ * {@code @JsonSizeConstraint("110.5KB")} sets a 110.5-kilobyte limit. MB and GB suffixes are also
+ * supported.
  */
 @Documented
 @Constraint(validatedBy = JsonSizeConstraint.JsonSizeValidator.class)
@@ -105,16 +106,16 @@ public @interface JsonSizeConstraint {
     }
 
     private static long parseSize(String text) {
-      long l = Math.round(Double.parseDouble(text.replaceAll("[GMK]B$", "")));
+      double size = Double.parseDouble(text.replaceAll("[GMK]B$", ""));
       char sizeChar = text.charAt(Math.max(0, text.length() - 2));
       if (sizeChar == KB) {
-        l *= BYTES_PER_KB;
+        size *= BYTES_PER_KB;
       } else if (sizeChar == MB) {
-        l *= BYTES_PER_KB * BYTES_PER_KB;
+        size *= BYTES_PER_KB * BYTES_PER_KB;
       } else if (sizeChar == GB) {
-        l *= BYTES_PER_KB * BYTES_PER_KB * BYTES_PER_KB;
+        size *= BYTES_PER_KB * BYTES_PER_KB * BYTES_PER_KB;
       }
-      return l;
+      return Math.round(size);
     }
 
     private static final class CountingOutputStream extends OutputStream {
