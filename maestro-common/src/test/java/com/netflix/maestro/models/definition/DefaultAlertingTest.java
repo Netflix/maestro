@@ -12,8 +12,8 @@
  */
 package com.netflix.maestro.models.definition;
 
+import static com.netflix.maestro.models.definition.alerting.Action.*;
 import static com.netflix.maestro.models.definition.alerting.AlertType.*;
-import static com.netflix.maestro.models.definition.alerting.AlertingTypeConfig.Action.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -94,6 +94,7 @@ public class DefaultAlertingTest extends MaestroBaseTest {
             Arrays.asList(
                 "demo+alertconfig_default1@netflix.com", "demo+alertconfig_default2@netflix.com")));
     expected.setPagerduties(new HashSet<>(Arrays.asList("default pager1", "default pager2")));
+    expected.setActions(new HashSet<>(Arrays.asList(EMAIL, SLACK)));
     PagerdutyConfig pagerdutyConfig = new DefaultAlerting.PagerdutyConfig();
     pagerdutyConfig.setAlwaysPage(true);
     pagerdutyConfig.setSeverity(PagerdutyConfig.Severity.WARNING);
