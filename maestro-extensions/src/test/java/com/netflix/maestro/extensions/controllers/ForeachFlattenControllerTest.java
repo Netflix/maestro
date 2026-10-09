@@ -14,6 +14,7 @@ package com.netflix.maestro.extensions.controllers;
 
 import static org.junit.Assert.assertThrows;
 
+import com.netflix.maestro.exceptions.MaestroBadRequestException;
 import com.netflix.maestro.exceptions.MaestroNotFoundException;
 import com.netflix.maestro.extensions.ExtensionsBaseTest;
 import com.netflix.maestro.extensions.dao.MaestroForeachFlattenedDao;
@@ -22,8 +23,11 @@ import com.netflix.maestro.extensions.models.StepIterationsSummary;
 import com.netflix.maestro.models.api.PaginationResult;
 import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.StepRuntimeState;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
+import java.util.Map;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -104,6 +108,45 @@ public class ForeachFlattenControllerTest extends ExtensionsBaseTest {
     Assert.assertEquals(1, result.getElements().size());
     Assert.assertEquals(false, result.getPageInfo().isHasNextPage());
     Assert.assertEquals(true, result.getPageInfo().isHasPreviousPage());
+  }
+
+  @Test
+  public void testScanForwardWithLoopParams() throws Exception {
+    Map<String, String> loopParams = Collections.singletonMap("region", "us-west-2");
+    String encodedLoopParams =
+        Base64.getUrlEncoder().encodeToString(MAPPER.writeValueAsBytes(loopParams));
+    Mockito.when(
+            dao.scanStepIterations(
+                "wf1", 1, 1, "s", null, 2, true, loopParams, Collections.EMPTY_LIST))
+        .thenReturn(Collections.nCopies(1, stepIteration));
+    PaginationResult<StepIteration> result =
+        controller.getStepIterations(
+            "wf1", 1, 1, "s", 1, null, null, Collections.EMPTY_LIST, encodedLoopParams);
+    Assert.assertEquals(1, result.getElements().size());
+  }
+
+  @Test
+  public void testGetStepIterationsThrowsBadRequestForInvalidLoopParamsBase64() {
+    assertThrows(
+        "Invalid loopParams query parameter",
+        MaestroBadRequestException.class,
+        () ->
+            controller.getStepIterations(
+                "wf1", 1, 1, "s", 1, null, null, Collections.EMPTY_LIST, "%"));
+    Mockito.verifyNoInteractions(dao);
+  }
+
+  @Test
+  public void testGetStepIterationsThrowsBadRequestForInvalidLoopParamsJson() {
+    String invalidJson =
+        Base64.getUrlEncoder().encodeToString("{".getBytes(StandardCharsets.UTF_8));
+    assertThrows(
+        "Invalid loopParams query parameter",
+        MaestroBadRequestException.class,
+        () ->
+            controller.getStepIterations(
+                "wf1", 1, 1, "s", 1, null, null, Collections.EMPTY_LIST, invalidJson));
+    Mockito.verifyNoInteractions(dao);
   }
 
   @Test

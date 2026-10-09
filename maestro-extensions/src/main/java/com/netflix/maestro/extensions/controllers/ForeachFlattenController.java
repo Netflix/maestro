@@ -16,6 +16,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.annotations.SuppressFBWarnings;
+import com.netflix.maestro.exceptions.MaestroBadRequestException;
 import com.netflix.maestro.exceptions.MaestroNotFoundException;
 import com.netflix.maestro.extensions.dao.MaestroForeachFlattenedDao;
 import com.netflix.maestro.extensions.models.StepIteration;
@@ -119,12 +120,7 @@ public class ForeachFlattenController {
     int limit = (last == null) ? first : last;
 
     String iterationCursor = decodeCursor(cursor);
-    Map<String, String> loopParameters = null;
-    try {
-      loopParameters = getLoopParameters(loopParamsStr);
-    } catch (IOException ex) {
-      LOG.error("Failed to unmarshal loop params: [{}]", loopParamsStr, ex);
-    }
+    Map<String, String> loopParameters = getLoopParameters(loopParamsStr);
 
     List<StepIteration> stepIterations =
         dao.scanStepIterations(
@@ -212,12 +208,20 @@ public class ForeachFlattenController {
     return direction.equals(PaginationDirection.NEXT) || hasMoreItems;
   }
 
-  private Map<String, String> getLoopParameters(String loopParamsStr) throws IOException {
+  private Map<String, String> getLoopParameters(String loopParamsStr) {
     if (loopParamsStr == null || loopParamsStr.isEmpty()) {
       return null;
     }
-    return objectMapper.readValue(
-        Base64.getUrlDecoder().decode(loopParamsStr.getBytes(Charset.defaultCharset())), TYPE_REF);
+    try {
+      return objectMapper.readValue(
+          Base64.getUrlDecoder().decode(loopParamsStr.getBytes(Charset.defaultCharset())),
+          TYPE_REF);
+    } catch (IllegalArgumentException | IOException ex) {
+      throw new MaestroBadRequestException(
+          ex,
+          "Invalid loopParams query parameter",
+          "loopParams must be a URL-safe base64 encoded JSON object with string values");
+    }
   }
 
   private String encodeCursor(String str) {
