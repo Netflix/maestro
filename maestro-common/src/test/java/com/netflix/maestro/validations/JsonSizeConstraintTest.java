@@ -74,6 +74,15 @@ public class JsonSizeConstraintTest extends BaseConstraintTest {
     }
   }
 
+  private static class TestWorkflowCreateRequestPoint5KBLimit {
+    @JsonSizeConstraint("0.5KB")
+    WorkflowCreateRequest workflowCreateRequest;
+
+    TestWorkflowCreateRequestPoint5KBLimit(WorkflowCreateRequest workflowCreateRequest) {
+      this.workflowCreateRequest = workflowCreateRequest;
+    }
+  }
+
   @Test
   public void testIfSizeValidationWorks() throws Exception {
     WorkflowCreateRequest request =
@@ -129,5 +138,24 @@ public class JsonSizeConstraintTest extends BaseConstraintTest {
     assertEquals(
         "@JsonSizeConstraint(\"10K\") annotation is malformed. Check javadocs for JsonSizeConstraint annotation.",
         violation10KBMalformed.getMessage());
+  }
+
+  @Test
+  public void testFractionalKilobyteLimit() throws Exception {
+    WorkflowCreateRequest request =
+        loadObject("fixtures/api/sample-workflow-create-request.json", WorkflowCreateRequest.class);
+
+    Set<ConstraintViolation<TestWorkflowCreateRequestPoint5KBLimit>> violations =
+        validator.validate(new TestWorkflowCreateRequestPoint5KBLimit(request));
+
+    assertEquals(1, violations.size());
+
+    ConstraintViolation<TestWorkflowCreateRequestPoint5KBLimit> violation =
+        violations.iterator().next();
+
+    assertEquals(
+        "Size of class com.netflix.maestro.models.api.WorkflowCreateRequest is 639 bytes"
+            + " which is larger than limit of 512 bytes",
+        violation.getMessage());
   }
 }
