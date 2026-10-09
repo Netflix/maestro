@@ -25,6 +25,7 @@ import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.artifact.ForeachArtifact;
 import com.netflix.maestro.models.artifact.SubworkflowArtifact;
+import com.netflix.maestro.models.artifact.TemplateArtifact;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.initiator.Initiator;
 import com.netflix.maestro.models.initiator.ManualInitiator;
@@ -82,6 +83,9 @@ public class MaestroParamExtension extends AbstractParamExtension {
 
   /** Function to get the foreach metadata. */
   static final String GET_FROM_FOREACH = "getFromForeach";
+
+  /** Function to get the data from the template inline workflow instance. */
+  static final String GET_FROM_TEMPLATE = "getFromTemplate";
 
   private final ExecutorService executor;
   private final MaestroStepInstanceDao stepInstanceDao;
@@ -144,6 +148,8 @@ public class MaestroParamExtension extends AbstractParamExtension {
       }
     } else if (GET_FROM_SUBWORKFLOW.equals(methodName)) {
       return getFromSubworkflow(arg1, arg2, arg3);
+    } else if (GET_FROM_TEMPLATE.equals(methodName)) {
+      return getFromTemplate(arg1, arg2, arg3);
     } else if (GET_FROM_SIGNAL_OR_DEFAULT.equals(methodName)) {
       return getFromSignalOrDefault(arg1, arg2, arg3);
     }
@@ -442,6 +448,50 @@ public class MaestroParamExtension extends AbstractParamExtension {
 
     if (stepInstance.getParams() == null || !stepInstance.getParams().containsKey(paramName)) {
       throw new MaestroInvalidExpressionException("Cannot find the param name: [%s]", paramName);
+    }
+    return stepInstance.getParams().get(paramName).getEvaluatedResult();
+  }
+
+  Object getFromTemplate(String templateStepId, String stepId, String paramName) {
+    try {
+      return executor
+          .submit(() -> fromTemplate(templateStepId, stepId, paramName))
+          .get(TIMEOUT_IN_MILLIS, TimeUnit.MILLISECONDS);
+    } catch (Exception e) {
+      throw new MaestroInternalError(
+          e,
+          "getFromTemplate throws an exception for templateStepId=[%s], stepId=[%s], paramName=[%s]",
+          templateStepId,
+          stepId,
+          paramName);
+    }
+  }
+
+  private Object fromTemplate(String templateStepId, String stepId, String paramName) {
+    StepRuntimeSummary runtimeSummary = validateAndGet(templateStepId);
+    Checks.checkTrue(
+        runtimeSummary.getType() == StepType.TEMPLATE,
+        "step [%s] is a type of [%s] instead of template step, cannot call getFromTemplate",
+        templateStepId,
+        runtimeSummary.getType());
+
+    TemplateArtifact artifact =
+        Checks.notNull(
+                runtimeSummary.getArtifacts().get(Artifact.Type.TEMPLATE.key()),
+                "Cannot load param [%s] of step [%s] from template [%s] as it is not initialized",
+                paramName,
+                stepId,
+                templateStepId)
+            .asTemplate();
+
+    StepInstance stepInstance =
+        stepInstanceDao.getStepInstanceView(
+            artifact.getTemplateWorkflowId(), artifact.getTemplateInstanceId(), stepId);
+
+    if (stepInstance.getParams() == null || !stepInstance.getParams().containsKey(paramName)) {
+      throw new MaestroInvalidExpressionException(
+          "Cannot find the param name [%s] in step [%s] of template step [%s]",
+          paramName, stepId, templateStepId);
     }
     return stepInstance.getParams().get(paramName).getEvaluatedResult();
   }

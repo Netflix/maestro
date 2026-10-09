@@ -1,0 +1,38 @@
+{
+  "owner": "tester",
+  "status": "alpha",
+  "support": "support-team",
+  "definition": {
+    "job_type": "write_audit_publish",
+    "step_type": "template",
+    "version": "v3",
+    "description": "Write into a snapshot, run checks against it, publish it.",
+    "params": {
+      "target_table": {
+        "value": "core.trips",
+        "type": "STRING",
+        "mode": "IMMUTABLE",
+        "internal_mode": "REQUIRED"
+      }
+    },
+    "steps": [
+      {
+        "step": {
+          "id": "write",
+          "type": "NoOp",
+          "transition": {
+            "successors": {
+              "audit": "true"
+            }
+          }
+        }
+      },
+      {
+        "step": {
+          "id": "audit",
+          "type": "NoOp"
+        }
+      }
+    ]
+  }
+}
