@@ -685,4 +685,73 @@ public class MaestroStepInstanceDaoTest extends MaestroDaoBaseTest {
     res = stepDao.getStepInstanceViews("sample-dag-test-3", 1L, 3L);
     assertEquals(0, res.size());
   }
+
+  @Test
+  public void testStepInstanceGenerationId() throws Exception {
+    StepInstance siGen2 = loadObject(TEST_STEP_INSTANCE, StepInstance.class);
+    siGen2.setWorkflowRunId(2);
+    siGen2.setStepAttemptId(1);
+    siGen2.setStepId("job1");
+    try {
+      stepDao.getStepInstance(TEST_WORKFLOW_ID, 1, 2, "job1", "1");
+    } catch (MaestroNotFoundException ignored) {
+    }
+
+    stepDao.insertOrUpsertStepInstance(siGen2, false, null, 2L);
+
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+    workflowSummary.setWorkflowId(TEST_WORKFLOW_ID);
+    workflowSummary.setWorkflowInstanceId(1);
+    workflowSummary.setWorkflowRunId(2);
+
+    StepRuntimeSummary summary =
+        StepRuntimeSummary.builder()
+            .stepId("job1")
+            .stepAttemptId(1)
+            .stepInstanceId(1)
+            .runtimeState(siGen2.getRuntimeState())
+            .artifacts(siGen2.getArtifacts())
+            .signalDependencies(siGen2.getSignalDependencies())
+            .signalOutputs(siGen2.getSignalOutputs())
+            .timeline(siGen2.getTimeline())
+            .build();
+
+    siGen2.getRuntimeState().setStatus(StepInstance.Status.FATALLY_FAILED);
+    summary.getRuntimeState().setStatus(StepInstance.Status.FATALLY_FAILED);
+    stepDao.updateStepInstance(workflowSummary, summary, null, 1L);
+
+    StepInstance retrieved = stepDao.getStepInstance(TEST_WORKFLOW_ID, 1, 2, "job1", "1");
+    assertEquals(StepInstance.Status.RUNNING, retrieved.getRuntimeState().getStatus());
+
+    stepDao.updateStepInstance(workflowSummary, summary, null, 2L);
+    retrieved = stepDao.getStepInstance(TEST_WORKFLOW_ID, 1, 2, "job1", "1");
+    assertEquals(StepInstance.Status.FATALLY_FAILED, retrieved.getRuntimeState().getStatus());
+
+    siGen2.getRuntimeState().setStatus(StepInstance.Status.SUCCEEDED);
+    summary.getRuntimeState().setStatus(StepInstance.Status.SUCCEEDED);
+    stepDao.updateStepInstance(workflowSummary, summary, null, 3L);
+    retrieved = stepDao.getStepInstance(TEST_WORKFLOW_ID, 1, 2, "job1", "1");
+    assertEquals(StepInstance.Status.SUCCEEDED, retrieved.getRuntimeState().getStatus());
+  }
+
+  @Test
+  public void testStepInstanceUpsertGenerationId() throws Exception {
+    StepInstance siGen = loadObject(TEST_STEP_INSTANCE, StepInstance.class);
+    siGen.setWorkflowRunId(3);
+    siGen.setStepAttemptId(1);
+    siGen.setStepId("job1");
+
+    stepDao.insertOrUpsertStepInstance(siGen, false, null, 2L);
+
+    siGen.getRuntimeState().setStatus(StepInstance.Status.FATALLY_FAILED);
+    stepDao.insertOrUpsertStepInstance(siGen, true, null, 1L);
+
+    StepInstance retrieved = stepDao.getStepInstance(TEST_WORKFLOW_ID, 1, 3, "job1", "1");
+    assertEquals(StepInstance.Status.RUNNING, retrieved.getRuntimeState().getStatus());
+
+    stepDao.insertOrUpsertStepInstance(siGen, true, null, 3L);
+
+    retrieved = stepDao.getStepInstance(TEST_WORKFLOW_ID, 1, 3, "job1", "1");
+    assertEquals(StepInstance.Status.FATALLY_FAILED, retrieved.getRuntimeState().getStatus());
+  }
 }
