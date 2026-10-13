@@ -9,8 +9,10 @@ import com.netflix.maestro.flow.models.FlowDef;
 import com.netflix.maestro.flow.models.FlowGroup;
 import com.netflix.maestro.flow.models.MessagePayload;
 import com.netflix.maestro.flow.utils.ExecutionHelper;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -41,6 +43,8 @@ public class FlowExecutor {
   private final long delay;
   private final long maxGroupNumPerNode;
   private final String address;
+  private final List<GroupOwnershipChangeObserver> groupOwnershipChangeObservers =
+      new CopyOnWriteArrayList<>();
 
   /** Constructor. */
   public FlowExecutor(ExecutionContext context) {
@@ -49,6 +53,10 @@ public class FlowExecutor {
     this.delay = context.getProperties().getMaintenanceDelayInMillis();
     this.maxGroupNumPerNode = context.getProperties().getMaxGroupNumPerNode();
     this.address = context.getProperties().getEngineAddress();
+  }
+
+  public void registerAsObserver(GroupOwnershipChangeObserver observer) {
+    groupOwnershipChangeObservers.add(observer);
   }
 
   /** PostConstructor to boostrap and start flow executor. */
@@ -117,6 +125,8 @@ public class FlowExecutor {
         LOG.info("[{}] claimed a group [{}]", address, group);
         try {
           readLock.lock();
+          groupOwnershipChangeObservers.forEach(
+              observer -> observer.onGroupClaimed(group.groupId()));
           groupActors.computeIfAbsent(group.groupId(), id -> Actor.startGroupActor(group, context));
         } finally {
           readLock.unlock();
@@ -191,6 +201,8 @@ public class FlowExecutor {
           groupId,
           id -> {
             FlowGroup newGroup = context.trySaveGroup(groupId, address);
+            groupOwnershipChangeObservers.forEach(
+                observer -> observer.onGroupClaimed(newGroup.groupId()));
             return Actor.startGroupActor(newGroup, context);
           });
     } finally {
