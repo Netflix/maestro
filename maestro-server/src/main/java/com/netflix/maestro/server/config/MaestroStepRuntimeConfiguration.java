@@ -41,6 +41,8 @@ import com.netflix.maestro.engine.params.ParamsManager;
 import com.netflix.maestro.engine.stepruntime.HttpStepRuntime;
 import com.netflix.maestro.engine.stepruntime.KubernetesStepRuntime;
 import com.netflix.maestro.engine.stepruntime.NotebookStepRuntime;
+import com.netflix.maestro.engine.steps.ExtensionStepRuntime;
+import com.netflix.maestro.engine.steps.ExtensionStepRuntimeRegistry;
 import com.netflix.maestro.engine.steps.ForeachStepRuntime;
 import com.netflix.maestro.engine.steps.NoOpStepRuntime;
 import com.netflix.maestro.engine.steps.SleepStepRuntime;
@@ -108,6 +110,24 @@ public class MaestroStepRuntimeConfiguration {
             objectMapper,
             metrics);
     stepRuntimeMap.put(StepType.KUBERNETES, step);
+    return step;
+  }
+
+  @Bean
+  public ExtensionStepRuntimeRegistry extensionStepRuntimeRegistry() {
+    LOG.info("Creating extensionStepRuntimeRegistry within Spring boot...");
+    return new ExtensionStepRuntimeRegistry();
+  }
+
+  @Bean
+  public ExtensionStepRuntime extension(
+      @Qualifier(STEP_RUNTIME_QUALIFIER) Map<StepType, StepRuntime> stepRuntimeMap,
+      ExtensionStepRuntimeRegistry extensionStepRuntimeRegistry,
+      JobTemplateManager jobTemplateManager) {
+    LOG.info("Creating extension step runtime within Spring boot...");
+    ExtensionStepRuntime step =
+        new ExtensionStepRuntime(extensionStepRuntimeRegistry, jobTemplateManager);
+    stepRuntimeMap.put(StepType.EXTENSION, step);
     return step;
   }
 
@@ -356,7 +376,16 @@ public class MaestroStepRuntimeConfiguration {
   }
 
   @Bean
-  @DependsOn({"sleep", "noop", "subworkflow", "foreach", "whileLoop", "kubernetes", "notebook"})
+  @DependsOn({
+    "sleep",
+    "noop",
+    "subworkflow",
+    "foreach",
+    "whileLoop",
+    "kubernetes",
+    "notebook",
+    "extension"
+  })
   public StepRuntimeManager stepRuntimeManager(
       @Qualifier(STEP_RUNTIME_QUALIFIER) Map<StepType, StepRuntime> stepRuntimeMap,
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
