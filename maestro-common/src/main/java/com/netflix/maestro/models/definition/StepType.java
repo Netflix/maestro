@@ -20,6 +20,11 @@ public enum StepType {
   KUBERNETES("Kubernetes", true),
   /** HTTP/HTTPS step. */
   HTTP("Http", true),
+  /**
+   * Extension step. Its runtime is chosen by the step's sub type from the extension step runtimes
+   * registered by the deployment, so new leaf step kinds can be added without a new enum value.
+   */
+  EXTENSION("extension", true),
   /** Join step. */
   JOIN("Join", false),
   /** foreach loop step. */
