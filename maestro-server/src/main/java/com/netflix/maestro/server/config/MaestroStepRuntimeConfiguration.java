@@ -48,8 +48,14 @@ import com.netflix.maestro.engine.steps.NoOpStepRuntime;
 import com.netflix.maestro.engine.steps.SleepStepRuntime;
 import com.netflix.maestro.engine.steps.StepRuntime;
 import com.netflix.maestro.engine.steps.SubworkflowStepRuntime;
+import com.netflix.maestro.engine.steps.TemplateStepRuntime;
 import com.netflix.maestro.engine.steps.WhileStepRuntime;
 import com.netflix.maestro.engine.templates.JobTemplateManager;
+import com.netflix.maestro.engine.templates.SelTemplatePreparer;
+import com.netflix.maestro.engine.templates.StaticTemplatePreparer;
+import com.netflix.maestro.engine.templates.StepTemplatePreparer;
+import com.netflix.maestro.engine.templates.TemplateInstanceRunner;
+import com.netflix.maestro.engine.templates.TemplatePreparer;
 import com.netflix.maestro.engine.tracing.MaestroTracingManager;
 import com.netflix.maestro.engine.utils.WorkflowEnrichmentHelper;
 import com.netflix.maestro.engine.utils.WorkflowHelper;
@@ -334,6 +340,66 @@ public class MaestroStepRuntimeConfiguration {
             instanceStepConcurrencyHandler,
             paramEvaluator);
     stepRuntimeMap.put(StepType.WHILE, step);
+    return step;
+  }
+
+  @Bean
+  public TemplateInstanceRunner templateInstanceRunner(
+      WorkflowActionHandler actionHandler,
+      InstanceStepConcurrencyHandler instanceStepConcurrencyHandler) {
+    LOG.info("Creating templateInstanceRunner within Spring boot...");
+    return new TemplateInstanceRunner(actionHandler, instanceStepConcurrencyHandler);
+  }
+
+  @Bean
+  public StaticTemplatePreparer staticTemplatePreparer() {
+    LOG.info("Creating staticTemplatePreparer within Spring boot...");
+    return new StaticTemplatePreparer();
+  }
+
+  @Bean
+  public SelTemplatePreparer selTemplatePreparer() {
+    LOG.info("Creating selTemplatePreparer within Spring boot...");
+    return new SelTemplatePreparer();
+  }
+
+  @Bean
+  public StepTemplatePreparer stepTemplatePreparer(
+      TemplateInstanceRunner templateInstanceRunner,
+      MaestroWorkflowInstanceDao instanceDao,
+      MaestroStepInstanceDao stepInstanceDao,
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper) {
+    LOG.info("Creating stepTemplatePreparer within Spring boot...");
+    return new StepTemplatePreparer(
+        templateInstanceRunner, instanceDao, stepInstanceDao, objectMapper);
+  }
+
+  /** Every {@link TemplatePreparer} bean in the context is available to template steps. */
+  @Bean
+  public TemplateStepRuntime template(
+      @Qualifier(STEP_RUNTIME_QUALIFIER) Map<StepType, StepRuntime> stepRuntimeMap,
+      TemplateInstanceRunner templateInstanceRunner,
+      MaestroWorkflowInstanceDao instanceDao,
+      MaestroStepInstanceDao stepInstanceDao,
+      MaestroQueueSystem queueSystem,
+      JobTemplateManager jobTemplateManager,
+      OutputDataManager outputDataManager,
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
+      List<TemplatePreparer> preparers) {
+    LOG.info(
+        "Creating Template step with preparers {} within Spring boot...",
+        preparers.stream().map(TemplatePreparer::type).toList());
+    TemplateStepRuntime step =
+        new TemplateStepRuntime(
+            templateInstanceRunner,
+            instanceDao,
+            stepInstanceDao,
+            queueSystem,
+            jobTemplateManager,
+            outputDataManager,
+            objectMapper,
+            preparers);
+    stepRuntimeMap.put(StepType.TEMPLATE, step);
     return step;
   }
 

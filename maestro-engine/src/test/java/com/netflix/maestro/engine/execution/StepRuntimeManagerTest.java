@@ -224,6 +224,33 @@ public class StepRuntimeManagerTest extends MaestroEngineBaseTest {
   }
 
   @Test
+  public void testExecuteCompletedWithError() {
+    Map<StepType, StepRuntime> stepRuntimeMap =
+        Collections.singletonMap(
+            StepType.NOOP,
+            new StepRuntime() {
+              @Override
+              public Result execute(
+                  WorkflowSummary workflowSummary, Step step, StepRuntimeSummary runtimeSummary) {
+                return new Result(
+                    State.COMPLETED_WITH_ERROR,
+                    Collections.singletonMap("test-artifact", artifact),
+                    null);
+              }
+            });
+    runtimeManager =
+        new StepRuntimeManager(
+            stepRuntimeMap, MAPPER, new ParamsManager(defaultParamManager), metricRepo, null);
+
+    boolean ret = runtimeManager.execute(workflowSummary, null, runtimeSummary);
+
+    assertTrue(ret);
+    assertEquals(StepInstance.Status.FINISHING, runtimeSummary.getRuntimeState().getStatus());
+    assertTrue(runtimeSummary.isCompletedWithError());
+    assertEquals(artifact, runtimeSummary.getArtifacts().get("test-artifact"));
+  }
+
+  @Test
   public void testExecuteFailure() {
     StepInstance.StepRetry stepRetry = new StepInstance.StepRetry();
     stepRetry.setErrorRetryLimit(1);

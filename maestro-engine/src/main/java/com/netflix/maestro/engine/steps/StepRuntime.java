@@ -84,6 +84,11 @@ public interface StepRuntime {
     CONTINUE,
     /** done with the current state, move to the next step state. */
     DONE,
+    /**
+     * done with the current state like DONE, but the step ends in COMPLETED_WITH_ERROR instead of
+     * SUCCEEDED once it finishes. Only valid from execute().
+     */
+    COMPLETED_WITH_ERROR,
     /** the step becomes USER_ERROR terminate state due to user error. */
     USER_ERROR,
     /** the step becomes PLATFORM_ERROR terminate state due to platform error. */
@@ -97,7 +102,7 @@ public interface StepRuntime {
 
     public boolean isFailed() {
       // Note that TIMED_OUT is currently considered as failed.
-      return this != CONTINUE && this != DONE && this != STOPPED;
+      return this != CONTINUE && this != DONE && this != COMPLETED_WITH_ERROR && this != STOPPED;
     }
 
     public boolean isTerminal() {

@@ -32,6 +32,7 @@ import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.artifact.DynamicOutputArtifact;
 import com.netflix.maestro.models.artifact.KubernetesArtifact;
 import com.netflix.maestro.models.artifact.RetryArtifact;
+import com.netflix.maestro.models.artifact.TemplateArtifact;
 import com.netflix.maestro.models.artifact.TitusArtifact;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.parameter.InternalParamMode;
@@ -368,6 +369,36 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
     assertEquals(1, runtimeSummary.getArtifacts().size());
     assertFalse(runtimeSummary.getArtifacts().containsKey(Artifact.Type.DYNAMIC_OUTPUT.key()));
     assertTrue(runtimeSummary.getParams().isEmpty());
+  }
+
+  @Test
+  public void testMergeTemplateStepOutputDataByStepInstanceUuid() throws IOException {
+    OutputData output = loadObject("fixtures/outputdata/sample-output-data.json", OutputData.class);
+    output.setExternalJobType(StepType.TEMPLATE);
+    output.setExternalJobId("uuid123");
+    when(outputDataDao.getOutputDataForExternalJob("uuid123", StepType.TEMPLATE))
+        .thenReturn(Optional.of(output));
+    Map<String, Parameter> params = new HashMap<>();
+    params.put(
+        "foo",
+        StringParameter.builder()
+            .value("default")
+            .evaluatedResult("default")
+            .evaluatedTime(12345L)
+            .build());
+    runtimeSummary =
+        runtimeSummaryBuilder()
+            .type(StepType.TEMPLATE)
+            .artifacts(new HashMap<>(Map.of(Artifact.Type.TEMPLATE.key(), new TemplateArtifact())))
+            .params(params)
+            .build();
+
+    outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
+
+    assertEquals(1, runtimeSummary.getParams().size());
+    assertEquals("bar", runtimeSummary.getParams().get("foo").asStringParam().getEvaluatedResult());
+    Mockito.verify(outputDataDao, times(1))
+        .getOutputDataForExternalJob("uuid123", StepType.TEMPLATE);
   }
 
   @Test

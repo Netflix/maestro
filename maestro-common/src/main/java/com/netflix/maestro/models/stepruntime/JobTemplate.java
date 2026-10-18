@@ -25,6 +25,7 @@ import com.netflix.maestro.models.definition.Tag;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.utils.Checks;
+import com.netflix.maestro.validations.JobTemplateDefinitionConstraint;
 import com.netflix.maestro.validations.MaestroReferenceIdConstraint;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -46,7 +47,7 @@ import lombok.Data;
 @Data
 public class JobTemplate {
   @Valid @NotNull private Metadata metadata;
-  @Valid @NotNull private Definition definition;
+  @Valid @NotNull @JobTemplateDefinitionConstraint private Definition definition;
 
   @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
   @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -112,7 +113,17 @@ public class JobTemplate {
   @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
   @JsonInclude(JsonInclude.Include.NON_NULL)
   @JsonPropertyOrder(
-      value = {"job_type", "step_type", "version", "description", "tags", "inherit_from", "params"},
+      value = {
+        "job_type",
+        "step_type",
+        "version",
+        "description",
+        "tags",
+        "inherit_from",
+        "params",
+        "prepare",
+        "output_params"
+      },
       alphabetic = true)
   @Data
   public static class Definition {
@@ -129,9 +140,21 @@ public class JobTemplate {
 
     @Valid private Map<String, ParamDefinition> params;
 
+    // how the step list run by a template step is produced, only for the template step type
+    @Valid private TemplatePrepare prepare;
+
+    // params published by a template step, evaluated inside its inline workflow instance over the
+    // prepared steps, only for the template step type
+    @Valid private Map<String, ParamDefinition> outputParams;
+
     /** set params. */
     public void setParams(Map<String, ParamDefinition> input) {
       this.params = ParamDefinition.preprocessDefinitionParams(input);
+    }
+
+    /** set output params. */
+    public void setOutputParams(Map<String, ParamDefinition> input) {
+      this.outputParams = ParamDefinition.preprocessDefinitionParams(input);
     }
   }
 }

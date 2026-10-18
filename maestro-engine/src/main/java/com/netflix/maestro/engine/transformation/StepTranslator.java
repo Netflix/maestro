@@ -27,24 +27,21 @@ public class StepTranslator implements Translator<Step, TaskDef> {
   @Override
   public TaskDef translate(Step step) {
     Checks.notNull(step, "Cannot find step in the definition");
-    switch (step.getType()) {
-      case JOIN:
-        return createMaestroGateTask((JoinStep) step);
-      case FOREACH:
-      case WHILE:
-      case SUBWORKFLOW:
-      case NOOP:
-      case SLEEP:
-      case TITUS:
-      case NOTEBOOK:
-      case KUBERNETES:
-      case HTTP:
-      case EXTENSION:
-        return createMaestroTask((AbstractStep) step);
-      default:
-        throw new UnsupportedOperationException(
-            step.getType() + " step type is not implemented yet.");
-    }
+    return switch (step.getType()) {
+      case JOIN -> createMaestroGateTask((JoinStep) step);
+      case FOREACH,
+              WHILE,
+              SUBWORKFLOW,
+              NOOP,
+              SLEEP,
+              TITUS,
+              NOTEBOOK,
+              KUBERNETES,
+              HTTP,
+              EXTENSION,
+              TEMPLATE ->
+          createMaestroTask((AbstractStep) step);
+    };
   }
 
   private TaskDef createMaestroGateTask(JoinStep step) {

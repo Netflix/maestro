@@ -149,6 +149,9 @@ public class Workflow {
             getAllStepIds(((ForeachStep) step).getSteps(), stepIds);
           } else if (step.getType() == StepType.WHILE) {
             getAllStepIds(((WhileStep) step).getSteps(), stepIds);
+          } else if (step.getType() == StepType.TEMPLATE
+              && ((TemplateStep) step).getStepInputs() != null) {
+            getAllStepIds(((TemplateStep) step).getStepInputs(), stepIds);
           }
         });
   }

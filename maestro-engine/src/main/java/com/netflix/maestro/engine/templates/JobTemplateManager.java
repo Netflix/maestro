@@ -21,7 +21,6 @@ import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.Tag;
-import com.netflix.maestro.models.definition.TypedStep;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.ParamSource;
 import com.netflix.maestro.models.parameter.Parameter;
@@ -34,6 +33,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -90,8 +90,16 @@ public class JobTemplateManager {
     return Map.copyOf(allParams);
   }
 
-  private String getJobTemplateVersion(WorkflowSummary workflowSummary, Step step) {
-    return resolveJobTemplateVersion(workflowSummary, ((TypedStep) step).getSubTypeVersion());
+  /**
+   * Resolve the job template version for a step. The step's subtype version wins, then the
+   * workflow's job_template_version param, then the default version.
+   *
+   * @param workflowSummary workflow summary
+   * @param step step definition
+   * @return the job template version to use
+   */
+  public String getJobTemplateVersion(WorkflowSummary workflowSummary, Step step) {
+    return resolveJobTemplateVersion(workflowSummary, step.getSubTypeVersion());
   }
 
   private String resolveJobTemplateVersion(
@@ -130,6 +138,48 @@ public class JobTemplateManager {
             .flatMap(Collection::stream)
             .collect(Collectors.toMap(Tag::getName, t -> t, (u, v) -> v, LinkedHashMap::new));
     return List.copyOf(allTags.values());
+  }
+
+  /**
+   * Find the registered job template definition of a step's subtype. The definition is the one
+   * registered for the subtype only and is not merged from inherit_from templates. The returned
+   * definition is cached and must not be mutated.
+   *
+   * @param step step definition
+   * @param version job template version
+   * @return the registered definition, or empty if there is no such job template
+   */
+  public Optional<JobTemplate.Definition> findDefinition(Step step, String version) {
+    var jobTemplateDef = loadJobTemplateSchema(step.getSubType(), version);
+    if (jobTemplateDef != null) {
+      checkStepType(jobTemplateDef, step);
+    }
+    return Optional.ofNullable(jobTemplateDef);
+  }
+
+  /**
+   * Load the registered job template definition of a step's subtype, which must exist.
+   *
+   * @param step step definition
+   * @param version job template version
+   * @return the registered definition
+   */
+  public JobTemplate.Definition loadDefinition(Step step, String version) {
+    return findDefinition(step, version)
+        .orElseThrow(
+            () ->
+                new NullPointerException(
+                    String.format(
+                        "Cannot find the job template [%s][%s] for the template step [%s]",
+                        step.getSubType(), version, step.getId())));
+  }
+
+  private void checkStepType(JobTemplate.Definition jobTemplateDef, Step step) {
+    Checks.checkTrue(
+        jobTemplateDef.getStepType() == step.getType(),
+        "Job template definition step type [%s] does not match the current step type [%s]",
+        jobTemplateDef.getStepType(),
+        step.getType());
   }
 
   /**
@@ -196,11 +246,7 @@ public class JobTemplateManager {
     List<JobTemplate.Definition> parentTemplates = new ArrayList<>();
     var jobTemplateDef = loadJobTemplateSchema(step.getSubType(), version);
     if (jobTemplateDef != null) {
-      Checks.checkTrue(
-          jobTemplateDef.getStepType() == step.getType(),
-          "Job template definition step type [%s] does not match the current step type [%s]",
-          jobTemplateDef.getStepType(),
-          step.getType());
+      checkStepType(jobTemplateDef, step);
 
       if (jobTemplateDef.getInheritFrom() != null) {
         Set<String> visited = new HashSet<>();

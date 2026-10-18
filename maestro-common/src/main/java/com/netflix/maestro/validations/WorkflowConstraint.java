@@ -18,6 +18,7 @@ import com.netflix.maestro.models.definition.ForeachStep;
 import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.definition.StepTransition;
 import com.netflix.maestro.models.definition.StepType;
+import com.netflix.maestro.models.definition.TemplateStep;
 import com.netflix.maestro.models.definition.WhileStep;
 import com.netflix.maestro.models.definition.Workflow;
 import jakarta.validation.Constraint;
@@ -69,8 +70,50 @@ public @interface WorkflowConstraint {
 
       return isStepListValid(workflow, context)
           && isDagValid(workflow.getSteps(), context)
+          && isStepInputsValid(workflow.getSteps(), context)
           && isInstanceStepConcurrencyValid(workflow.getInstanceStepConcurrency(), context)
           && isLoopParamNameValid(workflow, context);
+    }
+
+    /**
+     * Every step a template step supplies is placed by its own transition, so it must name at least
+     * one predecessor or successor. The named ids are resolved against the prepared steps when the
+     * template step runs, not here.
+     */
+    private boolean isStepInputsValid(List<Step> steps, ConstraintValidatorContext context) {
+      for (Step step : steps) {
+        if (step.getType() == StepType.TEMPLATE && ((TemplateStep) step).getStepInputs() != null) {
+          List<Step> stepInputs = ((TemplateStep) step).getStepInputs();
+          if (stepInputs.isEmpty()) {
+            context
+                .buildConstraintViolationWithTemplate(
+                    String.format(
+                        "[workflow step definitions] template step [%s] step_inputs cannot be empty",
+                        step.getId()))
+                .addPropertyNode(STEPS_PROPERTY_NAME)
+                .addConstraintViolation();
+            return false;
+          }
+          for (Step supplied : stepInputs) {
+            StepTransition transition = supplied.getTransition();
+            if (transition.getPredecessors().isEmpty() && transition.getSuccessors().isEmpty()) {
+              context
+                  .buildConstraintViolationWithTemplate(
+                      String.format(
+                          "[workflow step definitions] template step [%s] step input [%s] must name "
+                              + "a predecessor or a successor to be placed in the prepared steps",
+                          step.getId(), supplied.getId()))
+                  .addPropertyNode(STEPS_PROPERTY_NAME)
+                  .addConstraintViolation();
+              return false;
+            }
+          }
+          if (!isStepInputsValid(stepInputs, context)) {
+            return false;
+          }
+        }
+      }
+      return true;
     }
 
     private boolean isStepListValid(Workflow workflow, ConstraintValidatorContext context) {
@@ -209,6 +252,12 @@ public @interface WorkflowConstraint {
           }
           // remove all param names from current foreach step.
           currentLoopNames.forEach(loopParamNames::remove);
+        } else if (step.getType() == StepType.TEMPLATE
+            && ((TemplateStep) step).getStepInputs() != null) {
+          if (hasDuplicateLoopParamNames(
+              ((TemplateStep) step).getStepInputs(), context, loopParamNames)) {
+            return true;
+          }
         }
       }
       return false;

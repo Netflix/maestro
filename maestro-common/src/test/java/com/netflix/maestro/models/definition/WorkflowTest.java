@@ -83,6 +83,24 @@ public class WorkflowTest extends MaestroBaseTest {
   }
 
   @Test
+  public void testGetAllStepIdsInTemplateStepInputs() {
+    TypedStep step = new TypedStep();
+    step.setId("foo");
+    TemplateStep templateStep = new TemplateStep();
+    templateStep.setId("template-step");
+    templateStep.setStepInputs(Collections.nCopies(5, step));
+    TemplateStep bare = new TemplateStep();
+    bare.setId("bare-template");
+
+    Workflow workflow = Workflow.builder().steps(List.of(templateStep, bare)).build();
+    List<String> allStepIds = workflow.getAllStepIds();
+    assertEquals(7, allStepIds.size());
+    assertEquals("template-step", allStepIds.getFirst());
+    assertEquals("bare-template", allStepIds.getLast());
+    assertEquals(5, Collections.frequency(allStepIds, "foo"));
+  }
+
+  @Test
   public void testGetWorkflowNameOrDefault() {
     Workflow wf = Workflow.builder().id("test-wf").build();
     assertEquals("test-wf", wf.getWorkflowNameOrDefault());
