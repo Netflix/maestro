@@ -727,6 +727,8 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
     StringParameter saved = outputData.getParams().get("published_snapshot").asStringParam();
     assertEquals("snap-1", saved.getValue());
     assertNull(saved.getExpression());
+    // the output-data merge onto the parent step accepts MUTABLE params only
+    assertEquals(ParamMode.MUTABLE, saved.getMode());
     assertEquals("snap-1", saved.getEvaluatedResult());
     assertEquals(Long.valueOf(123L), saved.getEvaluatedTime());
     assertTrue(outputData.getArtifacts().isEmpty());

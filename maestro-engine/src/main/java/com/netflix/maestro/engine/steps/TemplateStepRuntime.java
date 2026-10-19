@@ -489,7 +489,7 @@ public class TemplateStepRuntime implements StepRuntime {
     Parameter literal =
         param
             .toDefinition()
-            .copyAndUpdate(param.getEvaluatedResult(), null, param.getMode(), null, null, null)
+            .copyAndUpdate(param.getEvaluatedResult(), null, ParamMode.MUTABLE, null, null, null)
             .toParameter();
     literal.setEvaluatedResult(param.getEvaluatedResult());
     literal.setEvaluatedTime(param.getEvaluatedTime());
