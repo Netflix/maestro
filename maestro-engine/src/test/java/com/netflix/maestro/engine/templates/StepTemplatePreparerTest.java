@@ -159,12 +159,16 @@ public class StepTemplatePreparerTest extends MaestroBaseTest {
     assertEquals(
         "{\"job_type\":\"dynamic_publish\",\"version\":\"v1\"}",
         runParams.get(Constants.TEMPLATE_IDENTITY_PARAM).getValue());
-    List<Step> stepInputs =
+    Map<String, List<Step>> stepInputs =
         MAPPER.readValue(
             runParams.get(Constants.TEMPLATE_STEP_INPUTS_PARAM).asStringParamDef().getValue(),
             new com.fasterxml.jackson.core.type.TypeReference<>() {});
-    assertEquals(List.of("write_a", "write_b"), stepInputs.stream().map(Step::getId).toList());
-    assertEquals(Map.of("audit", "true"), stepInputs.getLast().getTransition().getSuccessors());
+    assertEquals(List.of("writes", "after_publish"), List.copyOf(stepInputs.keySet()));
+    assertEquals(
+        List.of("write_a", "write_b"), stepInputs.get("writes").stream().map(Step::getId).toList());
+    assertEquals(
+        Map.of("write_b", "true"),
+        stepInputs.get("writes").getFirst().getTransition().getSuccessors());
   }
 
   @Test

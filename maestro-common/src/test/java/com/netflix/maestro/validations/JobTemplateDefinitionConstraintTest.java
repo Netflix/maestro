@@ -22,12 +22,16 @@ import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.TemplateStep;
 import com.netflix.maestro.models.definition.TypedStep;
 import com.netflix.maestro.models.parameter.ParamDefinition;
+import com.netflix.maestro.models.parameter.ParamMode;
+import com.netflix.maestro.models.parameter.ParamType;
 import com.netflix.maestro.models.parameter.StringParamDefinition;
 import com.netflix.maestro.models.stepruntime.JobTemplate;
 import com.netflix.maestro.models.stepruntime.TemplatePrepare;
+import com.netflix.maestro.models.stepruntime.TemplateStepInput;
 import jakarta.validation.ConstraintViolation;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -87,6 +91,28 @@ public class JobTemplateDefinitionConstraintTest extends BaseConstraintTest {
     return Map.of(name, StringParamDefinition.builder().name(name).value("foo").build());
   }
 
+  private static TemplateStepInput position(
+      List<String> predecessors,
+      List<String> successors,
+      List<String> params,
+      Map<String, ParamType> outputs) {
+    TemplateStepInput position = new TemplateStepInput();
+    position.setPredecessors(predecessors);
+    position.setSuccessors(successors);
+    position.setParams(params);
+    if (outputs != null) {
+      Map<String, TemplateStepInput.Output> declared = new LinkedHashMap<>();
+      outputs.forEach(
+          (name, type) -> {
+            TemplateStepInput.Output output = new TemplateStepInput.Output();
+            output.setType(type);
+            declared.put(name, output);
+          });
+      position.setOutputs(declared);
+    }
+    return position;
+  }
+
   private ConstraintViolation<TestDefinition> singleViolation(
       JobTemplate.Definition definition, String property) {
     Set<ConstraintViolation<TestDefinition>> violations =
@@ -119,13 +145,13 @@ public class JobTemplateDefinitionConstraintTest extends BaseConstraintTest {
   }
 
   @Test
-  public void isOutputParamsRejectedForNonTemplateStepType() {
+  public void isStepInputsRejectedForNonTemplateStepType() {
     JobTemplate.Definition definition = definition(StepType.KUBERNETES, null);
-    definition.setOutputParams(params("row_count"));
+    definition.setStepInputs(Map.of("writes", position(null, List.of("audit"), null, null)));
     assertEquals(
-        "[job template output_params] can only be set for the template step type "
+        "[job template step_inputs] can only be set for the template step type "
             + "- rejected step type is [KUBERNETES]",
-        singleViolation(definition, "output_params").getMessage());
+        singleViolation(definition, "step_inputs").getMessage());
   }
 
   @Test
@@ -210,24 +236,137 @@ public class JobTemplateDefinitionConstraintTest extends BaseConstraintTest {
   }
 
   @Test
-  public void isOutputParamReserved() {
+  public void isImmutableParamWithoutExpressionRejected() {
     JobTemplate.Definition definition =
         definition(StepType.TEMPLATE, staticPrepare(List.of(step("write", null))));
-    definition.setOutputParams(params(Constants.TEMPLATE_EXPANSION_PARAM));
+    definition.setParams(
+        Map.of(
+            "row_count",
+            StringParamDefinition.builder()
+                .name("row_count")
+                .value("0")
+                .mode(ParamMode.IMMUTABLE)
+                .build()));
     assertEquals(
-        "[job template output params] cannot use the reserved param name [maestro_expansion]",
-        singleViolation(definition, "output_params").getMessage());
+        "[job template params] param [row_count] in IMMUTABLE mode must carry an expression, "
+            + "it is what the template promises outward",
+        singleViolation(definition, "params").getMessage());
   }
 
   @Test
-  public void isOutputParamCollidingWithTemplateParam() {
+  public void isPromisedParamValid() {
     JobTemplate.Definition definition =
         definition(StepType.TEMPLATE, staticPrepare(List.of(step("write", null))));
-    definition.setParams(params("row_count"));
-    definition.setOutputParams(params("row_count"));
+    definition.setParams(
+        Map.of(
+            "row_count",
+            StringParamDefinition.builder()
+                .name("row_count")
+                .expression("write__row_count;")
+                .mode(ParamMode.IMMUTABLE)
+                .build()));
+    assertTrue(validator.validate(new TestDefinition(definition)).isEmpty());
+    assertEquals(Set.of("row_count"), definition.promisedParams().keySet());
+  }
+
+  private static JobTemplate.Definition wapDefinition() {
+    JobTemplate.Definition definition =
+        definition(
+            StepType.TEMPLATE,
+            staticPrepare(List.of(step("audit", "publish"), step("publish", null))));
+    definition.setParams(
+        Map.of(
+            "table",
+            StringParamDefinition.builder().name("table").value("core.trips").build(),
+            "snapshot",
+            StringParamDefinition.builder()
+                .name("snapshot")
+                .expression("publish__snapshot;")
+                .mode(ParamMode.IMMUTABLE)
+                .build()));
+    return definition;
+  }
+
+  @Test
+  public void isValidStepInputs() {
+    JobTemplate.Definition definition = wapDefinition();
+    definition.setStepInputs(
+        Map.of(
+            "writes",
+            position(null, List.of("audit"), List.of("table"), Map.of("row_count", ParamType.LONG)),
+            "after_publish",
+            position(List.of("publish"), null, List.of("table", "snapshot"), null)));
+    assertTrue(validator.validate(new TestDefinition(definition)).isEmpty());
+  }
+
+  @Test
+  public void isStepInputPositionNameReserved() {
+    JobTemplate.Definition definition = wapDefinition();
+    definition.setStepInputs(
+        Map.of("maestro_writes", position(null, List.of("audit"), null, null)));
     assertEquals(
-        "[job template output params] param name [row_count] collides with a template param",
-        singleViolation(definition, "output_params").getMessage());
+        "[job template step_inputs] position [maestro_writes] cannot use the reserved prefix [maestro_]",
+        singleViolation(definition, "step_inputs").getMessage());
+  }
+
+  @Test
+  public void isStepInputPositionCollidingWithStepId() {
+    JobTemplate.Definition definition = wapDefinition();
+    definition.setStepInputs(Map.of("audit", position(null, List.of("publish"), null, null)));
+    assertEquals(
+        "[job template step_inputs] position [audit] collides with a template step id",
+        singleViolation(definition, "step_inputs").getMessage());
+  }
+
+  @Test
+  public void isStepInputPositionWithoutPlace() {
+    JobTemplate.Definition definition = wapDefinition();
+    definition.setStepInputs(Map.of("writes", position(null, null, null, null)));
+    assertEquals(
+        "[job template step_inputs] position [writes] must name a predecessor or a successor",
+        singleViolation(definition, "step_inputs").getMessage());
+  }
+
+  @Test
+  public void isStepInputPositionNamingUnknownStep() {
+    JobTemplate.Definition definition = wapDefinition();
+    definition.setStepInputs(Map.of("writes", position(List.of("prep"), null, null, null)));
+    assertEquals(
+        "[job template step_inputs] position [writes] names [prep], which is not a template step",
+        singleViolation(definition, "step_inputs").getMessage());
+  }
+
+  /** A step preparer's steps are unknown at upsert, so the named ids are not checked here. */
+  @Test
+  public void isStepInputPositionOfStepPreparerAccepted() {
+    JobTemplate.Definition definition =
+        definition(StepType.TEMPLATE, stepPrepare(step("generate", null)));
+    definition.setStepInputs(Map.of("writes", position(null, List.of("audit"), null, null)));
+    assertTrue(validator.validate(new TestDefinition(definition)).isEmpty());
+  }
+
+  @Test
+  public void isStepInputPositionExposingUnknownParam() {
+    JobTemplate.Definition definition = wapDefinition();
+    definition.setStepInputs(
+        Map.of("writes", position(null, List.of("audit"), List.of("row_count"), null)));
+    assertEquals(
+        "[job template step_inputs] position [writes] exposes [row_count], "
+            + "which is not a template param",
+        singleViolation(definition, "step_inputs").getMessage());
+  }
+
+  @Test
+  public void isStepInputPositionOutputTypeNotScalar() {
+    JobTemplate.Definition definition = wapDefinition();
+    definition.setStepInputs(
+        Map.of(
+            "writes",
+            position(null, List.of("audit"), null, Map.of("rows", ParamType.LONG_ARRAY))));
+    assertEquals(
+        "[job template step_inputs] position [writes] output [rows] must be one of the types "
+            + "[STRING, LONG, DOUBLE, BOOLEAN]",
+        singleViolation(definition, "step_inputs").getMessage());
   }
 
   @Test

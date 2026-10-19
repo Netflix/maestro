@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /** Workflow definition validation. */
 @Documented
@@ -76,44 +77,65 @@ public @interface WorkflowConstraint {
     }
 
     /**
-     * Every step a template step supplies is placed by its own transition, so it must name at least
-     * one predecessor or successor. The named ids are resolved against the prepared steps when the
+     * The steps a template step attaches are grouped by the position name the template declares.
+     * Every position holds at least one step, and a step's transition may only name other steps of
+     * the same position. Position names are resolved against the registered template when the
      * template step runs, not here.
      */
     private boolean isStepInputsValid(List<Step> steps, ConstraintValidatorContext context) {
       for (Step step : steps) {
         if (step.getType() == StepType.TEMPLATE && ((TemplateStep) step).getStepInputs() != null) {
-          List<Step> stepInputs = ((TemplateStep) step).getStepInputs();
+          Map<String, List<Step>> stepInputs = ((TemplateStep) step).getStepInputs();
           if (stepInputs.isEmpty()) {
-            context
-                .buildConstraintViolationWithTemplate(
-                    String.format(
-                        "[workflow step definitions] template step [%s] step_inputs cannot be empty",
-                        step.getId()))
-                .addPropertyNode(STEPS_PROPERTY_NAME)
-                .addConstraintViolation();
-            return false;
+            return stepInputsViolation(
+                context, "template step [%s] step_inputs cannot be empty", step.getId());
           }
-          for (Step supplied : stepInputs) {
-            StepTransition transition = supplied.getTransition();
-            if (transition.getPredecessors().isEmpty() && transition.getSuccessors().isEmpty()) {
-              context
-                  .buildConstraintViolationWithTemplate(
-                      String.format(
-                          "[workflow step definitions] template step [%s] step input [%s] must name "
-                              + "a predecessor or a successor to be placed in the prepared steps",
-                          step.getId(), supplied.getId()))
-                  .addPropertyNode(STEPS_PROPERTY_NAME)
-                  .addConstraintViolation();
+          for (Map.Entry<String, List<Step>> position : stepInputs.entrySet()) {
+            List<Step> attached = position.getValue();
+            if (attached == null || attached.isEmpty()) {
+              return stepInputsViolation(
+                  context,
+                  "template step [%s] step_inputs position [%s] cannot be empty",
+                  step.getId(),
+                  position.getKey());
+            }
+            Set<String> ids = attached.stream().map(Step::getId).collect(Collectors.toSet());
+            for (Step supplied : attached) {
+              StepTransition transition = supplied.getTransition();
+              List<String> named =
+                  Stream.concat(
+                          transition.getPredecessors().stream(),
+                          transition.getSuccessors().keySet().stream())
+                      .filter(id -> !ids.contains(id))
+                      .toList();
+              if (!named.isEmpty()) {
+                return stepInputsViolation(
+                    context,
+                    "template step [%s] step input [%s] at position [%s] names %s, "
+                        + "which is not a step of the same position",
+                    step.getId(),
+                    supplied.getId(),
+                    position.getKey(),
+                    named);
+              }
+            }
+            if (!isStepInputsValid(attached, context)) {
               return false;
             }
-          }
-          if (!isStepInputsValid(stepInputs, context)) {
-            return false;
           }
         }
       }
       return true;
+    }
+
+    private static boolean stepInputsViolation(
+        ConstraintValidatorContext context, String message, Object... args) {
+      context
+          .buildConstraintViolationWithTemplate(
+              "[workflow step definitions] " + String.format(message, args))
+          .addPropertyNode(STEPS_PROPERTY_NAME)
+          .addConstraintViolation();
+      return false;
     }
 
     private boolean isStepListValid(Workflow workflow, ConstraintValidatorContext context) {
@@ -254,9 +276,10 @@ public @interface WorkflowConstraint {
           currentLoopNames.forEach(loopParamNames::remove);
         } else if (step.getType() == StepType.TEMPLATE
             && ((TemplateStep) step).getStepInputs() != null) {
-          if (hasDuplicateLoopParamNames(
-              ((TemplateStep) step).getStepInputs(), context, loopParamNames)) {
-            return true;
+          for (List<Step> attached : ((TemplateStep) step).getStepInputs().values()) {
+            if (hasDuplicateLoopParamNames(attached, context, loopParamNames)) {
+              return true;
+            }
           }
         }
       }

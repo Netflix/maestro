@@ -13,6 +13,8 @@
 package com.netflix.maestro.models.definition;
 
 import com.netflix.maestro.MaestroBaseTest;
+import java.util.List;
+import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -27,15 +29,20 @@ public class TemplateStepTest extends MaestroBaseTest {
     Assert.assertEquals("write_audit_publish", def.getSubType());
     Assert.assertEquals("v3", def.getSubTypeVersion());
     Assert.assertEquals(2, def.getParams().size());
+    // attached steps are keyed by the position the template declares
     Assert.assertEquals(
-        java.util.List.of("write_a", "write_b"),
-        def.getStepInputs().stream().map(Step::getId).toList());
+        List.of("writes", "after_publish"), List.copyOf(def.getStepInputs().keySet()));
+    List<Step> writes = def.getStepInputs().get("writes");
+    Assert.assertEquals(List.of("write_a", "write_b"), writes.stream().map(Step::getId).toList());
     Assert.assertEquals(
-        java.util.Map.of("write_b", "true"),
-        def.getStepInputs().getFirst().getTransition().getSuccessors());
+        Map.of("write_b", "true"), writes.getFirst().getTransition().getSuccessors());
+    Assert.assertTrue(writes.getLast().getTransition().getSuccessors().isEmpty());
+    Assert.assertEquals(0L, (long) writes.getLast().getParams().get("row_count").getValue());
+    List<Step> afterPublish = def.getStepInputs().get("after_publish");
+    Assert.assertEquals("announce", afterPublish.getFirst().getId());
     Assert.assertEquals(
-        java.util.Map.of("audit", "true"),
-        def.getStepInputs().getLast().getTransition().getSuccessors());
+        "'published ' + published_snapshot;",
+        afterPublish.getFirst().getParams().get("msg").getExpression());
     TemplateStep def2 = (TemplateStep) MAPPER.readValue(MAPPER.writeValueAsString(def), Step.class);
     Assert.assertEquals(def, def2);
   }

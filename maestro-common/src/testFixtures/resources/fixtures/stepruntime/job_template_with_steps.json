@@ -10,19 +10,21 @@
     "job_type": "write_audit_publish",
     "step_type": "template",
     "version": "v3",
-    "description": "Write into a snapshot, run checks against it, publish it.",
+    "description": "Write into a snapshot, run checks against it, publish it. Workflows may attach their own write jobs before the audit and their own steps after the publish.",
     "params": {
       "target_table": {
         "value": "core.trips",
         "type": "STRING",
-        "mode": "IMMUTABLE",
         "internal_mode": "REQUIRED"
       },
       "snapshot_id": {
         "expression": "return UUID.randomUUID().toString();",
+        "type": "STRING"
+      },
+      "published_snapshot": {
+        "expression": "publish_snapshot__snapshot;",
         "type": "STRING",
-        "mode": "IMMUTABLE",
-        "internal_mode": "REQUIRED"
+        "mode": "IMMUTABLE"
       }
     },
     "prepare": {
@@ -70,10 +72,19 @@
         }
       ]
     },
-    "output_params": {
-      "published_snapshot": {
-        "expression": "publish_snapshot__snapshot;",
-        "type": "STRING"
+    "step_inputs": {
+      "writes": {
+        "successors": ["audit"],
+        "params": ["target_table"],
+        "outputs": {
+          "row_count": {
+            "type": "LONG"
+          }
+        }
+      },
+      "after_publish": {
+        "predecessors": ["publish_snapshot"],
+        "params": ["target_table", "published_snapshot"]
       }
     }
   }

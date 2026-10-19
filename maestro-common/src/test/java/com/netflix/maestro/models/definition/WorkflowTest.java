@@ -88,7 +88,8 @@ public class WorkflowTest extends MaestroBaseTest {
     step.setId("foo");
     TemplateStep templateStep = new TemplateStep();
     templateStep.setId("template-step");
-    templateStep.setStepInputs(Collections.nCopies(5, step));
+    templateStep.setStepInputs(
+        Map.of("writes", Collections.nCopies(3, step), "after", Collections.nCopies(2, step)));
     TemplateStep bare = new TemplateStep();
     bare.setId("bare-template");
 

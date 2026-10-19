@@ -18,29 +18,54 @@
         "type": "STRING"
       }
     },
-    "step_inputs": [
-      {
-        "step": {
-          "id": "write_a",
-          "type": "NoOp",
-          "transition": {
-            "successors": {
-              "write_b": "true"
+    "step_inputs": {
+      "writes": [
+        {
+          "step": {
+            "id": "write_a",
+            "type": "NoOp",
+            "transition": {
+              "successors": {
+                "write_b": "true"
+              }
+            },
+            "params": {
+              "row_count": {
+                "value": 0,
+                "type": "LONG",
+                "mode": "MUTABLE"
+              }
+            }
+          }
+        },
+        {
+          "step": {
+            "id": "write_b",
+            "type": "NoOp",
+            "params": {
+              "row_count": {
+                "value": 0,
+                "type": "LONG",
+                "mode": "MUTABLE"
+              }
             }
           }
         }
-      },
-      {
-        "step": {
-          "id": "write_b",
-          "type": "NoOp",
-          "transition": {
-            "successors": {
-              "audit": "true"
+      ],
+      "after_publish": [
+        {
+          "step": {
+            "id": "announce",
+            "type": "NoOp",
+            "params": {
+              "msg": {
+                "expression": "'published ' + published_snapshot;",
+                "type": "STRING"
+              }
             }
           }
         }
-      }
-    ]
+      ]
+    }
   }
 }

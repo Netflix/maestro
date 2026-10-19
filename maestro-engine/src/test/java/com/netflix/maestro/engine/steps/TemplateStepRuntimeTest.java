@@ -60,6 +60,7 @@ import com.netflix.maestro.models.instance.WorkflowRuntimeOverview;
 import com.netflix.maestro.models.instance.WorkflowStepStatusSummary;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.ParamMode;
+import com.netflix.maestro.models.parameter.ParamSource;
 import com.netflix.maestro.models.parameter.ParamType;
 import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.models.parameter.StringParameter;
@@ -191,6 +192,14 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
 
   private static TemplateArtifact templateArtifact(StepRuntime.Result result) {
     return result.artifacts().get(Artifact.Type.TEMPLATE.key()).asTemplate();
+  }
+
+  private static Map<String, ParamDefinition> stepParams(Workflow workflow, String stepId) {
+    return workflow.getSteps().stream()
+        .filter(s -> s.getId().equals(stepId))
+        .findFirst()
+        .orElseThrow()
+        .getParams();
   }
 
   private static Map<String, String> successors(Workflow workflow, String stepId) {
@@ -373,22 +382,47 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
             "publish_snapshot",
             "write_a",
             "write_b",
+            "writes",
+            "announce",
             Constants.TEMPLATE_OUTPUTS_STEP_ID),
         inlineWorkflow.getAllStepIds());
+    // the writes position: write_a -> write_b -> join step "writes" -> audit
     assertEquals(Map.of("write_b", "true"), successors(inlineWorkflow, "write_a"));
-    assertEquals(Map.of("audit", "true"), successors(inlineWorkflow, "write_b"));
+    assertEquals(Map.of("writes", "true"), successors(inlineWorkflow, "write_b"));
+    assertEquals(Map.of("audit", "true"), successors(inlineWorkflow, "writes"));
     assertEquals(Map.of("audit", "true"), successors(inlineWorkflow, "write"));
+    ParamDefinition collected = stepParams(inlineWorkflow, "writes").get("row_count");
+    assertEquals(ParamType.LONG_ARRAY, collected.getType());
     assertEquals(
-        Map.of(Constants.TEMPLATE_OUTPUTS_STEP_ID, "true"),
-        successors(inlineWorkflow, "publish_snapshot"));
-    assertEquals(definition.getOutputParams(), inlineWorkflow.getSteps().getLast().getParams());
+        "return new long[]{write_a__row_count, write_b__row_count};", collected.getExpression());
+    // the after_publish position: publish_snapshot -> announce -> collector, with the promised
+    // param added to the attached step
+    assertEquals(Map.of("announce", "true"), successors(inlineWorkflow, "publish_snapshot"));
+    assertEquals(
+        Map.of(Constants.TEMPLATE_OUTPUTS_STEP_ID, "true"), successors(inlineWorkflow, "announce"));
+    ParamDefinition exposed = stepParams(inlineWorkflow, "announce").get("published_snapshot");
+    assertEquals("publish_snapshot__snapshot;", exposed.getExpression());
+    assertEquals(ParamMode.IMMUTABLE, exposed.getMode());
+    assertEquals(ParamSource.TEMPLATE_OUTPUT, exposed.getSource());
+    // the collector carries the promised params with the template output source
+    Map<String, ParamDefinition> collector = inlineWorkflow.getSteps().getLast().getParams();
+    assertEquals(Set.of("published_snapshot"), collector.keySet());
+    assertEquals(
+        "publish_snapshot__snapshot;", collector.get("published_snapshot").getExpression());
+    assertEquals(ParamSource.TEMPLATE_OUTPUT, collector.get("published_snapshot").getSource());
     // the artifact keeps the expansion as the preparer returned it, without the step inputs
     assertEquals(
         List.of("write", "audit", "publish_snapshot"),
         artifact.getExpansion().getSteps().stream().map(Step::getId).toList());
     // the supplied steps in the step definition are not mutated by the splice
-    assertEquals(
-        Map.of("write_b", "true"), step.getStepInputs().getFirst().getTransition().getSuccessors());
+    assertTrue(
+        step.getStepInputs().get("writes").getLast().getTransition().getSuccessors().isEmpty());
+    assertFalse(
+        step.getStepInputs()
+            .get("after_publish")
+            .getFirst()
+            .getParams()
+            .containsKey("published_snapshot"));
     assertEquals(
         Map.of("audit", "true"),
         definition.getPrepare().getSteps().getFirst().getTransition().getSuccessors());
@@ -429,8 +463,7 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
     TypedStep colliding = new TypedStep();
     colliding.setId("audit");
     colliding.setType(StepType.NOOP);
-    colliding.getTransition().setSuccessors(Map.of("publish_snapshot", "true"));
-    step.setStepInputs(List.of(colliding));
+    step.setStepInputs(Map.of("writes", List.of(colliding)));
     StepRuntimeSummary runtimeSummary = createStartedStepRuntimeSummary(TemplatePrepare.STATIC);
 
     StepRuntime.Result result = templateStepRuntime.execute(workflowSummary, step, runtimeSummary);
@@ -502,6 +535,8 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
   @SuppressWarnings("unchecked")
   public void testPrepareReadyLaunchesExecutionInstanceAfterPrepareInstance() throws Exception {
     definition.getPrepare().setType(TemplatePrepare.STEP);
+    // the expansion has no publish_snapshot step, so only the writes position is used
+    step.getStepInputs().remove("after_publish");
     TemplateExpansion expansion =
         loadObject("fixtures/stepruntime/sample-template-expansion.json", TemplateExpansion.class);
     when(stepPreparer.prepare(any()))
@@ -535,7 +570,7 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
             workflowCaptor.capture(),
             paramsCaptor.capture(),
             eq(false));
-    // the supplied write_a and write_b name audit, so they land in front of it
+    // the writes position lands in front of audit, through its join step
     assertEquals(
         List.of(
             "prep",
@@ -543,6 +578,7 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
             "audit",
             "write_a",
             "write_b",
+            "writes",
             Constants.TEMPLATE_OUTPUTS_STEP_ID),
         workflowCaptor.getValue().getAllStepIds());
     assertEquals("wap-3f2a", paramsCaptor.getValue().get("wap_branch").getValue());
@@ -714,8 +750,8 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
   }
 
   @Test
-  public void testTrackSucceededExecutionInstanceWithoutOutputParams() {
-    definition.setOutputParams(null);
+  public void testTrackSucceededExecutionInstanceWithoutPromisedParams() {
+    definition.setParams(Map.of("target_table", definition.getParams().get("target_table")));
     TemplateArtifact artifact = createArtifact(1L, null, 1L);
     mockExecutionInstance(artifact, WorkflowInstance.Status.SUCCEEDED, 0);
     StepRuntimeSummary runtimeSummary =
@@ -896,15 +932,21 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
 
   @Test
   public void testInjectRuntimeParamsDeclaresTypedOutputDefaults() {
-    Map<String, ParamDefinition> outputParams = new HashMap<>();
+    Map<String, ParamDefinition> promised = new HashMap<>();
     for (ParamType type : ParamType.values()) {
-      outputParams.put(
+      promised.put(
           type.name().toLowerCase(),
           MAPPER.convertValue(
-              Map.of("type", type.name(), "expression", "audit__" + type.name() + ";"),
+              Map.of(
+                  "type",
+                  type.name(),
+                  "expression",
+                  "audit__" + type.name() + ";",
+                  "mode",
+                  ParamMode.IMMUTABLE.name()),
               ParamDefinition.class));
     }
-    definition.setOutputParams(outputParams);
+    definition.setParams(promised);
     when(jobTemplateManager.loadRuntimeParams(workflowSummary, step)).thenReturn(Map.of());
 
     Map<String, ParamDefinition> params =

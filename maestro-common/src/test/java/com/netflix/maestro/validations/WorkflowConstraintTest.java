@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.Test;
 
@@ -309,7 +310,7 @@ public class WorkflowConstraintTest extends BaseConstraintTest {
     step.setId("foo");
     TemplateStep template = new TemplateStep();
     template.setId("template");
-    template.setStepInputs(Collections.singletonList(step));
+    template.setStepInputs(Map.of("writes", Collections.singletonList(step)));
     Workflow workflow = Workflow.builder().steps(Arrays.asList(step, template)).build();
     Set<ConstraintViolation<TestWorkflow>> violations =
         validator.validate(new TestWorkflow(workflow));
@@ -323,7 +324,7 @@ public class WorkflowConstraintTest extends BaseConstraintTest {
   public void isTemplateStepInputsEmpty() {
     TemplateStep template = new TemplateStep();
     template.setId("template");
-    template.setStepInputs(Collections.emptyList());
+    template.setStepInputs(Collections.emptyMap());
     Workflow workflow = Workflow.builder().steps(Collections.singletonList(template)).build();
     Set<ConstraintViolation<TestWorkflow>> violations =
         validator.validate(new TestWorkflow(workflow));
@@ -336,12 +337,10 @@ public class WorkflowConstraintTest extends BaseConstraintTest {
   }
 
   @Test
-  public void isTemplateStepInputWithoutTransition() {
-    TypedStep step = new TypedStep();
-    step.setId("validate");
+  public void isTemplateStepInputPositionEmpty() {
     TemplateStep template = new TemplateStep();
     template.setId("template");
-    template.setStepInputs(Collections.singletonList(step));
+    template.setStepInputs(Map.of("writes", Collections.emptyList()));
     Workflow workflow = Workflow.builder().steps(Collections.singletonList(template)).build();
     Set<ConstraintViolation<TestWorkflow>> violations =
         validator.validate(new TestWorkflow(workflow));
@@ -349,8 +348,31 @@ public class WorkflowConstraintTest extends BaseConstraintTest {
     ConstraintViolation<TestWorkflow> violation = violations.iterator().next();
     assertEquals("workflow.steps", violation.getPropertyPath().toString());
     assertEquals(
-        "[workflow step definitions] template step [template] step input [validate] must name "
-            + "a predecessor or a successor to be placed in the prepared steps",
+        "[workflow step definitions] template step [template] step_inputs position [writes] "
+            + "cannot be empty",
+        violation.getMessage());
+  }
+
+  /** An attached step may only name steps of its own position, never a template step id. */
+  @Test
+  public void isTemplateStepInputNamingOutsidePosition() {
+    TypedStep step = new TypedStep();
+    step.setId("validate");
+    StepTransition transition = new StepTransition();
+    transition.setSuccessors(Collections.singletonMap("audit", "true"));
+    step.setTransition(transition);
+    TemplateStep template = new TemplateStep();
+    template.setId("template");
+    template.setStepInputs(Map.of("writes", Collections.singletonList(step)));
+    Workflow workflow = Workflow.builder().steps(Collections.singletonList(template)).build();
+    Set<ConstraintViolation<TestWorkflow>> violations =
+        validator.validate(new TestWorkflow(workflow));
+    assertEquals(1, violations.size());
+    ConstraintViolation<TestWorkflow> violation = violations.iterator().next();
+    assertEquals("workflow.steps", violation.getPropertyPath().toString());
+    assertEquals(
+        "[workflow step definitions] template step [template] step input [validate] at position "
+            + "[writes] names [audit], which is not a step of the same position",
         violation.getMessage());
   }
 
@@ -369,36 +391,45 @@ public class WorkflowConstraintTest extends BaseConstraintTest {
     step.setType(StepType.NOOP);
     TemplateStep template = new TemplateStep();
     template.setId("template");
-    template.setStepInputs(Collections.singletonList(step));
+    template.setStepInputs(Map.of("writes", Collections.singletonList(step)));
     Set<ConstraintViolation<TestValidTemplateStep>> violations =
         validator.validate(new TestValidTemplateStep(template));
     assertEquals(1, violations.size());
     ConstraintViolation<TestValidTemplateStep> violation = violations.iterator().next();
     String path = violation.getPropertyPath().toString();
-    assertTrue(path, path.startsWith("step.stepInputs[0]") && path.endsWith(".id"));
+    assertTrue(
+        path, path.startsWith("step.stepInputs[writes].<map value>[0]") && path.endsWith(".id"));
     assertEquals(
         "[maestro id or name reference] cannot start with reserved prefix: maestro_ "
             + "- rejected value is [maestro_template_outputs]",
         violation.getMessage());
   }
 
-  /** The named ids live in the prepared steps and are resolved when the template step runs. */
+  /** Attached steps of one position form their own DAG; position names are resolved at run time. */
   @Test
-  public void isTemplateStepInputNamingPreparedStepsValid() {
+  public void isTemplateStepInputDagWithinPositionValid() {
     TypedStep writeA = new TypedStep();
     writeA.setId("write_a");
     StepTransition transition = new StepTransition();
-    transition.setSuccessors(Collections.singletonMap("write_b", "true"));
+    transition.setSuccessors(Collections.singletonMap("merge", "true"));
     writeA.setTransition(transition);
     TypedStep writeB = new TypedStep();
     writeB.setId("write_b");
-    StepTransition transitionB = new StepTransition();
-    transitionB.setPredecessors(Collections.singletonList("prep"));
-    transitionB.setSuccessors(Collections.singletonMap("audit", "true"));
-    writeB.setTransition(transitionB);
+    TypedStep merge = new TypedStep();
+    merge.setId("merge");
+    StepTransition transitionMerge = new StepTransition();
+    transitionMerge.setPredecessors(Collections.singletonList("write_b"));
+    merge.setTransition(transitionMerge);
+    TypedStep announce = new TypedStep();
+    announce.setId("announce");
     TemplateStep template = new TemplateStep();
     template.setId("template");
-    template.setStepInputs(Arrays.asList(writeA, writeB));
+    template.setStepInputs(
+        Map.of(
+            "writes",
+            Arrays.asList(writeA, writeB, merge),
+            "after_publish",
+            Collections.singletonList(announce)));
     Workflow workflow = Workflow.builder().steps(Collections.singletonList(template)).build();
     assertTrue(validator.validate(new TestWorkflow(workflow)).isEmpty());
   }

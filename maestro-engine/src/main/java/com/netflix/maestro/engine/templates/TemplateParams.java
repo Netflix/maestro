@@ -25,7 +25,7 @@ public final class TemplateParams {
   /**
    * The run params of an inline instance: every workflow param visible to the template step, then
    * every template param, registered or written in the step definition, with the value the template
-   * step evaluated. Output params are published by the inline instance and are not passed down.
+   * step evaluated. Promised params are evaluated by the inline instance and are not passed down.
    *
    * @param context the template step being prepared
    * @return the run params, in a mutable map
@@ -43,9 +43,7 @@ public final class TemplateParams {
     if (context.step().getParams() != null) {
       context.step().getParams().keySet().forEach(k -> putStepParam(runParams, stepParams, k));
     }
-    if (definition.getOutputParams() != null) {
-      definition.getOutputParams().keySet().forEach(runParams::remove);
-    }
+    definition.promisedParams().keySet().forEach(runParams::remove);
     return runParams;
   }
 

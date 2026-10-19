@@ -53,8 +53,8 @@ import lombok.extern.slf4j.Slf4j;
  * output param.
  *
  * <p>The generator receives every template param of the template step plus two platform params:
- * {@code maestro_step_inputs}, the supplied steps as a JSON string, and {@code
- * maestro_template_identity}, the job type and version being expanded as a JSON string.
+ * {@code maestro_step_inputs}, the supplied steps keyed by position name as a JSON string, and
+ * {@code maestro_template_identity}, the job type and version being expanded as a JSON string.
  */
 @Slf4j
 @AllArgsConstructor
@@ -64,7 +64,8 @@ public class StepTemplatePreparer implements TemplatePreparer {
 
   // the supplied steps are written through the declared generic type so that every step carries
   // its type id
-  private static final TypeReference<List<Step>> STEP_INPUTS_TYPE = new TypeReference<>() {};
+  private static final TypeReference<Map<String, List<Step>>> STEP_INPUTS_TYPE =
+      new TypeReference<>() {};
   private static final String JOB_TYPE_FIELD = "job_type";
   private static final String VERSION_FIELD = "version";
 
@@ -154,10 +155,10 @@ public class StepTemplatePreparer implements TemplatePreparer {
   private Map<String, ParamDefinition> createGeneratorRunParams(PrepareContext context) {
     Map<String, ParamDefinition> runParams =
         new LinkedHashMap<>(TemplateParams.createRunParams(context));
-    List<Step> stepInputs =
+    Map<String, List<Step>> stepInputs =
         context.step() instanceof TemplateStep templateStep && templateStep.getStepInputs() != null
             ? templateStep.getStepInputs()
-            : Collections.emptyList();
+            : Collections.emptyMap();
     Map<String, String> identity = new LinkedHashMap<>();
     identity.put(JOB_TYPE_FIELD, context.definition().getJobType());
     identity.put(VERSION_FIELD, context.artifact().getTemplateVersion());

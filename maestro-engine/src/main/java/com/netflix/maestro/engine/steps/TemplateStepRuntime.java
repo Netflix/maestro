@@ -83,8 +83,9 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class TemplateStepRuntime implements StepRuntime {
-  // the supplied steps are copied before the splice mutates their transitions
-  private static final TypeReference<List<Step>> STEP_INPUTS_TYPE = new TypeReference<>() {};
+  // the supplied steps are copied before the splice mutates their transitions and params
+  private static final TypeReference<Map<String, List<Step>>> STEP_INPUTS_TYPE =
+      new TypeReference<>() {};
 
   private final TemplateInstanceRunner instanceRunner;
   private final MaestroWorkflowInstanceDao instanceDao;
@@ -271,12 +272,12 @@ public class TemplateStepRuntime implements StepRuntime {
       artifact.setExpansion(objectMapper.convertValue(result.expansion(), TemplateExpansion.class));
       TemplateExpansion expansion =
           objectMapper.convertValue(result.expansion(), TemplateExpansion.class);
-      List<Step> stepInputs =
+      Map<String, List<Step>> stepInputs =
           step instanceof TemplateStep templateStep && templateStep.getStepInputs() != null
               ? copyStepInputs(templateStep.getStepInputs())
-              : Collections.emptyList();
-      List<Step> steps = TemplateStepSplicer.splice(expansion.getSteps(), stepInputs);
-      TemplateStepSplicer.appendCollector(steps, definition.getOutputParams());
+              : Collections.emptyMap();
+      List<Step> steps = TemplateStepSplicer.splice(expansion.getSteps(), definition, stepInputs);
+      TemplateStepSplicer.appendCollector(steps, definition.promisedParams());
       artifact.setTemplateInstanceId(
           artifact.getPrepareInstanceId() == null ? 1L : artifact.getPrepareInstanceId() + 1L);
       Result launched = launchExecutionInstance(context, steps, expansion.getParams(), false);
@@ -303,7 +304,7 @@ public class TemplateStepRuntime implements StepRuntime {
    * Copy the supplied steps before the splice mutates their transitions. The copy goes through the
    * declared generic type so that every step is written with its type id.
    */
-  private List<Step> copyStepInputs(List<Step> stepInputs) {
+  private Map<String, List<Step>> copyStepInputs(Map<String, List<Step>> stepInputs) {
     try {
       return objectMapper.readValue(
           objectMapper.writerFor(STEP_INPUTS_TYPE).writeValueAsString(stepInputs),
@@ -448,7 +449,8 @@ public class TemplateStepRuntime implements StepRuntime {
       TemplateArtifact artifact) {
     JobTemplate.Definition definition =
         jobTemplateManager.loadDefinition(step, artifact.getTemplateVersion());
-    if (definition.getOutputParams() == null || definition.getOutputParams().isEmpty()) {
+    Map<String, ParamDefinition> promised = definition.promisedParams();
+    if (promised.isEmpty()) {
       return;
     }
     StepInstance collector =
@@ -457,7 +459,7 @@ public class TemplateStepRuntime implements StepRuntime {
             artifact.getTemplateInstanceId(),
             Constants.TEMPLATE_OUTPUTS_STEP_ID);
     Map<String, Parameter> outputs = new LinkedHashMap<>();
-    for (String name : definition.getOutputParams().keySet()) {
+    for (String name : promised.keySet()) {
       Parameter param = collector.getParams() == null ? null : collector.getParams().get(name);
       Checks.checkTrue(
           param != null && param.isEvaluated(),
@@ -618,9 +620,10 @@ public class TemplateStepRuntime implements StepRuntime {
   }
 
   /**
-   * Declare the registered template params, the registered output params and the preparer's own
-   * params on the template step. An output param is declared with its type's default value and
-   * MUTABLE mode so that the output-data merge at the end of the step can overwrite it.
+   * Declare the registered template params and the preparer's own params on the template step. A
+   * promised param is declared with its type's default value and MUTABLE mode in place of the
+   * registered expression, which only evaluates inside the inline instance, so that the output-data
+   * merge at the end of the step can overwrite it.
    */
   @Override
   public Map<String, ParamDefinition> injectRuntimeParams(
@@ -632,11 +635,9 @@ public class TemplateStepRuntime implements StepRuntime {
         .findDefinition(step, version)
         .ifPresent(
             definition -> {
-              if (definition.getOutputParams() != null) {
-                definition
-                    .getOutputParams()
-                    .forEach((name, def) -> params.put(name, declareOutputParam(def)));
-              }
+              definition
+                  .promisedParams()
+                  .forEach((name, def) -> params.put(name, declareOutputParam(def)));
               params.putAll(getPreparer(definition).injectParams(definition));
             });
     return Collections.unmodifiableMap(params);

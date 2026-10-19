@@ -220,9 +220,11 @@ public class JobTemplateManagerTest extends MaestroBaseTest {
     Map<String, ParamDefinition> params =
         jobTemplateManager.loadRuntimeParams(workflowSummary, templateStep);
 
-    assertEquals(2, params.size());
+    // the promised param is a registered param too; the template step runtime redeclares it
+    assertEquals(3, params.size());
     assertTrue(params.containsKey("target_table"));
     assertTrue(params.containsKey("snapshot_id"));
+    assertTrue(params.containsKey("published_snapshot"));
     verify(jobTemplateDao, times(1)).getJobTemplate("write_audit_publish", "v3");
     verify(jobTemplateDao, times(0)).getJobTemplate("write_audit_publish", "v1");
   }

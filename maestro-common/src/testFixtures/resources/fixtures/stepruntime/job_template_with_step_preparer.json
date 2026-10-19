@@ -14,8 +14,12 @@
       "target_table": {
         "value": "core.trips",
         "type": "STRING",
-        "mode": "IMMUTABLE",
         "internal_mode": "REQUIRED"
+      },
+      "row_count": {
+        "expression": "audit__row_count;",
+        "type": "LONG",
+        "mode": "IMMUTABLE"
       }
     },
     "prepare": {
@@ -27,10 +31,10 @@
         }
       }
     },
-    "output_params": {
-      "row_count": {
-        "expression": "audit__row_count;",
-        "type": "LONG"
+    "step_inputs": {
+      "writes": {
+        "successors": ["audit"],
+        "params": ["target_table"]
       }
     }
   }

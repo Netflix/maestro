@@ -17,6 +17,7 @@ import static org.junit.Assert.assertNull;
 
 import com.netflix.maestro.MaestroBaseTest;
 import com.netflix.maestro.models.definition.StepType;
+import java.util.List;
 import org.junit.Test;
 
 public class TemplatePrepareTest extends MaestroBaseTest {
@@ -32,7 +33,9 @@ public class TemplatePrepareTest extends MaestroBaseTest {
     assertEquals(StepType.NOOP, prepare.getStep().getType());
     assertEquals(
         "audit__row_count;",
-        template.getDefinition().getOutputParams().get("row_count").getExpression());
+        template.getDefinition().promisedParams().get("row_count").getExpression());
+    assertEquals(
+        List.of("audit"), template.getDefinition().getStepInputs().get("writes").getSuccessors());
   }
 
   @Test

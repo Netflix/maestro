@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -59,9 +60,9 @@ public final class TemplateStep extends AbstractStep {
   @Getter(onMethod = @__({@Override}))
   private String subTypeVersion; // optional
 
-  // steps the workflow adds to the prepared steps; each one is placed by the predecessors and
-  // successors of its own transition, which may name prepared steps or other supplied steps
-  @Valid private List<@Valid Step> stepInputs;
+  // steps the workflow attaches to the template, keyed by the position name the template declares;
+  // a step's transition may only name other steps of the same position
+  @Valid private Map<String, List<@Valid Step>> stepInputs;
 
   @JsonIgnore
   @Override

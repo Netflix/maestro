@@ -13,6 +13,8 @@
 package com.netflix.maestro.engine.templates;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import com.netflix.maestro.AssertHelper;
@@ -22,7 +24,14 @@ import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.definition.StepTransition;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.TypedStep;
+import com.netflix.maestro.models.parameter.LongParamDefinition;
 import com.netflix.maestro.models.parameter.ParamDefinition;
+import com.netflix.maestro.models.parameter.ParamMode;
+import com.netflix.maestro.models.parameter.ParamSource;
+import com.netflix.maestro.models.parameter.ParamType;
+import com.netflix.maestro.models.parameter.StringParamDefinition;
+import com.netflix.maestro.models.stepruntime.JobTemplate;
+import com.netflix.maestro.models.stepruntime.TemplateStepInput;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -46,79 +55,203 @@ public class TemplateStepSplicerTest extends MaestroBaseTest {
     return step;
   }
 
-  /** The prepared steps of a model: write, audit, publish, with a conditional skip. */
+  /** A write job as an author attaches it: publishes row_count. */
+  private static TypedStep write(String id, Map<String, String> successors) {
+    TypedStep step = step(id, successors);
+    Map<String, ParamDefinition> params = new LinkedHashMap<>();
+    params.put(
+        "row_count",
+        LongParamDefinition.builder().name("row_count").value(0L).mode(ParamMode.MUTABLE).build());
+    step.setParams(params);
+    return step;
+  }
+
+  /** The prepared steps of the template: audit -> publish, plus a conditional skip off audit. */
   private static List<Step> prepared() {
     return new ArrayList<>(
         List.of(
-            step("write", Map.of("audit", "write__has_data", "skip", "!write__has_data")),
-            step("audit", Map.of("publish", "true")),
+            step("audit", Map.of("publish", "audit__has_data", "skip", "!audit__has_data")),
             step("publish", Map.of()),
             step("skip", Map.of())));
   }
 
+  private static TemplateStepInput position(
+      List<String> predecessors,
+      List<String> successors,
+      List<String> params,
+      Map<String, ParamType> outputs) {
+    TemplateStepInput position = new TemplateStepInput();
+    position.setPredecessors(predecessors);
+    position.setSuccessors(successors);
+    position.setParams(params);
+    if (outputs != null) {
+      Map<String, TemplateStepInput.Output> declared = new LinkedHashMap<>();
+      outputs.forEach(
+          (name, type) -> {
+            TemplateStepInput.Output output = new TemplateStepInput.Output();
+            output.setType(type);
+            declared.put(name, output);
+          });
+      position.setOutputs(declared);
+    }
+    return position;
+  }
+
+  /**
+   * The wap template: input table, promised snapshot, a writes position collecting row_count before
+   * audit and an after_publish position exposing the promised snapshot.
+   */
+  private static JobTemplate.Definition definition() {
+    JobTemplate.Definition definition = new JobTemplate.Definition();
+    definition.setJobType("wap");
+    definition.setStepType(StepType.TEMPLATE);
+    Map<String, ParamDefinition> params = new LinkedHashMap<>();
+    params.put("table", StringParamDefinition.builder().name("table").value("core.trips").build());
+    params.put(
+        "snapshot",
+        StringParamDefinition.builder()
+            .name("snapshot")
+            .expression("publish__snapshot;")
+            .mode(ParamMode.IMMUTABLE)
+            .build());
+    definition.setParams(params);
+    Map<String, TemplateStepInput> positions = new LinkedHashMap<>();
+    positions.put(
+        "writes",
+        position(null, List.of("audit"), List.of("table"), Map.of("row_count", ParamType.LONG)));
+    positions.put(
+        "after_publish", position(List.of("publish"), null, List.of("table", "snapshot"), null));
+    positions.put("between", position(List.of("audit"), List.of("publish"), null, null));
+    definition.setStepInputs(positions);
+    return definition;
+  }
+
+  private static Step find(List<Step> steps, String id) {
+    return steps.stream().filter(s -> s.getId().equals(id)).findFirst().orElseThrow();
+  }
+
   private static Map<String, String> successors(List<Step> steps, String id) {
-    return steps.stream()
-        .filter(s -> s.getId().equals(id))
-        .findFirst()
-        .orElseThrow()
-        .getTransition()
-        .getSuccessors();
+    return find(steps, id).getTransition().getSuccessors();
   }
 
   @Test
-  public void testSpliceAddsStepBeforeAPreparedStep() {
-    List<Step> steps =
-        TemplateStepSplicer.splice(prepared(), List.of(step("wait", Map.of("write", "true"))));
+  public void testSpliceAttachesParallelWritesThroughTheJoinStep() {
+    Map<String, List<Step>> inputs =
+        Map.of("writes", List.of(write("write_a", Map.of()), write("write_b", Map.of())));
+
+    List<Step> steps = TemplateStepSplicer.splice(prepared(), definition(), inputs);
 
     assertEquals(
-        List.of("write", "audit", "publish", "skip", "wait"),
+        List.of("audit", "publish", "skip", "write_a", "write_b", "writes"),
         steps.stream().map(Step::getId).toList());
-    assertEquals(Map.of("write", "true"), successors(steps, "wait"));
+    // both writes are roots and leaves: nothing before them, the join step after them
+    assertEquals(Map.of("writes", "true"), successors(steps, "write_a"));
+    assertEquals(Map.of("writes", "true"), successors(steps, "write_b"));
+    assertEquals(Map.of("audit", "true"), successors(steps, "writes"));
+    Step join = find(steps, "writes");
+    assertEquals(StepType.NOOP, join.getType());
+    ParamDefinition collected = join.getParams().get("row_count");
+    assertEquals(ParamType.LONG_ARRAY, collected.getType());
+    assertEquals(ParamMode.IMMUTABLE, collected.getMode());
     assertEquals(
-        Map.of("audit", "write__has_data", "skip", "!write__has_data"), successors(steps, "write"));
+        "return new long[]{write_a__row_count, write_b__row_count};", collected.getExpression());
+    // the prepared edges are untouched
+    assertEquals(
+        Map.of("publish", "audit__has_data", "skip", "!audit__has_data"),
+        successors(steps, "audit"));
     steps.forEach(step -> assertTrue(step.getTransition().getPredecessors().isEmpty()));
+    // table is an input and resolves as an instance param, so nothing is added for it
+    assertEquals(List.of("row_count"), List.copyOf(find(steps, "write_a").getParams().keySet()));
   }
 
   @Test
-  public void testSpliceAddsStepBetweenPreparedSteps() {
-    List<Step> steps =
-        TemplateStepSplicer.splice(
-            prepared(), List.of(step("validate", List.of("audit"), Map.of("publish", "true"))));
+  public void testSpliceWiresTheDagOfAPosition() {
+    Map<String, List<Step>> inputs =
+        Map.of(
+            "writes",
+            List.of(
+                write("write_a", Map.of("merge", "true")),
+                write("write_b", Map.of("merge", "write_b__row_count > 0")),
+                write("merge", Map.of())));
 
-    // audit keeps its edge to publish and gains one to validate; publish waits for both
-    assertEquals(Map.of("publish", "true", "validate", "true"), successors(steps, "audit"));
+    List<Step> steps = TemplateStepSplicer.splice(prepared(), definition(), inputs);
+
+    assertEquals(Map.of("merge", "true"), successors(steps, "write_a"));
+    assertEquals(Map.of("merge", "write_b__row_count > 0"), successors(steps, "write_b"));
+    assertEquals(Map.of("writes", "true"), successors(steps, "merge"));
+    assertEquals(
+        "return new long[]{write_a__row_count, write_b__row_count, merge__row_count};",
+        find(steps, "writes").getParams().get("row_count").getExpression());
+  }
+
+  @Test
+  public void testSpliceAttachesAfterAPredecessorAndExposesPromisedParams() {
+    Map<String, ParamDefinition> params = new LinkedHashMap<>();
+    params.put(
+        "msg",
+        StringParamDefinition.builder().name("msg").expression("'published ' + snapshot;").build());
+    TypedStep announce = step("announce", Map.of());
+    announce.setParams(params);
+    Map<String, List<Step>> inputs = Map.of("after_publish", List.of(announce));
+
+    List<Step> steps = TemplateStepSplicer.splice(prepared(), definition(), inputs);
+
+    assertEquals(
+        List.of("audit", "publish", "skip", "announce"), steps.stream().map(Step::getId).toList());
+    assertEquals(Map.of("announce", "true"), successors(steps, "publish"));
+    assertTrue(successors(steps, "announce").isEmpty());
+    Map<String, ParamDefinition> attached = find(steps, "announce").getParams();
+    assertEquals(List.of("msg", "snapshot"), List.copyOf(attached.keySet()));
+    ParamDefinition snapshot = attached.get("snapshot");
+    assertEquals("publish__snapshot;", snapshot.getExpression());
+    assertEquals(ParamMode.IMMUTABLE, snapshot.getMode());
+    assertEquals(ParamSource.TEMPLATE_OUTPUT, snapshot.getSource());
+    assertNull(snapshot.getValue());
+  }
+
+  @Test
+  public void testSpliceAttachesBetweenPreparedSteps() {
+    Map<String, List<Step>> inputs = Map.of("between", List.of(step("validate", Map.of())));
+
+    List<Step> steps = TemplateStepSplicer.splice(prepared(), definition(), inputs);
+
+    // audit keeps its conditional edges and gains one to validate; publish waits for both
+    assertEquals(
+        Map.of("publish", "audit__has_data", "skip", "!audit__has_data", "validate", "true"),
+        successors(steps, "audit"));
     assertEquals(Map.of("publish", "true"), successors(steps, "validate"));
   }
 
   @Test
-  public void testSpliceAddsStepAfterAPreparedStepAsALeaf() {
-    List<Step> steps =
-        TemplateStepSplicer.splice(
-            prepared(), List.of(step("notify", List.of("publish"), Map.of())));
+  public void testSpliceWithPredecessorInsideThePosition() {
+    Map<String, List<Step>> inputs =
+        Map.of(
+            "between",
+            List.of(step("check", Map.of()), step("validate", List.of("check"), Map.of())));
 
-    assertEquals(Map.of("notify", "true"), successors(steps, "publish"));
-    assertTrue(successors(steps, "notify").isEmpty());
-  }
+    List<Step> steps = TemplateStepSplicer.splice(prepared(), definition(), inputs);
 
-  @Test
-  public void testSpliceChainsSuppliedSteps() {
-    List<Step> steps =
-        TemplateStepSplicer.splice(
-            prepared(),
-            List.of(
-                step("write_a", Map.of("merge", "true")),
-                step("write_b", Map.of("merge", "write_b__rows > 0")),
-                step("merge", Map.of("write", "true"))));
-
-    assertEquals(Map.of("merge", "true"), successors(steps, "write_a"));
-    assertEquals(Map.of("merge", "write_b__rows > 0"), successors(steps, "write_b"));
-    assertEquals(Map.of("write", "true"), successors(steps, "merge"));
+    assertEquals(Map.of("validate", "true"), successors(steps, "check"));
+    assertEquals(Map.of("publish", "true"), successors(steps, "validate"));
+    assertTrue(successors(steps, "audit").containsKey("check"));
+    assertFalse(successors(steps, "audit").containsKey("validate"));
   }
 
   @Test
   public void testSpliceWithoutStepInputs() {
-    assertEquals(4, TemplateStepSplicer.splice(prepared(), null).size());
-    assertEquals(4, TemplateStepSplicer.splice(prepared(), List.of()).size());
+    assertEquals(3, TemplateStepSplicer.splice(prepared(), definition(), null).size());
+    assertEquals(3, TemplateStepSplicer.splice(prepared(), definition(), Map.of()).size());
+  }
+
+  @Test
+  public void testSpliceRejectsUndeclaredPosition() {
+    AssertHelper.assertThrows(
+        "position is not declared by the template",
+        IllegalArgumentException.class,
+        "Template step input position [nowhere] is not declared by the template",
+        () ->
+            TemplateStepSplicer.splice(
+                prepared(), definition(), Map.of("nowhere", List.of(step("x", Map.of())))));
   }
 
   @Test
@@ -126,78 +259,104 @@ public class TemplateStepSplicerTest extends MaestroBaseTest {
     AssertHelper.assertThrows(
         "supplied id collides with a prepared step id",
         IllegalArgumentException.class,
-        "Template step input [audit] collides with a prepared step id or another step input",
+        "Template step input [audit] collides with a prepared step id, a position name or another step input",
         () ->
             TemplateStepSplicer.splice(
-                prepared(), List.of(step("audit", Map.of("publish", "true")))));
+                prepared(), definition(), Map.of("writes", List.of(write("audit", Map.of())))));
+    AssertHelper.assertThrows(
+        "supplied id collides with a position name",
+        IllegalArgumentException.class,
+        "Template step input [writes] collides with a prepared step id, a position name or another step input",
+        () ->
+            TemplateStepSplicer.splice(
+                prepared(), definition(), Map.of("writes", List.of(write("writes", Map.of())))));
   }
 
   @Test
-  public void testSpliceRejectsDuplicateSuppliedId() {
+  public void testSpliceRejectsTransitionOutsideThePosition() {
     AssertHelper.assertThrows(
-        "supplied steps have duplicate ids",
+        "supplied step names a successor outside its position",
         IllegalArgumentException.class,
-        "Template step input [wait] collides with a prepared step id or another step input",
+        "Template step input [write_a] at position [writes] names successor [audit], which is not a step of the same position",
         () ->
             TemplateStepSplicer.splice(
                 prepared(),
-                List.of(
-                    step("wait", Map.of("write", "true")), step("wait", Map.of("write", "true")))));
-  }
-
-  @Test
-  public void testSpliceRejectsStepWithoutPosition() {
+                definition(),
+                Map.of("writes", List.of(write("write_a", Map.of("audit", "true"))))));
     AssertHelper.assertThrows(
-        "supplied step names neither predecessor nor successor",
-        IllegalArgumentException.class,
-        "Template step input [loose] names no predecessor or successor",
-        () -> TemplateStepSplicer.splice(prepared(), List.of(step("loose", Map.of()))));
-  }
-
-  @Test
-  public void testSpliceRejectsUnknownSuccessor() {
-    AssertHelper.assertThrows(
-        "supplied step names an unknown successor",
-        IllegalArgumentException.class,
-        "Template step input [wait] names successor [nowhere], which is neither a prepared step nor a step input",
-        () ->
-            TemplateStepSplicer.splice(
-                prepared(), List.of(step("wait", Map.of("nowhere", "true")))));
-  }
-
-  @Test
-  public void testSpliceRejectsUnknownPredecessor() {
-    AssertHelper.assertThrows(
-        "supplied step names an unknown predecessor",
+        "supplied step names a predecessor outside its position",
         NullPointerException.class,
-        "Template step input [notify] names predecessor [nowhere], which is neither a prepared step nor a step input",
+        "Template step input [validate] at position [between] names predecessor [audit], which is not a step of the same position",
         () ->
             TemplateStepSplicer.splice(
-                prepared(), List.of(step("notify", List.of("nowhere"), Map.of()))));
+                prepared(),
+                definition(),
+                Map.of("between", List.of(step("validate", List.of("audit"), Map.of())))));
+  }
+
+  @Test
+  public void testSpliceRejectsMissingOutputParam() {
+    AssertHelper.assertThrows(
+        "supplied step does not publish the declared output",
+        IllegalArgumentException.class,
+        "Template step input [write_a] at position [writes] must declare the output param [row_count] of type [LONG]",
+        () ->
+            TemplateStepSplicer.splice(
+                prepared(), definition(), Map.of("writes", List.of(step("write_a", Map.of())))));
+  }
+
+  @Test
+  public void testSpliceRejectsSuppliedParamNamedAfterAPromisedParam() {
+    TypedStep announce = step("announce", Map.of());
+    Map<String, ParamDefinition> params = new LinkedHashMap<>();
+    params.put("snapshot", StringParamDefinition.builder().name("snapshot").value("mine").build());
+    announce.setParams(params);
+    AssertHelper.assertThrows(
+        "supplied step defines a promised param",
+        IllegalArgumentException.class,
+        "Template step input [announce] defines [snapshot], which is a param the template provides",
+        () ->
+            TemplateStepSplicer.splice(
+                prepared(), definition(), Map.of("after_publish", List.of(announce))));
+  }
+
+  @Test
+  public void testSpliceRejectsPositionNamingUnknownPreparedStep() {
+    JobTemplate.Definition definition = definition();
+    definition.getStepInputs().put("late", position(List.of("archive"), null, null, null));
+    AssertHelper.assertThrows(
+        "position names a step the expansion does not have",
+        NullPointerException.class,
+        "Template step input position [late] names predecessor [archive], which is not a prepared step",
+        () ->
+            TemplateStepSplicer.splice(
+                prepared(), definition, Map.of("late", List.of(step("x", Map.of())))));
   }
 
   @Test
   public void testAppendCollector() {
     List<Step> steps =
         TemplateStepSplicer.splice(
-            prepared(), List.of(step("notify", List.of("publish"), Map.of())));
-    Map<String, ParamDefinition> outputParams =
-        Map.of("row_count", ParamDefinition.buildParamDefinition("row_count", 1L));
+            prepared(), definition(), Map.of("after_publish", List.of(step("announce", Map.of()))));
 
-    TemplateStepSplicer.appendCollector(steps, outputParams);
+    TemplateStepSplicer.appendCollector(steps, definition().promisedParams());
 
     Step collector = steps.getLast();
     assertEquals(Constants.TEMPLATE_OUTPUTS_STEP_ID, collector.getId());
     assertEquals(StepType.NOOP, collector.getType());
-    assertEquals(outputParams, collector.getParams());
-    assertEquals(Map.of(Constants.TEMPLATE_OUTPUTS_STEP_ID, "true"), successors(steps, "notify"));
+    assertEquals(List.of("snapshot"), List.copyOf(collector.getParams().keySet()));
+    ParamDefinition snapshot = collector.getParams().get("snapshot");
+    assertEquals("publish__snapshot;", snapshot.getExpression());
+    assertEquals(ParamMode.IMMUTABLE, snapshot.getMode());
+    assertEquals(ParamSource.TEMPLATE_OUTPUT, snapshot.getSource());
+    assertEquals(Map.of(Constants.TEMPLATE_OUTPUTS_STEP_ID, "true"), successors(steps, "announce"));
     assertEquals(Map.of(Constants.TEMPLATE_OUTPUTS_STEP_ID, "true"), successors(steps, "skip"));
-    assertEquals(Map.of("notify", "true"), successors(steps, "publish"));
+    assertEquals(Map.of("announce", "true"), successors(steps, "publish"));
     assertTrue(collector.getTransition().getSuccessors().isEmpty());
   }
 
   @Test
-  public void testAppendCollectorWithoutOutputParams() {
+  public void testAppendCollectorWithoutPromisedParams() {
     List<Step> steps = TemplateStepSplicer.appendCollector(prepared(), null);
     assertTrue(steps.getLast().getParams().isEmpty());
   }

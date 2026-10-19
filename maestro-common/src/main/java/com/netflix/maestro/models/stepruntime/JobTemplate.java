@@ -24,6 +24,7 @@ import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.Tag;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.parameter.ParamDefinition;
+import com.netflix.maestro.models.parameter.ParamMode;
 import com.netflix.maestro.utils.Checks;
 import com.netflix.maestro.validations.JobTemplateDefinitionConstraint;
 import com.netflix.maestro.validations.MaestroReferenceIdConstraint;
@@ -122,7 +123,7 @@ public class JobTemplate {
         "inherit_from",
         "params",
         "prepare",
-        "output_params"
+        "step_inputs"
       },
       alphabetic = true)
   @Data
@@ -138,23 +139,45 @@ public class JobTemplate {
     // list of job type and its version pair to inherit params from
     @Valid private Map<String, String> inheritFrom;
 
+    // template inputs in a mutable mode; IMMUTABLE params with an expression are what the template
+    // promises outward, see promisedParams()
     @Valid private Map<String, ParamDefinition> params;
 
     // how the step list run by a template step is produced, only for the template step type
     @Valid private TemplatePrepare prepare;
 
-    // params published by a template step, evaluated inside its inline workflow instance over the
-    // prepared steps, only for the template step type
-    @Valid private Map<String, ParamDefinition> outputParams;
+    // positions where a workflow may attach steps of its own, keyed by position name, only for the
+    // template step type
+    @Valid private Map<String, TemplateStepInput> stepInputs;
 
     /** set params. */
     public void setParams(Map<String, ParamDefinition> input) {
       this.params = ParamDefinition.preprocessDefinitionParams(input);
     }
 
-    /** set output params. */
-    public void setOutputParams(Map<String, ParamDefinition> input) {
-      this.outputParams = ParamDefinition.preprocessDefinitionParams(input);
+    /**
+     * The params the template promises outward: every {@code IMMUTABLE} param with an expression.
+     * They are evaluated inside the inline instance after the template steps ran and published on
+     * the template step; steps a workflow attaches may reference them by name.
+     *
+     * @return the promised params in declaration order, empty if none
+     */
+    public Map<String, ParamDefinition> promisedParams() {
+      Map<String, ParamDefinition> promised = new LinkedHashMap<>();
+      if (params != null) {
+        params.forEach(
+            (name, def) -> {
+              if (isPromised(def)) {
+                promised.put(name, def);
+              }
+            });
+      }
+      return promised;
+    }
+
+    /** True if a template param is promised outward: IMMUTABLE mode with an expression. */
+    public static boolean isPromised(ParamDefinition def) {
+      return def.getMode() == ParamMode.IMMUTABLE && def.getExpression() != null;
     }
   }
 }
