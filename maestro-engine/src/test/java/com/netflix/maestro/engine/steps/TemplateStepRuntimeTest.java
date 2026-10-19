@@ -141,7 +141,7 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
 
   private StepRuntimeSummary createStepRuntimeSummary(Map<String, Artifact> artifacts) {
     Map<String, Parameter> params = new HashMap<>();
-    params.put("target_table", buildParam("target_table", "core.trips"));
+    params.put("target_table", buildParam("target_table", "db.sample_table"));
     params.put("snapshot_id", buildParam("snapshot_id", "snap-1"));
     params.put("published_snapshot", buildParam("published_snapshot", ""));
     StepInstance.StepRetry stepRetry = new StepInstance.StepRetry();
@@ -430,7 +430,7 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
     Map<String, ParamDefinition> runParams = paramsCaptor.getValue();
     assertEquals(
         List.of("wf_param", "target_table", "snapshot_id"), List.copyOf(runParams.keySet()));
-    assertEquals("core.trips", runParams.get("target_table").asStringParamDef().getValue());
+    assertEquals("db.sample_table", runParams.get("target_table").asStringParamDef().getValue());
   }
 
   @Test
@@ -582,7 +582,7 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
             Constants.TEMPLATE_OUTPUTS_STEP_ID),
         workflowCaptor.getValue().getAllStepIds());
     assertEquals("wap-3f2a", paramsCaptor.getValue().get("wap_branch").getValue());
-    assertEquals("core.trips", paramsCaptor.getValue().get("target_table").getValue());
+    assertEquals("db.sample_table", paramsCaptor.getValue().get("target_table").getValue());
   }
 
   @Test
@@ -916,7 +916,7 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
   @Test
   public void testInjectRuntimeParamsDeclaresOutputParams() {
     Map<String, ParamDefinition> registered =
-        Map.of("target_table", buildParam("target_table", "core.trips").toDefinition());
+        Map.of("target_table", buildParam("target_table", "db.sample_table").toDefinition());
     when(jobTemplateManager.loadRuntimeParams(workflowSummary, step)).thenReturn(registered);
 
     Map<String, ParamDefinition> params =

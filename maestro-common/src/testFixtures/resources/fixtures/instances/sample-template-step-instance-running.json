@@ -18,7 +18,7 @@
       "sub_type_version": "v3",
       "params": {
         "target_table": {
-          "value": "core.trips",
+          "value": "db.sample_table",
           "type": "STRING"
         }
       }
@@ -93,11 +93,11 @@
       "source": "SYSTEM_INJECTED"
     },
     "target_table": {
-      "value": "core.trips",
+      "value": "db.sample_table",
       "type": "STRING",
       "tags": [],
       "mode": "MUTABLE",
-      "evaluated_result": "core.trips",
+      "evaluated_result": "db.sample_table",
       "evaluated_time": 1686462761502,
       "source": "DEFINITION"
     }

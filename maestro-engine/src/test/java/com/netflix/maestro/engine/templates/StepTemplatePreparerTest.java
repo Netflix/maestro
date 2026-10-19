@@ -83,7 +83,7 @@ public class StepTemplatePreparerTest extends MaestroBaseTest {
     workflowSummary.setWorkflowRunId(1L);
     workflowSummary.setParams(Map.of("wf_param", buildParam("wf_param", "wf_value")));
     Map<String, Parameter> params = new HashMap<>();
-    params.put("target_table", buildParam("target_table", "core.trips"));
+    params.put("target_table", buildParam("target_table", "db.sample_table"));
     params.put("row_count", buildParam("row_count", ""));
     StepRuntimeSummary runtimeSummary =
         StepRuntimeSummary.builder()

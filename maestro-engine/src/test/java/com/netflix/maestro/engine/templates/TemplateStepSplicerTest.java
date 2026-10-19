@@ -106,7 +106,8 @@ public class TemplateStepSplicerTest extends MaestroBaseTest {
     definition.setJobType("wap");
     definition.setStepType(StepType.TEMPLATE);
     Map<String, ParamDefinition> params = new LinkedHashMap<>();
-    params.put("table", StringParamDefinition.builder().name("table").value("core.trips").build());
+    params.put(
+        "table", StringParamDefinition.builder().name("table").value("db.sample_table").build());
     params.put(
         "snapshot",
         StringParamDefinition.builder()

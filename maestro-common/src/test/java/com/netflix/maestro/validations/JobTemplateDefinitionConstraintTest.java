@@ -277,7 +277,7 @@ public class JobTemplateDefinitionConstraintTest extends BaseConstraintTest {
     definition.setParams(
         Map.of(
             "table",
-            StringParamDefinition.builder().name("table").value("core.trips").build(),
+            StringParamDefinition.builder().name("table").value("db.sample_table").build(),
             "snapshot",
             StringParamDefinition.builder()
                 .name("snapshot")

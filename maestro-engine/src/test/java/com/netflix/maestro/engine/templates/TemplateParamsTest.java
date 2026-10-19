@@ -39,7 +39,7 @@ public class TemplateParamsTest extends MaestroBaseTest {
     step.setParams(Map.of("extra", buildParam("extra", "x").toDefinition()));
     Map<String, Parameter> stepParams =
         Map.of(
-            "target_table", buildParam("target_table", "core.trips"),
+            "target_table", buildParam("target_table", "db.sample_table"),
             "snapshot_id", buildParam("snapshot_id", "snap-1"),
             "extra", buildParam("extra", "x"),
             "published_snapshot", buildParam("published_snapshot", ""),
@@ -63,7 +63,7 @@ public class TemplateParamsTest extends MaestroBaseTest {
     assertEquals(
         List.of("wf_param", "target_table", "snapshot_id", "extra"),
         List.copyOf(runParams.keySet()));
-    assertEquals("core.trips", runParams.get("target_table").asStringParamDef().getValue());
+    assertEquals("db.sample_table", runParams.get("target_table").asStringParamDef().getValue());
     assertEquals("x", runParams.get("extra").asStringParamDef().getValue());
   }
 }

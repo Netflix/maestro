@@ -9,7 +9,7 @@
     "description": "Write into a snapshot, run checks against it, publish it.",
     "params": {
       "target_table": {
-        "value": "core.trips",
+        "value": "db.sample_table",
         "type": "STRING",
         "internal_mode": "REQUIRED"
       }

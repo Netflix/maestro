@@ -10,7 +10,7 @@
     },
     "params": {
       "target_table": {
-        "value": "core.trips",
+        "value": "db.sample_table",
         "type": "STRING"
       },
       "snapshot_id": {

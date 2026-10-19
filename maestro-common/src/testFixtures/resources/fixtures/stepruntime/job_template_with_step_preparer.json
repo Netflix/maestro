@@ -12,7 +12,7 @@
     "version": "v1",
     "params": {
       "target_table": {
-        "value": "core.trips",
+        "value": "db.sample_table",
         "type": "STRING",
         "internal_mode": "REQUIRED"
       },
