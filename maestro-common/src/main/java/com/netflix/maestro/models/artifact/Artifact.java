@@ -61,7 +61,13 @@ public interface Artifact {
     /** http artifact. */
     HTTP(Constants.MAESTRO_PREFIX + "http"),
     /** retry artifact. */
-    RETRY(Constants.MAESTRO_PREFIX + "retry");
+    RETRY(Constants.MAESTRO_PREFIX + "retry"),
+    /**
+     * artifact written by an extension step runtime. The implementing class picks its own map key
+     * and JSON type name and is registered on the mapper with registerSubtypes. On update the
+     * engine replaces it like every typed artifact instead of merging it as a DEFAULT map.
+     */
+    EXTENSION(null);
 
     private final String key;
 

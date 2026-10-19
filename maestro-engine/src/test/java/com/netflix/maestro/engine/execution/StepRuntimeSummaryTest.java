@@ -22,6 +22,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.engine.MaestroEngineBaseTest;
 import com.netflix.maestro.engine.db.StepAction;
@@ -63,6 +64,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.Data;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -235,6 +237,40 @@ public class StepRuntimeSummaryTest extends MaestroEngineBaseTest {
             "fixtures/execution/sample-step-runtime-summary-1.json", StepRuntimeSummary.class);
     Map<String, ParamDefinition> stepRunParams = summary.getStepRunParams();
     assertEquals("bar", stepRunParams.get("foo").asStringParamDef().getValue());
+  }
+
+  /** An extension runtime's artifact as a deployment would define it. */
+  @Data
+  private static class SparkArtifact implements Artifact {
+    private String applicationId;
+
+    @JsonIgnore
+    @Override
+    public Type getType() {
+      return Type.EXTENSION;
+    }
+  }
+
+  @Test
+  public void testMergeExtensionArtifactReplacesInsteadOfMerging() throws Exception {
+    StepRuntimeSummary summary =
+        loadObject(
+            "fixtures/execution/sample-step-runtime-summary-1.json", StepRuntimeSummary.class);
+    SparkArtifact first = new SparkArtifact();
+    first.setApplicationId("app-1");
+    summary.mergeRuntimeUpdate(null, Collections.singletonMap("spark", first));
+    assertEquals(first, summary.getArtifacts().get("spark"));
+
+    SparkArtifact second = new SparkArtifact();
+    second.setApplicationId("app-2");
+    summary.mergeRuntimeUpdate(null, Collections.singletonMap("spark", second));
+    assertEquals(second, summary.getArtifacts().get("spark"));
+    assertEquals("app-2", ((SparkArtifact) summary.getArtifacts().get("spark")).getApplicationId());
+
+    DefaultArtifact overwrite = DefaultArtifact.create("value", 1L);
+    summary.mergeRuntimeUpdate(null, Collections.singletonMap("spark", overwrite));
+    assertEquals(overwrite, summary.getArtifacts().get("spark"));
+    assertFalse(summary.isSynced());
   }
 
   @Test
