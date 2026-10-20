@@ -23,6 +23,7 @@ import com.netflix.maestro.models.definition.TemplateStep;
 import com.netflix.maestro.models.definition.TypedStep;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.ParamMode;
+import com.netflix.maestro.models.parameter.ParamSource;
 import com.netflix.maestro.models.parameter.ParamType;
 import com.netflix.maestro.models.parameter.StringParamDefinition;
 import com.netflix.maestro.models.stepruntime.JobTemplate;
@@ -224,7 +225,7 @@ public class JobTemplateDefinitionConstraintTest extends BaseConstraintTest {
   }
 
   @Test
-  public void isImmutableParamWithoutExpressionRejected() {
+  public void isPromisedParamWithoutExpressionRejected() {
     JobTemplate.Definition definition =
         definition(StepType.TEMPLATE, staticPrepare(List.of(step("write", null))));
     definition.setParams(
@@ -234,10 +235,49 @@ public class JobTemplateDefinitionConstraintTest extends BaseConstraintTest {
                 .name("row_count")
                 .value("0")
                 .mode(ParamMode.IMMUTABLE)
+                .addMetaField(Constants.METADATA_SOURCE_KEY, ParamSource.TEMPLATE_OUTPUT.name())
                 .build()));
     assertEquals(
-        "[job template params] param [row_count] in IMMUTABLE mode must carry an expression, "
-            + "it is what the template promises outward",
+        "[job template params] promised param [row_count] with the TEMPLATE_OUTPUT source "
+            + "must be in IMMUTABLE mode and carry an expression",
+        singleViolation(definition, "params").getMessage());
+  }
+
+  @Test
+  public void isPromisedParamInMutableModeRejected() {
+    JobTemplate.Definition definition =
+        definition(StepType.TEMPLATE, staticPrepare(List.of(step("write", null))));
+    definition.setParams(
+        Map.of(
+            "row_count",
+            StringParamDefinition.builder()
+                .name("row_count")
+                .expression("write__row_count;")
+                .mode(ParamMode.MUTABLE)
+                .addMetaField(Constants.METADATA_SOURCE_KEY, ParamSource.TEMPLATE_OUTPUT.name())
+                .build()));
+    assertEquals(
+        "[job template params] promised param [row_count] with the TEMPLATE_OUTPUT source "
+            + "must be in IMMUTABLE mode and carry an expression",
+        singleViolation(definition, "params").getMessage());
+  }
+
+  @Test
+  public void isOtherParamSourceRejected() {
+    JobTemplate.Definition definition =
+        definition(StepType.TEMPLATE, staticPrepare(List.of(step("write", null))));
+    definition.setParams(
+        Map.of(
+            "row_count",
+            StringParamDefinition.builder()
+                .name("row_count")
+                .expression("write__row_count;")
+                .mode(ParamMode.IMMUTABLE)
+                .addMetaField(Constants.METADATA_SOURCE_KEY, ParamSource.OUTPUT_PARAMETER.name())
+                .build()));
+    assertEquals(
+        "[job template params] param [row_count] cannot set the source [OUTPUT_PARAMETER], "
+            + "only TEMPLATE_OUTPUT is allowed for a param the template promises outward",
         singleViolation(definition, "params").getMessage());
   }
 
@@ -252,9 +292,26 @@ public class JobTemplateDefinitionConstraintTest extends BaseConstraintTest {
                 .name("row_count")
                 .expression("write__row_count;")
                 .mode(ParamMode.IMMUTABLE)
+                .addMetaField(Constants.METADATA_SOURCE_KEY, ParamSource.TEMPLATE_OUTPUT.name())
                 .build()));
     assertTrue(validator.validate(new TestDefinition(definition)).isEmpty());
     assertEquals(Set.of("row_count"), definition.promisedParams().keySet());
+  }
+
+  @Test
+  public void isImmutableParamWithoutSourceNotPromised() {
+    JobTemplate.Definition definition =
+        definition(StepType.TEMPLATE, staticPrepare(List.of(step("write", null))));
+    definition.setParams(
+        Map.of(
+            "tmp_table",
+            StringParamDefinition.builder()
+                .name("tmp_table")
+                .expression("table + '_tmp';")
+                .mode(ParamMode.IMMUTABLE)
+                .build()));
+    assertTrue(validator.validate(new TestDefinition(definition)).isEmpty());
+    assertTrue(definition.promisedParams().isEmpty());
   }
 
   private static JobTemplate.Definition wapDefinition() {
@@ -271,6 +328,7 @@ public class JobTemplateDefinitionConstraintTest extends BaseConstraintTest {
                 .name("snapshot")
                 .expression("publish__snapshot;")
                 .mode(ParamMode.IMMUTABLE)
+                .addMetaField(Constants.METADATA_SOURCE_KEY, ParamSource.TEMPLATE_OUTPUT.name())
                 .build()));
     return definition;
   }

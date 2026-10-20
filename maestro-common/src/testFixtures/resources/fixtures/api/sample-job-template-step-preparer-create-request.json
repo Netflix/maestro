@@ -15,17 +15,20 @@
       "snapshot": {
         "type": "STRING",
         "mode": "IMMUTABLE",
-        "expression": "publish__snapshot;"
+        "expression": "publish__snapshot;",
+        "source": "TEMPLATE_OUTPUT"
       },
       "rows": {
         "type": "LONG",
         "mode": "IMMUTABLE",
-        "expression": "audit__total;"
+        "expression": "audit__total;",
+        "source": "TEMPLATE_OUTPUT"
       },
       "branch": {
         "type": "STRING",
         "mode": "IMMUTABLE",
-        "expression": "branch;"
+        "expression": "branch;",
+        "source": "TEMPLATE_OUTPUT"
       }
     },
     "prepare": {

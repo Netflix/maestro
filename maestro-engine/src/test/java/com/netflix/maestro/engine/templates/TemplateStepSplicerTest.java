@@ -112,6 +112,7 @@ public class TemplateStepSplicerTest extends MaestroBaseTest {
             .name("snapshot")
             .expression("publish__snapshot;")
             .mode(ParamMode.IMMUTABLE)
+            .addMetaField(Constants.METADATA_SOURCE_KEY, ParamSource.TEMPLATE_OUTPUT.name())
             .build());
     definition.setParams(params);
     Map<String, TemplateStepInput> positions = new LinkedHashMap<>();

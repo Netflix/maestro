@@ -946,7 +946,9 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
                   "expression",
                   "audit__" + type.name() + ";",
                   "mode",
-                  ParamMode.IMMUTABLE.name()),
+                  ParamMode.IMMUTABLE.name(),
+                  "source",
+                  ParamSource.TEMPLATE_OUTPUT.name()),
               ParamDefinition.class));
     }
     definition.setParams(promised);

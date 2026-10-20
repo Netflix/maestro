@@ -18,6 +18,7 @@ import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.Workflow;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.ParamMode;
+import com.netflix.maestro.models.parameter.ParamSource;
 import com.netflix.maestro.models.parameter.ParamType;
 import com.netflix.maestro.models.stepruntime.JobTemplate;
 import com.netflix.maestro.models.stepruntime.TemplatePrepare;
@@ -42,9 +43,10 @@ import java.util.stream.Stream;
 /**
  * Job template definition validation. The template fields {@code prepare} and {@code step_inputs}
  * are required or allowed only for the template step type and rejected for every other step type. A
- * static step list follows the same rules as a workflow step list. An {@code IMMUTABLE} template
- * param is what the template promises outward and must carry an expression. Every step input
- * position must sit somewhere, expose only template params, and collect only scalar outputs.
+ * static step list follows the same rules as a workflow step list. A template param declared with
+ * the {@code TEMPLATE_OUTPUT} source is what the template promises outward and must be {@code
+ * IMMUTABLE} with an expression; no other source may be set. Every step input position must sit
+ * somewhere, expose only template params, and collect only scalar outputs.
  */
 @Documented
 @Constraint(validatedBy = JobTemplateDefinitionConstraint.JobTemplateDefinitionValidator.class)
@@ -122,12 +124,24 @@ public @interface JobTemplateDefinitionConstraint {
       }
       for (Map.Entry<String, ParamDefinition> entry : definition.getParams().entrySet()) {
         ParamDefinition def = entry.getValue();
-        if (def.getMode() == ParamMode.IMMUTABLE && def.getExpression() == null) {
+        if (def.getSource() == null) {
+          continue;
+        }
+        if (def.getSource() != ParamSource.TEMPLATE_OUTPUT) {
           return violation(
               context,
               String.format(
-                  "[job template params] param [%s] in IMMUTABLE mode must carry an expression, "
-                      + "it is what the template promises outward",
+                  "[job template params] param [%s] cannot set the source [%s], "
+                      + "only TEMPLATE_OUTPUT is allowed for a param the template promises outward",
+                  entry.getKey(), def.getSource()),
+              PARAMS_PROPERTY_NAME);
+        }
+        if (def.getMode() != ParamMode.IMMUTABLE || def.getExpression() == null) {
+          return violation(
+              context,
+              String.format(
+                  "[job template params] promised param [%s] with the TEMPLATE_OUTPUT source "
+                      + "must be in IMMUTABLE mode and carry an expression",
                   entry.getKey()),
               PARAMS_PROPERTY_NAME);
         }

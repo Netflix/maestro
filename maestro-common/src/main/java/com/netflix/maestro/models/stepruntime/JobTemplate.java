@@ -25,6 +25,7 @@ import com.netflix.maestro.models.definition.Tag;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.ParamMode;
+import com.netflix.maestro.models.parameter.ParamSource;
 import com.netflix.maestro.utils.Checks;
 import com.netflix.maestro.validations.JobTemplateDefinitionConstraint;
 import com.netflix.maestro.validations.MaestroReferenceIdConstraint;
@@ -139,8 +140,8 @@ public class JobTemplate {
     // list of job type and its version pair to inherit params from
     @Valid private Map<String, String> inheritFrom;
 
-    // template inputs in a mutable mode; IMMUTABLE params with an expression are what the template
-    // promises outward, see promisedParams()
+    // template inputs in a mutable mode; params with the TEMPLATE_OUTPUT source are what the
+    // template promises outward, see promisedParams()
     @Valid private Map<String, ParamDefinition> params;
 
     // how the step list run by a template step is produced, only for the template step type
@@ -156,9 +157,11 @@ public class JobTemplate {
     }
 
     /**
-     * The params the template promises outward: every {@code IMMUTABLE} param with an expression.
-     * They are evaluated inside the inline instance after the template steps ran and published on
-     * the template step; steps a workflow attaches may reference them by name.
+     * The params the template promises outward: every param declared with the {@code
+     * TEMPLATE_OUTPUT} source, which is {@code IMMUTABLE} and carries an expression. They are
+     * evaluated inside the inline instance after the template steps ran and published on the
+     * template step; steps a workflow attaches may reference them by name. An {@code IMMUTABLE}
+     * param without that source is a constant internal to the template.
      *
      * @return the promised params in declaration order, empty if none
      */
@@ -175,9 +178,14 @@ public class JobTemplate {
       return promised;
     }
 
-    /** True if a template param is promised outward: IMMUTABLE mode with an expression. */
+    /**
+     * True if a template param is promised outward: declared with the TEMPLATE_OUTPUT source in
+     * IMMUTABLE mode with an expression.
+     */
     public static boolean isPromised(ParamDefinition def) {
-      return def.getMode() == ParamMode.IMMUTABLE && def.getExpression() != null;
+      return def.getSource() == ParamSource.TEMPLATE_OUTPUT
+          && def.getMode() == ParamMode.IMMUTABLE
+          && def.getExpression() != null;
     }
   }
 }

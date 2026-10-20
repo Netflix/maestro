@@ -19,7 +19,8 @@
       "row_count": {
         "expression": "audit__row_count;",
         "type": "LONG",
-        "mode": "IMMUTABLE"
+        "mode": "IMMUTABLE",
+        "source": "TEMPLATE_OUTPUT"
       }
     },
     "prepare": {

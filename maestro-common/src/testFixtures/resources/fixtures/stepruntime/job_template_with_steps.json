@@ -24,7 +24,8 @@
       "published_snapshot": {
         "expression": "publish_snapshot__snapshot;",
         "type": "STRING",
-        "mode": "IMMUTABLE"
+        "mode": "IMMUTABLE",
+        "source": "TEMPLATE_OUTPUT"
       }
     },
     "prepare": {
