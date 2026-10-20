@@ -19,6 +19,7 @@ import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.MaestroBaseTest;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
+import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.models.artifact.TemplateArtifact;
 import com.netflix.maestro.models.definition.TemplateStep;
 import com.netflix.maestro.models.stepruntime.JobTemplate;
@@ -62,7 +63,7 @@ public class SelTemplatePreparerTest extends MaestroBaseTest {
 
     AssertHelper.assertThrows(
         "the sel preparer is not implemented",
-        UnsupportedOperationException.class,
+        MaestroInternalError.class,
         "Template step [publish] uses the sel preparer, which is not implemented yet",
         () -> preparer.prepare(context));
   }

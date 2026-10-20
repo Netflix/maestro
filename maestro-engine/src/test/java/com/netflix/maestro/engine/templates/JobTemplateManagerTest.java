@@ -25,6 +25,7 @@ import com.netflix.maestro.MaestroBaseTest;
 import com.netflix.maestro.engine.dao.MaestroJobTemplateDao;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
 import com.netflix.maestro.engine.properties.JobTemplateCacheProperties;
+import com.netflix.maestro.exceptions.MaestroNotFoundException;
 import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.Tag;
@@ -261,7 +262,7 @@ public class JobTemplateManagerTest extends MaestroBaseTest {
     assertTrue(jobTemplateManager.findDefinition(templateStep, "v3").isEmpty());
     AssertHelper.assertThrows(
         "Missing job template should throw exception",
-        NullPointerException.class,
+        MaestroNotFoundException.class,
         "Cannot find the job template [write_audit_publish][v3] for the template step [publish]",
         () -> jobTemplateManager.loadDefinition(templateStep, "v3"));
   }

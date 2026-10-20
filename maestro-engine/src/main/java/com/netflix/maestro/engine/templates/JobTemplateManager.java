@@ -17,6 +17,7 @@ import com.netflix.maestro.engine.dao.MaestroJobTemplateDao;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
 import com.netflix.maestro.engine.params.ParamsMergeHelper;
 import com.netflix.maestro.engine.properties.JobTemplateCacheProperties;
+import com.netflix.maestro.exceptions.MaestroNotFoundException;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.definition.StepType;
@@ -168,10 +169,9 @@ public class JobTemplateManager {
     return findDefinition(step, version)
         .orElseThrow(
             () ->
-                new NullPointerException(
-                    String.format(
-                        "Cannot find the job template [%s][%s] for the template step [%s]",
-                        step.getSubType(), version, step.getId())));
+                new MaestroNotFoundException(
+                    "Cannot find the job template [%s][%s] for the template step [%s]",
+                    step.getSubType(), version, step.getId()));
   }
 
   private void checkStepType(JobTemplate.Definition jobTemplateDef, Step step) {

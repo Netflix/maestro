@@ -40,6 +40,7 @@ import com.netflix.maestro.engine.templates.SelTemplatePreparer;
 import com.netflix.maestro.engine.templates.StaticTemplatePreparer;
 import com.netflix.maestro.engine.templates.TemplateInstanceRunner;
 import com.netflix.maestro.engine.templates.TemplatePreparer;
+import com.netflix.maestro.exceptions.MaestroNotFoundException;
 import com.netflix.maestro.exceptions.MaestroRetryableError;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.artifact.Artifact;
@@ -240,7 +241,7 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
   @Test
   public void testStartFatalErrorWhenTemplateMissing() {
     when(jobTemplateManager.loadDefinition(step, VERSION))
-        .thenThrow(new NullPointerException("Cannot find the job template"));
+        .thenThrow(new MaestroNotFoundException("Cannot find the job template"));
     StepRuntimeSummary runtimeSummary = createStepRuntimeSummary(new HashMap<>());
 
     StepRuntime.Result result = templateStepRuntime.start(workflowSummary, step, runtimeSummary);
@@ -449,7 +450,7 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
   @Test
   public void testExecuteFatalErrorWhenTemplateMissing() {
     when(jobTemplateManager.loadDefinition(step, VERSION))
-        .thenThrow(new NullPointerException("Cannot find the job template"));
+        .thenThrow(new MaestroNotFoundException("Cannot find the job template"));
     StepRuntimeSummary runtimeSummary = createStartedStepRuntimeSummary(TemplatePrepare.STATIC);
 
     StepRuntime.Result result = templateStepRuntime.execute(workflowSummary, step, runtimeSummary);

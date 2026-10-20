@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.engine.templates;
 
+import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.AbstractStep;
 import com.netflix.maestro.models.definition.Step;
@@ -253,7 +254,7 @@ public final class TemplateStepSplicer {
               .expression(expression)
               .mode(ParamMode.IMMUTABLE)
               .build();
-      default -> throw new IllegalArgumentException("Unsupported output type " + elementType);
+      default -> throw new MaestroInternalError("Unsupported output type [%s]", elementType);
     };
   }
 

@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.engine.templates;
 
+import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.models.stepruntime.TemplatePrepare;
 
 /**
@@ -29,9 +30,8 @@ public class SelTemplatePreparer implements TemplatePreparer {
 
   @Override
   public PrepareResult prepare(PrepareContext context) {
-    throw new UnsupportedOperationException(
-        String.format(
-            "Template step [%s] uses the sel preparer, which is not implemented yet",
-            context.step().getId()));
+    throw new MaestroInternalError(
+        "Template step [%s] uses the sel preparer, which is not implemented yet",
+        context.step().getId());
   }
 }
