@@ -33,8 +33,8 @@ public class StaticTemplatePreparer implements TemplatePreparer {
         context.definition().getJobType(),
         context.artifact().getTemplateVersion(),
         context.step().getId());
-    TemplateExpansion expansion = new TemplateExpansion();
-    expansion.setSteps(new ArrayList<>(prepare.getSteps()));
+    TemplateExpansion expansion =
+        TemplateExpansion.builder().steps(new ArrayList<>(prepare.getSteps())).build();
     return PrepareResult.ready(expansion, null);
   }
 }

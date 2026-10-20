@@ -47,10 +47,11 @@ public class SelTemplatePreparerTest extends MaestroBaseTest {
     JobTemplate.Definition definition =
         loadObject("fixtures/stepruntime/job_template_with_steps.json", JobTemplate.class)
             .getDefinition();
-    TemplatePrepare prepare = new TemplatePrepare();
-    prepare.setType(TemplatePrepare.SEL);
-    prepare.setExpression("return buildExpansion(target_table);");
-    definition.setPrepare(prepare);
+    definition.setPrepare(
+        TemplatePrepare.builder()
+            .type(TemplatePrepare.SEL)
+            .expression("return buildExpansion(target_table);")
+            .build());
     TemplateStep step = new TemplateStep();
     step.setId("publish");
     PrepareContext context =

@@ -80,21 +80,19 @@ public class TemplateStepSplicerTest extends MaestroBaseTest {
       List<String> successors,
       List<String> params,
       Map<String, ParamType> outputs) {
-    TemplateStepInput position = new TemplateStepInput();
-    position.setPredecessors(predecessors);
-    position.setSuccessors(successors);
-    position.setParams(params);
+    TemplateStepInput.TemplateStepInputBuilder position =
+        TemplateStepInput.builder()
+            .predecessors(predecessors)
+            .successors(successors)
+            .params(params);
     if (outputs != null) {
       Map<String, TemplateStepInput.Output> declared = new LinkedHashMap<>();
       outputs.forEach(
-          (name, type) -> {
-            TemplateStepInput.Output output = new TemplateStepInput.Output();
-            output.setType(type);
-            declared.put(name, output);
-          });
-      position.setOutputs(declared);
+          (name, type) ->
+              declared.put(name, TemplateStepInput.Output.builder().type(type).build()));
+      position.outputs(declared);
     }
-    return position;
+    return position.build();
   }
 
   /**

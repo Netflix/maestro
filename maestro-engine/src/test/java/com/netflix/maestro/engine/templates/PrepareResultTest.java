@@ -25,7 +25,7 @@ import org.junit.Test;
 public class PrepareResultTest {
   @Test
   public void testReady() {
-    TemplateExpansion expansion = new TemplateExpansion();
+    TemplateExpansion expansion = TemplateExpansion.builder().build();
     PrepareResult result = PrepareResult.ready(expansion, null);
     assertTrue(result.isReady());
     assertEquals(expansion, result.expansion());
@@ -37,7 +37,7 @@ public class PrepareResultTest {
   @Test
   public void testReadyWithEvent() {
     TimelineLogEvent event = TimelineLogEvent.info("prepared");
-    PrepareResult result = PrepareResult.ready(new TemplateExpansion(), event);
+    PrepareResult result = PrepareResult.ready(TemplateExpansion.builder().build(), event);
     assertTrue(result.isReady());
     assertEquals(event, result.event());
   }

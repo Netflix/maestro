@@ -15,32 +15,47 @@ package com.netflix.maestro.models.stepruntime;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
-import lombok.Data;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.ToString;
 
 /**
  * The payload every template preparer produces: the step list the template step runs as an inline
  * workflow instance and additional run params for that instance. It is never a full workflow
  * definition.
  */
+@JsonDeserialize(builder = TemplateExpansion.TemplateExpansionBuilder.class)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(
     value = {"steps", "params"},
     alphabetic = true)
-@Data
+@Getter
+@ToString
+@EqualsAndHashCode
 public class TemplateExpansion {
-  @Valid private List<Step> steps;
+  @Valid private final List<Step> steps;
 
-  @Valid private Map<String, ParamDefinition> params;
+  @Valid private final Map<String, ParamDefinition> params;
 
-  /** set params. */
-  public void setParams(Map<String, ParamDefinition> input) {
-    this.params = ParamDefinition.preprocessDefinitionParams(input);
+  /** Constructor used by the builder; params are preprocessed as a workflow's params are. */
+  @Builder(toBuilder = true)
+  TemplateExpansion(List<Step> steps, Map<String, ParamDefinition> params) {
+    this.steps = steps;
+    this.params = ParamDefinition.preprocessDefinitionParams(params);
   }
+
+  /** builder class for lombok and jackson. */
+  @JsonPOJOBuilder(withPrefix = "")
+  @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+  public static final class TemplateExpansionBuilder {}
 }

@@ -55,24 +55,15 @@ public class JobTemplateDefinitionConstraintTest extends BaseConstraintTest {
   }
 
   private static TemplatePrepare staticPrepare(List<Step> steps) {
-    TemplatePrepare prepare = new TemplatePrepare();
-    prepare.setType(TemplatePrepare.STATIC);
-    prepare.setSteps(steps);
-    return prepare;
+    return TemplatePrepare.builder().type(TemplatePrepare.STATIC).steps(steps).build();
   }
 
   private static TemplatePrepare selPrepare(String expression) {
-    TemplatePrepare prepare = new TemplatePrepare();
-    prepare.setType(TemplatePrepare.SEL);
-    prepare.setExpression(expression);
-    return prepare;
+    return TemplatePrepare.builder().type(TemplatePrepare.SEL).expression(expression).build();
   }
 
   private static TemplatePrepare stepPrepare(Step step) {
-    TemplatePrepare prepare = new TemplatePrepare();
-    prepare.setType(TemplatePrepare.STEP);
-    prepare.setStep(step);
-    return prepare;
+    return TemplatePrepare.builder().type(TemplatePrepare.STEP).step(step).build();
   }
 
   private static TypedStep step(String id, String successor) {
@@ -96,21 +87,19 @@ public class JobTemplateDefinitionConstraintTest extends BaseConstraintTest {
       List<String> successors,
       List<String> params,
       Map<String, ParamType> outputs) {
-    TemplateStepInput position = new TemplateStepInput();
-    position.setPredecessors(predecessors);
-    position.setSuccessors(successors);
-    position.setParams(params);
+    TemplateStepInput.TemplateStepInputBuilder position =
+        TemplateStepInput.builder()
+            .predecessors(predecessors)
+            .successors(successors)
+            .params(params);
     if (outputs != null) {
       Map<String, TemplateStepInput.Output> declared = new LinkedHashMap<>();
       outputs.forEach(
-          (name, type) -> {
-            TemplateStepInput.Output output = new TemplateStepInput.Output();
-            output.setType(type);
-            declared.put(name, output);
-          });
-      position.setOutputs(declared);
+          (name, type) ->
+              declared.put(name, TemplateStepInput.Output.builder().type(type).build()));
+      position.outputs(declared);
     }
-    return position;
+    return position.build();
   }
 
   private ConstraintViolation<TestDefinition> singleViolation(
@@ -163,7 +152,7 @@ public class JobTemplateDefinitionConstraintTest extends BaseConstraintTest {
 
   @Test
   public void isPrepareTypeNull() {
-    TemplatePrepare prepare = new TemplatePrepare();
+    TemplatePrepare prepare = TemplatePrepare.builder().build();
     assertEquals(
         "[job template prepare] type cannot be null",
         singleViolation(definition(StepType.TEMPLATE, prepare), "prepare").getMessage());
@@ -171,8 +160,7 @@ public class JobTemplateDefinitionConstraintTest extends BaseConstraintTest {
 
   @Test
   public void isUnknownPrepareTypeAccepted() {
-    TemplatePrepare prepare = new TemplatePrepare();
-    prepare.setType("remote");
+    TemplatePrepare prepare = TemplatePrepare.builder().type("remote").build();
     assertTrue(
         validator.validate(new TestDefinition(definition(StepType.TEMPLATE, prepare))).isEmpty());
   }

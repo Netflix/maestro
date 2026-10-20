@@ -15,12 +15,17 @@ package com.netflix.maestro.models.stepruntime;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.netflix.maestro.models.definition.Step;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
-import lombok.Data;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.ToString;
 
 /**
  * How a template step produces the step list it runs. The {@code type} selects a preparer
@@ -29,12 +34,16 @@ import lombok.Data;
  * {@code sel} evaluates {@code expression} to the expansion payload, and {@code step} runs {@code
  * step} as a generator whose {@code expansion} output param holds the payload.
  */
+@JsonDeserialize(builder = TemplatePrepare.TemplatePrepareBuilder.class)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(
     value = {"type", "steps", "expression", "step"},
     alphabetic = true)
-@Data
+@Builder(toBuilder = true)
+@Getter
+@ToString
+@EqualsAndHashCode
 public class TemplatePrepare {
   /** Preparer type whose step list is stored in the registration. */
   public static final String STATIC = "static";
@@ -45,11 +54,16 @@ public class TemplatePrepare {
   /** Preparer type whose expansion payload is produced by a registered generator step. */
   public static final String STEP = "step";
 
-  @NotNull private String type;
+  @NotNull private final String type;
 
-  @Valid private List<Step> steps;
+  @Valid private final List<Step> steps;
 
-  private String expression;
+  private final String expression;
 
-  @Valid private Step step;
+  @Valid private final Step step;
+
+  /** builder class for lombok and jackson. */
+  @JsonPOJOBuilder(withPrefix = "")
+  @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+  public static final class TemplatePrepareBuilder {}
 }

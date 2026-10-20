@@ -16,13 +16,18 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.netflix.maestro.models.parameter.ParamType;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Map;
-import lombok.Data;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.ToString;
 
 /**
  * A position in a job template where a workflow may attach steps of its own. The template owner
@@ -32,24 +37,28 @@ import lombok.Data;
  * its {@code step_inputs} and, when outputs are declared, the id of the join step the template's
  * own steps read the collected outputs from, as {@code <position>__<output>}.
  */
+@JsonDeserialize(builder = TemplateStepInput.TemplateStepInputBuilder.class)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(
     value = {"predecessors", "successors", "params", "outputs"},
     alphabetic = true)
-@Data
+@Builder(toBuilder = true)
+@Getter
+@ToString
+@EqualsAndHashCode
 public class TemplateStepInput {
   /** Template step ids that run before the attached steps. */
-  private List<String> predecessors;
+  private final List<String> predecessors;
 
   /** Template step ids that run after the attached steps. */
-  private List<String> successors;
+  private final List<String> successors;
 
   /** Template param names the attached steps may reference. */
-  private List<String> params;
+  private final List<String> params;
 
   /** Params every attached step must publish, collected on the join step as arrays. */
-  @Valid private Map<String, Output> outputs;
+  @Valid private final Map<String, Output> outputs;
 
   /** True when the position collects outputs from its attached steps. */
   @JsonIgnore
@@ -57,11 +66,25 @@ public class TemplateStepInput {
     return outputs != null && !outputs.isEmpty();
   }
 
+  /** builder class for lombok and jackson. */
+  @JsonPOJOBuilder(withPrefix = "")
+  @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+  public static final class TemplateStepInputBuilder {}
+
   /** Declaration of one output every attached step must publish. */
+  @JsonDeserialize(builder = Output.OutputBuilder.class)
   @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  @Data
+  @Builder(toBuilder = true)
+  @Getter
+  @ToString
+  @EqualsAndHashCode
   public static class Output {
-    @NotNull private ParamType type;
+    @NotNull private final ParamType type;
+
+    /** builder class for lombok and jackson. */
+    @JsonPOJOBuilder(withPrefix = "")
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static final class OutputBuilder {}
   }
 }

@@ -70,7 +70,7 @@ public class StaticTemplatePreparerTest extends MaestroBaseTest {
 
   @Test
   public void testPrepareWithoutSteps() {
-    definition.getPrepare().setSteps(null);
+    definition.setPrepare(definition.getPrepare().toBuilder().steps(null).build());
     AssertHelper.assertThrows(
         "static preparer needs steps",
         NullPointerException.class,

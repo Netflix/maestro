@@ -253,7 +253,7 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
 
   @Test
   public void testStartFatalErrorWhenPreparerUnknown() {
-    definition.getPrepare().setType("remote");
+    definition.setPrepare(definition.getPrepare().toBuilder().type("remote").build());
     StepRuntimeSummary runtimeSummary = createStepRuntimeSummary(new HashMap<>());
 
     StepRuntime.Result result = templateStepRuntime.start(workflowSummary, step, runtimeSummary);
@@ -477,7 +477,7 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
 
   @Test
   public void testExecuteStepPreparerPendingWithArtifact() {
-    definition.getPrepare().setType(TemplatePrepare.STEP);
+    definition.setPrepare(definition.getPrepare().toBuilder().type(TemplatePrepare.STEP).build());
     when(stepPreparer.prepare(any()))
         .thenAnswer(
             invocation -> {
@@ -502,7 +502,7 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
 
   @Test
   public void testPreparePendingWithoutArtifactChange() {
-    definition.getPrepare().setType(TemplatePrepare.STEP);
+    definition.setPrepare(definition.getPrepare().toBuilder().type(TemplatePrepare.STEP).build());
     when(stepPreparer.prepare(any())).thenReturn(PrepareResult.pending(null, false));
     StepRuntimeSummary runtimeSummary =
         createStepRuntimeSummary(
@@ -517,7 +517,7 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
 
   @Test
   public void testPrepareFailed() {
-    definition.getPrepare().setType(TemplatePrepare.STEP);
+    definition.setPrepare(definition.getPrepare().toBuilder().type(TemplatePrepare.STEP).build());
     when(stepPreparer.prepare(any()))
         .thenReturn(
             PrepareResult.failed(StepRuntime.State.FATAL_ERROR, TimelineLogEvent.info("failed")));
@@ -535,7 +535,7 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
   @Test
   @SuppressWarnings("unchecked")
   public void testPrepareReadyLaunchesExecutionInstanceAfterPrepareInstance() throws Exception {
-    definition.getPrepare().setType(TemplatePrepare.STEP);
+    definition.setPrepare(definition.getPrepare().toBuilder().type(TemplatePrepare.STEP).build());
     // the expansion has no publish_snapshot step, so only the writes position is used
     step.getStepInputs().remove("after_publish");
     TemplateExpansion expansion =
@@ -588,9 +588,9 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
 
   @Test
   public void testPrepareReadyWithoutStepsIsFatal() {
-    definition.getPrepare().setType(TemplatePrepare.STEP);
+    definition.setPrepare(definition.getPrepare().toBuilder().type(TemplatePrepare.STEP).build());
     when(stepPreparer.prepare(any()))
-        .thenReturn(PrepareResult.ready(new TemplateExpansion(), null));
+        .thenReturn(PrepareResult.ready(TemplateExpansion.builder().build(), null));
     StepRuntimeSummary runtimeSummary =
         createStepRuntimeSummary(
             Map.of(Artifact.Type.TEMPLATE.key(), createArtifact(1L, 1L, null)));
@@ -969,10 +969,11 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
 
   @Test
   public void testExecuteSelPreparerIsNotImplemented() {
-    TemplatePrepare prepare = new TemplatePrepare();
-    prepare.setType(TemplatePrepare.SEL);
-    prepare.setExpression("return buildExpansion(target_table);");
-    definition.setPrepare(prepare);
+    definition.setPrepare(
+        TemplatePrepare.builder()
+            .type(TemplatePrepare.SEL)
+            .expression("return buildExpansion(target_table);")
+            .build());
     StepRuntimeSummary runtimeSummary = createStartedStepRuntimeSummary(TemplatePrepare.SEL);
 
     StepRuntime.Result result = templateStepRuntime.execute(workflowSummary, step, runtimeSummary);
