@@ -19,7 +19,6 @@ import com.netflix.maestro.engine.templates.JobTemplateManager;
 import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.Tag;
-import com.netflix.maestro.models.definition.TypedStep;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.utils.Checks;
 import java.util.List;
@@ -55,7 +54,7 @@ public class ExtensionStepRuntime implements StepRuntime {
 
   @Override
   public Result terminate(WorkflowSummary workflowSummary, StepRuntimeSummary runtimeSummary) {
-    return resolve(workflowSummary, runtimeSummary.getSubType(), null)
+    return resolve(workflowSummary, runtimeSummary.getSubType(), runtimeSummary.getSubTypeVersion())
         .terminate(workflowSummary, runtimeSummary);
   }
 
@@ -71,11 +70,7 @@ public class ExtensionStepRuntime implements StepRuntime {
   }
 
   private StepRuntime resolve(WorkflowSummary workflowSummary, Step step) {
-    String subTypeVersion = null;
-    if (step instanceof TypedStep typedStep) {
-      subTypeVersion = typedStep.getSubTypeVersion();
-    }
-    return resolve(workflowSummary, step.getSubType(), subTypeVersion);
+    return resolve(workflowSummary, step.getSubType(), step.getSubTypeVersion());
   }
 
   /**

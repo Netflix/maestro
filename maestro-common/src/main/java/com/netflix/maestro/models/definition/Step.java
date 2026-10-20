@@ -61,6 +61,11 @@ public interface Step {
     return null;
   }
 
+  /** Get the job template version pinned for the step subtype, or null for the default. */
+  default String getSubTypeVersion() {
+    return null;
+  }
+
   /** Get step failure mode. */
   FailureMode getFailureMode();
 

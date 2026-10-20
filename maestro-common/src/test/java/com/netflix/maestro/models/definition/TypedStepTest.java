@@ -93,4 +93,17 @@ public class TypedStepTest extends MaestroBaseTest {
         (TypedStep) MAPPER.readValue(MAPPER.writeValueAsString(typedStep1), Step.class);
     Assertions.assertThat(typedStep1).usingRecursiveComparison().isEqualTo(typedStep2);
   }
+
+  @Test
+  public void testSubTypeVersionAccessor() throws Exception {
+    Step step =
+        MAPPER.readValue(
+            """
+            {"step": {"id": "s1", "type": "extension", "sub_type": "spark", "sub_type_version": "v2"}}
+            """,
+            Step.class);
+    Assert.assertEquals("spark", step.getSubType());
+    Assert.assertEquals("v2", step.getSubTypeVersion());
+    Assert.assertNull(new ForeachStep().getSubTypeVersion());
+  }
 }

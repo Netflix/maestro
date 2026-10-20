@@ -104,6 +104,28 @@ public class ExtensionStepRuntimeTest extends MaestroEngineBaseTest {
   }
 
   @Test
+  public void testTerminateResolvesAncestorsWithRuntimeSummarySubTypeVersion() {
+    StepRuntimeSummary derivedSummary =
+        StepRuntimeSummary.builder()
+            .stepId("test")
+            .stepAttemptId(1)
+            .stepInstanceUuid("uuid")
+            .stepName("testExtension")
+            .stepInstanceId(1)
+            .type(StepType.EXTENSION)
+            .subType("my-spark-job")
+            .subTypeVersion("v2")
+            .build();
+    when(jobTemplateManager.loadAncestorJobTypes(workflowSummary, "my-spark-job", "v2"))
+        .thenReturn(List.of("spark"));
+    var result = StepRuntime.Result.of(StepRuntime.State.STOPPED);
+    when(sparkRuntime.terminate(workflowSummary, derivedSummary)).thenReturn(result);
+
+    assertSame(result, runtime.terminate(workflowSummary, derivedSummary));
+    verify(jobTemplateManager).loadAncestorJobTypes(workflowSummary, "my-spark-job", "v2");
+  }
+
+  @Test
   public void testInjectRuntimeParamsAndTags() {
     Map<String, ParamDefinition> params =
         Map.of("spark_conf", buildParam("spark_conf", "x").toDefinition());

@@ -277,6 +277,7 @@ public class MaestroExecutionPreparer implements ExecutionPreparer {
             .tags(stepInstance.getTags())
             .type(stepInstance.getDefinition().getType())
             .subType(stepInstance.getDefinition().getSubType())
+            .subTypeVersion(stepInstance.getDefinition().getSubTypeVersion())
             .params(stepInstance.getParams())
             .transition(stepInstance.getTransition())
             .stepRetry(stepInstance.getStepRetry())
