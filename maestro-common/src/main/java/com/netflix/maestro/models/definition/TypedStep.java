@@ -57,6 +57,7 @@ public final class TypedStep extends AbstractStep {
   @Getter(onMethod = @__({@Override}))
   private String subType; // optional
 
+  @Getter(onMethod = @__({@Override}))
   private String subTypeVersion; // optional
 
   @JsonProperty

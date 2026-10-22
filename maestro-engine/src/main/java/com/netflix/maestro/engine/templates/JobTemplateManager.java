@@ -91,8 +91,13 @@ public class JobTemplateManager {
   }
 
   private String getJobTemplateVersion(WorkflowSummary workflowSummary, Step step) {
+    return resolveJobTemplateVersion(workflowSummary, ((TypedStep) step).getSubTypeVersion());
+  }
+
+  private String resolveJobTemplateVersion(
+      WorkflowSummary workflowSummary, @Nullable String subTypeVersion) {
     // subtype version is used for job template versioning if present.
-    String version = ((TypedStep) step).getSubTypeVersion();
+    String version = subTypeVersion;
     if (version == null
         && workflowSummary.getParams() != null
         && workflowSummary.getParams().containsKey(Constants.JOB_TEMPLATE_VERSION_PARAM)) {
@@ -141,6 +146,41 @@ public class JobTemplateManager {
       return null;
     } else {
       return template.getStepType();
+    }
+  }
+
+  /**
+   * Load the job types a sub type inherits from, following the {@code inherit_from} chain of its
+   * job templates. The list is in pre-order, so a direct parent comes before that parent's own
+   * ancestors. A job type with no template, or no {@code inherit_from}, has no ancestors. A job
+   * type already on the path is skipped, so a cyclic chain terminates.
+   *
+   * @param workflowSummary workflow summary, used to resolve the job template version
+   * @param subType the step sub type whose ancestors to load
+   * @param subTypeVersion the step sub type version, or null to use the workflow or default version
+   * @return the ancestor job types, nearest first
+   */
+  public List<String> loadAncestorJobTypes(
+      WorkflowSummary workflowSummary, String subType, @Nullable String subTypeVersion) {
+    List<String> ancestors = new ArrayList<>();
+    Set<String> visited = new HashSet<>();
+    visited.add(subType);
+    collectAncestorJobTypes(
+        subType, resolveJobTemplateVersion(workflowSummary, subTypeVersion), ancestors, visited);
+    return List.copyOf(ancestors);
+  }
+
+  private void collectAncestorJobTypes(
+      String jobType, String version, List<String> ancestors, Set<String> visited) {
+    var jobTemplateDef = loadJobTemplateSchema(jobType, version);
+    if (jobTemplateDef == null || jobTemplateDef.getInheritFrom() == null) {
+      return;
+    }
+    for (var parent : jobTemplateDef.getInheritFrom().entrySet()) {
+      if (visited.add(parent.getKey())) {
+        ancestors.add(parent.getKey());
+        collectAncestorJobTypes(parent.getKey(), parent.getValue(), ancestors, visited);
+      }
     }
   }
 

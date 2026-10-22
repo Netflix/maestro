@@ -258,6 +258,7 @@ public final class MaestroTask implements FlowTask {
             .tags(stepDefinition.getTags())
             .type(stepDefinition.getType())
             .subType(stepDefinition.getSubType())
+            .subTypeVersion(stepDefinition.getSubTypeVersion())
             .params(new LinkedHashMap<>()) // empty placeholder
             .transition(StepInstanceTransition.from(stepDefinition))
             .stepRetry(stepRetry)

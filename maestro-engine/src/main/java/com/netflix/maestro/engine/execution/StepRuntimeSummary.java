@@ -78,6 +78,7 @@ import lombok.ToString;
       "tags",
       "type",
       "sub_type",
+      "sub_type_version",
       "params",
       "transition",
       "step_retry",
@@ -109,6 +110,7 @@ public final class StepRuntimeSummary {
   @Valid @TagListConstraint private final TagList tags;
   private final StepType type;
   private final String subType;
+  private final String subTypeVersion;
   @Valid private final Map<String, Parameter> params;
   @Valid private final StepInstanceTransition transition;
   @NotNull @Valid private final StepInstance.StepRetry stepRetry;
@@ -159,6 +161,7 @@ public final class StepRuntimeSummary {
       @Valid @TagListConstraint TagList tags,
       @NotNull StepType type,
       String subType,
+      String subTypeVersion,
       @Valid @NotNull Map<String, Parameter> params,
       @Valid @NotNull StepInstanceTransition transition,
       @Valid @NotNull StepInstance.StepRetry stepRetry,
@@ -183,6 +186,7 @@ public final class StepRuntimeSummary {
     this.tags = tags == null ? new TagList(null) : tags;
     this.type = type;
     this.subType = subType;
+    this.subTypeVersion = subTypeVersion;
     this.params = Parameter.preprocessInstanceParams(params);
     this.transition = transition;
     this.stepRetry = stepRetry;
