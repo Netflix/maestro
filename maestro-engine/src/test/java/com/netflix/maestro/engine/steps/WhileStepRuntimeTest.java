@@ -19,6 +19,7 @@ import static org.mockito.Mockito.when;
 
 import com.netflix.maestro.engine.MaestroEngineBaseTest;
 import com.netflix.maestro.engine.concurrency.InstanceStepConcurrencyHandler;
+import com.netflix.maestro.engine.dao.MaestroStepBreakpointDao;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
 import com.netflix.maestro.engine.eval.ParamEvaluator;
@@ -54,6 +55,7 @@ public class WhileStepRuntimeTest extends MaestroEngineBaseTest {
   @Mock private WorkflowActionHandler workflowActionHandler;
   @Mock private MaestroWorkflowInstanceDao workflowInstanceDao;
   @Mock private MaestroStepInstanceDao stepInstanceDao;
+  @Mock private MaestroStepBreakpointDao stepBreakpointDao;
   @Mock private MaestroQueueSystem queueSystem;
   @Mock private InstanceStepConcurrencyHandler instanceStepConcurrencyHandler;
   @Mock private ParamEvaluator paramEvaluator;
@@ -68,6 +70,7 @@ public class WhileStepRuntimeTest extends MaestroEngineBaseTest {
             workflowActionHandler,
             workflowInstanceDao,
             stepInstanceDao,
+            stepBreakpointDao,
             queueSystem,
             instanceStepConcurrencyHandler,
             paramEvaluator);
@@ -140,6 +143,68 @@ public class WhileStepRuntimeTest extends MaestroEngineBaseTest {
     assertTrue(result.artifacts().isEmpty());
   }
 
+  @Test
+  public void testExecuteWithBreakpointReturnsPaused() {
+    workflowSummary.setWorkflowVersionId(1L);
+    WhileStep step = createWhileStep("count < 3", Collections.emptyList());
+    StepRuntimeSummary runtimeSummary = createStepRuntimeSummary();
+    WhileArtifact artifact = new WhileArtifact();
+    artifact.setLoopWorkflowId("fake_loop_workflow_id");
+    artifact.setLoopRunId(1L);
+    artifact.setFirstIteration(1L);
+    artifact.setLastIteration(0L);
+    java.util.Map<String, java.util.List<Object>> loopParamValues = new java.util.LinkedHashMap<>();
+    loopParamValues.put("count", new java.util.ArrayList<>(Collections.singletonList(1L)));
+    artifact.setLoopParamValues(loopParamValues);
+    runtimeSummary.getArtifacts().put(Type.WHILE.key(), artifact);
+
+    // Mock paramEvaluator to evaluate condition to true (loop continues)
+    org.mockito.Mockito.doAnswer(
+            invocation -> {
+              Parameter param = invocation.getArgument(3);
+              param.setEvaluatedResult(true);
+              return null;
+            })
+        .when(paramEvaluator)
+        .parseStepParameter(
+            org.mockito.Mockito.anyMap(),
+            org.mockito.Mockito.anyMap(),
+            org.mockito.Mockito.anyMap(),
+            org.mockito.Mockito.any(),
+            org.mockito.Mockito.anyString());
+
+    // Mock breakpoint dao returning true (breakpoint set)
+    when(stepBreakpointDao.createPausedStepAttemptIfNeeded(
+            WORKFLOW_ID, 1L, INSTANCE_ID, RUN_ID, STEP_ID, STEP_ATTEMPT_ID))
+        .thenReturn(true);
+
+    StepRuntime.Result result = whileStepRuntime.execute(workflowSummary, step, runtimeSummary);
+
+    System.out.println("RESULT STATE: " + result.state());
+    System.out.println("RESULT TIMELINE: " + result.timeline());
+    assertEquals(StepRuntime.State.PAUSED, result.state());
+    assertNotNull(result.artifacts().get(Type.WHILE.key()));
+    assertEquals(1, result.timeline().size());
+    assertTrue(result.timeline().get(0).getMessage().contains("While loop paused"));
+  }
+
+  @Test
+  public void testStartWithExistingWhileArtifact() {
+    WhileStep step = createWhileStep("count < 3", Collections.emptyList());
+    StepRuntimeSummary runtimeSummary = createStepRuntimeSummary();
+
+    // Add existing while artifact to runtime summary (representing resume case)
+    WhileArtifact existingArtifact = new WhileArtifact();
+    existingArtifact.setLoopRunId(5L);
+    existingArtifact.setLastIteration(4L);
+    runtimeSummary.getArtifacts().put(Type.WHILE.key(), existingArtifact);
+
+    StepRuntime.Result result = whileStepRuntime.start(workflowSummary, step, runtimeSummary);
+
+    assertEquals(StepRuntime.State.DONE, result.state());
+    assertEquals(existingArtifact, result.artifacts().get(Type.WHILE.key()));
+  }
+
   private WhileStep createWhileStep(
       String condition, java.util.List<com.netflix.maestro.models.definition.Step> steps) {
     WhileStep step = new WhileStep();
@@ -154,7 +219,7 @@ public class WhileStepRuntimeTest extends MaestroEngineBaseTest {
     Map<String, Parameter> params = new HashMap<>();
 
     Map<String, Object> loopParamValues = new LinkedHashMap<>();
-    loopParamValues.put("count", 1);
+    loopParamValues.put("count", 1L);
 
     MapParameter loopParams =
         MapParameter.builder()

@@ -50,6 +50,14 @@ public final class StepSyncManager {
       @NotNull StepInstance instance,
       @NotNull WorkflowSummary workflowSummary,
       @NotNull StepRuntimeSummary stepSummary) {
+    return sync(instance, workflowSummary, stepSummary, 0L);
+  }
+
+  public Optional<Details> sync(
+      @NotNull StepInstance instance,
+      @NotNull WorkflowSummary workflowSummary,
+      @NotNull StepRuntimeSummary stepSummary,
+      long flowGeneration) {
     try {
       MaestroJobEvent jobEvent = null;
       if (!stepSummary.getPendingRecords().isEmpty()) {
@@ -62,10 +70,13 @@ public final class StepSyncManager {
         case INSERT:
         case UPSERT:
           instanceDao.insertOrUpsertStepInstance(
-              instance, stepSummary.getDbOperation() == DbOperation.UPSERT, jobEvent);
+              instance,
+              stepSummary.getDbOperation() == DbOperation.UPSERT,
+              jobEvent,
+              flowGeneration);
           break;
         case UPDATE:
-          instanceDao.updateStepInstance(workflowSummary, stepSummary, jobEvent);
+          instanceDao.updateStepInstance(workflowSummary, stepSummary, jobEvent, flowGeneration);
           break;
         default:
           throw new MaestroInternalError(

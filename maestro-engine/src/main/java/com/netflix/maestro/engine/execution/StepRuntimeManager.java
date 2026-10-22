@@ -155,6 +155,9 @@ public final class StepRuntimeManager {
     switch (result.state()) {
       case CONTINUE:
         return true;
+      case PAUSED:
+        runtimeSummary.markPaused(tracingManager);
+        return true;
       case DONE:
         runtimeSummary.markFinishing(tracingManager);
         return result.shouldPersist();

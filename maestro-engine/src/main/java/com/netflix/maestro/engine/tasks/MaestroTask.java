@@ -24,6 +24,7 @@ import com.netflix.maestro.engine.db.StepAction;
 import com.netflix.maestro.engine.eval.InstanceWrapper;
 import com.netflix.maestro.engine.eval.MaestroParamExtensionRepo;
 import com.netflix.maestro.engine.eval.ParamEvaluator;
+import com.netflix.maestro.engine.execution.StepLocalMemory;
 import com.netflix.maestro.engine.execution.StepRuntimeCallbackDelayPolicy;
 import com.netflix.maestro.engine.execution.StepRuntimeManager;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
@@ -308,6 +309,7 @@ public final class MaestroTask implements FlowTask {
         getClass(),
         "exception",
         e.getClass().getSimpleName());
+    StepLocalMemory.remove(task.getTaskId());
   }
 
   private boolean initializeAndSendOutputSignals(
@@ -786,7 +788,7 @@ public final class MaestroTask implements FlowTask {
       if (runtimeSummary.isSynced()) {
         return false;
       } else {
-        syncPendingUpdates(task, workflowSummary, runtimeSummary, false);
+        syncPendingUpdates(task, workflowSummary, runtimeSummary, false, flow.getGeneration());
         return true;
       }
     } catch (MaestroRetryableError mre) { // will retry in the next polling cycle
@@ -1108,9 +1110,11 @@ public final class MaestroTask implements FlowTask {
       Task task,
       WorkflowSummary workflowSummary,
       StepRuntimeSummary runtimeSummary,
-      boolean thrown) {
+      boolean thrown,
+      long flowGeneration) {
     StepInstance stepInstance = createStepInstance(workflowSummary, runtimeSummary);
-    Optional<Details> result = stepSyncManager.sync(stepInstance, workflowSummary, runtimeSummary);
+    Optional<Details> result =
+        stepSyncManager.sync(stepInstance, workflowSummary, runtimeSummary, flowGeneration);
     if (result.isPresent()) {
       runtimeSummary.addTimeline(
           TimelineLogEvent.warn("Failed to sync due to error: " + result.get()));
@@ -1123,6 +1127,9 @@ public final class MaestroTask implements FlowTask {
       runtimeSummary.cleanUp();
       // update task status only if sync succeeds.
       TaskHelper.deriveTaskStatus(task, runtimeSummary);
+      if (task.isTerminal()) {
+        StepLocalMemory.remove(task.getTaskId());
+      }
     }
     task.getOutputData().put(Constants.STEP_RUNTIME_SUMMARY_FIELD, runtimeSummary);
   }
@@ -1222,7 +1229,9 @@ public final class MaestroTask implements FlowTask {
     }
 
     if (!runtimeSummary.isSynced()) {
-      syncPendingUpdates(task, workflowSummary, runtimeSummary, true);
+      syncPendingUpdates(task, workflowSummary, runtimeSummary, true, flow.getGeneration());
+    } else {
+      StepLocalMemory.remove(task.getTaskId());
     }
   }
 
