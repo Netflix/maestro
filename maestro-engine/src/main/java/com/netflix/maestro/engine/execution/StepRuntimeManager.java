@@ -158,6 +158,10 @@ public final class StepRuntimeManager {
       case DONE:
         runtimeSummary.markFinishing(tracingManager);
         return result.shouldPersist();
+      case COMPLETED_WITH_ERROR:
+        runtimeSummary.setCompletedWithError(true);
+        runtimeSummary.markFinishing(tracingManager);
+        return result.shouldPersist();
       case USER_ERROR:
         markTerminatedWithMetric(
             runtimeSummary, result.state(), getUserErrorStatus(runtimeSummary));

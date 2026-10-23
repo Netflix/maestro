@@ -56,6 +56,13 @@ public enum ParamSource {
   /** Set by template parent. */
   TEMPLATE(false),
 
+  /**
+   * Declared by a job template as its result and written by the template step runtime only: on the
+   * collector step and on the steps a workflow attaches to the template. Evaluated after the
+   * template steps ran, never at instance start.
+   */
+  TEMPLATE_OUTPUT(true),
+
   /** Set by foreach launch. */
   FOREACH(false),
 

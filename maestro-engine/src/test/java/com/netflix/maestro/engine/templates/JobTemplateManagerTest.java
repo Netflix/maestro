@@ -25,8 +25,11 @@ import com.netflix.maestro.MaestroBaseTest;
 import com.netflix.maestro.engine.dao.MaestroJobTemplateDao;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
 import com.netflix.maestro.engine.properties.JobTemplateCacheProperties;
+import com.netflix.maestro.exceptions.MaestroNotFoundException;
+import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.Tag;
+import com.netflix.maestro.models.definition.TemplateStep;
 import com.netflix.maestro.models.definition.TypedStep;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.Parameter;
@@ -202,6 +205,94 @@ public class JobTemplateManagerTest extends MaestroBaseTest {
         IllegalArgumentException.class,
         "Cyclic dependency detected for step [test-step][NOTEBOOK][shell] when inheriting job type [parent-job-type]",
         () -> jobTemplateManager.loadTags(workflowSummary, step));
+  }
+
+  @Test
+  public void testLoadRuntimeParamsAndTagsWithTemplateStepVersion() throws IOException {
+    JobTemplate templateJobTemplate =
+        loadObject("fixtures/stepruntime/job_template_with_steps.json", JobTemplate.class);
+    TemplateStep templateStep = new TemplateStep();
+    templateStep.setId("publish");
+    templateStep.setSubType("write_audit_publish");
+    templateStep.setSubTypeVersion("v3");
+    when(jobTemplateDao.getJobTemplate("write_audit_publish", "v3"))
+        .thenReturn(templateJobTemplate);
+
+    Map<String, ParamDefinition> params =
+        jobTemplateManager.loadRuntimeParams(workflowSummary, templateStep);
+
+    // the promised param is a registered param too; the template step runtime redeclares it
+    assertEquals(3, params.size());
+    assertTrue(params.containsKey("target_table"));
+    assertTrue(params.containsKey("snapshot_id"));
+    assertTrue(params.containsKey("published_snapshot"));
+    verify(jobTemplateDao, times(1)).getJobTemplate("write_audit_publish", "v3");
+    verify(jobTemplateDao, times(0)).getJobTemplate("write_audit_publish", "v1");
+  }
+
+  @Test
+  public void testFindDefinition() throws IOException {
+    JobTemplate templateJobTemplate =
+        loadObject("fixtures/stepruntime/job_template_with_steps.json", JobTemplate.class);
+    TemplateStep templateStep = new TemplateStep();
+    templateStep.setId("publish");
+    templateStep.setSubType("write_audit_publish");
+    when(jobTemplateDao.getJobTemplate("write_audit_publish", "v3"))
+        .thenReturn(templateJobTemplate);
+
+    var definition = jobTemplateManager.findDefinition(templateStep, "v3");
+
+    assertTrue(definition.isPresent());
+    assertEquals(
+        List.of("write", "audit", "publish_snapshot"),
+        definition.get().getPrepare().getSteps().stream()
+            .map(Step::getId)
+            .collect(Collectors.toList()));
+    assertEquals(definition.get(), jobTemplateManager.loadDefinition(templateStep, "v3"));
+    verify(jobTemplateDao, times(1)).getJobTemplate("write_audit_publish", "v3");
+  }
+
+  @Test
+  public void testFindDefinitionWithMissingTemplate() {
+    TemplateStep templateStep = new TemplateStep();
+    templateStep.setId("publish");
+    templateStep.setSubType("write_audit_publish");
+    when(jobTemplateDao.getJobTemplate("write_audit_publish", "v3")).thenReturn(null);
+
+    assertTrue(jobTemplateManager.findDefinition(templateStep, "v3").isEmpty());
+    AssertHelper.assertThrows(
+        "Missing job template should throw exception",
+        MaestroNotFoundException.class,
+        "Cannot find the job template [write_audit_publish][v3] for the template step [publish]",
+        () -> jobTemplateManager.loadDefinition(templateStep, "v3"));
+  }
+
+  @Test
+  public void testFindDefinitionWithStepTypeMismatch() {
+    TemplateStep templateStep = new TemplateStep();
+    templateStep.setId("publish");
+    templateStep.setSubType("shell");
+    when(jobTemplateDao.getJobTemplate("shell", "v1")).thenReturn(jobTemplate);
+
+    AssertHelper.assertThrows(
+        "Step type mismatch should throw exception",
+        IllegalArgumentException.class,
+        "Job template definition step type [NOTEBOOK] does not match the current step type [TEMPLATE]",
+        () -> jobTemplateManager.findDefinition(templateStep, "v1"));
+  }
+
+  @Test
+  public void testGetJobTemplateVersion() {
+    TemplateStep templateStep = new TemplateStep();
+    templateStep.setId("publish");
+    templateStep.setSubType("write_audit_publish");
+    assertEquals("v1", jobTemplateManager.getJobTemplateVersion(workflowSummary, templateStep));
+    templateStep.setSubTypeVersion("v3");
+    assertEquals("v3", jobTemplateManager.getJobTemplateVersion(workflowSummary, templateStep));
+    workflowSummary.setParams(Map.of());
+    templateStep.setSubTypeVersion(null);
+    assertEquals(
+        "default", jobTemplateManager.getJobTemplateVersion(workflowSummary, templateStep));
   }
 
   @Test

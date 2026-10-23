@@ -40,7 +40,7 @@ import com.netflix.maestro.models.definition.RunStrategy;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.definition.Workflow;
 import com.netflix.maestro.models.definition.WorkflowDefinition;
-import com.netflix.maestro.models.initiator.ForeachInitiator;
+import com.netflix.maestro.models.initiator.UpstreamInitiator;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.timeline.TimelineEvent;
@@ -506,7 +506,7 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
                         workflowId);
                   });
           String nonInlineWorkflowId =
-              ((ForeachInitiator) instance.getInitiator()).getNonInlineParent().getWorkflowId();
+              ((UpstreamInitiator) instance.getInitiator()).getNonInlineParent().getWorkflowId();
           MaestroWorkflow maestroWorkflow = getMaestroWorkflow(nonInlineWorkflowId);
           if (maestroWorkflow == null) {
             throw new MaestroNotFoundException(
@@ -606,7 +606,7 @@ public class MaestroWorkflowDao extends AbstractDatabaseDao {
   public TimelineEvent deleteWorkflow(String workflowId, User author) {
     if (IdHelper.isInlineWorkflowId(workflowId)) {
       throw new MaestroUnprocessableEntityException(
-          "Cannot delete an inline foreach workflow [%s], please delete its parent concrete workflow instead.",
+          "Cannot delete an inline workflow [%s], please delete its parent concrete workflow instead.",
           workflowId);
     }
 

@@ -17,6 +17,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import jakarta.validation.Valid;
+import java.util.List;
+import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -30,15 +33,36 @@ import lombok.ToString;
  */
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder(alphabetic = true)
+@JsonPropertyOrder(
+    value = {
+      "id",
+      "name",
+      "description",
+      "transition",
+      "sub_type",
+      "sub_type_version",
+      "failure_mode",
+      "tags",
+      "timeout",
+      "signal_dependencies",
+      "signal_outputs",
+      "params",
+      "step_inputs"
+    },
+    alphabetic = true)
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public final class TemplateStep extends AbstractStep {
-  // todo: placeholder and add fields when supporting template
+  @Getter(onMethod = @__({@Override}))
+  private String subType; // job type of the registered template
 
   @Getter(onMethod = @__({@Override}))
-  private String subType; // optional
+  private String subTypeVersion; // optional
+
+  // steps the workflow attaches to the template, keyed by the position name the template declares;
+  // a step's transition may only name other steps of the same position
+  @Valid private Map<String, List<@Valid Step>> stepInputs;
 
   @JsonIgnore
   @Override

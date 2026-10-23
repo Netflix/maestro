@@ -91,7 +91,8 @@ public class MaestroWorkflowDeletionDao extends AbstractDatabaseDao {
     DELETING_INLINE_INSTANCES(
         "DELETE FROM maestro_workflow_instance WHERE (workflow_id, instance_id, run_id) IN ("
             + "SELECT workflow_id, instance_id, run_id FROM maestro_workflow_instance WHERE "
-            + "(workflow_id >= ? AND workflow_id < ?) OR (workflow_id >= ? AND workflow_id < ?) LIMIT ?)") {
+            + "(workflow_id >= ? AND workflow_id < ?) OR (workflow_id >= ? AND workflow_id < ?) "
+            + "OR (workflow_id >= ? AND workflow_id < ?) LIMIT ?)") {
       @Override
       void prepareQuery(PreparedStatement stmt, String workflowId, long internalId)
           throws SQLException {
@@ -106,6 +107,11 @@ public class MaestroWorkflowDeletionDao extends AbstractDatabaseDao {
             ++idx,
             IdHelper.getInlineWorkflowPrefixId(internalId, StepType.WHILE)
                 + Constants.INLINE_WORKFLOW_ID_LARGEST_CHAR_IN_USE); // upper bound
+        stmt.setString(++idx, IdHelper.getInlineWorkflowPrefixId(internalId, StepType.TEMPLATE));
+        stmt.setString(
+            ++idx,
+            IdHelper.getInlineWorkflowPrefixId(internalId, StepType.TEMPLATE)
+                + Constants.INLINE_WORKFLOW_ID_LARGEST_CHAR_IN_USE); // upper bound
         stmt.setInt(++idx, Constants.BATCH_DELETION_LIMIT);
       }
     },
@@ -114,7 +120,7 @@ public class MaestroWorkflowDeletionDao extends AbstractDatabaseDao {
             + "(workflow_id, workflow_instance_id, step_id, workflow_run_id, step_attempt_id) IN ("
             + "SELECT workflow_id, workflow_instance_id, step_id, workflow_run_id, step_attempt_id FROM "
             + "maestro_step_instance WHERE (workflow_id >= ? AND workflow_id < ?) "
-            + "OR (workflow_id >= ? AND workflow_id < ?) LIMIT ?)") {
+            + "OR (workflow_id >= ? AND workflow_id < ?) OR (workflow_id >= ? AND workflow_id < ?) LIMIT ?)") {
       @Override
       void prepareQuery(PreparedStatement stmt, String workflowId, long internalId)
           throws SQLException {
