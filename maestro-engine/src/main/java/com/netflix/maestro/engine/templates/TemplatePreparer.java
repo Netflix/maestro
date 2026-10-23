@@ -12,9 +12,11 @@
  */
 package com.netflix.maestro.engine.templates;
 
+import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.stepruntime.JobTemplate;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -48,4 +50,20 @@ public interface TemplatePreparer {
    * @return the prepare result
    */
   PrepareResult prepare(PrepareContext context);
+
+  /**
+   * Adjust the steps the workflow attached at the template's positions before they are spliced into
+   * the prepared steps. The runtime calls it once the expansion is ready, with a copy of the
+   * workflow's {@code step_inputs} keyed by position; the step definition itself is never changed.
+   * The returned map goes through the same splice rules as the original: declared positions, new
+   * step ids, required outputs. The default returns the attached steps unchanged.
+   *
+   * @param context the template step being prepared
+   * @param stepInputs the attached steps keyed by position, a mutable copy
+   * @return the attached steps to splice, never null
+   */
+  default Map<String, List<Step>> adaptStepInputs(
+      PrepareContext context, Map<String, List<Step>> stepInputs) {
+    return stepInputs;
+  }
 }

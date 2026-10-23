@@ -64,6 +64,7 @@ import com.netflix.maestro.models.parameter.ParamMode;
 import com.netflix.maestro.models.parameter.ParamSource;
 import com.netflix.maestro.models.parameter.ParamType;
 import com.netflix.maestro.models.parameter.Parameter;
+import com.netflix.maestro.models.parameter.StringParamDefinition;
 import com.netflix.maestro.models.parameter.StringParameter;
 import com.netflix.maestro.models.stepruntime.JobTemplate;
 import com.netflix.maestro.models.stepruntime.TemplateExpansion;
@@ -107,6 +108,7 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
   @Before
   public void setUp() throws Exception {
     when(stepPreparer.type()).thenReturn(TemplatePrepare.STEP);
+    when(stepPreparer.adaptStepInputs(any(), any())).thenAnswer(inv -> inv.getArgument(1));
     templateStepRuntime =
         new TemplateStepRuntime(
             instanceRunner,
@@ -584,6 +586,75 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
         workflowCaptor.getValue().getAllStepIds());
     assertEquals("wap-3f2a", paramsCaptor.getValue().get("wap_branch").getValue());
     assertEquals("db.sample_table", paramsCaptor.getValue().get("target_table").getValue());
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testPreparerAdaptsStepInputsBeforeSplice() throws Exception {
+    definition.setPrepare(definition.getPrepare().toBuilder().type(TemplatePrepare.STEP).build());
+    step.getStepInputs().remove("after_publish");
+    TemplateExpansion expansion =
+        loadObject("fixtures/stepruntime/sample-template-expansion.json", TemplateExpansion.class);
+    when(stepPreparer.prepare(any()))
+        .thenReturn(PrepareResult.ready(expansion, TimelineLogEvent.info("prepared")));
+    // the preparer tags every attached write step
+    when(stepPreparer.adaptStepInputs(any(), any()))
+        .thenAnswer(
+            inv -> {
+              Map<String, List<Step>> inputs = inv.getArgument(1);
+              inputs
+                  .get("writes")
+                  .forEach(
+                      s ->
+                          s.getParams()
+                              .put(
+                                  "write_tag",
+                                  StringParamDefinition.builder()
+                                      .name("write_tag")
+                                      .value("wap-1")
+                                      .build()));
+              return inputs;
+            });
+    StepRuntimeSummary runtimeSummary =
+        createStepRuntimeSummary(
+            Map.of(Artifact.Type.TEMPLATE.key(), createArtifact(1L, 1L, null)));
+
+    StepRuntime.Result result = templateStepRuntime.execute(workflowSummary, step, runtimeSummary);
+
+    assertEquals(StepRuntime.State.CONTINUE, result.state());
+    ArgumentCaptor<Workflow> workflowCaptor = ArgumentCaptor.forClass(Workflow.class);
+    verify(instanceRunner)
+        .run(any(), any(), eq(step), any(), eq(2L), workflowCaptor.capture(), any(), eq(false));
+    Workflow inlineWorkflow = workflowCaptor.getValue();
+    // the adapted copies are what gets spliced
+    assertEquals("wap-1", stepParams(inlineWorkflow, "write_a").get("write_tag").getValue());
+    assertEquals("wap-1", stepParams(inlineWorkflow, "write_b").get("write_tag").getValue());
+    // the step definition's own inputs are untouched
+    assertEquals(
+        List.of("write_a", "write_b"),
+        step.getStepInputs().get("writes").stream().map(Step::getId).toList());
+    assertFalse(step.getStepInputs().get("writes").getFirst().getParams().containsKey("write_tag"));
+  }
+
+  @Test
+  public void testPreparerReturningNullStepInputsIsFatal() {
+    definition.setPrepare(definition.getPrepare().toBuilder().type(TemplatePrepare.STEP).build());
+    when(stepPreparer.prepare(any()))
+        .thenReturn(
+            PrepareResult.ready(
+                TemplateExpansion.builder()
+                    .steps(List.of(definition.getPrepare().getSteps().getFirst()))
+                    .build(),
+                null));
+    when(stepPreparer.adaptStepInputs(any(), any())).thenReturn(null);
+    StepRuntimeSummary runtimeSummary =
+        createStepRuntimeSummary(
+            Map.of(Artifact.Type.TEMPLATE.key(), createArtifact(1L, 1L, null)));
+
+    StepRuntime.Result result = templateStepRuntime.execute(workflowSummary, step, runtimeSummary);
+
+    assertEquals(StepRuntime.State.FATAL_ERROR, result.state());
+    assertTrue(firstError(result).contains("preparer [step] returned null step inputs"));
   }
 
   @Test

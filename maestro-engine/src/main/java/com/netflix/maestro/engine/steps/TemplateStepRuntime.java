@@ -275,7 +275,13 @@ public class TemplateStepRuntime implements StepRuntime {
       Map<String, List<Step>> stepInputs =
           step instanceof TemplateStep templateStep && templateStep.getStepInputs() != null
               ? copyStepInputs(templateStep.getStepInputs())
-              : Collections.emptyMap();
+              : new LinkedHashMap<>();
+      stepInputs =
+          Checks.notNull(
+              preparer.adaptStepInputs(context, stepInputs),
+              "Template step [%s] preparer [%s] returned null step inputs",
+              step.getId(),
+              preparer.type());
       List<Step> steps = TemplateStepSplicer.splice(expansion.getSteps(), definition, stepInputs);
       TemplateStepSplicer.appendCollector(steps, definition.promisedParams());
       artifact.setTemplateInstanceId(
