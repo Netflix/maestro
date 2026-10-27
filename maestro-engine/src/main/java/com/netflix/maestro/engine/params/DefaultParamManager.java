@@ -121,7 +121,13 @@ public class DefaultParamManager {
         defaultTypeParams.put(typeName, typeParams);
       }
     } catch (Exception e) {
-      throw new MaestroRuntimeException("Error processing step default file " + defaultFile, e);
+      throw new MaestroRuntimeException(
+          "Failed to load default params for ["
+              + typeName
+              + "] from classpath resource ["
+              + defaultFile
+              + "] or its configured override",
+          e);
     }
   }
 
