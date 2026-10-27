@@ -266,7 +266,7 @@ public class ParamsManagerTest extends MaestroEngineBaseTest {
   public void testInjectedJobTemplateParams() {
     when(stepRuntime.injectRuntimeParams(any(), any()))
         .thenReturn(singletonMap("p2", ParamDefinition.buildParamDefinition("p2", "d2")));
-    when(defaultParamManager.getDefaultParamsForType(any()))
+    when(defaultParamManager.getDefaultParamsForStep(any()))
         .thenReturn(
             Optional.of(singletonMap("p3", ParamDefinition.buildParamDefinition("p3", "d3"))));
 
@@ -285,7 +285,7 @@ public class ParamsManagerTest extends MaestroEngineBaseTest {
   public void testInjectedJobTemplateParamsOverride() {
     when(stepRuntime.injectRuntimeParams(any(), any()))
         .thenReturn(singletonMap("p3", ParamDefinition.buildParamDefinition("p3", "d2")));
-    when(defaultParamManager.getDefaultParamsForType(any()))
+    when(defaultParamManager.getDefaultParamsForStep(any()))
         .thenReturn(
             Optional.of(singletonMap("p3", ParamDefinition.buildParamDefinition("p3", "d3"))));
 
@@ -644,7 +644,7 @@ public class ParamsManagerTest extends MaestroEngineBaseTest {
         .thenReturn(singletonMap("p1", ParamDefinition.buildParamDefinition("p1", "d1")));
     when(stepRuntime.injectRuntimeParams(any(), any()))
         .thenReturn(singletonMap("p2", ParamDefinition.buildParamDefinition("p2", "d2")));
-    when(defaultParamManager.getDefaultParamsForType(any()))
+    when(defaultParamManager.getDefaultParamsForStep(any()))
         .thenReturn(
             Optional.of(singletonMap("p3", ParamDefinition.buildParamDefinition("p3", "d3"))));
     ((TypedStep) step).setParams(stepParams);

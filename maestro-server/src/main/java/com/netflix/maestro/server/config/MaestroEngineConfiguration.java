@@ -28,6 +28,7 @@ import com.netflix.maestro.engine.handlers.WorkflowInstanceActionHandler;
 import com.netflix.maestro.engine.metrics.MaestroMetricRepo;
 import com.netflix.maestro.engine.params.DefaultParamManager;
 import com.netflix.maestro.engine.params.ParamsManager;
+import com.netflix.maestro.engine.steps.ExtensionStepRuntimeRegistry;
 import com.netflix.maestro.engine.utils.WorkflowHelper;
 import com.netflix.maestro.engine.validations.DryRunValidator;
 import com.netflix.maestro.models.Constants;
@@ -41,6 +42,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -127,6 +129,20 @@ public class MaestroEngineConfiguration {
       DefaultParamsProperties defaultParamsProperties) {
     LOG.info("Creating DefaultParamManager within Spring boot...");
     return new DefaultParamManager(objectMapper, toParamOverrides(defaultParamsProperties));
+  }
+
+  /**
+   * Loads the default params of the registered extension step sub types once every singleton
+   * exists, so every extension runtime has registered its sub type by then.
+   */
+  @Bean
+  public SmartInitializingSingleton extensionSubTypeDefaultParamsLoader(
+      DefaultParamManager defaultParamManager, ExtensionStepRuntimeRegistry registry) {
+    LOG.info("Creating extensionSubTypeDefaultParamsLoader within Spring boot...");
+    return () -> {
+      LOG.info("Loading default params for extension sub types {}", registry.subTypes());
+      defaultParamManager.loadSubTypeParams(registry.subTypes());
+    };
   }
 
   private static Map<String, String> toParamOverrides(DefaultParamsProperties properties) {

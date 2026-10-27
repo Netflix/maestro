@@ -20,10 +20,12 @@ import static org.junit.Assert.assertTrue;
 
 import com.netflix.maestro.engine.MaestroEngineBaseTest;
 import com.netflix.maestro.models.definition.StepType;
+import com.netflix.maestro.models.definition.TypedStep;
 import com.netflix.maestro.models.parameter.InternalParamMode;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.ParamType;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -52,6 +54,7 @@ public class DefaultParamManagerTest extends MaestroEngineBaseTest {
   public void setUp() throws IOException {
     defaultParamManager = new DefaultParamManager(YAML_MAPPER);
     defaultParamManager.init();
+    defaultParamManager.loadSubTypeParams(List.of("sample_ext", "unknown_ext"));
   }
 
   @Test
@@ -114,6 +117,91 @@ public class DefaultParamManagerTest extends MaestroEngineBaseTest {
         .get()
         .put("TEST", ParamDefinition.buildParamDefinition("TEST", "123"));
     assertNull(defaultParamManager.getDefaultParamsForType(StepType.FOREACH).get().get("TEST"));
+  }
+
+  @Test
+  public void testExtensionStepUsesSubTypeParams() {
+    Map<String, ParamDefinition> params =
+        defaultParamManager.getDefaultParamsForStep(extensionStep("sample_ext")).orElseThrow();
+
+    assertEquals("sample_ext", params.get("sample_ext").getName());
+    assertEquals(
+        "https://sample.local",
+        params.get("sample_ext").asMapParamDef().getValue().get("endpoint").getValue());
+  }
+
+  @Test
+  public void testExtensionStepSubTypeLookupIgnoresCase() {
+    assertTrue(
+        defaultParamManager.getDefaultParamsForStep(extensionStep("SAMPLE_EXT")).isPresent());
+  }
+
+  @Test
+  public void testExtensionStepWithoutSubTypeFileHasNoParams() {
+    assertFalse(
+        defaultParamManager.getDefaultParamsForStep(extensionStep("unknown_ext")).isPresent());
+  }
+
+  @Test
+  public void testUnloadedSubTypeHasNoParams() {
+    assertFalse(
+        defaultParamManager.getDefaultParamsForStep(extensionStep("unloaded_ext")).isPresent());
+  }
+
+  @Test
+  public void testExtensionStepWithoutSubTypeUsesTypeParams() {
+    TypedStep step = new TypedStep();
+    step.setType(StepType.EXTENSION);
+
+    assertEquals(
+        defaultParamManager.getDefaultParamsForType(StepType.EXTENSION),
+        defaultParamManager.getDefaultParamsForStep(step));
+  }
+
+  @Test
+  public void testNonExtensionStepUsesTypeParams() {
+    TypedStep step = new TypedStep();
+    step.setType(StepType.FOREACH);
+    step.setSubType("sample_ext");
+
+    assertEquals(
+        defaultParamManager.getDefaultParamsForType(StepType.FOREACH),
+        defaultParamManager.getDefaultParamsForStep(step));
+  }
+
+  @Test
+  public void testSubTypeParamsMutate() {
+    defaultParamManager
+        .getDefaultParamsForStep(extensionStep("sample_ext"))
+        .orElseThrow()
+        .put("TEST", ParamDefinition.buildParamDefinition("TEST", "123"));
+
+    assertNull(
+        defaultParamManager
+            .getDefaultParamsForStep(extensionStep("sample_ext"))
+            .orElseThrow()
+            .get("TEST"));
+  }
+
+  @Test
+  public void testBySubTypeOverrideAddsParams() throws IOException {
+    Map<String, String> overrides =
+        Map.of("sample_ext", "my_ext_param:\n  value: v\n  type: STRING\n");
+    DefaultParamManager manager = new DefaultParamManager(YAML_MAPPER, overrides);
+    manager.init();
+    manager.loadSubTypeParams(List.of("sample_ext"));
+
+    Map<String, ParamDefinition> params =
+        manager.getDefaultParamsForStep(extensionStep("sample_ext")).orElseThrow();
+    assertEquals("v", params.get("my_ext_param").getValue());
+    assertNotNull(params.get("sample_ext"));
+  }
+
+  private static TypedStep extensionStep(String subType) {
+    TypedStep step = new TypedStep();
+    step.setType(StepType.EXTENSION);
+    step.setSubType(subType);
+    return step;
   }
 
   @Test

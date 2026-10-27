@@ -147,7 +147,7 @@ public class ParamsManager {
     }
     // Merge in params applicable to step type
     Optional<Map<String, ParamDefinition>> defaultStepTypeParams =
-        defaultParamManager.getDefaultParamsForType(stepDefinition.getType());
+        defaultParamManager.getDefaultParamsForStep(stepDefinition);
     if (defaultStepTypeParams.isPresent()) {
       LOG.debug("Merging step level default for {}", stepDefinition.getType());
       ParamsMergeHelper.mergeParams(
@@ -319,7 +319,7 @@ public class ParamsManager {
     }
     // Merge in params applicable to step type
     Optional<Map<String, ParamDefinition>> defaultStepTypeParams =
-        defaultParamManager.getDefaultParamsForType(stepDefinition.getType());
+        defaultParamManager.getDefaultParamsForStep(stepDefinition);
     defaultStepTypeParams.ifPresent(
         stepTypeParams ->
             ParamsMergeHelper.mergeParams(
