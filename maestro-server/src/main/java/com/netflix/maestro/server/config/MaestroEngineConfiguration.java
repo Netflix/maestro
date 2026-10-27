@@ -138,7 +138,11 @@ public class MaestroEngineConfiguration {
   @Bean
   public SmartInitializingSingleton extensionSubTypeDefaultParamsLoader(
       DefaultParamManager defaultParamManager, ExtensionStepRuntimeRegistry registry) {
-    return () -> defaultParamManager.loadSubTypeParams(registry.subTypes());
+    LOG.info("Creating extensionSubTypeDefaultParamsLoader within Spring boot...");
+    return () -> {
+      LOG.info("Loading default params for extension sub types {}", registry.subTypes());
+      defaultParamManager.loadSubTypeParams(registry.subTypes());
+    };
   }
 
   private static Map<String, String> toParamOverrides(DefaultParamsProperties properties) {
