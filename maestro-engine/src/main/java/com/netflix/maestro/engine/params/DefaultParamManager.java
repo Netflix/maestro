@@ -21,12 +21,12 @@ import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.ParamSource;
 import java.io.IOException;
 import java.net.URL;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
 
 /** DefaultParamManager used to manage various levels of default and schema level parameters. */
@@ -82,19 +82,32 @@ public class DefaultParamManager {
     defaultStepParams = applyOverride(loadParamsFromFile(NETFLIX_PARAMS_FILE), STEP_OVERRIDE_KEY);
     defaultDryRunParams =
         applyOverride(loadParamsFromFile(DRY_RUN_PARAMS_FILE), DRY_RUN_OVERRIDE_KEY);
-    defaultTypeParams = new ConcurrentHashMap<>();
+    defaultTypeParams = new HashMap<>();
     for (StepType stepType : StepType.values()) {
-      String stepName = stepType.toString().toLowerCase(Locale.US);
-      defaultTypeParams.put(stepName, loadTypeParams(stepName));
+      loadTypeParams(stepType.toString().toLowerCase(Locale.US));
+    }
+  }
+
+  /**
+   * Load the default params of the given extension step sub types from {@code
+   * defaultparams/default-<sub_type>-step-params.yaml} on the classpath, with the configured
+   * override for each sub type applied. Sub types are registered by extensions, so this runs once
+   * at startup after they are registered and before any step runs.
+   *
+   * @param subTypes the registered extension step sub types
+   */
+  public void loadSubTypeParams(Collection<String> subTypes) {
+    for (String subType : subTypes) {
+      loadTypeParams(subType.toLowerCase(Locale.US));
     }
   }
 
   /**
    * Load the bundled default params for a step type or an extension sub type, named {@code
    * defaultparams/default-<name>-step-params.yaml} on the classpath, with the configured override
-   * for that name applied. Returns an empty map when neither exists.
+   * for that name applied. Keeps nothing when neither exists.
    */
-  private Map<String, ParamDefinition> loadTypeParams(String typeName) {
+  private void loadTypeParams(String typeName) {
     String defaultFile = String.format(STEP_TYPE_PARAMS_FILE, typeName);
     try {
       Map<String, ParamDefinition> typeParams = Collections.emptyMap();
@@ -103,7 +116,10 @@ public class DefaultParamManager {
         LOG.info("Loading default param file for {} step", typeName);
         typeParams = loadParamsFromFile(defaultFile);
       }
-      return applyOverride(typeParams, typeName);
+      typeParams = applyOverride(typeParams, typeName);
+      if (!typeParams.isEmpty()) {
+        defaultTypeParams.put(typeName, typeParams);
+      }
     } catch (Exception e) {
       throw new MaestroRuntimeException("Error processing step default file " + defaultFile, e);
     }
@@ -137,10 +153,8 @@ public class DefaultParamManager {
   }
 
   /**
-   * Get default params for a step: for an {@link StepType#EXTENSION} step with a sub type, the sub
-   * type's defaults ({@code defaultparams/default-<sub_type>-step-params.yaml}, loaded on first use
-   * since sub types are registered by extensions and are not known at init); otherwise the step
-   * type's defaults.
+   * Get default params for a step: the sub type's defaults for an {@link StepType#EXTENSION} step
+   * with a sub type (see {@link #loadSubTypeParams}), otherwise the step type's defaults.
    *
    * @param step step definition
    * @return optional default param map for the step
@@ -163,12 +177,12 @@ public class DefaultParamManager {
   }
 
   private Optional<Map<String, ParamDefinition>> getDefaultParamsFor(String typeName) {
-    Map<String, ParamDefinition> defaults =
-        defaultTypeParams.computeIfAbsent(typeName, this::loadTypeParams);
-    if (defaults.isEmpty()) {
+    Map<String, ParamDefinition> defaults = defaultTypeParams.get(typeName);
+    if (defaults != null) {
+      return Optional.of(preprocessParams(defaults));
+    } else {
       return Optional.empty();
     }
-    return Optional.of(preprocessParams(defaults));
   }
 
   /** Load params from JSON file. */

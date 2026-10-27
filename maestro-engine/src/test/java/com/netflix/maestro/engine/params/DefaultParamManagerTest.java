@@ -25,6 +25,7 @@ import com.netflix.maestro.models.parameter.InternalParamMode;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.ParamType;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -53,6 +54,7 @@ public class DefaultParamManagerTest extends MaestroEngineBaseTest {
   public void setUp() throws IOException {
     defaultParamManager = new DefaultParamManager(YAML_MAPPER);
     defaultParamManager.init();
+    defaultParamManager.loadSubTypeParams(List.of("sample_ext", "unknown_ext"));
   }
 
   @Test
@@ -141,6 +143,12 @@ public class DefaultParamManagerTest extends MaestroEngineBaseTest {
   }
 
   @Test
+  public void testUnloadedSubTypeHasNoParams() {
+    assertFalse(
+        defaultParamManager.getDefaultParamsForStep(extensionStep("unloaded_ext")).isPresent());
+  }
+
+  @Test
   public void testExtensionStepWithoutSubTypeUsesTypeParams() {
     TypedStep step = new TypedStep();
     step.setType(StepType.EXTENSION);
@@ -181,6 +189,7 @@ public class DefaultParamManagerTest extends MaestroEngineBaseTest {
         Map.of("sample_ext", "my_ext_param:\n  value: v\n  type: STRING\n");
     DefaultParamManager manager = new DefaultParamManager(YAML_MAPPER, overrides);
     manager.init();
+    manager.loadSubTypeParams(List.of("sample_ext"));
 
     Map<String, ParamDefinition> params =
         manager.getDefaultParamsForStep(extensionStep("sample_ext")).orElseThrow();
