@@ -27,10 +27,25 @@ import com.netflix.maestro.models.stepruntime.JobTemplate;
  * @param runtimeSummary the template step runtime summary with its evaluated params, read-only
  * @param definition the registered job template definition of the step's sub type
  * @param artifact the template artifact of the current run
+ * @param previousArtifact the template artifact of the previous step attempt, with the expansion
+ *     and the inline instance that failed, so that a preparer can prepare the retry differently;
+ *     null on the first attempt
  */
 public record PrepareContext(
     WorkflowSummary workflowSummary,
     Step step,
     StepRuntimeSummary runtimeSummary,
     JobTemplate.Definition definition,
-    TemplateArtifact artifact) {}
+    TemplateArtifact artifact,
+    TemplateArtifact previousArtifact) {
+
+  /** Context of a first attempt, without a previous artifact. */
+  public PrepareContext(
+      WorkflowSummary workflowSummary,
+      Step step,
+      StepRuntimeSummary runtimeSummary,
+      JobTemplate.Definition definition,
+      TemplateArtifact artifact) {
+    this(workflowSummary, step, runtimeSummary, definition, artifact, null);
+  }
+}

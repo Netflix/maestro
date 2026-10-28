@@ -143,6 +143,11 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
   }
 
   private StepRuntimeSummary createStepRuntimeSummary(Map<String, Artifact> artifacts) {
+    return createStepRuntimeSummary(artifacts, 1L);
+  }
+
+  private StepRuntimeSummary createStepRuntimeSummary(
+      Map<String, Artifact> artifacts, long stepAttemptId) {
     Map<String, Parameter> params = new HashMap<>();
     params.put("target_table", buildParam("target_table", "db.sample_table"));
     params.put("snapshot_id", buildParam("snapshot_id", "snap-1"));
@@ -151,7 +156,7 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
     stepRetry.setRetryable(true);
     return StepRuntimeSummary.builder()
         .stepId(STEP_ID)
-        .stepAttemptId(1L)
+        .stepAttemptId(stepAttemptId)
         .stepInstanceUuid("step-uuid")
         .type(StepType.TEMPLATE)
         .artifacts(artifacts)
@@ -237,6 +242,22 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
     verify(instanceRunner, never())
         .run(any(), any(), any(), any(), anyLong(), any(), any(), anyBoolean());
     verify(instanceDao, never()).getLargestTemplateRunIdFromRuns(anyString());
+    verify(stepInstanceDao, never()).getLatestTemplateArtifact(anyString(), anyLong(), anyString());
+  }
+
+  @Test
+  public void testStartRetryTakesNextRunIdAndPreparesAgain() {
+    when(instanceDao.getLargestTemplateRunIdFromRuns(anyString())).thenReturn(1L);
+    StepRuntimeSummary runtimeSummary = createStepRuntimeSummary(new HashMap<>(), 2L);
+
+    StepRuntime.Result result = templateStepRuntime.start(workflowSummary, step, runtimeSummary);
+
+    assertEquals(StepRuntime.State.DONE, result.state());
+    TemplateArtifact artifact = templateArtifact(result);
+    assertEquals(2L, artifact.getTemplateRunId());
+    assertNull(artifact.getTemplateInstanceId());
+    assertNull(artifact.getExpansion());
+    // a retry in a fresh run never reuses the previous attempt's execution instance
     verify(stepInstanceDao, never()).getLatestTemplateArtifact(anyString(), anyLong(), anyString());
   }
 
@@ -503,6 +524,43 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
   }
 
   @Test
+  public void testPrepareFirstAttemptHasNoPreviousArtifact() {
+    definition.setPrepare(definition.getPrepare().toBuilder().type(TemplatePrepare.STEP).build());
+    when(stepPreparer.prepare(any())).thenReturn(PrepareResult.pending(null, false));
+    StepRuntimeSummary runtimeSummary = createStartedStepRuntimeSummary(TemplatePrepare.STEP);
+
+    templateStepRuntime.execute(workflowSummary, step, runtimeSummary);
+
+    ArgumentCaptor<com.netflix.maestro.engine.templates.PrepareContext> captor =
+        ArgumentCaptor.forClass(com.netflix.maestro.engine.templates.PrepareContext.class);
+    verify(stepPreparer).prepare(captor.capture());
+    assertNull(captor.getValue().previousArtifact());
+    verify(stepInstanceDao, never())
+        .getStepInstanceArtifacts(anyString(), anyLong(), anyLong(), anyString(), anyString());
+  }
+
+  @Test
+  public void testPrepareRetryPassesPreviousAttemptArtifact() {
+    definition.setPrepare(definition.getPrepare().toBuilder().type(TemplatePrepare.STEP).build());
+    when(stepPreparer.prepare(any())).thenReturn(PrepareResult.pending(null, false));
+    TemplateArtifact previous = createArtifact(1L, 1L, 2L);
+    when(stepInstanceDao.getStepInstanceArtifacts(WORKFLOW_ID, 1L, 1L, STEP_ID, "1"))
+        .thenReturn(Map.of(Artifact.Type.TEMPLATE.key(), previous));
+    TemplateArtifact current = createStartedArtifact(TemplatePrepare.STEP);
+    current.setTemplateRunId(2L);
+    StepRuntimeSummary runtimeSummary =
+        createStepRuntimeSummary(Map.of(Artifact.Type.TEMPLATE.key(), current), 2L);
+
+    templateStepRuntime.execute(workflowSummary, step, runtimeSummary);
+
+    ArgumentCaptor<com.netflix.maestro.engine.templates.PrepareContext> captor =
+        ArgumentCaptor.forClass(com.netflix.maestro.engine.templates.PrepareContext.class);
+    verify(stepPreparer).prepare(captor.capture());
+    assertEquals(previous, captor.getValue().previousArtifact());
+    assertEquals(current, captor.getValue().artifact());
+  }
+
+  @Test
   public void testPreparePendingWithoutArtifactChange() {
     definition.setPrepare(definition.getPrepare().toBuilder().type(TemplatePrepare.STEP).build());
     when(stepPreparer.prepare(any())).thenReturn(PrepareResult.pending(null, false));
@@ -745,7 +803,7 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
     expected.put(WorkflowInstance.Status.CREATED, StepRuntime.State.CONTINUE);
     expected.put(WorkflowInstance.Status.IN_PROGRESS, StepRuntime.State.CONTINUE);
     expected.put(WorkflowInstance.Status.PAUSED, StepRuntime.State.CONTINUE);
-    expected.put(WorkflowInstance.Status.FAILED, StepRuntime.State.FATAL_ERROR);
+    expected.put(WorkflowInstance.Status.FAILED, StepRuntime.State.USER_ERROR);
     expected.put(WorkflowInstance.Status.STOPPED, StepRuntime.State.STOPPED);
     expected.put(WorkflowInstance.Status.TIMED_OUT, StepRuntime.State.TIMED_OUT);
 

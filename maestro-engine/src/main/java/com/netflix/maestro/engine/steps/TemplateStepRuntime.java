@@ -155,7 +155,8 @@ public class TemplateStepRuntime implements StepRuntime {
   /**
    * Build the artifact of this run. A restart that is not a fresh run reuses the execution instance
    * of the previous run, with the template version that instance ran: its id is copied here and
-   * {@link #execute} restarts it. Every other run prepares the step list again.
+   * {@link #execute} restarts it. Every other run, including a retry of the step after a failed
+   * execution instance, takes the next inline run id and prepares the step list again.
    */
   private TemplateArtifact createArtifact(
       WorkflowSummary workflowSummary, Step step, StepRuntimeSummary runtimeSummary) {
@@ -172,7 +173,9 @@ public class TemplateStepRuntime implements StepRuntime {
     artifact.setTemplateVersion(version);
     artifact.setPrepareType(definition.getPrepare().getType());
 
-    if (!workflowSummary.isFreshRun() || !runtimeSummary.getStepRetry().isRetryable()) {
+    if (!workflowSummary.isFreshRun()
+        || !runtimeSummary.getStepRetry().isRetryable()
+        || runtimeSummary.getStepAttemptId() > 1) {
       artifact.setTemplateRunId(
           instanceDao.getLargestTemplateRunIdFromRuns(artifact.getTemplateWorkflowId()) + 1L);
       if (!workflowSummary.isFreshRun()) {
@@ -236,6 +239,23 @@ public class TemplateStepRuntime implements StepRuntime {
     }
   }
 
+  /** The template artifact of the previous step attempt of this run, null on the first attempt. */
+  private TemplateArtifact getPreviousArtifact(
+      WorkflowSummary workflowSummary, StepRuntimeSummary runtimeSummary) {
+    if (runtimeSummary.getStepAttemptId() <= 1) {
+      return null;
+    }
+    Map<String, Artifact> artifacts =
+        stepInstanceDao.getStepInstanceArtifacts(
+            workflowSummary.getWorkflowId(),
+            workflowSummary.getWorkflowInstanceId(),
+            workflowSummary.getWorkflowRunId(),
+            runtimeSummary.getStepId(),
+            String.valueOf(runtimeSummary.getStepAttemptId() - 1));
+    Artifact previous = artifacts == null ? null : artifacts.get(Artifact.Type.TEMPLATE.key());
+    return previous == null ? null : previous.asTemplate();
+  }
+
   /** Restart the previous run's execution instance with the definition of the version it ran. */
   private Result restartExecutionInstance(
       WorkflowSummary workflowSummary,
@@ -259,7 +279,13 @@ public class TemplateStepRuntime implements StepRuntime {
         jobTemplateManager.loadDefinition(step, artifact.getTemplateVersion());
     TemplatePreparer preparer = getPreparer(definition);
     PrepareContext context =
-        new PrepareContext(workflowSummary, step, runtimeSummary, definition, artifact);
+        new PrepareContext(
+            workflowSummary,
+            step,
+            runtimeSummary,
+            definition,
+            artifact,
+            getPreviousArtifact(workflowSummary, runtimeSummary));
     PrepareResult result = preparer.prepare(context);
     List<TimelineEvent> timeline =
         result.event() == null ? Collections.emptyList() : List.of(result.event());
@@ -405,7 +431,7 @@ public class TemplateStepRuntime implements StepRuntime {
                 : State.DONE;
         break;
       case FAILED:
-        state = State.FATAL_ERROR; // no retry for template step
+        state = State.USER_ERROR; // the step's retry policy decides whether to prepare again
         break;
       case STOPPED:
         state = State.STOPPED;
