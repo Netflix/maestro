@@ -524,43 +524,6 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
   }
 
   @Test
-  public void testPrepareFirstAttemptHasNoPreviousArtifact() {
-    definition.setPrepare(definition.getPrepare().toBuilder().type(TemplatePrepare.STEP).build());
-    when(stepPreparer.prepare(any())).thenReturn(PrepareResult.pending(null, false));
-    StepRuntimeSummary runtimeSummary = createStartedStepRuntimeSummary(TemplatePrepare.STEP);
-
-    templateStepRuntime.execute(workflowSummary, step, runtimeSummary);
-
-    ArgumentCaptor<com.netflix.maestro.engine.templates.PrepareContext> captor =
-        ArgumentCaptor.forClass(com.netflix.maestro.engine.templates.PrepareContext.class);
-    verify(stepPreparer).prepare(captor.capture());
-    assertNull(captor.getValue().previousArtifact());
-    verify(stepInstanceDao, never())
-        .getStepInstanceArtifacts(anyString(), anyLong(), anyLong(), anyString(), anyString());
-  }
-
-  @Test
-  public void testPrepareRetryPassesPreviousAttemptArtifact() {
-    definition.setPrepare(definition.getPrepare().toBuilder().type(TemplatePrepare.STEP).build());
-    when(stepPreparer.prepare(any())).thenReturn(PrepareResult.pending(null, false));
-    TemplateArtifact previous = createArtifact(1L, 1L, 2L);
-    when(stepInstanceDao.getStepInstanceArtifacts(WORKFLOW_ID, 1L, 1L, STEP_ID, "1"))
-        .thenReturn(Map.of(Artifact.Type.TEMPLATE.key(), previous));
-    TemplateArtifact current = createStartedArtifact(TemplatePrepare.STEP);
-    current.setTemplateRunId(2L);
-    StepRuntimeSummary runtimeSummary =
-        createStepRuntimeSummary(Map.of(Artifact.Type.TEMPLATE.key(), current), 2L);
-
-    templateStepRuntime.execute(workflowSummary, step, runtimeSummary);
-
-    ArgumentCaptor<com.netflix.maestro.engine.templates.PrepareContext> captor =
-        ArgumentCaptor.forClass(com.netflix.maestro.engine.templates.PrepareContext.class);
-    verify(stepPreparer).prepare(captor.capture());
-    assertEquals(previous, captor.getValue().previousArtifact());
-    assertEquals(current, captor.getValue().artifact());
-  }
-
-  @Test
   public void testPreparePendingWithoutArtifactChange() {
     definition.setPrepare(definition.getPrepare().toBuilder().type(TemplatePrepare.STEP).build());
     when(stepPreparer.prepare(any())).thenReturn(PrepareResult.pending(null, false));

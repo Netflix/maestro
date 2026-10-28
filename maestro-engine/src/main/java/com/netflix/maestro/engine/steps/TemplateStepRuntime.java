@@ -239,23 +239,6 @@ public class TemplateStepRuntime implements StepRuntime {
     }
   }
 
-  /** The template artifact of the previous step attempt of this run, null on the first attempt. */
-  private TemplateArtifact getPreviousArtifact(
-      WorkflowSummary workflowSummary, StepRuntimeSummary runtimeSummary) {
-    if (runtimeSummary.getStepAttemptId() <= 1) {
-      return null;
-    }
-    Map<String, Artifact> artifacts =
-        stepInstanceDao.getStepInstanceArtifacts(
-            workflowSummary.getWorkflowId(),
-            workflowSummary.getWorkflowInstanceId(),
-            workflowSummary.getWorkflowRunId(),
-            runtimeSummary.getStepId(),
-            String.valueOf(runtimeSummary.getStepAttemptId() - 1));
-    Artifact previous = artifacts == null ? null : artifacts.get(Artifact.Type.TEMPLATE.key());
-    return previous == null ? null : previous.asTemplate();
-  }
-
   /** Restart the previous run's execution instance with the definition of the version it ran. */
   private Result restartExecutionInstance(
       WorkflowSummary workflowSummary,
@@ -279,13 +262,7 @@ public class TemplateStepRuntime implements StepRuntime {
         jobTemplateManager.loadDefinition(step, artifact.getTemplateVersion());
     TemplatePreparer preparer = getPreparer(definition);
     PrepareContext context =
-        new PrepareContext(
-            workflowSummary,
-            step,
-            runtimeSummary,
-            definition,
-            artifact,
-            getPreviousArtifact(workflowSummary, runtimeSummary));
+        new PrepareContext(workflowSummary, step, runtimeSummary, definition, artifact);
     PrepareResult result = preparer.prepare(context);
     List<TimelineEvent> timeline =
         result.event() == null ? Collections.emptyList() : List.of(result.event());
