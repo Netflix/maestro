@@ -50,10 +50,10 @@ public final class TemplateArtifact implements Artifact {
   private String templateWorkflowId; // template inline workflow id
   private String templateIdentity; // template inline workflow identity
   private String prepareType; // preparer type of the registered template
-  private Long prepareInstanceId; // prepare instance id, only for a step preparer
-  private Long templateInstanceId; // execution instance id, null until the step list is prepared
-  private long templateRunId;
-  private String templateUuid;
+  private Long prepareInstanceId; // inline instance id of the prepare instance, step preparer only
+  private Long templateInstanceId; // inline instance id of the execution instance, null until ready
+  private long templateRunId; // inline run id, shared by the prepare and execution instances
+  private String templateUuid; // inline instance uuid of the execution instance
   private String jobType; // template step sub_type
   private String templateVersion; // job template version resolved at start
   private TemplateExpansion expansion; // what the preparer returned, before step inputs are added

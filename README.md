@@ -53,7 +53,7 @@ You can read more details about it in our series of blog posts
 - `curl --header "user: tester" -X POST 'http://127.0.0.1:8080/api/v3/job-templates' -H "Content-Type: application/json" -d @maestro-common/src/testFixtures/resources/fixtures/api/sample-job-template-positions-create-request.json`
 - `curl --header "user: tester" -X POST 'http://127.0.0.1:8080/api/v3/workflows' -H "Content-Type: application/json" -d @maestro-server/src/test/resources/samples/sample-template-wf.json`
 - `curl --header "user: tester" -X POST 'http://127.0.0.1:8080/api/v3/workflows/sample-template-wf/versions/latest/actions/start' -H "Content-Type: application/json" -d '{"initiator": {"type": "manual"}}'`
-- The step-preparer variant, whose generator runs in a Kubernetes pod, is `sample-job-template-step-preparer-create-request.json` with `sample-template-step-preparer-wf.json`.
+- For an example that runs a generator in a Kubernetes pod to build the list of steps to execute, use `sample-job-template-step-preparer-create-request.json` together with `sample-template-step-preparer-wf.json`.
 
 ## Run it with maestro-extensions (foreach flattening service)
 The `maestro-extensions` module runs as a separate Spring Boot service that listens to maestro
