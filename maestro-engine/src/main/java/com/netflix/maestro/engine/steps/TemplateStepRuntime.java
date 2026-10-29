@@ -44,6 +44,7 @@ import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.instance.WorkflowRuntimeOverview;
 import com.netflix.maestro.models.instance.WorkflowStepStatusSummary;
+import com.netflix.maestro.models.parameter.MapParameter;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.ParamMode;
 import com.netflix.maestro.models.parameter.ParamType;
@@ -513,14 +514,27 @@ public class TemplateStepRuntime implements StepRuntime {
    * template step.
    */
   private static Parameter toLiteral(Parameter param) {
+    Object value =
+        param.getType() == ParamType.MAP
+            ? literalMapValue(param.asMapParam())
+            : param.getEvaluatedResult();
     Parameter literal =
         param
             .toDefinition()
-            .copyAndUpdate(param.getEvaluatedResult(), null, ParamMode.MUTABLE, null, null, null)
+            .copyAndUpdate(value, null, ParamMode.MUTABLE, null, null, null)
             .toParameter();
     literal.setEvaluatedResult(param.getEvaluatedResult());
     literal.setEvaluatedTime(param.getEvaluatedTime());
     return literal;
+  }
+
+  /** A MAP definition holds a definition per entry, so each evaluated entry becomes a literal. */
+  private static Map<String, ParamDefinition> literalMapValue(MapParameter param) {
+    Map<String, ParamDefinition> value = new LinkedHashMap<>();
+    for (String key : param.getEvaluatedResult().keySet()) {
+      value.put(key, toLiteral(param.getEvaluatedParam(key)).toDefinition());
+    }
+    return value;
   }
 
   /**

@@ -61,6 +61,7 @@ import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.instance.WorkflowRuntimeOverview;
 import com.netflix.maestro.models.instance.WorkflowStepStatusSummary;
 import com.netflix.maestro.models.parameter.LongParamDefinition;
+import com.netflix.maestro.models.parameter.MapParameter;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.ParamMode;
 import com.netflix.maestro.models.parameter.ParamSource;
@@ -77,6 +78,7 @@ import com.netflix.maestro.queue.MaestroQueueSystem;
 import com.netflix.maestro.queue.jobevents.InstanceActionJobEvent;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -891,6 +893,72 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
     assertEquals("snap-1", saved.getEvaluatedResult());
     assertEquals(Long.valueOf(123L), saved.getEvaluatedTime());
     assertTrue(outputData.getArtifacts().isEmpty());
+  }
+
+  @Test
+  public void testTrackSucceededExecutionInstancePublishesMapOutputParam() {
+    Map<String, ParamDefinition> promised = new HashMap<>(definition.getParams());
+    promised.put(
+        "context",
+        MAPPER.convertValue(
+            Map.of(
+                "type",
+                ParamType.MAP.name(),
+                "expression",
+                "audit__context;",
+                "mode",
+                ParamMode.IMMUTABLE.name(),
+                "source",
+                ParamSource.TEMPLATE_OUTPUT.name()),
+            ParamDefinition.class));
+    definition.setParams(promised);
+    TemplateArtifact artifact = createArtifact(1L, null, 1L);
+    mockExecutionInstance(artifact, WorkflowInstance.Status.SUCCEEDED, 0);
+    Map<String, Object> evaluated = new LinkedHashMap<>();
+    evaluated.put("table", "db.table");
+    evaluated.put("rows", 42L);
+    Map<String, Object> nested = new LinkedHashMap<>();
+    nested.put("branch", "wap-1");
+    evaluated.put("meta", nested);
+    Parameter context =
+        MapParameter.builder()
+            .name("context")
+            .expression("audit__context;")
+            .evaluatedResult(evaluated)
+            .evaluatedTime(123L)
+            .build();
+    mockCollectorView(
+        artifact,
+        Map.of(
+            "context", context, "published_snapshot", buildParam("published_snapshot", "snap-1")));
+    StepRuntimeSummary runtimeSummary =
+        createStepRuntimeSummary(Map.of(Artifact.Type.TEMPLATE.key(), artifact));
+
+    StepRuntime.Result result = templateStepRuntime.execute(workflowSummary, step, runtimeSummary);
+
+    assertEquals(StepRuntime.State.DONE, result.state());
+    ArgumentCaptor<OutputData> captor = ArgumentCaptor.forClass(OutputData.class);
+    verify(outputDataManager).saveOutputData(captor.capture());
+    MapParameter saved = captor.getValue().getParams().get("context").asMapParam();
+    assertNull(saved.getExpression());
+    assertEquals(ParamMode.MUTABLE, saved.getMode());
+    // each entry becomes a literal definition of its own type
+    assertEquals(Set.of("table", "rows", "meta"), saved.getValue().keySet());
+    assertEquals("db.table", saved.getValue().get("table").asStringParamDef().getValue());
+    assertEquals(Long.valueOf(42L), saved.getValue().get("rows").asLongParamDef().getValue());
+    assertNull(saved.getValue().get("table").getExpression());
+    assertEquals(
+        "wap-1",
+        saved
+            .getValue()
+            .get("meta")
+            .asMapParamDef()
+            .getValue()
+            .get("branch")
+            .asStringParamDef()
+            .getValue());
+    assertEquals(evaluated, saved.getEvaluatedResult());
+    assertEquals(Long.valueOf(123L), saved.getEvaluatedTime());
   }
 
   @Test
