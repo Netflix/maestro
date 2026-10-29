@@ -16,6 +16,7 @@ import com.netflix.maestro.engine.dao.MaestroOutputDataDao;
 import com.netflix.maestro.engine.dto.OutputData;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.models.artifact.Artifact;
+import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.parameter.ParamType;
 import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.models.parameter.StringArrayParameter;
@@ -118,7 +119,8 @@ public class OutputDataManager {
       jobId = artifacts.get(Artifact.Type.KUBERNETES.key()).asKubernetes().getJobId();
     } else if (artifacts.containsKey(Artifact.Type.TITUS.key())) {
       jobId = artifacts.get(Artifact.Type.TITUS.key()).asTitus().getTitusTaskId();
-    } else if (artifacts.containsKey(Artifact.Type.HTTP.key())) {
+    } else if (artifacts.containsKey(Artifact.Type.HTTP.key())
+        || runtimeSummary.getType() == StepType.EXTENSION) {
       jobId = runtimeSummary.getStepInstanceUuid();
     }
     if (jobId != null && !jobId.isEmpty()) {

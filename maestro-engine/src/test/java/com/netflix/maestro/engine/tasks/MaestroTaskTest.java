@@ -81,6 +81,8 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
   @Mock private StepRuntimeCallbackDelayPolicy callbackDelayPolicy;
   private StepTimeoutProperties timeoutProperties;
   private Task task;
+  private OutputDataManager outputDataManager;
+  private boolean mergeOutputDataOnFailure;
 
   @Before
   public void setup() {
@@ -472,6 +474,7 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
       WorkflowSummary workflowSummary) {
     SignalHandler signalHandler = mock(SignalHandler.class);
     when(signalHandler.sendOutputSignals(any(), any())).thenReturn(true);
+    outputDataManager = mock(OutputDataManager.class);
     maestroTask =
         new MaestroTask(
             stepRuntimeManager,
@@ -479,7 +482,7 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
             paramEvaluator,
             MAPPER,
             signalHandler,
-            mock(OutputDataManager.class),
+            outputDataManager,
             null,
             actionDao,
             null,
@@ -488,7 +491,8 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
             timeoutProperties,
             metricRepo,
             null,
-            paramExtensionRepo);
+            paramExtensionRepo,
+            mergeOutputDataOnFailure);
     task = mock(Task.class);
     when(task.referenceTaskName()).thenReturn("job1");
     Map<String, Object> runtimeSummaryMap = new HashMap<>();
@@ -907,5 +911,31 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
 
     verify(stepRuntimeManager)
         .terminate(eq(workflowSummary), eq(runtimeSummary), eq(StepInstance.Status.TIMED_OUT));
+  }
+
+  @Test
+  public void testFailedStepOutputDataIsNotMergedByDefault() throws Exception {
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+    Step stepDef = loadObject("fixtures/typedsteps/sample-typed-step.json", Step.class);
+    StepRuntimeSummary runtimeSummary = loadTimeoutRuntimeSummary(StepInstance.Status.USER_FAILED);
+
+    createAndRunMaestroTask(3, Flow.Status.RUNNING, stepDef, runtimeSummary, workflowSummary);
+
+    verify(outputDataManager, never()).validateAndMergeOutputParamsAndArtifacts(any());
+    verify(outputDataManager).isStepNonRetryable(runtimeSummary);
+  }
+
+  @Test
+  public void testFailedStepOutputDataIsMergedWhenEnabled() throws Exception {
+    mergeOutputDataOnFailure = true;
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+    Step stepDef = loadObject("fixtures/typedsteps/sample-typed-step.json", Step.class);
+    StepRuntimeSummary runtimeSummary =
+        loadTimeoutRuntimeSummary(StepInstance.Status.PLATFORM_FAILED);
+
+    createAndRunMaestroTask(3, Flow.Status.RUNNING, stepDef, runtimeSummary, workflowSummary);
+
+    verify(outputDataManager).validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
+    verify(outputDataManager).isStepNonRetryable(runtimeSummary);
   }
 }

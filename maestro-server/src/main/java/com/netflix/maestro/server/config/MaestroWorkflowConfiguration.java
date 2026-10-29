@@ -140,8 +140,11 @@ public class MaestroWorkflowConfiguration {
       MaestroProperties maestroProperties,
       MaestroMetrics metricRepo,
       MaestroTracingManager tracingManager,
-      MaestroParamExtensionRepo extensionRepo) {
-    LOG.info("Creating Maestro maestroTask within Spring boot...");
+      MaestroParamExtensionRepo extensionRepo,
+      @Value("${maestro.output-data.merge-on-failure:false}") boolean mergeOutputDataOnFailure) {
+    LOG.info(
+        "Creating Maestro maestroTask within Spring boot (mergeOutputDataOnFailure={})...",
+        mergeOutputDataOnFailure);
     return new MaestroTask(
         stepRuntimeManager,
         stepSyncManager,
@@ -157,7 +160,8 @@ public class MaestroWorkflowConfiguration {
         maestroProperties.getStepTimeout(),
         metricRepo,
         tracingManager,
-        extensionRepo);
+        extensionRepo,
+        mergeOutputDataOnFailure);
   }
 
   @Bean

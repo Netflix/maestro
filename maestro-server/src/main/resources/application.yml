@@ -57,6 +57,9 @@ maestro:
   signal:
     # when true, mark still-pending signal dependencies as CANCELED once the owning step is terminal
     terminal-states-enabled: false
+  output-data:
+    # when true, a failed step's saved output params and artifacts are merged into its params space
+    merge-on-failure: false
 
 engine:
   configs:
