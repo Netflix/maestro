@@ -59,10 +59,12 @@ import com.netflix.maestro.utils.Checks;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -239,6 +241,21 @@ public class TemplateStepRuntime implements StepRuntime {
     }
   }
 
+  /**
+   * Reject a duplicate step id anywhere in the final step list, nested foreach, while and template
+   * step inputs included, the same rule a pushed workflow meets in its validation.
+   */
+  private static void checkStepIdsUnique(Step step, List<Step> steps) {
+    Set<String> seen = new HashSet<>();
+    for (String id : Workflow.builder().steps(steps).build().getAllStepIds()) {
+      Checks.checkTrue(
+          seen.add(id),
+          "Template step [%s] prepared a duplicate step id [%s] across its steps and the attached steps",
+          step.getId(),
+          id);
+    }
+  }
+
   /** Restart the previous run's execution instance with the definition of the version it ran. */
   private Result restartExecutionInstance(
       WorkflowSummary workflowSummary,
@@ -287,6 +304,7 @@ public class TemplateStepRuntime implements StepRuntime {
               preparer.type());
       List<Step> steps = TemplateStepSplicer.splice(expansion.getSteps(), definition, stepInputs);
       TemplateStepSplicer.appendCollector(steps, definition.promisedParams());
+      checkStepIdsUnique(step, steps);
       artifact.setTemplateInstanceId(
           artifact.getPrepareInstanceId() == null ? 1L : artifact.getPrepareInstanceId() + 1L);
       Result launched = launchExecutionInstance(context, steps, expansion.getParams(), false);

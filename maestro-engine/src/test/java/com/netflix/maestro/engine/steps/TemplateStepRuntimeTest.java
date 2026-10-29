@@ -45,6 +45,7 @@ import com.netflix.maestro.exceptions.MaestroRetryableError;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.artifact.TemplateArtifact;
+import com.netflix.maestro.models.definition.ForeachStep;
 import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.Tag;
@@ -59,6 +60,7 @@ import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.instance.WorkflowRuntimeOverview;
 import com.netflix.maestro.models.instance.WorkflowStepStatusSummary;
+import com.netflix.maestro.models.parameter.LongParamDefinition;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.ParamMode;
 import com.netflix.maestro.models.parameter.ParamSource;
@@ -480,6 +482,70 @@ public class TemplateStepRuntimeTest extends MaestroBaseTest {
 
     assertEquals(StepRuntime.State.FATAL_ERROR, result.state());
     assertTrue(result.artifacts().isEmpty());
+  }
+
+  private static TypedStep noop(String id) {
+    TypedStep typed = new TypedStep();
+    typed.setId(id);
+    typed.setType(StepType.NOOP);
+    return typed;
+  }
+
+  private static ForeachStep loopOver(String id, Step nested) {
+    ForeachStep loop = new ForeachStep();
+    loop.setId(id);
+    loop.setSteps(List.of(nested));
+    Map<String, ParamDefinition> params = new HashMap<>();
+    params.put(
+        "row_count",
+        LongParamDefinition.builder().name("row_count").value(1L).mode(ParamMode.MUTABLE).build());
+    loop.setParams(params);
+    return loop;
+  }
+
+  @Test
+  public void testExecuteFatalErrorWhenNestedStepIdsCollide() {
+    definition.setPrepare(definition.getPrepare().toBuilder().type(TemplatePrepare.STEP).build());
+    step.getStepInputs().remove("after_publish");
+    // the template's own foreach and the attached foreach both nest a step called write
+    ForeachStep internal = loopOver("internal_loop", noop("write"));
+    internal.getTransition().getSuccessors().put("audit", "true");
+    when(stepPreparer.prepare(any()))
+        .thenReturn(
+            PrepareResult.ready(
+                TemplateExpansion.builder().steps(List.of(internal, noop("audit"))).build(), null));
+    step.setStepInputs(Map.of("writes", List.of(loopOver("supplied_loop", noop("write")))));
+    StepRuntimeSummary runtimeSummary =
+        createStepRuntimeSummary(
+            Map.of(Artifact.Type.TEMPLATE.key(), createArtifact(1L, 1L, null)));
+
+    StepRuntime.Result result = templateStepRuntime.execute(workflowSummary, step, runtimeSummary);
+
+    assertEquals(StepRuntime.State.FATAL_ERROR, result.state());
+    assertTrue(firstError(result).contains("duplicate step id [write]"));
+    verify(instanceRunner, never())
+        .run(any(), any(), any(), any(), anyLong(), any(), any(), anyBoolean());
+  }
+
+  @Test
+  public void testExecuteFatalErrorWhenExpansionRepeatsStepId() {
+    definition.setPrepare(definition.getPrepare().toBuilder().type(TemplatePrepare.STEP).build());
+    step.setStepInputs(null);
+    when(stepPreparer.prepare(any()))
+        .thenReturn(
+            PrepareResult.ready(
+                TemplateExpansion.builder().steps(List.of(noop("audit"), noop("audit"))).build(),
+                null));
+    StepRuntimeSummary runtimeSummary =
+        createStepRuntimeSummary(
+            Map.of(Artifact.Type.TEMPLATE.key(), createArtifact(1L, 1L, null)));
+
+    StepRuntime.Result result = templateStepRuntime.execute(workflowSummary, step, runtimeSummary);
+
+    assertEquals(StepRuntime.State.FATAL_ERROR, result.state());
+    assertTrue(firstError(result).contains("duplicate step id [audit]"));
+    verify(instanceRunner, never())
+        .run(any(), any(), any(), any(), anyLong(), any(), any(), anyBoolean());
   }
 
   @Test
