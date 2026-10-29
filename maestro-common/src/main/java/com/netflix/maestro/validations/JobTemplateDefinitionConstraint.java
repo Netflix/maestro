@@ -156,12 +156,47 @@ public @interface JobTemplateDefinitionConstraint {
         return violation(
             context, "[job template prepare] type cannot be null", PREPARE_PROPERTY_NAME);
       }
+      if (!isUnusedPrepareFieldAbsent(prepare, context)) {
+        return false;
+      }
       return switch (prepare.getType()) {
         case TemplatePrepare.STATIC -> isStaticPrepareValid(definition, context);
         case TemplatePrepare.SEL -> isSelPrepareValid(prepare, context);
         case TemplatePrepare.STEP -> isStepPrepareValid(prepare, context);
         default -> true; // an unknown type is checked against the enabled preparers by the engine
       };
+    }
+
+    /** Each built-in preparer type reads one field; a field of another type is rejected. */
+    private boolean isUnusedPrepareFieldAbsent(
+        TemplatePrepare prepare, ConstraintValidatorContext context) {
+      boolean builtIn =
+          switch (prepare.getType()) {
+            case TemplatePrepare.STATIC, TemplatePrepare.SEL, TemplatePrepare.STEP -> true;
+            default -> false;
+          };
+      if (!builtIn) {
+        return true;
+      }
+      if (prepare.getSteps() != null && !TemplatePrepare.STATIC.equals(prepare.getType())) {
+        return unusedPrepareField(context, "steps", TemplatePrepare.STATIC);
+      }
+      if (prepare.getExpression() != null && !TemplatePrepare.SEL.equals(prepare.getType())) {
+        return unusedPrepareField(context, "expression", TemplatePrepare.SEL);
+      }
+      if (prepare.getStep() != null && !TemplatePrepare.STEP.equals(prepare.getType())) {
+        return unusedPrepareField(context, "step", TemplatePrepare.STEP);
+      }
+      return true;
+    }
+
+    private boolean unusedPrepareField(
+        ConstraintValidatorContext context, String field, String ownerType) {
+      return violation(
+          context,
+          String.format(
+              "[job template prepare] %s can only be set for the %s preparer", field, ownerType),
+          PREPARE_PROPERTY_NAME);
     }
 
     private boolean isStaticPrepareValid(

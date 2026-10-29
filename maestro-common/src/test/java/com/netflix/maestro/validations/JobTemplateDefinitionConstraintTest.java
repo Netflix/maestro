@@ -167,6 +167,51 @@ public class JobTemplateDefinitionConstraintTest extends BaseConstraintTest {
   }
 
   @Test
+  public void isStaticPrepareWithExpressionRejected() {
+    TemplatePrepare prepare =
+        staticPrepare(List.of(step("audit", null))).toBuilder().expression("x;").build();
+    assertEquals(
+        "[job template prepare] expression can only be set for the sel preparer",
+        singleViolation(definition(StepType.TEMPLATE, prepare), "prepare").getMessage());
+  }
+
+  @Test
+  public void isSelPrepareWithStepsRejected() {
+    TemplatePrepare prepare =
+        selPrepare("x;").toBuilder().steps(List.of(step("audit", null))).build();
+    assertEquals(
+        "[job template prepare] steps can only be set for the static preparer",
+        singleViolation(definition(StepType.TEMPLATE, prepare), "prepare").getMessage());
+  }
+
+  @Test
+  public void isStepPrepareWithExpressionRejected() {
+    TemplatePrepare prepare =
+        stepPrepare(step("generate", null)).toBuilder().expression("x;").build();
+    assertEquals(
+        "[job template prepare] expression can only be set for the sel preparer",
+        singleViolation(definition(StepType.TEMPLATE, prepare), "prepare").getMessage());
+  }
+
+  @Test
+  public void isStaticPrepareWithStepRejected() {
+    TemplatePrepare prepare =
+        staticPrepare(List.of(step("audit", null))).toBuilder()
+            .step(step("generate", null))
+            .build();
+    assertEquals(
+        "[job template prepare] step can only be set for the step preparer",
+        singleViolation(definition(StepType.TEMPLATE, prepare), "prepare").getMessage());
+  }
+
+  @Test
+  public void isUnknownPrepareTypeWithAnyFieldAccepted() {
+    TemplatePrepare prepare = TemplatePrepare.builder().type("remote").expression("x;").build();
+    assertTrue(
+        validator.validate(new TestDefinition(definition(StepType.TEMPLATE, prepare))).isEmpty());
+  }
+
+  @Test
   public void isValidStaticPrepare() {
     JobTemplate.Definition definition =
         definition(
