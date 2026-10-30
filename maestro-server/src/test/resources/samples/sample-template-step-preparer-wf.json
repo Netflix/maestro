@@ -1,0 +1,87 @@
+{
+  "properties": {
+    "owner": "tester",
+    "run_strategy": "sequential"
+  },
+  "workflow": {
+    "id": "sample-template-step-preparer-wf",
+    "name": "Test template workflow",
+    "description": "Runs the sample_wap_dynamic job template with two write steps attached before the audit and one step attached after the publish.",
+    "steps": [
+      {
+        "template": {
+          "id": "load",
+          "sub_type": "sample_wap_dynamic",
+          "sub_type_version": "v1",
+          "transition": {
+            "successors": {
+              "report": "true"
+            }
+          },
+          "params": {
+            "table": {
+              "type": "STRING",
+              "value": "db.sample_table"
+            }
+          },
+          "step_inputs": {
+            "writes": [
+              {
+                "step": {
+                  "id": "write_a",
+                  "type": "NoOp",
+                  "params": {
+                    "row_count": {
+                      "type": "LONG",
+                      "mode": "MUTABLE",
+                      "value": 10
+                    }
+                  }
+                }
+              },
+              {
+                "step": {
+                  "id": "write_b",
+                  "type": "NoOp",
+                  "params": {
+                    "row_count": {
+                      "type": "LONG",
+                      "mode": "MUTABLE",
+                      "value": 20
+                    }
+                  }
+                }
+              }
+            ],
+            "after_publish": [
+              {
+                "step": {
+                  "id": "announce",
+                  "type": "NoOp",
+                  "params": {
+                    "msg": {
+                      "type": "STRING",
+                      "expression": "'published ' + snapshot;"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "step": {
+          "id": "report",
+          "type": "NoOp",
+          "params": {
+            "what": {
+              "type": "STRING",
+              "expression": "load__snapshot + ' ' + load__rows + ' ' + load__branch;"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

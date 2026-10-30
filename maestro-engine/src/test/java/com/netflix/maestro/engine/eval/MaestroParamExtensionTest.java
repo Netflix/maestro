@@ -14,6 +14,8 @@ package com.netflix.maestro.engine.eval;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
@@ -28,22 +30,29 @@ import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.exceptions.MaestroNotFoundException;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.artifact.Artifact;
+import com.netflix.maestro.models.artifact.TemplateArtifact;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.initiator.Initiator;
 import com.netflix.maestro.models.initiator.ManualInitiator;
 import com.netflix.maestro.models.initiator.SignalInitiator;
 import com.netflix.maestro.models.initiator.SubworkflowInitiator;
+import com.netflix.maestro.models.initiator.TemplateInitiator;
+import com.netflix.maestro.models.initiator.UpstreamInitiator;
+import com.netflix.maestro.models.instance.StepAttemptState;
 import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.StepRuntimeState;
 import com.netflix.maestro.models.parameter.LongParameter;
 import com.netflix.maestro.models.parameter.MapParameter;
 import com.netflix.maestro.models.parameter.ParamType;
 import com.netflix.maestro.models.parameter.StringMapParameter;
+import com.netflix.maestro.models.parameter.StringParamDefinition;
 import com.netflix.maestro.models.parameter.StringParameter;
 import com.netflix.maestro.models.signal.SignalInstance;
 import com.netflix.maestro.models.signal.SignalParamValue;
+import com.netflix.maestro.models.stepruntime.TemplateExpansion;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -370,6 +379,144 @@ public class MaestroParamExtensionTest extends MaestroEngineBaseTest {
     initiator = new DryRunValidator.ValidationInitiator();
     when(instanceWrapper.getInitiator()).thenReturn(initiator);
     assertEquals("VALIDATION", paramExtension.getFromInstance(Constants.INITIATOR_TYPE_PARAM));
+  }
+
+  private static StepAttemptState attemptState(long runId, long attemptId, StepInstance.Status s) {
+    StepAttemptState state = new StepAttemptState();
+    state.setWorkflowId("parent-wf");
+    state.setWorkflowInstanceId(1L);
+    state.setWorkflowRunId(runId);
+    state.setStepId("load");
+    state.setStepAttemptId(attemptId);
+    StepRuntimeState runtimeState = new StepRuntimeState();
+    runtimeState.setStatus(s);
+    state.setRuntimeState(runtimeState);
+    return state;
+  }
+
+  private static StepRuntimeState stateOf(StepInstance.Status status) {
+    StepRuntimeState state = new StepRuntimeState();
+    state.setStatus(status);
+    return state;
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testGetFromTemplateAttemptsInsideInlineInstance() {
+    TemplateInitiator initiator = new TemplateInitiator();
+    UpstreamInitiator.Info parent = new UpstreamInitiator.Info();
+    parent.setWorkflowId("parent-wf");
+    parent.setInstanceId(1L);
+    parent.setRunId(1L);
+    parent.setStepId("load");
+    parent.setStepAttemptId(3L);
+    initiator.setAncestors(List.of(parent));
+    when(instanceWrapper.getInitiator()).thenReturn(initiator);
+    when(stepInstanceDao.getStepAttemptStates("parent-wf", 1L, "load"))
+        .thenReturn(
+            List.of(
+                attemptState(1L, 3L, StepInstance.Status.RUNNING),
+                attemptState(1L, 2L, StepInstance.Status.USER_FAILED),
+                attemptState(1L, 1L, StepInstance.Status.USER_FAILED)));
+    TemplateArtifact first = new TemplateArtifact();
+    first.setTemplateWorkflowId("maestro_template_x");
+    first.setTemplateInstanceId(2L);
+    first.setTemplateRunId(1L);
+    first.setExpansion(
+        TemplateExpansion.builder()
+            .params(Map.of("memory", StringParamDefinition.builder().value("4g").build()))
+            .build());
+    when(stepInstanceDao.getStepInstanceArtifacts("parent-wf", 1L, 1L, "load", "1"))
+        .thenReturn(Map.of(Artifact.Type.TEMPLATE.key(), first));
+    when(stepInstanceDao.getAllStepStates("maestro_template_x", 2L, 1L))
+        .thenReturn(
+            Map.of(
+                "audit", stateOf(StepInstance.Status.FATALLY_FAILED),
+                "write_a", stateOf(StepInstance.Status.SUCCEEDED)));
+    // attempt 2 failed before an execution instance existed
+    TemplateArtifact second = new TemplateArtifact();
+    second.setTemplateWorkflowId("maestro_template_x");
+    second.setTemplateRunId(2L);
+    when(stepInstanceDao.getStepInstanceArtifacts("parent-wf", 1L, 1L, "load", "2"))
+        .thenReturn(Map.of(Artifact.Type.TEMPLATE.key(), second));
+
+    Map<String, Object> chain =
+        (Map<String, Object>)
+            paramExtension.getFromTemplate(MaestroParamExtension.TEMPLATE_ATTEMPTS_FIELD);
+
+    assertEquals(List.of("1", "2"), List.copyOf(chain.keySet()));
+    Map<String, Object> one = (Map<String, Object>) chain.get("1");
+    assertEquals(1L, one.get("run_id"));
+    assertEquals(1L, one.get("attempt_id"));
+    assertEquals("USER_FAILED", one.get("status"));
+    assertEquals("maestro_template_x", one.get("template_workflow_id"));
+    assertEquals(2L, one.get("template_instance_id"));
+    assertEquals(1L, one.get("template_run_id"));
+    assertEquals(
+        "{\"params\":{\"memory\":{\"value\":\"4g\",\"type\":\"STRING\"}}}", one.get("expansion"));
+    assertEquals(Map.of("audit", "FATALLY_FAILED", "write_a", "SUCCEEDED"), one.get("steps"));
+    Map<String, Object> two = (Map<String, Object>) chain.get("2");
+    assertEquals(2L, two.get("attempt_id"));
+    assertEquals(2L, two.get("template_run_id"));
+    assertFalse(two.containsKey("template_instance_id"));
+    assertFalse(two.containsKey("steps"));
+    assertFalse(two.containsKey("expansion"));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testGetFromTemplateAttemptsFromTemplateStepItself() {
+    when(instanceWrapper.getInitiator()).thenReturn(new ManualInitiator());
+    when(instanceWrapper.isWorkflowParam()).thenReturn(false);
+    when(instanceWrapper.getWorkflowId()).thenReturn("parent-wf");
+    when(instanceWrapper.getWorkflowInstanceId()).thenReturn(1L);
+    when(instanceWrapper.getWorkflowRunId()).thenReturn(1L);
+    when(instanceWrapper.getStepInstanceAttributes())
+        .thenReturn(
+            StepInstanceAttributes.from(
+                StepRuntimeSummary.builder()
+                    .stepId("load")
+                    .stepAttemptId(2L)
+                    .type(StepType.TEMPLATE)
+                    .stepRetry(StepInstance.StepRetry.from(null))
+                    .build()));
+    when(stepInstanceDao.getStepAttemptStates("parent-wf", 1L, "load"))
+        .thenReturn(List.of(attemptState(1L, 1L, StepInstance.Status.USER_FAILED)));
+    when(stepInstanceDao.getStepInstanceArtifacts("parent-wf", 1L, 1L, "load", "1"))
+        .thenReturn(Map.of());
+
+    Map<String, Object> chain =
+        (Map<String, Object>)
+            paramExtension.getFromTemplate(MaestroParamExtension.TEMPLATE_ATTEMPTS_FIELD);
+
+    assertEquals(1, chain.size());
+    assertEquals("USER_FAILED", ((Map<String, Object>) chain.get("1")).get("status"));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testGetFromTemplateAttemptsEmptyInValidation() {
+    when(instanceWrapper.getInitiator()).thenReturn(new DryRunValidator.ValidationInitiator());
+    Map<String, Object> chain =
+        (Map<String, Object>)
+            paramExtension.getFromTemplate(MaestroParamExtension.TEMPLATE_ATTEMPTS_FIELD);
+    assertTrue(chain.isEmpty());
+  }
+
+  @Test
+  public void testGetFromTemplateRejectsOtherContextsAndFields() {
+    when(instanceWrapper.getInitiator()).thenReturn(new ManualInitiator());
+    when(instanceWrapper.isWorkflowParam()).thenReturn(true);
+    AssertHelper.assertThrows(
+        "only a template step or its inline instance may call it",
+        MaestroInternalError.class,
+        "getFromTemplate throws an exception",
+        () -> paramExtension.getFromTemplate(MaestroParamExtension.TEMPLATE_ATTEMPTS_FIELD));
+    AssertHelper.assertThrows(
+        "only attempts is supported",
+        MaestroInternalError.class,
+        "getFromTemplate throws an exception",
+        () -> paramExtension.getFromTemplate("outputs"));
   }
 
   @Test

@@ -17,9 +17,12 @@ import static org.junit.Assert.assertNull;
 
 import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.MaestroBaseTest;
+import com.netflix.maestro.flow.models.TaskDef;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.Defaults;
+import com.netflix.maestro.models.definition.FailureMode;
 import com.netflix.maestro.models.definition.StepType;
+import com.netflix.maestro.models.definition.TemplateStep;
 import com.netflix.maestro.models.definition.TypedStep;
 import java.util.List;
 import org.junit.Test;
@@ -58,5 +61,18 @@ public class StepTranslatorTest extends MaestroBaseTest {
         NullPointerException.class,
         "Cannot find step in the definition",
         () -> translator.translate(null));
+  }
+
+  @Test
+  public void testTranslateTemplateStep() throws Exception {
+    TemplateStep step =
+        loadObject("fixtures/typedsteps/sample-template-step.json", TemplateStep.class);
+
+    TaskDef taskDef = translator.translate(step);
+
+    assertEquals("publish", taskDef.taskReferenceName());
+    assertEquals(Constants.MAESTRO_TASK_NAME, taskDef.type());
+    assertNull(taskDef.joinOn());
+    assertEquals(FailureMode.FAIL_AFTER_RUNNING, step.getFailureMode());
   }
 }

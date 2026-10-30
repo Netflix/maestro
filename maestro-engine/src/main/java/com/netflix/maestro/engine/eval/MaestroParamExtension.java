@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.engine.eval;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
@@ -25,10 +26,13 @@ import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.artifact.ForeachArtifact;
 import com.netflix.maestro.models.artifact.SubworkflowArtifact;
+import com.netflix.maestro.models.artifact.TemplateArtifact;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.initiator.Initiator;
 import com.netflix.maestro.models.initiator.ManualInitiator;
 import com.netflix.maestro.models.initiator.SignalInitiator;
+import com.netflix.maestro.models.initiator.UpstreamInitiator;
+import com.netflix.maestro.models.instance.StepAttemptState;
 import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.parameter.ParamType;
 import com.netflix.maestro.models.parameter.Parameter;
@@ -36,6 +40,9 @@ import com.netflix.maestro.models.signal.SignalDependencies;
 import com.netflix.maestro.utils.Checks;
 import com.netflix.maestro.utils.ObjectHelper;
 import com.netflix.sel.ext.AbstractParamExtension;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
 import java.util.concurrent.ExecutorService;
@@ -83,6 +90,12 @@ public class MaestroParamExtension extends AbstractParamExtension {
   /** Function to get the foreach metadata. */
   static final String GET_FROM_FOREACH = "getFromForeach";
 
+  /** Function to get the runtime facts of the enclosing template step, like its attempts. */
+  static final String GET_FROM_TEMPLATE = "getFromTemplate";
+
+  /** getFromTemplate field: the earlier attempts of the template step in order. */
+  static final String TEMPLATE_ATTEMPTS_FIELD = "attempts";
+
   private final ExecutorService executor;
   private final MaestroStepInstanceDao stepInstanceDao;
   private final String env;
@@ -110,6 +123,8 @@ public class MaestroParamExtension extends AbstractParamExtension {
       return getFromStep(arg1);
     } else if (GET_FROM_SIGNAL.equals(methodName)) {
       return getFromSignal(arg1);
+    } else if (GET_FROM_TEMPLATE.equals(methodName)) {
+      return getFromTemplate(arg1);
     }
     throw new UnsupportedOperationException(
         String.format(
@@ -444,6 +459,117 @@ public class MaestroParamExtension extends AbstractParamExtension {
       throw new MaestroInvalidExpressionException("Cannot find the param name: [%s]", paramName);
     }
     return stepInstance.getParams().get(paramName).getEvaluatedResult();
+  }
+
+  Object getFromTemplate(String fieldName) {
+    try {
+      return executor
+          .submit(() -> fromTemplate(fieldName))
+          .get(TIMEOUT_IN_MILLIS, TimeUnit.MILLISECONDS);
+    } catch (Exception e) {
+      throw new MaestroInternalError(
+          e, "getFromTemplate throws an exception for fieldName=[%s]", fieldName);
+    }
+  }
+
+  /**
+   * Runtime facts of the enclosing template step. Only {@code attempts} is supported: a map keyed
+   * by position in the chain ("1", "2", ...) of the step attempts before the current one, each with
+   * the run id, attempt id and status of the template step attempt, the inline workflow id,
+   * instance id and run id it launched, the expansion the preparer returned as a JSON string, and
+   * the final status of every step of that inline run. Nothing is stored for it; it is read from
+   * the earlier attempts when an expression asks. Callable from a param of the template step itself
+   * and from any param inside its inline instances. Empty during dry-run validation.
+   */
+  private Object fromTemplate(String fieldName) {
+    Checks.checkTrue(
+        TEMPLATE_ATTEMPTS_FIELD.equals(fieldName),
+        "Invalid field name [%s] for getFromTemplate call, only [%s] is supported",
+        fieldName,
+        TEMPLATE_ATTEMPTS_FIELD);
+    Initiator initiator = instanceWrapper.getInitiator();
+    if (initiator instanceof DryRunValidator.ValidationInitiator) {
+      return new LinkedHashMap<String, Object>();
+    }
+    UpstreamInitiator.Info templateStep = resolveTemplateStep(initiator);
+    List<StepAttemptState> attempts =
+        stepInstanceDao.getStepAttemptStates(
+            templateStep.getWorkflowId(), templateStep.getInstanceId(), templateStep.getStepId());
+    Map<String, Object> chain = new LinkedHashMap<>();
+    attempts.stream()
+        .filter(
+            a ->
+                a.getWorkflowRunId() < templateStep.getRunId()
+                    || (a.getWorkflowRunId() == templateStep.getRunId()
+                        && a.getStepAttemptId() < templateStep.getStepAttemptId()))
+        .sorted(
+            Comparator.comparingLong(StepAttemptState::getWorkflowRunId)
+                .thenComparingLong(StepAttemptState::getStepAttemptId))
+        .forEach(
+            a -> chain.put(String.valueOf(chain.size() + 1), describeAttempt(templateStep, a)));
+    return chain;
+  }
+
+  /** The template step an expression runs for: the step itself, or the parent of its inline run. */
+  private UpstreamInitiator.Info resolveTemplateStep(Initiator initiator) {
+    if (initiator.getType() == Initiator.Type.TEMPLATE) {
+      return ((UpstreamInitiator) initiator).getParent();
+    }
+    StepInstanceAttributes attributes = instanceWrapper.getStepInstanceAttributes();
+    Checks.checkTrue(
+        !instanceWrapper.isWorkflowParam()
+            && attributes != null
+            && attributes.getType() == StepType.TEMPLATE,
+        "getFromTemplate('%s') can only be called from a template step or inside its inline instance",
+        TEMPLATE_ATTEMPTS_FIELD);
+    UpstreamInitiator.Info info = new UpstreamInitiator.Info();
+    info.setWorkflowId(instanceWrapper.getWorkflowId());
+    info.setInstanceId(instanceWrapper.getWorkflowInstanceId());
+    info.setRunId(instanceWrapper.getWorkflowRunId());
+    info.setStepId(attributes.getStepId());
+    info.setStepAttemptId(attributes.getStepAttemptId());
+    return info;
+  }
+
+  private Map<String, Object> describeAttempt(
+      UpstreamInitiator.Info templateStep, StepAttemptState attempt) {
+    Map<String, Object> entry = new LinkedHashMap<>();
+    entry.put("run_id", attempt.getWorkflowRunId());
+    entry.put("attempt_id", attempt.getStepAttemptId());
+    entry.put("status", attempt.getRuntimeState().getStatus().name());
+    Map<String, Artifact> artifacts =
+        stepInstanceDao.getStepInstanceArtifacts(
+            templateStep.getWorkflowId(),
+            templateStep.getInstanceId(),
+            attempt.getWorkflowRunId(),
+            templateStep.getStepId(),
+            String.valueOf(attempt.getStepAttemptId()));
+    Artifact artifact = artifacts == null ? null : artifacts.get(Artifact.Type.TEMPLATE.key());
+    if (artifact == null) {
+      return entry;
+    }
+    TemplateArtifact template = artifact.asTemplate();
+    entry.put("template_workflow_id", template.getTemplateWorkflowId());
+    entry.put("template_run_id", template.getTemplateRunId());
+    if (template.getExpansion() != null) {
+      try {
+        entry.put("expansion", objectMapper.writeValueAsString(template.getExpansion()));
+      } catch (JsonProcessingException e) {
+        throw new MaestroInternalError(e, "Cannot serialize the template expansion");
+      }
+    }
+    if (template.getTemplateInstanceId() != null) {
+      entry.put("template_instance_id", template.getTemplateInstanceId());
+      Map<String, Object> steps = new LinkedHashMap<>();
+      stepInstanceDao
+          .getAllStepStates(
+              template.getTemplateWorkflowId(),
+              template.getTemplateInstanceId(),
+              template.getTemplateRunId())
+          .forEach((stepId, state) -> steps.put(stepId, state.getStatus().name()));
+      entry.put("steps", steps);
+    }
+    return entry;
   }
 
   Long nextUniqueId() {

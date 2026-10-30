@@ -85,6 +85,22 @@ public final class Constants {
   public static final String WHILE_INLINE_WORKFLOW_PREFIX =
       MAESTRO_PREFIX + StepType.WHILE.getType();
 
+  /** Maestro template inline workflow prefix. */
+  public static final String TEMPLATE_INLINE_WORKFLOW_PREFIX =
+      MAESTRO_PREFIX + StepType.TEMPLATE.getType();
+
+  /** Output param of a template generator step holding the expansion payload as a JSON string. */
+  public static final String TEMPLATE_EXPANSION_PARAM = MAESTRO_PREFIX + "expansion";
+
+  /** Run param of a template prepare instance holding the supplied step inputs as a JSON string. */
+  public static final String TEMPLATE_STEP_INPUTS_PARAM = MAESTRO_PREFIX + "step_inputs";
+
+  /** Run param of a template prepare instance holding the job type and version being expanded. */
+  public static final String TEMPLATE_IDENTITY_PARAM = MAESTRO_PREFIX + "template_identity";
+
+  /** Step id of the collector step appended to a template execution instance. */
+  public static final String TEMPLATE_OUTPUTS_STEP_ID = MAESTRO_PREFIX + "template_outputs";
+
   /** Maximum limit for step concurrency. */
   public static final long STEP_CONCURRENCY_MAX_LIMIT = 1000L;
 

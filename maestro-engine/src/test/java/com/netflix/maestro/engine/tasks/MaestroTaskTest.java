@@ -41,13 +41,18 @@ import com.netflix.maestro.models.Defaults;
 import com.netflix.maestro.models.definition.ParsableLong;
 import com.netflix.maestro.models.definition.RetryPolicy;
 import com.netflix.maestro.models.definition.Step;
+import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.TimeoutPhase;
+import com.netflix.maestro.models.definition.TypedStep;
 import com.netflix.maestro.models.instance.RestartConfig;
 import com.netflix.maestro.models.instance.RunPolicy;
 import com.netflix.maestro.models.instance.StepInstance;
+import com.netflix.maestro.models.instance.StepInstanceTransition;
 import com.netflix.maestro.models.instance.StepRuntimeState;
 import com.netflix.maestro.models.instance.StepSelection;
 import com.netflix.maestro.models.instance.StepSelector;
+import com.netflix.maestro.models.parameter.BooleanParameter;
+import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.models.signal.SignalOutputs;
 import com.netflix.maestro.models.timeline.Timeline;
 import com.netflix.maestro.models.timeline.TimelineEvent;
@@ -852,6 +857,64 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
     verify(task, atLeastOnce()).setStartDelayInMillis(delay.capture());
     long firstDelay = delay.getAllValues().get(0);
     assertThat(firstDelay).isBetween(minInclusive, maxInclusive);
+  }
+
+  @Test
+  public void testFinishingEndsSucceeded() throws Exception {
+    StepRuntimeSummary runtimeSummary = finishingRuntimeSummary();
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+
+    createAndRunMaestroTask(
+        1, Flow.Status.RUNNING, noOpStepWithoutOutputs(), runtimeSummary, workflowSummary);
+
+    Assert.assertEquals(
+        StepInstance.Status.SUCCEEDED, runtimeSummary.getRuntimeState().getStatus());
+  }
+
+  @Test
+  public void testFinishingEndsCompletedWithErrorWhenRequestedByStepRuntime() throws Exception {
+    StepRuntimeSummary runtimeSummary = finishingRuntimeSummary();
+    runtimeSummary.setCompletedWithError(true);
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+
+    createAndRunMaestroTask(
+        1, Flow.Status.RUNNING, noOpStepWithoutOutputs(), runtimeSummary, workflowSummary);
+
+    Assert.assertEquals(
+        StepInstance.Status.COMPLETED_WITH_ERROR, runtimeSummary.getRuntimeState().getStatus());
+  }
+
+  /** A FINISHING step ready to end: satisfied, params generated, no successor conditions. */
+  private StepRuntimeSummary finishingRuntimeSummary() {
+    Map<String, Parameter> params = new HashMap<>();
+    params.put(
+        Constants.STEP_SATISFIED_FIELD,
+        BooleanParameter.builder()
+            .name(Constants.STEP_SATISFIED_FIELD)
+            .value(true)
+            .evaluatedResult(true)
+            .evaluatedTime(System.currentTimeMillis())
+            .build());
+    StepRuntimeState runtimeState = new StepRuntimeState();
+    runtimeState.setStatus(StepInstance.Status.FINISHING);
+    runtimeState.setWaitPermitTime(System.currentTimeMillis());
+    return StepRuntimeSummary.builder()
+        .stepId("job1")
+        .stepAttemptId(1L)
+        .stepInstanceUuid("uuid")
+        .type(StepType.NOOP)
+        .params(params)
+        .transition(new StepInstanceTransition())
+        .stepRetry(new StepInstance.StepRetry())
+        .runtimeState(runtimeState)
+        .build();
+  }
+
+  private static Step noOpStepWithoutOutputs() {
+    TypedStep stepDef = new TypedStep();
+    stepDef.setId("job1");
+    stepDef.setType(StepType.NOOP);
+    return stepDef;
   }
 
   private StepRuntimeSummary loadTimeoutRuntimeSummary(StepInstance.Status status)

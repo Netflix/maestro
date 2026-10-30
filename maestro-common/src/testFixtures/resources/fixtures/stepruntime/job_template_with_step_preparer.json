@@ -1,0 +1,42 @@
+{
+  "metadata": {
+    "owner": "tester",
+    "version_author": "tester",
+    "status": "alpha",
+    "support": "support-team",
+    "create_time": 1660751501925
+  },
+  "definition": {
+    "job_type": "dynamic_publish",
+    "step_type": "template",
+    "version": "v1",
+    "params": {
+      "target_table": {
+        "value": "db.sample_table",
+        "type": "STRING",
+        "internal_mode": "REQUIRED"
+      },
+      "row_count": {
+        "expression": "audit__row_count;",
+        "type": "LONG",
+        "mode": "IMMUTABLE",
+        "source": "TEMPLATE_OUTPUT"
+      }
+    },
+    "prepare": {
+      "type": "step",
+      "step": {
+        "step": {
+          "id": "generate",
+          "type": "NoOp"
+        }
+      }
+    },
+    "step_inputs": {
+      "writes": {
+        "successors": ["audit"],
+        "params": ["target_table"]
+      }
+    }
+  }
+}
