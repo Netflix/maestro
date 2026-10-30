@@ -273,6 +273,34 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
   }
 
   @Test
+  public void testExtensionStepOutputParamsAreLocatedByStepInstanceUuid() {
+    outputData.setExternalJobId("uuid123");
+    outputData.setExternalJobType(StepType.EXTENSION);
+    when(outputDataDao.getOutputDataForExternalJob("uuid123", StepType.EXTENSION))
+        .thenReturn(Optional.of(outputData));
+    runtimeSummary =
+        runtimeSummaryBuilder().type(StepType.EXTENSION).params(mutableStringParam("v1")).build();
+
+    outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
+
+    assertEquals("hello", runtimeSummary.getParams().get("str_param").asString());
+  }
+
+  private static Map<String, Parameter> mutableStringParam(String value) {
+    Map<String, Parameter> params = new HashMap<>();
+    params.put(
+        "str_param",
+        StringParameter.builder()
+            .name("str_param")
+            .value(value)
+            .evaluatedResult(value)
+            .mode(ParamMode.MUTABLE)
+            .evaluatedTime(System.currentTimeMillis())
+            .build());
+    return params;
+  }
+
+  @Test
   public void testValidOutputParamTypes() throws IOException {
     Map<String, Parameter> runtimeParams =
         loadObject("fixtures/outputdata/sample-output-data-params-defaults.json", PARAM_MAP);

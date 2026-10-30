@@ -948,6 +948,9 @@ public final class MaestroTask implements FlowTask {
             break;
           case USER_FAILED:
           case PLATFORM_FAILED:
+            // A failed step's output data is merged into its params, so downstream steps can read
+            // what it reported before failing.
+            outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
             // A retryable failure is escalated to FATALLY_FAILED when the step's output data marks
             // it as non-retryable, then falls through to the FATALLY_FAILED handling.
             if (!outputDataManager.isStepNonRetryable(runtimeSummary)) {
