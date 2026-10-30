@@ -209,15 +209,22 @@ public final class ParamsMergeHelper {
             });
   }
 
-  /** Merge output params into parameter map. */
+  /**
+   * Merge output params into parameter map.
+   *
+   * @throws MaestroValidationException before any param is written if an output param is not
+   *     defined in the parameter map
+   */
   public static void mergeOutputDataParams(
       Map<String, Parameter> allParams, Map<String, Parameter> params) {
+    for (String name : params.keySet()) {
+      if (!allParams.containsKey(name)) {
+        throw new MaestroValidationException(
+            "Invalid output parameter [%s], not defined in params", name);
+      }
+    }
     params.forEach(
         (name, param) -> {
-          if (!allParams.containsKey(name)) {
-            throw new MaestroValidationException(
-                "Invalid output parameter [%s], not defined in params", name);
-          }
           MergeContext context = MergeContext.stepCreate(ParamSource.OUTPUT_PARAMETER);
           if (param.getType() == ParamType.MAP && param.isLiteral()) {
             ParamDefinition baseDef = allParams.get(name).toDefinition();

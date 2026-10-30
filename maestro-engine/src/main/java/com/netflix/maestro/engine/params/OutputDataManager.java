@@ -21,7 +21,11 @@ import com.netflix.maestro.models.parameter.ParamType;
 import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.models.parameter.StringArrayParameter;
 import com.netflix.maestro.models.parameter.StringParameter;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -71,8 +75,14 @@ public class OutputDataManager {
     outputDataDao.insertOrUpdateOutputData(outputData);
   }
 
-  /** Merge back output parameters updated by step into params space along with validation. */
-  public void validateAndMergeOutputParamsAndArtifacts(StepRuntimeSummary runtimeSummary) {
+  /**
+   * Merge back output parameters updated by step into params space along with validation.
+   *
+   * @param runtimeSummary step runtime summary whose params and artifacts receive the output data
+   * @return the names of the params whose evaluated result the merge changed, empty if none
+   */
+  public List<String> validateAndMergeOutputParamsAndArtifacts(StepRuntimeSummary runtimeSummary) {
+    List<String> changedParams = new ArrayList<>();
     Optional<String> externalJobId = extractExternalJobId(runtimeSummary);
     if (externalJobId.isPresent()) {
       Optional<OutputData> outputDataOpt =
@@ -81,8 +91,26 @@ public class OutputDataManager {
           outputData -> {
             // merge output params if any.
             if (outputData.getParams() != null) {
+              Map<String, Object> resultsBeforeMerge = new HashMap<>();
+              outputData
+                  .getParams()
+                  .keySet()
+                  .forEach(
+                      name -> {
+                        Parameter param = runtimeSummary.getParams().get(name);
+                        if (param != null) {
+                          resultsBeforeMerge.put(name, copyResult(param.getEvaluatedResult()));
+                        }
+                      });
               ParamsMergeHelper.mergeOutputDataParams(
                   runtimeSummary.getParams(), outputData.getParams());
+              resultsBeforeMerge.forEach(
+                  (name, before) -> {
+                    Object after = runtimeSummary.getParams().get(name).getEvaluatedResult();
+                    if (!sameResult(before, after)) {
+                      changedParams.add(name);
+                    }
+                  });
             }
             // merge output artifacts if any.
             if (outputData.getArtifacts() != null) {
@@ -90,6 +118,7 @@ public class OutputDataManager {
             }
           });
     }
+    return changedParams;
   }
 
   /**
@@ -110,6 +139,24 @@ public class OutputDataManager {
         .map(artifacts -> artifacts.get(Artifact.Type.RETRY.key()))
         .map(artifact -> !artifact.asRetry().isRetryable())
         .orElse(false);
+  }
+
+  private static Object copyResult(Object result) {
+    if (result instanceof Map<?, ?> map) {
+      Map<Object, Object> copy = new LinkedHashMap<>();
+      map.forEach((key, value) -> copy.put(key, copyResult(value)));
+      return copy;
+    }
+    return result;
+  }
+
+  private static boolean sameResult(Object before, Object after) {
+    if (before instanceof Map<?, ?> beforeMap && after instanceof Map<?, ?> afterMap) {
+      return beforeMap.keySet().equals(afterMap.keySet())
+          && beforeMap.keySet().stream()
+              .allMatch(key -> sameResult(beforeMap.get(key), afterMap.get(key)));
+    }
+    return Objects.deepEquals(before, after);
   }
 
   private Optional<String> extractExternalJobId(StepRuntimeSummary runtimeSummary) {
