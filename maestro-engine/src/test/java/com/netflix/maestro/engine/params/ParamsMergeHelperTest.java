@@ -1146,6 +1146,29 @@ public class ParamsMergeHelperTest extends MaestroEngineBaseTest {
   }
 
   @Test
+  public void testMergeOutputDataParamsInvalidExceptionLeavesParamsUntouched() {
+    Map<String, Parameter> allParams = new LinkedHashMap<>();
+    allParams.put(
+        "key",
+        StringParameter.builder()
+            .name("key")
+            .value("v1")
+            .evaluatedResult("v1")
+            .mode(ParamMode.MUTABLE)
+            .build());
+    Map<String, Parameter> paramsToMerge = new LinkedHashMap<>();
+    paramsToMerge.put(
+        "key", StringParameter.builder().value("test").evaluatedResult("test").build());
+    paramsToMerge.put("undeclared", StringParameter.builder().value("x").build());
+    AssertHelper.assertThrows(
+        "throws exception when output params to merge are not present in all params",
+        MaestroValidationException.class,
+        "Invalid output parameter [undeclared], not defined in params",
+        () -> ParamsMergeHelper.mergeOutputDataParams(allParams, paramsToMerge));
+    assertEquals("v1", allParams.get("key").asString());
+  }
+
+  @Test
   public void testMergeOutputDataParamsMapParam() throws JsonProcessingException {
     Map<String, Parameter> allParams =
         parseParamMap(

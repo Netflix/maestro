@@ -43,6 +43,7 @@ import com.netflix.maestro.engine.utils.StepHelper;
 import com.netflix.maestro.engine.utils.TaskHelper;
 import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.exceptions.MaestroRetryableError;
+import com.netflix.maestro.exceptions.MaestroValidationException;
 import com.netflix.maestro.flow.models.Flow;
 import com.netflix.maestro.flow.models.Task;
 import com.netflix.maestro.flow.runtime.FlowTask;
@@ -858,6 +859,7 @@ public final class MaestroTask implements FlowTask {
       StepRuntimeSummary runtimeSummary) {
     boolean doneWithExecute = false;
     while (!doneWithExecute) {
+      boolean failedOutputDataMerged = false;
       try {
         switch (runtimeSummary.getRuntimeState().getStatus()) {
           case NOT_CREATED:
@@ -950,7 +952,8 @@ public final class MaestroTask implements FlowTask {
           case PLATFORM_FAILED:
             // A failed step's output data is merged into its params, so downstream steps can read
             // what it reported before failing.
-            outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
+            mergeFailedStepOutputData(runtimeSummary);
+            failedOutputDataMerged = true;
             // A retryable failure is escalated to FATALLY_FAILED when the step's output data marks
             // it as non-retryable, then falls through to the FATALLY_FAILED handling.
             if (!outputDataManager.isStepNonRetryable(runtimeSummary)) {
@@ -965,6 +968,9 @@ public final class MaestroTask implements FlowTask {
                     failedStatus));
             // fall through, to apply failure mode handling
           case FATALLY_FAILED: // Failure mode only applies to FATALLY_FAILED
+            if (!failedOutputDataMerged) {
+              mergeFailedStepOutputData(runtimeSummary);
+            }
             if (!runtimeSummary.isIgnoreFailureMode()) {
               if (FailureMode.IGNORE_FAILURE == stepDefinition.getFailureMode()) {
                 runtimeSummary.markTerminated(
@@ -1009,6 +1015,26 @@ public final class MaestroTask implements FlowTask {
       }
     }
     return false;
+  }
+
+  /**
+   * Merges a failed step's output data into its params and artifacts. A validation failure is added
+   * to the timeline as a warning and the step's failure status is kept.
+   */
+  private void mergeFailedStepOutputData(StepRuntimeSummary runtimeSummary) {
+    try {
+      List<String> changedParams =
+          outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
+      if (!changedParams.isEmpty()) {
+        runtimeSummary.addTimeline(
+            TimelineLogEvent.info(
+                "Merged the failed step's output data and changed params [%s].", changedParams));
+      }
+    } catch (MaestroValidationException e) {
+      runtimeSummary.addTimeline(
+          TimelineLogEvent.warn(
+              "Failed to merge the failed step's output data due to [%s].", e.getMessage()));
+    }
   }
 
   /**
