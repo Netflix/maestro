@@ -122,15 +122,8 @@ public final class MaestroTask implements FlowTask {
   private final MaestroMetrics metrics;
   private final MaestroTracingManager tracingManager;
   private final MaestroParamExtensionRepo paramExtensionRepo;
-  private final boolean mergeOutputDataOnFailure;
 
-  /**
-   * Maestro task constructor.
-   *
-   * @param mergeOutputDataOnFailure when true, a failed step's saved output params and artifacts
-   *     are merged into its params space, so downstream steps can read what it reported before
-   *     failing; when false, only a succeeded step's output data is merged.
-   */
+  /** Maestro task constructor. */
   public MaestroTask(
       StepRuntimeManager stepRuntimeManager,
       StepSyncManager stepSyncManager,
@@ -146,8 +139,7 @@ public final class MaestroTask implements FlowTask {
       StepTimeoutProperties timeoutProperties,
       MaestroMetrics metricRepo,
       @Nullable MaestroTracingManager tracingManager,
-      @Nullable MaestroParamExtensionRepo extensionRepo,
-      boolean mergeOutputDataOnFailure) {
+      @Nullable MaestroParamExtensionRepo extensionRepo) {
     this.stepRuntimeManager = stepRuntimeManager;
     this.stepSyncManager = stepSyncManager;
     this.paramEvaluator = paramEvaluator;
@@ -166,7 +158,6 @@ public final class MaestroTask implements FlowTask {
       LOG.info("Tracing manager is null, all tracing will be skipped.");
     }
     this.paramExtensionRepo = extensionRepo;
-    this.mergeOutputDataOnFailure = mergeOutputDataOnFailure;
   }
 
   @Override
@@ -957,11 +948,9 @@ public final class MaestroTask implements FlowTask {
             break;
           case USER_FAILED:
           case PLATFORM_FAILED:
-            // A failed step's output data is merged into its params when enabled, so downstream
-            // steps can read what it reported before failing.
-            if (mergeOutputDataOnFailure) {
-              outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
-            }
+            // A failed step's output data is merged into its params, so downstream steps can read
+            // what it reported before failing.
+            outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
             // A retryable failure is escalated to FATALLY_FAILED when the step's output data marks
             // it as non-retryable, then falls through to the FATALLY_FAILED handling.
             if (!outputDataManager.isStepNonRetryable(runtimeSummary)) {
