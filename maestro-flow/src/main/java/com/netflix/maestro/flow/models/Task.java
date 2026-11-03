@@ -1,6 +1,7 @@
 package com.netflix.maestro.flow.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.flow.Constants;
 import java.util.Map;
 import lombok.Data;
@@ -26,6 +27,7 @@ import lombok.Getter;
  * @author jun-he
  */
 @Data
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class Task {
 
   @Getter

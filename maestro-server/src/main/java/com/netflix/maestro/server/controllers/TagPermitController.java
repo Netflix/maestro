@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.server.controllers;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.engine.concurrency.TagPermitManager;
 import com.netflix.maestro.exceptions.MaestroNotFoundException;
 import com.netflix.maestro.models.api.TagPermitRequest;
@@ -39,6 +40,7 @@ import org.springframework.web.bind.annotation.RestController;
     value = "/api/v3/tag-permits",
     produces = MediaType.APPLICATION_JSON_VALUE,
     consumes = MediaType.APPLICATION_JSON_VALUE)
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class TagPermitController {
   private final TagPermitManager tagPermitManager;
   private final User.UserBuilder callerBuilder;

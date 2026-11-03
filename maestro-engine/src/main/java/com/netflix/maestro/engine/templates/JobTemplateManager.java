@@ -13,6 +13,7 @@
 package com.netflix.maestro.engine.templates;
 
 import com.netflix.maestro.annotations.Nullable;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.engine.dao.MaestroJobTemplateDao;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
 import com.netflix.maestro.engine.params.ParamsMergeHelper;
@@ -45,6 +46,7 @@ import java.util.stream.Collectors;
  * call. For example, we can define different jobs based on kubernetes with different schemas. Each
  * job can be identified as a subtype of kubernetes step type.
  */
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class JobTemplateManager {
   private record JobKey(String jobType, String version) {}
 

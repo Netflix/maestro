@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.timetrigger.messageprocessors;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.engine.execution.RunResponse;
 import com.netflix.maestro.engine.utils.ExceptionClassifier;
 import com.netflix.maestro.exceptions.MaestroNotFoundException;
@@ -35,7 +36,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 import java.util.function.Supplier;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +43,7 @@ import lombok.extern.slf4j.Slf4j;
 /** Processor class to process execution messages for time triggers. */
 @Slf4j
 @AllArgsConstructor
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class TimeTriggerExecutionProcessor {
   private TimeTriggerProducer timeTriggerProducer;
   private MaestroWorkflowLauncher maestroWorkflowLauncher;
@@ -161,7 +162,9 @@ public class TimeTriggerExecutionProcessor {
         firstExecutionDate);
     if (fullDelayForExecution > props.getMaxDelay()) {
       fullDelayForExecution =
-          props.getMaxDelay() - props.getMaxJitter() + new Random().nextInt(props.getMaxJitter());
+          props.getMaxDelay()
+              - props.getMaxJitter()
+              + java.util.concurrent.ThreadLocalRandom.current().nextInt(props.getMaxJitter());
     }
     return Math.max(0, fullDelayForExecution);
   }

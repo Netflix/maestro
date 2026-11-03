@@ -58,6 +58,9 @@ public class UrlValidator {
    * @throws MaestroValidationException if the URL is invalid or not allowed
    */
   public URI validateAndParseUri(String url) {
+    if (url == null) {
+      throw new MaestroValidationException("URL cannot be null.");
+    }
     try {
       URI uri = URI.create(url);
       String scheme = uri.getScheme();
@@ -82,7 +85,7 @@ public class UrlValidator {
             "URL host [%s] is not allowed. Please contact the administrator.", host);
       }
       return uri;
-    } catch (NullPointerException | IllegalArgumentException e) {
+    } catch (IllegalArgumentException e) {
       LOG.info("Rejected malformed URL: [{}]", url, e);
       throw new MaestroValidationException(e, "Invalid URL: [%s]", url);
     }

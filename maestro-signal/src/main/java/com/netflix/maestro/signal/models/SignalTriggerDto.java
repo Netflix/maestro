@@ -1,5 +1,7 @@
 package com.netflix.maestro.signal.models;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
+
 /**
  * Data model for getting a signal trigger table record. Won't be persisted.
  *
@@ -10,6 +12,7 @@ package com.netflix.maestro.signal.models;
  * @param checkpoints corresponding signal checkpoints
  * @author jun-he
  */
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public record SignalTriggerDto(
     String workflowId,
     String triggerUuid,

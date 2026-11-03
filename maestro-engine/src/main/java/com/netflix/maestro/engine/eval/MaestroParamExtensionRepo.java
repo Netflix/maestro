@@ -15,6 +15,7 @@ package com.netflix.maestro.engine.eval;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.annotations.Nullable;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
 import com.netflix.maestro.engine.handlers.SignalHandler;
 import com.netflix.maestro.exceptions.MaestroUnprocessableEntityException;
@@ -29,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /** A repository to hold maestro param extensions for the param evaluation. */
 @Slf4j
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class MaestroParamExtensionRepo {
   private static final int THREAD_NUM = 3;
   private final ThreadLocal<Extension> repos = new ThreadLocal<>();

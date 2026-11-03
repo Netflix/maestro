@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.server.controllers;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.engine.dao.MaestroJobTemplateDao;
 import com.netflix.maestro.exceptions.MaestroNotFoundException;
 import com.netflix.maestro.models.api.JobTemplateCreateRequest;
@@ -41,6 +42,7 @@ import org.springframework.web.bind.annotation.RestController;
     value = "/api/v3/job-templates",
     produces = MediaType.APPLICATION_JSON_VALUE,
     consumes = MediaType.APPLICATION_JSON_VALUE)
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class JobTemplateController {
   private final MaestroJobTemplateDao jobTemplateDao;
   private final User.UserBuilder callerBuilder;

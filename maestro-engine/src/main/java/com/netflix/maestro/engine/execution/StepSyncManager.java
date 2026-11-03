@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.engine.execution;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
 import com.netflix.maestro.engine.db.DbOperation;
 import com.netflix.maestro.exceptions.MaestroInternalError;
@@ -27,6 +28,7 @@ import java.util.Optional;
  * Step synchronization manager to write the update to maestro step instance table and also publish
  * the events to the internal queue.
  */
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public final class StepSyncManager {
   private final MaestroStepInstanceDao instanceDao;
 

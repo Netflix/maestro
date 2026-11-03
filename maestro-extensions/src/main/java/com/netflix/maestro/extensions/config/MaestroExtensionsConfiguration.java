@@ -13,7 +13,6 @@
 package com.netflix.maestro.extensions.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.database.DatabaseConfiguration;
 import com.netflix.maestro.extensions.dao.MaestroForeachFlattenedDao;
 import com.netflix.maestro.extensions.handlers.ForeachFlatteningHandler;
@@ -45,7 +44,6 @@ import org.springframework.context.annotation.Configuration;
 @ComponentScan(basePackages = "com.netflix.maestro.extensions")
 @EnableConfigurationProperties(MaestroExtensionsProperties.class)
 @ConditionalOnProperty(value = "extensions.enabled", havingValue = "true")
-@SuppressFBWarnings("EI_EXPOSE_REP2")
 @Slf4j
 public class MaestroExtensionsConfiguration {
 

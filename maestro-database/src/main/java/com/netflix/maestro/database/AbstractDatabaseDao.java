@@ -15,6 +15,7 @@ package com.netflix.maestro.database;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.database.utils.ConnectionFunction;
 import com.netflix.maestro.database.utils.ResultProcessor;
 import com.netflix.maestro.database.utils.StatementFunction;
@@ -49,6 +50,7 @@ import lombok.extern.slf4j.Slf4j;
   "PMD.AbstractClassWithoutAbstractMethod",
   "PMD.PreserveStackTrace"
 })
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public abstract class AbstractDatabaseDao {
   private static final String RETRY_SQL_STATE = "40001";
   private static final String QUERY_ERROR_METRIC_NAME = "maestro_db_query_error";

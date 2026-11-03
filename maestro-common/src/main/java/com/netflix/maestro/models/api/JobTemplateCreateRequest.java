@@ -18,6 +18,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.models.definition.GitInfo;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.stepruntime.JobTemplate;
@@ -39,6 +40,7 @@ import lombok.Data;
     value = {"owner", "status", "support", "test_workflows", "git_info", "definition"},
     alphabetic = true)
 @Data
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class JobTemplateCreateRequest {
   /** reserved fields cannot be set within extraInfo. */
   private static final Set<String> RESERVED_FIELDS =

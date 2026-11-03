@@ -34,7 +34,6 @@ import lombok.experimental.SuperBuilder;
  *
  * <p>SHOULD NOT mutate the returned array data.
  */
-@SuppressFBWarnings({"EI_EXPOSE_REP", "EI_EXPOSE_REP2"})
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(
@@ -45,6 +44,7 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder(toBuilder = true)
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public final class DoubleArrayParamDefinition extends AbstractParamDefinition {
   private final BigDecimal[] value;
 

@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.exceptions;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -20,6 +21,7 @@ import lombok.Getter;
 
 /** Maestro Workflow Bad Request exception. */
 @Getter
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class MaestroBadRequestException extends MaestroRuntimeException {
   private static final long serialVersionUID = -5554778492523995123L;
 

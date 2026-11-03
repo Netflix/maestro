@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.utils.Checks;
 import jakarta.validation.constraints.NotNull;
 import java.io.IOException;
@@ -46,6 +47,7 @@ import lombok.ToString;
 @EqualsAndHashCode
 @Getter
 @SuppressWarnings("PMD.LooseCoupling")
+@SuppressFBWarnings({"EI_EXPOSE_REP", "NP_NULL_ON_SOME_PATH"})
 public class ForeachDetails {
   @JsonValue @NotNull private final EnumMap<WorkflowInstance.Status, List<Interval>> info;
 

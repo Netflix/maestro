@@ -1,5 +1,6 @@
 package com.netflix.maestro.server.controllers;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.api.SignalCreateRequest;
 import com.netflix.maestro.models.signal.SignalInstance;
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
     value = "/api/v3/signals",
     produces = MediaType.APPLICATION_JSON_VALUE,
     consumes = MediaType.APPLICATION_JSON_VALUE)
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class SignalController {
 
   private final MaestroSignalBrokerDao brokerDao;

@@ -93,7 +93,13 @@ public class UrlValidatorTest {
     }
 
     // Test malformed URLs
-    for (String url : Arrays.asList(null, " ", "http://", "invalid url")) {
+    AssertHelper.assertThrows(
+        "Null URL",
+        MaestroValidationException.class,
+        "URL cannot be null.",
+        () -> validator.validateAndParseUri(null));
+
+    for (String url : Arrays.asList(" ", "http://", "invalid url")) {
       AssertHelper.assertThrows(
           "Malformed URL",
           MaestroValidationException.class,

@@ -13,6 +13,7 @@
 package com.netflix.maestro.engine.execution;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.engine.db.StepAction;
 import com.netflix.maestro.engine.metrics.MetricConstants;
 import com.netflix.maestro.engine.params.ParamsManager;
@@ -33,6 +34,7 @@ import java.util.Map;
 
 /** step runtime manager to manage step runtime and their results. */
 @SuppressWarnings("PMD.ExhaustiveSwitchHasDefault")
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public final class StepRuntimeManager {
   private final Map<StepType, StepRuntime> stepRuntimeMap;
   private final ObjectMapper objectMapper;

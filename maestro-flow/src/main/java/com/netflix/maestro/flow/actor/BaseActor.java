@@ -1,6 +1,7 @@
 package com.netflix.maestro.flow.actor;
 
 import com.netflix.maestro.annotations.Nullable;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.annotations.VisibleForTesting;
 import com.netflix.maestro.flow.engine.ExecutionContext;
 import com.netflix.maestro.metrics.MaestroMetrics;
@@ -19,6 +20,7 @@ import org.slf4j.Logger;
  *
  * @author jun-he
  */
+@SuppressFBWarnings("RV_RETURN_VALUE_IGNORED_BAD_PRACTICE")
 abstract sealed class BaseActor implements Actor permits GroupActor, FlowActor, TaskActor {
   private final BlockingQueue<Action> actions = new LinkedBlockingQueue<>();
   // best effort de-duplication. Still possible that same actions are in the queue multiple times.

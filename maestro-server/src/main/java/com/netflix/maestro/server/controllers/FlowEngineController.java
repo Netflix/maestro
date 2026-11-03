@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.server.controllers;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
 import com.netflix.maestro.flow.models.FlowDef;
@@ -45,6 +46,7 @@ import org.springframework.web.bind.annotation.RestController;
     value = "/api/v3/groups",
     produces = MediaType.APPLICATION_JSON_VALUE,
     consumes = MediaType.APPLICATION_JSON_VALUE)
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class FlowEngineController {
   private static final String GROUP_ID = "groupId";
   private static final String CODE = "code";

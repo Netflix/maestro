@@ -12,7 +12,10 @@
  */
 package com.netflix.maestro.queue.metrics;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
+
 /** Class for Metric constants such as keys / tags for queue package. */
+@SuppressFBWarnings("NM_SAME_SIMPLE_NAME_AS_SUPERCLASS")
 public final class MetricConstants extends com.netflix.maestro.metrics.MetricConstants {
 
   /** Constructor for MetricConstants. */

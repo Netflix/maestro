@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.queue;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.error.Details;
@@ -30,9 +31,15 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @SuppressWarnings("PMD.LooseCoupling")
 public class MaestroQueueSystem {
+  @SuppressFBWarnings("EI_EXPOSE_REP2")
   private final EnumMap<MaestroJobEvent.Type, BlockingQueue<MessageDto>> eventQueues;
+
+  @SuppressFBWarnings("EI_EXPOSE_REP2")
   private final MaestroQueueDao queueDao;
+
+  @SuppressFBWarnings("EI_EXPOSE_REP2")
   private final QueueProperties properties;
+
   private final MaestroMetrics metrics;
 
   public MaestroQueueSystem(
@@ -129,6 +136,7 @@ public class MaestroQueueSystem {
    *
    * @param message the message to notify
    */
+  @SuppressFBWarnings("RV_RETURN_VALUE_IGNORED_BAD_PRACTICE")
   public void notify(MessageDto message) {
     if (message == null) {
       return;

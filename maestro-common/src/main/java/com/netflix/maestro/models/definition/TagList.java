@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.annotations.Nullable;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.utils.Checks;
 import jakarta.validation.Valid;
 import java.util.ArrayList;
@@ -34,6 +35,7 @@ import lombok.Data;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(alphabetic = true)
 @Data
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class TagList {
   /** singleton object for empty tag list. */
   public static final TagList EMPTY_TAG_LIST = new TagList(Collections.emptyList());

@@ -1,5 +1,6 @@
 package com.netflix.maestro.signal.models;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.models.trigger.SignalTrigger;
 
 /**
@@ -10,5 +11,6 @@ import com.netflix.maestro.models.trigger.SignalTrigger;
  * @param signalTrigger signal trigger
  * @author jun-he
  */
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public record SignalTriggerDef(
     String workflowId, String triggerUuid, SignalTrigger signalTrigger) {}

@@ -1,6 +1,7 @@
 package com.netflix.maestro.engine.handlers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
 import com.netflix.maestro.engine.db.DbOperation;
@@ -38,6 +39,7 @@ import java.util.stream.Collectors;
  *
  * @author jun-he
  */
+@SuppressFBWarnings({"EI_EXPOSE_REP", "BX_UNBOXING_IMMEDIATELY_REBOXED"})
 public class MaestroExecutionPreparer implements ExecutionPreparer {
   private final MaestroWorkflowInstanceDao instanceDao;
   private final MaestroStepInstanceDao stepInstanceDao;

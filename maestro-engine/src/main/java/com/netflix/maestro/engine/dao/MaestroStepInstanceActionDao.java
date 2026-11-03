@@ -14,6 +14,7 @@ package com.netflix.maestro.engine.dao;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.annotations.Nullable;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.annotations.VisibleForTesting;
 import com.netflix.maestro.database.AbstractDatabaseDao;
 import com.netflix.maestro.database.DatabaseConfiguration;
@@ -72,6 +73,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @SuppressWarnings("checkstyle:MultipleStringLiterals")
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class MaestroStepInstanceActionDao extends AbstractDatabaseDao {
   private static final String INSERT_ACTION_QUERY =
       "INSERT INTO maestro_step_instance_action (workflow_id,workflow_instance_id,workflow_run_id,step_id,payload) "

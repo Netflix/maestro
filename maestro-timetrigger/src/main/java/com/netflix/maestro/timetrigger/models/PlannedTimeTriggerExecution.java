@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.timetrigger.models;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import java.util.Date;
 
 /**
@@ -20,5 +21,6 @@ import java.util.Date;
  * @param timeTriggerWithWatermark the time trigger with watermark
  * @param executionDate the execution date
  */
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public record PlannedTimeTriggerExecution(
     TimeTriggerWithWatermark timeTriggerWithWatermark, Date executionDate) {}

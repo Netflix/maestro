@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.engine.tasks;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.engine.dao.MaestroTagPermitDao;
 import com.netflix.maestro.engine.dto.StepTagPermit;
 import com.netflix.maestro.engine.dto.StepUuidSeq;
@@ -41,6 +42,7 @@ import lombok.extern.slf4j.Slf4j;
  * is an internal task and should not be used externally by users.
  */
 @Slf4j
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public final class MaestroTagPermitTask implements FlowTask {
   /** Status code for step acquired tag permits. */
   public static final int ACQUIRED_STATUS_CODE = 7;

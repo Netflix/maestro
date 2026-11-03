@@ -1,5 +1,6 @@
 package com.netflix.maestro.flow.engine;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.exceptions.MaestroNotFoundException;
 import com.netflix.maestro.exceptions.MaestroRetryableError;
@@ -35,6 +36,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author jun-he
  */
 @Slf4j
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class ExecutionContext {
   // central dispatcher to schedule a delayed action for all actors
   private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
@@ -331,6 +333,7 @@ public class ExecutionContext {
    *
    * @param group flow group to heartbeat
    */
+  @SuppressFBWarnings("NP_NULL_ON_SOME_PATH")
   @SuppressWarnings("PMD.DoNotTerminateVM")
   public long heartbeatGroup(FlowGroup group) {
     Long heartbeatTs = flowDao.heartbeatGroup(group);

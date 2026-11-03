@@ -1,5 +1,6 @@
 package com.netflix.maestro.flow.models;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.utils.Checks;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -19,6 +20,7 @@ import lombok.Getter;
  * @author jun-he
  */
 @Data
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class Flow {
   @Getter
   public enum Status {
@@ -55,9 +57,9 @@ public class Flow {
 
   // transient mutable data
   private volatile Status status;
-  private long updateTime;
+  private volatile long updateTime;
   private String reasonForIncompletion;
-  private long seq;
+  private volatile long seq;
 
   private Task prepareTask; // inline task runs at the beginning before user jobs
   private Task monitorTask; // inline task runs whenever there is an update in the flow

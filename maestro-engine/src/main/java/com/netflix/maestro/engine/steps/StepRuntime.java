@@ -13,6 +13,7 @@
 package com.netflix.maestro.engine.steps;
 
 import com.netflix.maestro.annotations.Nullable;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
 import com.netflix.maestro.models.Constants;
@@ -37,6 +38,7 @@ import java.util.Map;
  * <p>The whole execution offers at-least-once guarantee. Therefore, the logic implemented here
  * should be idempotent. For example, Periodically check sleep time or check the container status.
  */
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public interface StepRuntime {
   /** Maestro system user. */
   User SYSTEM_USER = User.create(Constants.MAESTRO_QUALIFIER);

@@ -26,7 +26,7 @@ import jakarta.validation.constraints.NotNull;
  * @param stepId id of the step.
  * @param stepAttemptId attempt id of the step.
  */
-@SuppressFBWarnings({"EI_EXPOSE_REP", "EI_EXPOSE_REP2"})
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public record StepEventHandlerInput(
     @NotNull WorkflowInstance workflowInstance,
     @NotNull String stepId,

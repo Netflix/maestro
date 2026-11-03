@@ -12,7 +12,10 @@
  */
 package com.netflix.maestro.engine.metrics;
 
+import com.netflix.maestro.annotations.SuppressFBWarnings;
+
 /** Class for Metric constants such as keys / tags for engine package. */
+@SuppressFBWarnings("NM_SAME_SIMPLE_NAME_AS_SUPERCLASS")
 public final class MetricConstants extends com.netflix.maestro.metrics.MetricConstants {
 
   private MetricConstants() {}

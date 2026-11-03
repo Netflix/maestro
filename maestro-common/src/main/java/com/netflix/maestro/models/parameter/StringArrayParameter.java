@@ -34,7 +34,6 @@ import lombok.extern.slf4j.Slf4j;
  * <p>SHOULD NOT mutate the evaluated array data.
  */
 @Slf4j
-@SuppressFBWarnings({"EI_EXPOSE_REP", "EI_EXPOSE_REP2"})
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(
@@ -54,6 +53,7 @@ import lombok.extern.slf4j.Slf4j;
 @Getter(onMethod = @__({@Override}))
 @SuperBuilder(toBuilder = true)
 @EqualsAndHashCode(callSuper = true)
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public final class StringArrayParameter extends AbstractParameter {
   private final String[] value;
   private String[] evaluatedResult;

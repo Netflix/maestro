@@ -18,6 +18,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.netflix.maestro.annotations.SuppressFBWarnings;
 import com.netflix.maestro.models.definition.User;
 import java.util.List;
 import lombok.EqualsAndHashCode;
@@ -31,6 +32,7 @@ import lombok.Getter;
     alphabetic = true)
 @Getter
 @EqualsAndHashCode
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public class WorkflowTimeline {
   private final String workflowId;
   private final List<WorkflowTimelineEvent> timelineEvents;
