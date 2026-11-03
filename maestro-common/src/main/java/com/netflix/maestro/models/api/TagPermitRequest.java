@@ -12,26 +12,64 @@
  */
 package com.netflix.maestro.models.api;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.netflix.maestro.utils.Checks;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /** Request to set a tag permit. */
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder(
     value = {"tag", "max_allowed"},
     alphabetic = true)
-@AllArgsConstructor
 @NoArgsConstructor
 @Data
 public class TagPermitRequest {
+  /** reserved fields cannot be set within extraInfo. */
+  private static final Set<String> RESERVED_FIELDS =
+      new HashSet<>(Arrays.asList("tag", "max_allowed"));
+
   @NotNull private String tag;
 
   @Min(value = 0, message = "maxAllowed value must be greater or equals thant zero.")
   private int maxAllowed;
+
+  private Map<String, Object> extraInfo = new LinkedHashMap<>();
+
+  /** set extra info with validation. */
+  public void setExtraInfo(Map<String, Object> extraInfo) {
+    if (extraInfo != null) {
+      Checks.checkTrue(
+          RESERVED_FIELDS.stream().noneMatch(extraInfo::containsKey),
+          "extra info %s cannot contain any reserved keys %s",
+          extraInfo.keySet(),
+          RESERVED_FIELDS);
+    }
+    this.extraInfo = extraInfo;
+  }
+
+  /** extraInfo includes optional extra information associated with the tag permit request. */
+  @JsonAnyGetter
+  public Map<String, Object> getExtraInfo() {
+    return extraInfo;
+  }
+
+  /** Add fields to extraInfo. */
+  @JsonAnySetter
+  public void add(String name, Object value) {
+    extraInfo.put(name, value);
+  }
 }

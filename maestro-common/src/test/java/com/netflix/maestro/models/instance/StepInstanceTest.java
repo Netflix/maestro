@@ -20,7 +20,9 @@ import com.netflix.maestro.exceptions.MaestroInvalidStatusException;
 import com.netflix.maestro.models.Defaults;
 import com.netflix.maestro.models.definition.ParsableLong;
 import com.netflix.maestro.models.definition.RetryPolicy;
+import com.netflix.maestro.models.definition.TimeoutPhase;
 import java.util.Arrays;
+import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -48,6 +50,18 @@ public class StepInstanceTest extends MaestroBaseTest {
       Assertions.assertThat(actual).usingRecursiveComparison().isEqualTo(expected);
       assertEquals(ser1, ser2);
     }
+  }
+
+  @Test
+  public void testTimeoutsInMillisDeserialization() throws Exception {
+    StepInstance instance =
+        loadObject("fixtures/instances/sample-step-instance-running.json", StepInstance.class);
+    assertEquals(600000L, instance.getTimeoutInMillis().longValue());
+    assertEquals(
+        Map.of(TimeoutPhase.STEP, 86400000L, TimeoutPhase.RUNNING, 600000L),
+        instance.getTimeoutsInMillis());
+    StepInstance parsed = MAPPER.readValue(MAPPER.writeValueAsString(instance), StepInstance.class);
+    assertEquals(instance.getTimeoutsInMillis(), parsed.getTimeoutsInMillis());
   }
 
   @Test

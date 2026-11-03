@@ -50,11 +50,19 @@ public interface Step {
   /** Get step timeout in seconds. */
   ParsableLong getTimeout();
 
+  /** Get per-phase step timeouts. */
+  StepTimeouts getTimeouts();
+
   /** Get step type. */
   StepType getType();
 
   /** Get step subtype. */
   default String getSubType() {
+    return null;
+  }
+
+  /** Get the job template version pinned for the step subtype, or null for the default. */
+  default String getSubTypeVersion() {
     return null;
   }
 

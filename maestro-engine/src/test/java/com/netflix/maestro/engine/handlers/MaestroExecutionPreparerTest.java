@@ -29,6 +29,7 @@ import static org.mockito.Mockito.when;
 import com.netflix.maestro.engine.MaestroEngineBaseTest;
 import com.netflix.maestro.engine.dao.MaestroStepInstanceDao;
 import com.netflix.maestro.engine.dao.MaestroWorkflowInstanceDao;
+import com.netflix.maestro.engine.execution.StepRuntimeSummary;
 import com.netflix.maestro.engine.execution.WorkflowSummary;
 import com.netflix.maestro.engine.transformation.StepTranslator;
 import com.netflix.maestro.engine.transformation.WorkflowTranslator;
@@ -42,6 +43,7 @@ import com.netflix.maestro.flow.models.TaskDef;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.definition.SubworkflowStep;
+import com.netflix.maestro.models.definition.TimeoutPhase;
 import com.netflix.maestro.models.instance.RunPolicy;
 import com.netflix.maestro.models.instance.StepInstance;
 import com.netflix.maestro.models.instance.StepRuntimeState;
@@ -190,6 +192,13 @@ public class MaestroExecutionPreparerTest extends MaestroEngineBaseTest {
     assertEquals(3, flow.getSeq());
     assertEquals(instance.getStartTime(), flow.getPrepareTask().getStartTime());
     assertEquals(Set.of("job1"), flow.getRunningTasks().keySet());
+    StepRuntimeSummary summary =
+        StepHelper.retrieveRuntimeSummary(
+            MAPPER, flow.getRunningTasks().get("job1").getOutputData());
+    assertEquals(600000L, summary.getTimeoutInMillis().longValue());
+    assertEquals(
+        Map.of(TimeoutPhase.STEP, 86400000L, TimeoutPhase.RUNNING, 600000L),
+        summary.getTimeoutsInMillis());
   }
 
   @Test

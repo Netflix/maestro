@@ -43,6 +43,7 @@ import lombok.ToString;
       "failure_mode",
       "tags",
       "timeout",
+      "timeouts",
       "condition",
       "signal_dependencies",
       "signal_outputs",

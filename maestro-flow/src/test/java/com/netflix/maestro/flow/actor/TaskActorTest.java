@@ -15,13 +15,16 @@ package com.netflix.maestro.flow.actor;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.netflix.maestro.flow.models.DefaultMessagePayload;
 import com.netflix.maestro.flow.models.Flow;
+import com.netflix.maestro.flow.models.MessagePayload;
 import com.netflix.maestro.flow.models.Task;
 import com.netflix.maestro.flow.models.TaskDef;
 import java.util.Set;
@@ -155,8 +158,10 @@ public class TaskActorTest extends ActorBaseTest {
   @Test
   public void testRunForActionTaskActivateWithoutCancel() {
     var mockFuture = Mockito.mock(ScheduledFuture.class);
-    taskActor.getScheduledActions().put(new Action.TaskPing(123), mockFuture);
-    verifyExecute(Action.TASK_ACTIVATE, false, new Action.TaskPing(123));
+    taskActor
+        .getScheduledActions()
+        .put(new Action.TaskPing(123, MessagePayload.DEFAULT), mockFuture);
+    verifyExecute(Action.TASK_ACTIVATE, false, new Action.TaskPing(123, MessagePayload.DEFAULT));
     verify(mockFuture, times(0)).cancel(false);
   }
 
@@ -179,8 +184,8 @@ public class TaskActorTest extends ActorBaseTest {
   @Test
   public void testExecuteNotStarted() {
     taskActor.runForAction(Action.TASK_PING);
-    taskActor.runForAction(new Action.TaskPing(123));
-    taskActor.runForAction(new Action.TaskActivate(123));
+    taskActor.runForAction(new Action.TaskPing(123, MessagePayload.DEFAULT));
+    taskActor.runForAction(new Action.TaskActivate(123, MessagePayload.DEFAULT));
     taskActor.runForAction(Action.TASK_TIMEOUT);
 
     // Should not execute if task is not started
@@ -199,10 +204,27 @@ public class TaskActorTest extends ActorBaseTest {
               assertEquals(123, taskArg.getCode());
               return false;
             });
-    taskActor.runForAction(new Action.TaskActivate(123));
+    taskActor.runForAction(new Action.TaskActivate(123, MessagePayload.DEFAULT));
 
     verify(context, times(1)).execute(any(), any());
     assertEquals(0, task.getCode()); // reset action code
+  }
+
+  @Test
+  public void testExecuteWithPayload() {
+    task.setStarted(true);
+    MessagePayload payload = new DefaultMessagePayload();
+    when(context.execute(flow, task))
+        .thenAnswer(
+            invocation -> {
+              Task taskArg = invocation.getArgument(1);
+              assertSame(payload, taskArg.getMessagePayload());
+              return false;
+            });
+    taskActor.runForAction(new Action.TaskActivate(123, payload));
+
+    verify(context, times(1)).execute(any(), any());
+    assertSame(MessagePayload.DEFAULT, task.getMessagePayload()); // reset payload
   }
 
   @Test

@@ -12,144 +12,41 @@
  */
 package com.netflix.maestro.models.definition;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import com.netflix.maestro.models.definition.alerting.AlertType;
-import com.netflix.maestro.models.definition.alerting.AlertingTypeConfig;
-import com.netflix.maestro.models.definition.alerting.BypassDigestConfig;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.Parameter;
-import com.netflix.maestro.utils.StringParser;
-import com.netflix.maestro.validations.TctConstraint;
-import jakarta.validation.constraints.NotNull;
-import java.io.Serializable;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import lombok.Data;
-import lombok.Getter;
 
-/** Alerting config. */
-@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-@JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder(
-    value = {
-      "emails",
-      "pagerduties",
-      "slack",
-      "bypass_digest_config",
-      "pagerduty_configs",
-      "tct",
-      "type_configs"
-    },
-    alphabetic = true)
-@Data
-public class Alerting {
-
-  private Set<String> emails;
-  private Set<String> pagerduties;
-
-  @JsonProperty("slack")
-  private SlackConfig slackConfig;
-
-  private BypassDigestConfig bypassDigestConfig;
-
-  private Map<AlertType, AlertingTypeConfig> typeConfigs;
-
-  private PagerdutyConfig pagerdutyConfig;
-
-  @TctConstraint private Tct tct;
-
-  /** Slack portion of {@link Alerting}. */
-  @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-  @JsonInclude(JsonInclude.Include.NON_NULL)
-  @JsonPropertyOrder(
-      value = {
-        "users",
-        "channels",
-        "mention_users",
-      },
-      alphabetic = true)
-  @Data
-  public static class SlackConfig implements Serializable {
-
-    private static final long serialVersionUID = -5354026172019808586L;
-
-    private Set<String> users;
-    private Set<String> channels;
-    private Set<String> mentionUsers;
-  }
-
-  /** Pagerduty configurations of {@link Alerting}. */
-  @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-  @JsonInclude(JsonInclude.Include.NON_NULL)
-  @JsonPropertyOrder(
-      value = {
-        "severity",
-        "always_page",
-      },
-      alphabetic = true)
-  @Data
-  public static class PagerdutyConfig implements Serializable {
-
-    private static final long serialVersionUID = -5354026172019808586L;
-
-    private Severity severity;
-    private Boolean alwaysPage;
-
-    /**
-     * <a
-     * href="https://support.pagerduty.com/docs/dynamic-notifications#eventalert-severity-levels">Pagerduty
-     * severity</a>.
-     */
-    public enum Severity {
-      /** critical. */
-      CRITICAL("critical"),
-
-      /** error. */
-      ERROR("error"),
-
-      /** warning. */
-      WARNING("warning"),
-
-      /** info. */
-      INFO("info");
-
-      @JsonIgnore @Getter private final String name;
-
-      Severity(final String name) {
-        this.name = name;
-      }
-
-      /** Static creator. */
-      @JsonCreator
-      public static Severity create(@NotNull String name) {
-        return Severity.valueOf(name.toUpperCase(Locale.US));
-      }
-    }
-  }
-
-  /** Update alerting fields by parsing parameters within it. */
+/**
+ * Pluggable alerting config carried on a workflow's {@link Properties}. The engine does not
+ * interpret the contents of this block; downstream consumers (notification services, dashboards,
+ * runtime hooks) read it via their own logic.
+ *
+ * <p>The default implementation, {@link DefaultAlerting}, preserves the original Netflix-flavored
+ * shape and is registered as the default abstract-type mapping inside {@link
+ * com.netflix.maestro.utils.JsonHelper#objectMapper()}. Downstream consumers can replace it by
+ * registering their own mapping:
+ *
+ * <pre>
+ *   SimpleModule module = new SimpleModule();
+ *   module.addAbstractTypeMapping(Alerting.class, MyAlerting.class);
+ *   mapper.registerModule(module);
+ * </pre>
+ *
+ * <p>A later-registered abstract-type mapping replaces the OSS default, so the consumer's impl
+ * wins.
+ *
+ * <p>Each running JVM uses exactly one {@code Alerting} implementation, so no JSON type
+ * discriminator is needed. Existing serialized data continues to deserialize as {@link
+ * DefaultAlerting} on any mapper that doesn't register a different mapping.
+ */
+@SuppressWarnings("PMD.ImplicitFunctionalInterface")
+public interface Alerting {
+  /**
+   * Update fields by parsing parameters within them. Implementations should resolve any parameter
+   * references (typically {@code ${...}} placeholders) using the provided parser. Called by the
+   * engine during workflow start.
+   */
   @JsonIgnore
-  public void update(Function<ParamDefinition, Parameter> paramParser) {
-    if (emails != null && !emails.isEmpty()) {
-      emails =
-          emails.stream()
-              .map(email -> StringParser.parseWithParam(email, paramParser))
-              .collect(Collectors.toSet());
-    }
-    if (tct != null) {
-      Parameter param = paramParser.apply(tct.getCompletedByTsParam());
-      if (param != null) {
-        tct.setCompletedByTs(param.asLong());
-      }
-    }
-  }
+  void update(Function<ParamDefinition, Parameter> paramParser);
 }

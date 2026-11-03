@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.netflix.maestro.annotations.Nullable;
 import com.netflix.maestro.models.definition.User;
+import com.netflix.maestro.models.error.Details;
 import com.netflix.maestro.models.instance.StepDependencyMatchStatus;
 import com.netflix.maestro.models.timeline.TimelineEvent;
 import com.netflix.maestro.models.timeline.TimelineLogEvent;
@@ -44,6 +45,24 @@ public class SignalDependencies {
   }
 
   /**
+   * Marks every still-pending dependency as {@link StepDependencyMatchStatus#CANCELED}, used when
+   * the owning step reaches a terminal state and the dependencies can no longer match.
+   *
+   * @return true if any dependency status was changed
+   */
+  @JsonIgnore
+  public boolean markPendingAsCanceled() {
+    boolean changed = false;
+    for (SignalDependency dependency : dependencies) {
+      if (dependency.getStatus() == StepDependencyMatchStatus.PENDING) {
+        dependency.markCanceled();
+        changed = true;
+      }
+    }
+    return changed;
+  }
+
+  /**
    * By passes all pending step dependencies by changing their status from PENDING to SKIPPED. It
    * also records the user and timestamp info in the {@link
    * com.netflix.maestro.models.timeline.Timeline}.
@@ -63,7 +82,7 @@ public class SignalDependencies {
 
   @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
   @JsonPropertyOrder(
-      value = {"name", "status", "match_params", "signal_id"},
+      value = {"name", "status", "match_params", "signal_id", "details"},
       alphabetic = true)
   @JsonInclude(JsonInclude.Include.NON_EMPTY)
   @Data
@@ -72,6 +91,7 @@ public class SignalDependencies {
     private StepDependencyMatchStatus status;
     @Nullable private Map<String, SignalMatchParam> matchParams;
     @Nullable private Long signalId;
+    @Nullable private Details details;
 
     /** Create a new {@link SignalDependency} with PENDING match status. */
     public static SignalDependency initialize(String name, Map<String, SignalMatchParam> params) {
@@ -85,6 +105,22 @@ public class SignalDependencies {
     public void update(Long seqId, StepDependencyMatchStatus matchStatus) {
       this.signalId = seqId;
       this.status = matchStatus;
+    }
+
+    /** Marks the dependency as {@link StepDependencyMatchStatus#CANCELED}. */
+    private void markCanceled() {
+      this.status = StepDependencyMatchStatus.CANCELED;
+    }
+
+    /**
+     * Marks the dependency as {@link StepDependencyMatchStatus#FAILED} and records the error
+     * details that prevented it from being resolved.
+     *
+     * @param errorDetails the error details
+     */
+    public void markFailed(Details errorDetails) {
+      this.status = StepDependencyMatchStatus.FAILED;
+      this.details = errorDetails;
     }
   }
 }

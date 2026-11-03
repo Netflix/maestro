@@ -18,6 +18,7 @@ import static junit.framework.TestCase.assertNull;
 import static org.mockito.Mockito.when;
 
 import com.netflix.maestro.MaestroBaseTest;
+import com.netflix.maestro.extensions.models.StepInstanceReference;
 import com.netflix.maestro.models.initiator.ForeachInitiator;
 import com.netflix.maestro.models.initiator.UpstreamInitiator;
 import com.netflix.maestro.models.initiator.UpstreamInitiator.Info;
@@ -110,6 +111,54 @@ public class ForeachFlatteningHelperTest extends MaestroBaseTest {
     assertEquals("11-11", getIterationRank("1-1"));
     assertEquals("221-13", getIterationRank("21-3"));
     assertEquals("14-17-222", getIterationRank("4-7-22"));
+  }
+
+  @Test
+  public void testGetLeafStepInstanceRef() {
+    assertEquals(
+        new StepInstanceReference("maestro_foreach_inline", 23, 1, "leaf-step", 9),
+        ForeachFlatteningHelper.getLeafStepInstanceRef(
+            "maestro_foreach_inline", "3344-13-223", "leaf-step", "211-12-13-11-11-19"));
+    assertEquals(
+        new StepInstanceReference("maestro_foreach_inline", 2, 1, "leaf-step", 1),
+        ForeachFlatteningHelper.getLeafStepInstanceRef(
+            "maestro_foreach_inline", "12", "leaf-step", "11-11"));
+  }
+
+  @Test
+  public void testGetLeafStepInstanceRefReturnsNullWhenLeafWorkflowIdMissing() {
+    assertNull(ForeachFlatteningHelper.getLeafStepInstanceRef(null, "12", "leaf-step", "11-11"));
+  }
+
+  @Test
+  public void testEncodeDecodeByLengthRoundTrip() {
+    String[] values = {"1", "9", "23", "344", "265000009998", "33456000999898"};
+    for (String value : values) {
+      assertEquals(
+          value,
+          ForeachFlatteningHelper.decodeByLength(ForeachFlatteningHelper.encodeByLength(value)));
+    }
+  }
+
+  @Test
+  public void testGetLeafStepRefRoundTripsEncoders() {
+    long leafInstanceId = WORKFLOW_INSTANCE_ID_LONG_NON_DIGIT_ENCODING;
+    long leafRunId = NESTED_WORKFLOW_RUN_ID;
+    long leafStepAttemptId = 9L;
+    when(stepInstance.getWorkflowRunId()).thenReturn(leafRunId);
+    when(stepInstance.getStepAttemptId()).thenReturn(leafStepAttemptId);
+    UpstreamInitiator initiator = getUpstreamInitiator(NESTED_INSTANCE_ID_LONG);
+    String leafWorkflowId = "maestro_foreach_leaf";
+    String stepId = "leaf-step";
+
+    String iterationRank = FOREACH_FLATTENING_HELPER.getIterationRank(initiator, leafInstanceId);
+    String attemptSeq = FOREACH_FLATTENING_HELPER.getAttemptSeq(initiator, stepInstance);
+
+    assertEquals(
+        new StepInstanceReference(
+            leafWorkflowId, leafInstanceId, leafRunId, stepId, leafStepAttemptId),
+        ForeachFlatteningHelper.getLeafStepInstanceRef(
+            leafWorkflowId, iterationRank, stepId, attemptSeq));
   }
 
   private static UpstreamInitiator getUpstreamInitiator(long nestedInstanceIdLong) {

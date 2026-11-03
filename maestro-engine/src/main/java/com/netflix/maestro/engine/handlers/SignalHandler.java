@@ -50,4 +50,14 @@ public interface SignalHandler {
    * @return the corresponding signal instance
    */
   SignalInstance getSignalInstance(String signalName, long signalId);
+
+  /**
+   * Called when the owning step reaches a terminal state, letting the handler finalize any
+   * still-pending signal dependencies (e.g. mark them canceled). Defaults to a no-op.
+   *
+   * @param workflowSummary the workflow summary
+   * @param stepRuntimeSummary the step runtime summary
+   */
+  default void onTermination(
+      WorkflowSummary workflowSummary, StepRuntimeSummary stepRuntimeSummary) {}
 }

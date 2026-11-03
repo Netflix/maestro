@@ -15,6 +15,7 @@ package com.netflix.maestro.engine.templates;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -255,5 +256,69 @@ public class JobTemplateManagerTest extends MaestroBaseTest {
     assertEquals("overridden script", params.get("script").asStringParamDef().getValue());
     assertTrue(params.containsKey("kubernetes"));
     assertTrue(params.containsKey("notebook"));
+  }
+
+  @Test
+  public void testLoadAncestorJobTypes() {
+    JobTemplate parentTemplate = new JobTemplate();
+    parentTemplate.setDefinition(new JobTemplate.Definition());
+    parentTemplate.getDefinition().setStepType(StepType.NOTEBOOK);
+    parentTemplate.getDefinition().setJobType("parent-job-type");
+    parentTemplate.getDefinition().setInheritFrom(Map.of("grandparent-job-type", "v3"));
+    JobTemplate grandparentTemplate = new JobTemplate();
+    grandparentTemplate.setDefinition(new JobTemplate.Definition());
+    grandparentTemplate.getDefinition().setStepType(StepType.NOTEBOOK);
+    grandparentTemplate.getDefinition().setJobType("grandparent-job-type");
+
+    jobTemplate.getDefinition().setInheritFrom(Map.of("parent-job-type", "default"));
+    when(jobTemplateDao.getJobTemplate("shell", "v1")).thenReturn(jobTemplate);
+    when(jobTemplateDao.getJobTemplate("parent-job-type", "default")).thenReturn(parentTemplate);
+    when(jobTemplateDao.getJobTemplate("grandparent-job-type", "v3"))
+        .thenReturn(grandparentTemplate);
+
+    assertEquals(
+        List.of("parent-job-type", "grandparent-job-type"),
+        jobTemplateManager.loadAncestorJobTypes(workflowSummary, "shell", null));
+    verify(jobTemplateDao, times(1)).getJobTemplate("shell", "v1");
+  }
+
+  @Test
+  public void testLoadAncestorJobTypesWithSubTypeVersion() {
+    jobTemplate.getDefinition().setInheritFrom(Map.of("parent-job-type", "default"));
+    when(jobTemplateDao.getJobTemplate("shell", "v2")).thenReturn(jobTemplate);
+    when(jobTemplateDao.getJobTemplate("parent-job-type", "default")).thenReturn(null);
+
+    assertEquals(
+        List.of("parent-job-type"),
+        jobTemplateManager.loadAncestorJobTypes(workflowSummary, "shell", "v2"));
+    verify(jobTemplateDao, times(1)).getJobTemplate("shell", "v2");
+    verify(jobTemplateDao, never()).getJobTemplate("shell", "v1");
+  }
+
+  @Test
+  public void testLoadAncestorJobTypesWithoutTemplateOrParents() {
+    when(jobTemplateDao.getJobTemplate(anyString(), anyString())).thenReturn(null);
+    assertTrue(jobTemplateManager.loadAncestorJobTypes(workflowSummary, "shell", null).isEmpty());
+    verify(jobTemplateDao, times(1)).getJobTemplate("shell", "v1");
+
+    when(jobTemplateDao.getJobTemplate("shell", "v1")).thenReturn(jobTemplate);
+    assertTrue(jobTemplateManager.loadAncestorJobTypes(workflowSummary, "shell", null).isEmpty());
+  }
+
+  @Test
+  public void testLoadAncestorJobTypesWithCyclicDependency() {
+    JobTemplate parentTemplate = new JobTemplate();
+    parentTemplate.setDefinition(new JobTemplate.Definition());
+    parentTemplate.getDefinition().setStepType(StepType.NOTEBOOK);
+    parentTemplate.getDefinition().setJobType("parent-job-type");
+    parentTemplate.getDefinition().setInheritFrom(Map.of("shell", "v1"));
+
+    jobTemplate.getDefinition().setInheritFrom(Map.of("parent-job-type", "default"));
+    when(jobTemplateDao.getJobTemplate("parent-job-type", "default")).thenReturn(parentTemplate);
+    when(jobTemplateDao.getJobTemplate("shell", "v1")).thenReturn(jobTemplate);
+
+    assertEquals(
+        List.of("parent-job-type"),
+        jobTemplateManager.loadAncestorJobTypes(workflowSummary, "shell", null));
   }
 }

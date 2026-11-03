@@ -156,6 +156,10 @@
     "retryable": true
   },
   "timeout_in_millis": 600000,
+  "timeouts_in_millis": {
+    "STEP": 86400000,
+    "RUNNING": 600000
+  },
   "runtime_state": {
     "status": "RUNNING",
     "create_time": 1608749932076,

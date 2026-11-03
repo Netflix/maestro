@@ -105,6 +105,7 @@ public class DryRunValidator {
                 .tags(step.getTags())
                 .type(step.getType())
                 .subType(step.getSubType())
+                .subTypeVersion(step.getSubTypeVersion())
                 .params(new LinkedHashMap<>())
                 .transition(StepInstanceTransition.from(step))
                 .synced(true)

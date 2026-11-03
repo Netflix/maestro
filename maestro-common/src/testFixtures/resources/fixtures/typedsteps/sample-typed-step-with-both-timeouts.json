@@ -1,0 +1,16 @@
+{
+  "step": {
+    "id": "job1",
+    "type": "Sleep",
+    "timeout": "10 minutes",
+    "timeouts": {
+      "running": "8h"
+    },
+    "params": {
+      "sleep_seconds": {
+        "value": 15,
+        "type": "LONG"
+      }
+    }
+  }
+}

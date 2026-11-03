@@ -41,10 +41,14 @@ public class RunStrategyTest extends MaestroBaseTest {
           "{\"run_strategy\": {\"rule\": \"parallel\", \"workflow_concurrency\": 2}}",
           "{\"run_strategy\": {\"rule\": \"parallel\", \"workflow_concurrency\": 1}}",
           "{\"run_strategy\": {\"rule\": \"parallel\", \"workflow_concurrency\": 0}}",
-          "{\"run_strategy\": {\"rule\": \"sequential\"}}");
+          "{\"run_strategy\": {\"rule\": \"sequential\"}}",
+          "{\"run_strategy\": \"SERIAL_LATEST_ONLY\"}",
+          "{\"run_strategy\": \"serial_latest_only\"}",
+          "{\"run_strategy\": {\"rule\": \"SERIAL_LATEST_ONLY\", \"workflow_concurrency\": 1}}");
 
   private final List<Long> validCaseConcurrency =
-      Arrays.asList(1L, 1L, 1L, 1L, Defaults.DEFAULT_PARALLELISM, 0L, 1L, 2L, 1L, 2L, 1L, 0L, 1L);
+      Arrays.asList(
+          1L, 1L, 1L, 1L, Defaults.DEFAULT_PARALLELISM, 0L, 1L, 2L, 1L, 2L, 1L, 0L, 1L, 1L, 1L, 1L);
 
   private final List<String[]> invalidCases =
       Arrays.asList(
@@ -66,6 +70,10 @@ public class RunStrategyTest extends MaestroBaseTest {
           },
           new String[] {
             "{\"run_strategy\": {\"rule\": \"LAST_ONLY\", \"workflow_concurrency\": 2}}",
+            "Only PARALLEL run strategy allows a workflow_concurrency greater than 1 "
+          },
+          new String[] {
+            "{\"run_strategy\": {\"rule\": \"SERIAL_LATEST_ONLY\", \"workflow_concurrency\": 2}}",
             "Only PARALLEL run strategy allows a workflow_concurrency greater than 1 "
           });
 

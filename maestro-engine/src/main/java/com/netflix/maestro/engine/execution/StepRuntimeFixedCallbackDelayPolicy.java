@@ -62,12 +62,25 @@ public class StepRuntimeFixedCallbackDelayPolicy implements StepRuntimeCallbackD
     return CallbackDelayPolicyType.FIXED_CALLBACK_DELAY;
   }
 
+  /**
+   * Resolves the delay for the step, most specific key first: the step's lower cased sub type if it
+   * has one, then its lower cased step type, then the {@code default} entry. A sub type entry lets
+   * steps sharing one step type, such as extension steps, poll at different rates.
+   */
   private Long getCallbackDelayForStepType(
       Map<String, Long> fixedCallbackDelayConfigForStepInstanceStatus,
       StepRuntimeSummary runtimeSummary,
       StepInstance.Status stepInstanceStatus) {
-    String stepType = runtimeSummary.getType().getType().toLowerCase(Locale.US);
-    Long callbackDelay = fixedCallbackDelayConfigForStepInstanceStatus.get(stepType);
+    Long callbackDelay = null;
+    if (runtimeSummary.getSubType() != null) {
+      callbackDelay =
+          fixedCallbackDelayConfigForStepInstanceStatus.get(
+              runtimeSummary.getSubType().toLowerCase(Locale.US));
+    }
+    if (callbackDelay == null) {
+      String stepType = runtimeSummary.getType().getType().toLowerCase(Locale.US);
+      callbackDelay = fixedCallbackDelayConfigForStepInstanceStatus.get(stepType);
+    }
     if (callbackDelay == null) {
       Checks.checkTrue(
           fixedCallbackDelayConfigForStepInstanceStatus.containsKey(DEFAULT_STEP_TYPE_KEY),

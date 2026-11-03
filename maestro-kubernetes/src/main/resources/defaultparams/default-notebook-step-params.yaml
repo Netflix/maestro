@@ -8,13 +8,22 @@ kubernetes:
     cpu:
       type: STRING
       internal_mode: OPTIONAL
+    cpu_request:
+      type: STRING
+      internal_mode: OPTIONAL
     disk:
+      type: STRING
+      internal_mode: OPTIONAL
+    disk_request:
       type: STRING
       internal_mode: OPTIONAL
     gpu:
       type: STRING
       internal_mode: OPTIONAL
     memory:
+      type: STRING
+      internal_mode: OPTIONAL
+    memory_request:
       type: STRING
       internal_mode: OPTIONAL
     image:

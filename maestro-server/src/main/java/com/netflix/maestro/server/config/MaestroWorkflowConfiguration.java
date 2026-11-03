@@ -53,12 +53,14 @@ import com.netflix.maestro.metrics.MaestroMetrics;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.queue.MaestroQueueSystem;
 import com.netflix.maestro.server.properties.MaestroEngineProperties;
+import com.netflix.maestro.server.properties.MaestroProperties;
 import com.netflix.maestro.server.properties.StepRuntimeProperties;
 import com.netflix.maestro.signal.dao.MaestroSignalBrokerDao;
 import com.netflix.maestro.signal.handler.MaestroSignalHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.bval.jsr.ApacheValidationProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -135,6 +137,7 @@ public class MaestroWorkflowConfiguration {
       TagPermitManager tagPermitAcquirer,
       InstanceStepConcurrencyHandler instanceStepConcurrencyHandler,
       StepRuntimeCallbackDelayPolicy stepRuntimeCallbackDelayPolicy,
+      MaestroProperties maestroProperties,
       MaestroMetrics metricRepo,
       MaestroTracingManager tracingManager,
       MaestroParamExtensionRepo extensionRepo) {
@@ -151,6 +154,7 @@ public class MaestroWorkflowConfiguration {
         tagPermitAcquirer,
         instanceStepConcurrencyHandler,
         stepRuntimeCallbackDelayPolicy,
+        maestroProperties.getStepTimeout(),
         metricRepo,
         tracingManager,
         extensionRepo);
@@ -221,9 +225,13 @@ public class MaestroWorkflowConfiguration {
   }
 
   @Bean
-  public SignalHandler signalHandler(MaestroSignalBrokerDao brokerDao) {
-    LOG.info("Creating maestroSignalHandler within Spring boot...");
-    return new MaestroSignalHandler(brokerDao);
+  public SignalHandler signalHandler(
+      MaestroSignalBrokerDao brokerDao,
+      @Value("${maestro.signal.terminal-states-enabled:false}") boolean terminalStatesEnabled) {
+    LOG.info(
+        "Creating maestroSignalHandler within Spring boot (terminalStatesEnabled={})...",
+        terminalStatesEnabled);
+    return new MaestroSignalHandler(brokerDao, terminalStatesEnabled);
   }
 
   @Bean

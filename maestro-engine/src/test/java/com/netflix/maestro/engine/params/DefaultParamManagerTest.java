@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.engine.params;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -19,9 +20,12 @@ import static org.junit.Assert.assertTrue;
 
 import com.netflix.maestro.engine.MaestroEngineBaseTest;
 import com.netflix.maestro.models.definition.StepType;
+import com.netflix.maestro.models.definition.TypedStep;
+import com.netflix.maestro.models.parameter.InternalParamMode;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.ParamType;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -50,6 +54,7 @@ public class DefaultParamManagerTest extends MaestroEngineBaseTest {
   public void setUp() throws IOException {
     defaultParamManager = new DefaultParamManager(YAML_MAPPER);
     defaultParamManager.init();
+    defaultParamManager.loadSubTypeParams(List.of("sample_ext", "unknown_ext"));
   }
 
   @Test
@@ -112,5 +117,193 @@ public class DefaultParamManagerTest extends MaestroEngineBaseTest {
         .get()
         .put("TEST", ParamDefinition.buildParamDefinition("TEST", "123"));
     assertNull(defaultParamManager.getDefaultParamsForType(StepType.FOREACH).get().get("TEST"));
+  }
+
+  @Test
+  public void testExtensionStepUsesSubTypeParams() {
+    Map<String, ParamDefinition> params =
+        defaultParamManager.getDefaultParamsForStep(extensionStep("sample_ext")).orElseThrow();
+
+    assertEquals("sample_ext", params.get("sample_ext").getName());
+    assertEquals(
+        "https://sample.local",
+        params.get("sample_ext").asMapParamDef().getValue().get("endpoint").getValue());
+  }
+
+  @Test
+  public void testExtensionStepSubTypeLookupIgnoresCase() {
+    assertTrue(
+        defaultParamManager.getDefaultParamsForStep(extensionStep("SAMPLE_EXT")).isPresent());
+  }
+
+  @Test
+  public void testExtensionStepWithoutSubTypeFileHasNoParams() {
+    assertFalse(
+        defaultParamManager.getDefaultParamsForStep(extensionStep("unknown_ext")).isPresent());
+  }
+
+  @Test
+  public void testUnloadedSubTypeHasNoParams() {
+    assertFalse(
+        defaultParamManager.getDefaultParamsForStep(extensionStep("unloaded_ext")).isPresent());
+  }
+
+  @Test
+  public void testExtensionStepWithoutSubTypeUsesTypeParams() {
+    TypedStep step = new TypedStep();
+    step.setType(StepType.EXTENSION);
+
+    assertEquals(
+        defaultParamManager.getDefaultParamsForType(StepType.EXTENSION),
+        defaultParamManager.getDefaultParamsForStep(step));
+  }
+
+  @Test
+  public void testNonExtensionStepUsesTypeParams() {
+    TypedStep step = new TypedStep();
+    step.setType(StepType.FOREACH);
+    step.setSubType("sample_ext");
+
+    assertEquals(
+        defaultParamManager.getDefaultParamsForType(StepType.FOREACH),
+        defaultParamManager.getDefaultParamsForStep(step));
+  }
+
+  @Test
+  public void testSubTypeParamsMutate() {
+    defaultParamManager
+        .getDefaultParamsForStep(extensionStep("sample_ext"))
+        .orElseThrow()
+        .put("TEST", ParamDefinition.buildParamDefinition("TEST", "123"));
+
+    assertNull(
+        defaultParamManager
+            .getDefaultParamsForStep(extensionStep("sample_ext"))
+            .orElseThrow()
+            .get("TEST"));
+  }
+
+  @Test
+  public void testBySubTypeOverrideAddsParams() throws IOException {
+    Map<String, String> overrides =
+        Map.of("sample_ext", "my_ext_param:\n  value: v\n  type: STRING\n");
+    DefaultParamManager manager = new DefaultParamManager(YAML_MAPPER, overrides);
+    manager.init();
+    manager.loadSubTypeParams(List.of("sample_ext"));
+
+    Map<String, ParamDefinition> params =
+        manager.getDefaultParamsForStep(extensionStep("sample_ext")).orElseThrow();
+    assertEquals("v", params.get("my_ext_param").getValue());
+    assertNotNull(params.get("sample_ext"));
+  }
+
+  private static TypedStep extensionStep(String subType) {
+    TypedStep step = new TypedStep();
+    step.setType(StepType.EXTENSION);
+    step.setSubType(subType);
+    return step;
+  }
+
+  @Test
+  public void testWorkflowParamOverrideMergesAndAdds() throws IOException {
+    Map<String, String> overrides =
+        Map.of(
+            DefaultParamManager.WORKFLOW_OVERRIDE_KEY,
+            "TARGET_RUN_HOUR:\n"
+                + "  value: OVERRIDDEN\n"
+                + "  type: STRING\n"
+                + "MY_ORG_PARAM:\n"
+                + "  value: hello\n"
+                + "  type: STRING\n");
+    DefaultParamManager manager = new DefaultParamManager(YAML_MAPPER, overrides);
+    manager.init();
+
+    Map<String, ParamDefinition> params = manager.getDefaultWorkflowParams();
+    assertNotNull(params.get("TARGET_RUN_DATE"));
+    assertEquals("OVERRIDDEN", params.get("TARGET_RUN_HOUR").getValue());
+    assertEquals("hello", params.get("MY_ORG_PARAM").getValue());
+  }
+
+  @Test
+  public void testByTypeOverrideAddsParamsForTypeWithoutBundledFile() throws IOException {
+    Map<String, String> overrides =
+        Map.of("titus", "my_titus_param:\n  value: v\n  type: STRING\n");
+    DefaultParamManager manager = new DefaultParamManager(YAML_MAPPER, overrides);
+    manager.init();
+
+    assertTrue(manager.getDefaultParamsForType(StepType.TITUS).isPresent());
+    assertEquals(
+        "v",
+        manager.getDefaultParamsForType(StepType.TITUS).get().get("my_titus_param").getValue());
+  }
+
+  @Test
+  public void testNoOverrideLeavesDefaultsUnchanged() throws IOException {
+    DefaultParamManager manager = new DefaultParamManager(YAML_MAPPER, null);
+    manager.init();
+
+    assertNotNull(manager.getDefaultWorkflowParams().get("TARGET_RUN_HOUR").getName());
+    assertFalse(manager.getDefaultParamsForType(StepType.TITUS).isPresent());
+  }
+
+  @Test
+  public void testMapOverrideKeepsSiblingEntries() throws IOException {
+    Map<String, String> overrides =
+        Map.of(
+            "notebook",
+            "notebook:\n"
+                + "  type: MAP\n"
+                + "  value:\n"
+                + "    image:\n"
+                + "      type: STRING\n"
+                + "      value: \"other-registry.local/notebook:v2\"\n");
+    DefaultParamManager manager = new DefaultParamManager(YAML_MAPPER, overrides);
+    manager.init();
+
+    Map<String, ParamDefinition> notebook =
+        manager
+            .getDefaultParamsForType(StepType.NOTEBOOK)
+            .orElseThrow()
+            .get("notebook")
+            .asMapParamDef()
+            .getValue();
+    assertEquals("other-registry.local/notebook:v2", notebook.get("image").getValue());
+    // siblings absent from the override survive rather than being dropped with the enclosing MAP
+    assertEquals("1", notebook.get("cpu").getValue());
+    assertEquals("4G", notebook.get("memory").getValue());
+  }
+
+  @Test
+  public void testMapOverrideKeepsEnclosingParamAttributes() throws IOException {
+    Map<String, String> overrides =
+        Map.of(
+            "notebook",
+            "notebook:\n"
+                + "  type: MAP\n"
+                + "  value:\n"
+                + "    image:\n"
+                + "      type: STRING\n"
+                + "      value: \"other-registry.local/notebook:v2\"\n");
+    DefaultParamManager manager = new DefaultParamManager(YAML_MAPPER, overrides);
+    manager.init();
+
+    ParamDefinition notebook =
+        manager.getDefaultParamsForType(StepType.NOTEBOOK).orElseThrow().get("notebook");
+    assertEquals(InternalParamMode.REQUIRED, notebook.getInternalMode());
+    assertNotNull(notebook.getTags());
+  }
+
+  @Test
+  public void testOverrideOfReservedParamIsAllowed() throws IOException {
+    // loop_index is internal_mode RESERVED; merging as SYSTEM_DEFAULT must not be rejected.
+    Map<String, String> overrides =
+        Map.of("foreach", "loop_index:\n" + "  type: LONG\n" + "  value: 7\n");
+    DefaultParamManager manager = new DefaultParamManager(YAML_MAPPER, overrides);
+    manager.init();
+
+    ParamDefinition loopIndex =
+        manager.getDefaultParamsForType(StepType.FOREACH).orElseThrow().get("loop_index");
+    assertEquals(7L, (long) loopIndex.getValue());
+    assertEquals(InternalParamMode.RESERVED, loopIndex.getInternalMode());
   }
 }

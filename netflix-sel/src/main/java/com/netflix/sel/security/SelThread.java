@@ -20,17 +20,15 @@ import com.netflix.sel.type.SelType;
 import com.netflix.sel.visitor.SelParserEvaluationVisitor;
 import com.netflix.sel.visitor.SelParserValidationVisitor;
 import java.io.ByteArrayInputStream;
-import java.security.AccessControlContext;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-/** Thread to execute SEL with access control enabled */
+/** Thread to execute SEL with a restricted class loader. */
 public final class SelThread extends Thread {
   private static final ThreadGroup SEL_THREAD_GROUP = new ThreadGroup("SelThreadGroup");
 
-  private final AccessControlContext acc = SelAccessController.INSTANCE.accessControlContext();
   private final ClassLoader classLoader = SelClassLoader.INSTANCE;
 
   private final SelParserEvaluationVisitor selEvaluator;
@@ -92,12 +90,7 @@ public final class SelThread extends Thread {
 
   @Override
   public void run() {
-    SecurityManager sm = System.getSecurityManager();
-    if (!(sm instanceof SelSecurityManager)) {
-      throw new IllegalStateException("Invalid security manager: " + sm);
-    }
     Thread.currentThread().setContextClassLoader(this.classLoader);
-    ((SelSecurityManager) sm).setAccessControl(this.acc);
     super.run();
   }
 }

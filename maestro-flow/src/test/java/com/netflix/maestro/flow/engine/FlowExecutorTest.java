@@ -27,6 +27,7 @@ import com.netflix.maestro.flow.actor.ActorBaseTest;
 import com.netflix.maestro.flow.models.Flow;
 import com.netflix.maestro.flow.models.FlowDef;
 import com.netflix.maestro.flow.models.FlowGroup;
+import com.netflix.maestro.flow.models.MessagePayload;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
@@ -108,5 +109,17 @@ public class FlowExecutorTest extends ActorBaseTest {
     assertTrue(executor.wakeUp(1L, "wf-1", "task1", 123));
     assertFalse(executor.wakeUp(2L, "wf-1", "task1", -1));
     assertTrue(executor.wakeUp(1L, "wf-2", null, 123));
+  }
+
+  @Test
+  public void testWakeUpWithPayload() {
+    assertFalse(executor.wakeUp(1L, "wf-1", "task1", 0, MessagePayload.DEFAULT));
+    when(context.trySaveGroup(1, "test-address"))
+        .thenReturn(new FlowGroup(1, 1, "test-address", 12345));
+
+    executor.startFlow(1, "test-id", "wf-1", new FlowDef(), Map.of());
+    assertTrue(executor.wakeUp(1L, "wf-1", "task1", 0, MessagePayload.DEFAULT));
+    assertFalse(executor.wakeUp(2L, "wf-1", "task1", 0, MessagePayload.DEFAULT));
+    assertTrue(executor.wakeUp(1L, "wf-2", "task1", 123, MessagePayload.DEFAULT));
   }
 }

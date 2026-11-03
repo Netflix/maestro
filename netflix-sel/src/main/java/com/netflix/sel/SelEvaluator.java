@@ -13,7 +13,6 @@
 package com.netflix.sel;
 
 import com.netflix.sel.ext.Extension;
-import com.netflix.sel.security.SelSecurityManager;
 import com.netflix.sel.security.SelThread;
 import com.netflix.sel.security.SelThreadFactory;
 import com.netflix.sel.type.SelType;
@@ -54,7 +53,6 @@ public final class SelEvaluator {
             new SelThreadFactory(stackLimit, loopLimit, arrayLimit, lengthLimit, visitLimit));
     this.whitelistVars = new HashSet<>(SelTypeUtil.STATIC_OBJECTS.keySet());
     this.timeout = timeout;
-    start();
     warmUp();
   }
 
@@ -81,15 +79,6 @@ public final class SelEvaluator {
     return res;
   }
 
-  private void start() {
-    LOG.info("Start SEL Evaluator ...");
-    if (System.getSecurityManager() != null) {
-      throw new IllegalStateException("ERROR: security manager has already been set.");
-    }
-    System.setSecurityManager(new SelSecurityManager());
-    LOG.info("Enable security manager for SEL threads.");
-  }
-
   private void warmUp() {
     ((ThreadPoolExecutor) this.executor).prestartCoreThread();
   }
@@ -102,7 +91,6 @@ public final class SelEvaluator {
     } catch (InterruptedException iex) {
       throw new RuntimeException("failed to shutdown executor", iex);
     }
-    System.setSecurityManager(null);
-    LOG.info("Shutdown SEL Evaluator and reset security manager. Bye.");
+    LOG.info("Shutdown SEL Evaluator. Bye.");
   }
 }

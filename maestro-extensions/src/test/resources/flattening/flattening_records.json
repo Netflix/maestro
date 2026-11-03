@@ -898,5 +898,14 @@
     "step_status_encoded": 103, "step_status_priority": 10,
     "step_runtime_state": {"create_time": 1700640657740, "end_time": 1700640665922, "evaluate_param_time": 1700640659660, "execute_time": 1700640665922, "finish_time": 1700640665922, "initialize_time": 1700640658412, "modify_time": 1700640665922, "start_time": 1700640665921, "status": "SUCCEEDED", "wait_permit_time": 1700640659661, "wait_signal_time": 1700640659660},
     "is_inserted_in_new_run": false
+  },
+  {
+    "instance": {"initial_step_created_ms": 1700640661860, "iteration_rank": "225-14", "step_id": "leaf-ref-step", "workflow_id": "foreach.flattening.leafref", "workflow_instance_id": 1, "workflow_run_id": 1, "leaf_workflow_id": "maestro_foreach_fixture_inline"},
+    "run_id_validity_end": 9223372036854775807,
+    "step_attempt_seq": "11-11-11-11-11-19",
+    "loop_parameters": {"i_range": 4, "num": 25},
+    "step_status_encoded": 103, "step_status_priority": 10,
+    "step_runtime_state": {"create_time": 1700640661860, "end_time": 1700640671309, "evaluate_param_time": 1700640663821, "execute_time": 1700640671309, "finish_time": 1700640671309, "initialize_time": 1700640662617, "modify_time": 1700640671309, "start_time": 1700640671308, "status": "SUCCEEDED", "wait_permit_time": 1700640663822, "wait_signal_time": 1700640663821},
+    "is_inserted_in_new_run": false
   }
 ]

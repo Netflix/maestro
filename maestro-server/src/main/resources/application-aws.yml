@@ -55,6 +55,10 @@ maestro:
   step-action:
     action-timeout: 5000
     check-interval: 500
+  # step timeout defaults, check StepTimeoutProperties
+  step-timeout:
+    default-running-timeout-in-millis: 864000000 # 10 days
+    default-timeout-phase: running # phase the single step `timeout` field applies to
 
 engine:
   configs:

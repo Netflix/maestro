@@ -40,6 +40,7 @@ import lombok.ToString;
       "retry_policy",
       "tags",
       "timeout",
+      "timeouts",
       "signal_dependencies",
       "signal_outputs",
       "params"
@@ -56,6 +57,7 @@ public final class TypedStep extends AbstractStep {
   @Getter(onMethod = @__({@Override}))
   private String subType; // optional
 
+  @Getter(onMethod = @__({@Override}))
   private String subTypeVersion; // optional
 
   @JsonProperty

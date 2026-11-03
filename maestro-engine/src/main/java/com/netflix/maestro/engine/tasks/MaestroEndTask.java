@@ -33,6 +33,7 @@ import com.netflix.maestro.models.Actions;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.error.Details;
+import com.netflix.maestro.models.instance.StepSelection;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.instance.WorkflowRuntimeOverview;
 import com.netflix.maestro.models.timeline.TimelineDetailsEvent;
@@ -212,6 +213,11 @@ public final class MaestroEndTask implements FlowTask {
       runtimeSummary.setRollupBase(rollupAggregationHelper.calculateRollupBase(workflowInstance));
 
       emitWorkflowDelayMetricWithTimeline(runtimeSummary, summary, getDequeueTime(flow));
+
+      StepSelection selection = summary.getStepSelection();
+      if (selection != null) {
+        runtimeSummary.addTimeline(TimelineLogEvent.info("Run %s.", selection.describe()));
+      }
 
       return Optional.of(
           updateMaestroWorkflowInstance(

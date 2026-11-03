@@ -55,9 +55,9 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Workflow run strategy manager to handle starting workflow instance runs. It supports starting or
  * running instances by any maestro initiators, including manual, signal, time, and subworkflow
- * trigger. Five run strategy rules are implemented. Three of them (sequential, parallel,
- * strict_sequential) support queueing. Two of them (first_only and last_only) do not allow queueing
- * and the decision (start/stop) is made when the request is received.
+ * trigger. Six run strategy rules are implemented. Four of them (sequential, parallel,
+ * strict_sequential, serial_latest_only) support queueing. Two of them (first_only and last_only)
+ * do not allow queueing and the decision (start/stop) is made when the request is received.
  *
  * <p>If queueing is enabled, at the end, a {@link StartWorkflowJobEvent} event is emitted. If
  * disabling queueing, at the end, emit a {@link TerminateThenRunJobEvent} event if feasible.
@@ -140,6 +140,14 @@ public class MaestroRunStrategyDao extends AbstractDatabaseDao {
   private static final String LAST_ONLY_TIMELINE_TEMPLATE =
       "[\"With LAST_ONLY run strategy, this run is stopped due to starting a new run.\"]";
 
+  private static final String SERIAL_LATEST_ONLY_TIMELINE_TEMPLATE =
+      "[\"With SERIAL_LATEST_ONLY run strategy, this run is stopped because new instance %s with run %s arrived.\"]";
+
+  private static final String STOP_SERIAL_LATEST_ONLY_QUEUED_INSTANCE_QUERY =
+      "UPDATE maestro_workflow_instance SET status = 'STOPPED', "
+          + "end_ts = CURRENT_TIMESTAMP, modify_ts = CURRENT_TIMESTAMP, timeline = array_append(timeline, ?) "
+          + "WHERE workflow_id=? AND status='CREATED' AND execution_id IS NULL RETURNING instance";
+
   private static final String STOP_QUEUED_INSTANCES_QUERY =
       "UPDATE maestro_workflow_instance SET status = 'STOPPED', start_ts = CURRENT_TIMESTAMP, "
           + "end_ts = CURRENT_TIMESTAMP, modify_ts = CURRENT_TIMESTAMP, timeline = array_append(timeline, ?) "
@@ -158,7 +166,10 @@ public class MaestroRunStrategyDao extends AbstractDatabaseDao {
           + "WHERE workflow_id=? AND instance_id=? AND run_id<? AND status='FAILED'";
 
   private static final Set<RunStrategy.Rule> SERIALIZABLE_RUN_STRATEGIES =
-      Set.of(RunStrategy.Rule.FIRST_ONLY, RunStrategy.Rule.LAST_ONLY);
+      Set.of(
+          RunStrategy.Rule.FIRST_ONLY,
+          RunStrategy.Rule.LAST_ONLY,
+          RunStrategy.Rule.SERIAL_LATEST_ONLY);
 
   private static final String RUN_STRATEGY_TAG = "run_strategy";
   private static final User RUN_STRATEGY_USER =
@@ -166,6 +177,26 @@ public class MaestroRunStrategyDao extends AbstractDatabaseDao {
 
   private final MaestroQueueSystem queueSystem;
   private final MaestroMetrics metrics;
+  private final ObjectMapper objectMapper;
+
+  /**
+   * Carries the start status and transaction-attempt workflow instance out of a retryable
+   * transaction.
+   *
+   * <p>The DAO copies the committed run fields from {@code startedInstance} back to the
+   * caller-visible instance only after {@code withRetryableTransaction} succeeds.
+   */
+  private record StartResult(int startStatus, WorkflowInstance startedInstance) {}
+
+  /**
+   * Carries batch start statuses and transaction-attempt workflow instances out of a retryable
+   * transaction.
+   *
+   * <p>Each transaction attempt mutates copied instances and a fresh UUID set. After the
+   * transaction commits, the DAO copies the committed run fields from {@code startedInstances} back
+   * to the caller-visible batch.
+   */
+  private record StartBatchResult(int[] startStatuses, List<WorkflowInstance> startedInstances) {}
 
   /** constructor. */
   public MaestroRunStrategyDao(
@@ -177,6 +208,23 @@ public class MaestroRunStrategyDao extends AbstractDatabaseDao {
     super(dataSource, objectMapper, config, metrics);
     this.queueSystem = queueSystem;
     this.metrics = metrics;
+    this.objectMapper = objectMapper;
+  }
+
+  private WorkflowInstance copyWorkflowInstance(WorkflowInstance instance) {
+    // WorkflowInstance is persisted with Jackson; use the same model shape for isolated copies.
+    return objectMapper.convertValue(instance, WorkflowInstance.class);
+  }
+
+  private List<WorkflowInstance> copyWorkflowInstances(List<WorkflowInstance> instances) {
+    return instances.stream().map(this::copyWorkflowInstance).collect(Collectors.toList());
+  }
+
+  private void copyInstanceRunFields(WorkflowInstance source, WorkflowInstance target) {
+    target.setWorkflowInstanceId(source.getWorkflowInstanceId());
+    target.setWorkflowRunId(source.getWorkflowRunId());
+    target.setCorrelationId(source.getCorrelationId());
+    target.setCreateTime(source.getCreateTime());
   }
 
   private long getLatestInstanceId(Connection conn, String workflowId) throws SQLException {
@@ -557,56 +605,62 @@ public class MaestroRunStrategyDao extends AbstractDatabaseDao {
    */
   public int startWithRunStrategy(WorkflowInstance instance, RunStrategy runStrategy) {
     List<MessageDto> messages = new ArrayList<>();
-    int ret =
+    StartResult result =
         withMetricLogError(
             () ->
                 withRetryableTransaction(
                     conn -> {
                       messages.clear(); // clear it to handle the transaction retry
+                      WorkflowInstance attemptInstance = copyWorkflowInstance(instance);
                       // Ensures run strategy is not violated
                       if (SERIALIZABLE_RUN_STRATEGIES.contains(runStrategy.getRule())) {
                         markTransactionSerializable(conn);
                       }
                       final long nextInstanceId =
-                          getLatestInstanceId(conn, instance.getWorkflowId()) + 1;
-                      if (isDuplicated(conn, instance)) {
-                        return 0;
+                          getLatestInstanceId(conn, attemptInstance.getWorkflowId()) + 1;
+                      if (isDuplicated(conn, attemptInstance)) {
+                        return new StartResult(0, attemptInstance);
                       }
-                      completeInstanceInit(conn, nextInstanceId, instance);
+                      completeInstanceInit(conn, nextInstanceId, attemptInstance);
                       int res;
-                      if (instance.getStatus().isTerminal()) {
+                      if (attemptInstance.getStatus().isTerminal()) {
                         // Save it directly and send a terminate event
-                        res = addTerminatedInstance(conn, instance, messages);
+                        res = addTerminatedInstance(conn, attemptInstance, messages);
                       } else {
                         switch (runStrategy.getRule()) {
                           case SEQUENTIAL:
                           case PARALLEL:
                           case STRICT_SEQUENTIAL:
-                            res = insertInstance(conn, instance, true, null, messages);
+                            res = insertInstance(conn, attemptInstance, true, null, messages);
                             break;
                           case FIRST_ONLY:
-                            res = startFirstOnlyInstance(conn, instance, messages);
+                            res = startFirstOnlyInstance(conn, attemptInstance, messages);
                             break;
                           case LAST_ONLY:
-                            res = startLastOnlyInstance(conn, instance, messages);
+                            res = startLastOnlyInstance(conn, attemptInstance, messages);
+                            break;
+                          case SERIAL_LATEST_ONLY:
+                            res = startSerialLatestOnlyInstance(conn, attemptInstance, messages);
                             break;
                           default:
                             throw new MaestroInternalError(
                                 "When start, run strategy [%s] is not supported.", runStrategy);
                         }
                       }
-                      if (instance.getWorkflowInstanceId() == nextInstanceId) {
-                        updateLatestInstanceId(conn, instance.getWorkflowId(), nextInstanceId);
+                      if (attemptInstance.getWorkflowInstanceId() == nextInstanceId) {
+                        updateLatestInstanceId(
+                            conn, attemptInstance.getWorkflowId(), nextInstanceId);
                       }
-                      return res;
+                      return new StartResult(res, attemptInstance);
                     }),
             "startWithRunStrategy",
             "Failed to start a workflow [{}][{}] with run strategy [{}]",
             instance.getWorkflowId(),
             instance.getWorkflowUuid(),
             runStrategy);
+    copyInstanceRunFields(result.startedInstance(), instance);
     messages.forEach(queueSystem::notify);
-    return ret;
+    return result.startStatus();
   }
 
   /**
@@ -629,6 +683,7 @@ public class MaestroRunStrategyDao extends AbstractDatabaseDao {
             case SEQUENTIAL:
             case PARALLEL:
             case STRICT_SEQUENTIAL:
+            case SERIAL_LATEST_ONLY:
               return dequeueWorkflowInstances(
                   workflowId,
                   runStrategy.getWorkflowConcurrency(),
@@ -707,58 +762,74 @@ public class MaestroRunStrategyDao extends AbstractDatabaseDao {
       return new int[0];
     }
     List<MessageDto> messages = new ArrayList<>();
-    int[] ret =
+    StartBatchResult result =
         withMetricLogError(
-            () -> {
-              Set<String> uuids =
-                  instances.stream()
-                      .map(WorkflowInstance::getWorkflowUuid)
-                      .collect(Collectors.toSet());
-
-              return withRetryableTransaction(
-                  conn -> {
-                    messages.clear(); // clear it to handle the transaction retry
-                    if (SERIALIZABLE_RUN_STRATEGIES.contains(runStrategy.getRule())) {
-                      markTransactionSerializable(conn);
-                    }
-                    final long nextInstanceId = getLatestInstanceId(conn, workflowId) + 1;
-                    if (dedupAndCheckIfAllDuplicated(conn, workflowId, uuids)) {
-                      return new int[instances.size()];
-                    }
-                    long lastAssignedInstanceId =
-                        completeInstancesInit(conn, nextInstanceId, uuids, instances);
-                    int[] res;
-                    switch (runStrategy.getRule()) {
-                      case SEQUENTIAL:
-                      case PARALLEL:
-                      case STRICT_SEQUENTIAL:
-                        res = enqueueInstances(conn, workflowId, instances, messages);
-                        break;
-                      case FIRST_ONLY:
-                        res = startFirstOnlyInstances(conn, workflowId, instances, messages);
-                        break;
-                      case LAST_ONLY:
-                        res = startLastOnlyInstances(conn, workflowId, instances, messages);
-                        break;
-                      default:
-                        throw new MaestroInternalError(
-                            "When startBatch, run strategy [%s] is not supported.", runStrategy);
-                    }
-                    if (lastAssignedInstanceId >= nextInstanceId) {
-                      updateLatestInstanceId(conn, workflowId, lastAssignedInstanceId);
-                    }
-                    return res;
-                  });
-            },
+            () ->
+                withRetryableTransaction(
+                    conn -> {
+                      messages.clear(); // clear it to handle the transaction retry
+                      List<WorkflowInstance> attemptInstances = copyWorkflowInstances(instances);
+                      Set<String> uuids =
+                          attemptInstances.stream()
+                              .map(WorkflowInstance::getWorkflowUuid)
+                              .collect(Collectors.toSet());
+                      if (SERIALIZABLE_RUN_STRATEGIES.contains(runStrategy.getRule())) {
+                        markTransactionSerializable(conn);
+                      }
+                      final long nextInstanceId = getLatestInstanceId(conn, workflowId) + 1;
+                      if (dedupAndCheckIfAllDuplicated(conn, workflowId, uuids)) {
+                        return new StartBatchResult(
+                            new int[attemptInstances.size()], attemptInstances);
+                      }
+                      long lastAssignedInstanceId =
+                          completeInstancesInit(conn, nextInstanceId, uuids, attemptInstances);
+                      int[] res;
+                      switch (runStrategy.getRule()) {
+                        case SEQUENTIAL:
+                        case PARALLEL:
+                        case STRICT_SEQUENTIAL:
+                          res = enqueueInstances(conn, workflowId, attemptInstances, messages);
+                          break;
+                        case FIRST_ONLY:
+                          res =
+                              startFirstOnlyInstances(conn, workflowId, attemptInstances, messages);
+                          break;
+                        case LAST_ONLY:
+                          res =
+                              startLastOnlyInstances(conn, workflowId, attemptInstances, messages);
+                          break;
+                        case SERIAL_LATEST_ONLY:
+                          res =
+                              startSerialLatestOnlyInstances(
+                                  conn, workflowId, attemptInstances, messages);
+                          break;
+                        default:
+                          throw new MaestroInternalError(
+                              "When startBatch, run strategy [%s] is not supported.", runStrategy);
+                      }
+                      if (lastAssignedInstanceId >= nextInstanceId) {
+                        updateLatestInstanceId(conn, workflowId, lastAssignedInstanceId);
+                      }
+                      return new StartBatchResult(res, attemptInstances);
+                    }),
             "startBatchWithRunStrategy",
             "Failed to start [{}] workflow instances for [{}] with run strategy [{}]",
             instances.size(),
             workflowId,
             runStrategy);
+    for (int i = 0; i < instances.size(); ++i) {
+      copyInstanceRunFields(result.startedInstances().get(i), instances.get(i));
+    }
     messages.forEach(queueSystem::notify);
-    return ret;
+    return result.startStatuses();
   }
 
+  /**
+   * Removes UUIDs that already exist for the workflow from the mutable {@code uuids} set.
+   *
+   * @return {@code true} when every candidate UUID was already present and the batch should be
+   *     treated as duplicated without creating any instance rows.
+   */
   private boolean dedupAndCheckIfAllDuplicated(
       Connection conn, String workflowId, Set<String> uuids) throws SQLException {
     try (PreparedStatement wfiStmt = conn.prepareStatement(CHECK_EXISTING_UUIDS_QUERY)) {
@@ -773,6 +844,17 @@ public class MaestroRunStrategyDao extends AbstractDatabaseDao {
     return uuids.isEmpty();
   }
 
+  /**
+   * Assigns instance IDs, run IDs, correlation IDs, and create times to distinct instances that
+   * remain in the mutable {@code uuids} set.
+   *
+   * <p>Duplicate UUIDs inside the same batch are skipped after the first assignment. UUIDs removed
+   * by {@link #dedupAndCheckIfAllDuplicated(Connection, String, Set)} are skipped because they
+   * already exist in the database.
+   *
+   * @return the last instance ID assigned, or {@code startingInstanceId - 1} when no instances were
+   *     assigned.
+   */
   private long completeInstancesInit(
       Connection conn, long startingInstanceId, Set<String> uuids, List<WorkflowInstance> instances)
       throws SQLException {
@@ -843,6 +925,136 @@ public class MaestroRunStrategyDao extends AbstractDatabaseDao {
     }
     Collections.reverse(instances);
     return ret;
+  }
+
+  private int startSerialLatestOnlyInstance(
+      Connection conn, WorkflowInstance instance, List<MessageDto> messages) throws SQLException {
+    stopSerialLatestOnlyQueuedInstance(
+        conn,
+        instance.getWorkflowId(),
+        instance.getWorkflowInstanceId(),
+        instance.getWorkflowRunId(),
+        messages);
+    return insertInstance(conn, instance, true, null, messages);
+  }
+
+  /**
+   * Starts a batch of workflow instances under the SERIAL_LATEST_ONLY run strategy.
+   *
+   * <p>The batch is reversed so the last arrival (highest instance id) is processed first and
+   * becomes the sole queued candidate. All existing queued rows for the workflow and all earlier
+   * rows in the batch are stopped in the same transaction. A single {@link StartWorkflowJobEvent}
+   * is emitted for the new arrival. The instances list and the return array are restored to their
+   * original order before returning.
+   */
+  private int[] startSerialLatestOnlyInstances(
+      Connection conn,
+      String workflowId,
+      List<WorkflowInstance> instances,
+      List<MessageDto> messages)
+      throws SQLException {
+    Collections.reverse(instances);
+    int[] ret = new int[instances.size()];
+    List<WorkflowInstance> stoppedInstances = new ArrayList<>();
+    TimelineEvent timelineEvent = null;
+    boolean firstInserted = false;
+    int idx = 0;
+
+    try (PreparedStatement insertStmt = conn.prepareStatement(INSERT_WORKFLOW_INSTANCE_QUERY);
+        PreparedStatement stopStmt =
+            conn.prepareStatement(INSERT_STOPPED_WORKFLOW_INSTANCE_QUERY)) {
+      for (WorkflowInstance inst : instances) {
+        if (inst.getWorkflowInstanceId() != DO_NOTHING_CODE) {
+          if (!firstInserted) {
+            stopSerialLatestOnlyQueuedInstance(
+                conn, workflowId, inst.getWorkflowInstanceId(), inst.getWorkflowRunId(), messages);
+            timelineEvent =
+                TimelineLogEvent.info(
+                    SERIAL_LATEST_ONLY_TIMELINE_TEMPLATE,
+                    inst.getWorkflowInstanceId(),
+                    inst.getWorkflowRunId());
+            prepareCreateInstanceStatement(insertStmt, inst);
+            insertStmt.addBatch();
+            ret[idx] = SUCCESS_WRITE_SIZE;
+            firstInserted = true;
+          } else {
+            prepareStopInstanceStatement(stopStmt, inst, timelineEvent);
+            stopStmt.addBatch();
+            ret[idx] = -SUCCESS_WRITE_SIZE;
+            stoppedInstances.add(inst);
+          }
+        }
+        ++idx;
+      }
+
+      if (firstInserted) {
+        int[] insertRes = insertStmt.executeBatch();
+        Checks.checkTrue(
+            Arrays.stream(insertRes).allMatch(i -> i == SUCCESS_WRITE_SIZE),
+            "executeBatch in startSerialLatestOnlyInstances insert should return all 1s.");
+      }
+      if (!stoppedInstances.isEmpty()) {
+        int[] stopRes = stopStmt.executeBatch();
+        Checks.checkTrue(
+            Arrays.stream(stopRes).allMatch(i -> i == SUCCESS_WRITE_SIZE),
+            "executeBatch in startSerialLatestOnlyInstances stop should return all 1s.");
+        messages.add(
+            queueSystem.enqueue(
+                conn,
+                WorkflowInstanceUpdateJobEvent.create(
+                    stoppedInstances,
+                    WorkflowInstance.Status.STOPPED,
+                    System.currentTimeMillis())));
+      }
+    }
+
+    if (firstInserted) {
+      publishStartWorkflowJobEvent(conn, workflowId, messages);
+    }
+
+    Collections.reverse(instances);
+    int tmp;
+    for (int i = 0, j = ret.length - 1; i < j; ++i, --j) {
+      tmp = ret[i];
+      ret[i] = ret[j];
+      ret[j] = tmp;
+    }
+    return ret;
+  }
+
+  private void stopSerialLatestOnlyQueuedInstance(
+      Connection conn,
+      String workflowId,
+      long newInstanceId,
+      long newRunId,
+      List<MessageDto> messages)
+      throws SQLException {
+    try (PreparedStatement wfiStmt =
+        conn.prepareStatement(STOP_SERIAL_LATEST_ONLY_QUEUED_INSTANCE_QUERY)) {
+      wfiStmt.setString(
+          1,
+          toJson(
+              TimelineLogEvent.info(
+                  SERIAL_LATEST_ONLY_TIMELINE_TEMPLATE, newInstanceId, newRunId)));
+      wfiStmt.setString(2, workflowId);
+      List<WorkflowInstance> stopped = new ArrayList<>();
+      try (ResultSet result = wfiStmt.executeQuery()) {
+        while (result.next()) {
+          stopped.add(fromJson(result.getString(1), WorkflowInstance.class));
+        }
+      }
+      if (!stopped.isEmpty()) {
+        messages.add(
+            queueSystem.enqueue(
+                conn,
+                WorkflowInstanceUpdateJobEvent.create(
+                    stopped, WorkflowInstance.Status.STOPPED, System.currentTimeMillis())));
+        LOG.info(
+            "With SERIAL_LATEST_ONLY run strategy, stopped [{}] queued instance(s) for workflow [{}]",
+            stopped.size(),
+            workflowId);
+      }
+    }
   }
 
   private int[] startFirstOrLastOnlyInstances(

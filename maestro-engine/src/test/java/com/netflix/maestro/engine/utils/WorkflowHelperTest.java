@@ -38,11 +38,14 @@ import com.netflix.maestro.models.instance.RunPolicy;
 import com.netflix.maestro.models.instance.RunProperties;
 import com.netflix.maestro.models.instance.StepAggregatedView;
 import com.netflix.maestro.models.instance.StepInstance;
+import com.netflix.maestro.models.instance.StepSelection;
+import com.netflix.maestro.models.instance.StepSelector;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.Before;
 import org.junit.Test;
@@ -91,6 +94,13 @@ public class WorkflowHelperTest extends MaestroEngineBaseTest {
             WorkflowDefinition.class);
     assertEquals(
         RunStrategy.Rule.PARALLEL, parallel.getPropertiesSnapshot().getRunStrategy().getRule());
+    WorkflowDefinition serialLatestOnly =
+        loadObject(
+            "fixtures/workflows/definition/sample-minimal-wf-run-strategy-serial-latest-only.json",
+            WorkflowDefinition.class);
+    assertEquals(
+        RunStrategy.Rule.SERIAL_LATEST_ONLY,
+        serialLatestOnly.getPropertiesSnapshot().getRunStrategy().getRule());
   }
 
   @Test
@@ -310,6 +320,53 @@ public class WorkflowHelperTest extends MaestroEngineBaseTest {
     // For trigger based, verify if null has been passed.
     Mockito.verify(paramsManager, Mockito.times(1))
         .generateMergedWorkflowParams(createdInstance, request);
+  }
+
+  @Test
+  public void testRestartInheritsStepSelectionUnlessSupplied() {
+    StepSelection baseline =
+        StepSelection.builder()
+            .exclude(StepSelector.builder().stepIdStartsWith(Set.of("report_")).build())
+            .build();
+    Workflow workflow = definition.getWorkflow();
+    WorkflowInstance instance =
+        workflowHelper.createWorkflowInstance(
+            workflow,
+            12345L,
+            1,
+            new RunProperties(),
+            RunRequest.builder()
+                .initiator(new ManualInitiator())
+                .currentPolicy(RunPolicy.START_CUSTOMIZED_RUN)
+                .stepSelection(baseline)
+                .runParams(Collections.emptyMap())
+                .build());
+    assertEquals(baseline, instance.getRunConfig().getStepSelection());
+
+    // a restart that says nothing about selection keeps the baseline one
+    workflowHelper.updateWorkflowInstance(
+        instance,
+        RunRequest.builder()
+            .initiator(new ManualInitiator())
+            .currentPolicy(RunPolicy.RESTART_FROM_BEGINNING)
+            .runParams(Collections.emptyMap())
+            .build());
+    assertEquals(baseline, instance.getRunConfig().getStepSelection());
+
+    // a restart that supplies its own selection replaces the baseline one
+    StepSelection replacement =
+        StepSelection.builder()
+            .include(StepSelector.builder().stepIdStartsWith(Set.of("load_")).build())
+            .build();
+    workflowHelper.updateWorkflowInstance(
+        instance,
+        RunRequest.builder()
+            .initiator(new ManualInitiator())
+            .currentPolicy(RunPolicy.RESTART_FROM_BEGINNING)
+            .stepSelection(replacement)
+            .runParams(Collections.emptyMap())
+            .build());
+    assertEquals(replacement, instance.getRunConfig().getStepSelection());
   }
 
   @Test

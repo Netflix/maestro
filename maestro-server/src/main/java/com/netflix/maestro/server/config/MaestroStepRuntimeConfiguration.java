@@ -31,7 +31,9 @@ import com.netflix.maestro.engine.http.SizeBoundedBodyHandler;
 import com.netflix.maestro.engine.http.UrlValidator;
 import com.netflix.maestro.engine.kubernetes.KubernetesCommandGenerator;
 import com.netflix.maestro.engine.kubernetes.KubernetesRuntimeExecutor;
+import com.netflix.maestro.engine.notebook.DefaultAlertingNotebookParamsContributor;
 import com.netflix.maestro.engine.notebook.NotebookParamsBuilder;
+import com.netflix.maestro.engine.notebook.NotebookParamsContributor;
 import com.netflix.maestro.engine.notebook.PapermillEntrypointBuilder;
 import com.netflix.maestro.engine.params.DefaultParamManager;
 import com.netflix.maestro.engine.params.OutputDataManager;
@@ -39,6 +41,8 @@ import com.netflix.maestro.engine.params.ParamsManager;
 import com.netflix.maestro.engine.stepruntime.HttpStepRuntime;
 import com.netflix.maestro.engine.stepruntime.KubernetesStepRuntime;
 import com.netflix.maestro.engine.stepruntime.NotebookStepRuntime;
+import com.netflix.maestro.engine.steps.ExtensionStepRuntime;
+import com.netflix.maestro.engine.steps.ExtensionStepRuntimeRegistry;
 import com.netflix.maestro.engine.steps.ForeachStepRuntime;
 import com.netflix.maestro.engine.steps.NoOpStepRuntime;
 import com.netflix.maestro.engine.steps.SleepStepRuntime;
@@ -63,6 +67,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
@@ -105,6 +110,24 @@ public class MaestroStepRuntimeConfiguration {
             objectMapper,
             metrics);
     stepRuntimeMap.put(StepType.KUBERNETES, step);
+    return step;
+  }
+
+  @Bean
+  public ExtensionStepRuntimeRegistry extensionStepRuntimeRegistry() {
+    LOG.info("Creating extensionStepRuntimeRegistry within Spring boot...");
+    return new ExtensionStepRuntimeRegistry();
+  }
+
+  @Bean
+  public ExtensionStepRuntime extension(
+      @Qualifier(STEP_RUNTIME_QUALIFIER) Map<StepType, StepRuntime> stepRuntimeMap,
+      ExtensionStepRuntimeRegistry extensionStepRuntimeRegistry,
+      JobTemplateManager jobTemplateManager) {
+    LOG.info("Creating extension step runtime within Spring boot...");
+    ExtensionStepRuntime step =
+        new ExtensionStepRuntime(extensionStepRuntimeRegistry, jobTemplateManager);
+    stepRuntimeMap.put(StepType.EXTENSION, step);
     return step;
   }
 
@@ -161,10 +184,17 @@ public class MaestroStepRuntimeConfiguration {
   }
 
   @Bean
-  public NotebookParamsBuilder notebookParamsBuilder(
+  public NotebookParamsContributor defaultAlertingNotebookParamsContributor(
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper) {
+    return new DefaultAlertingNotebookParamsContributor(objectMapper);
+  }
+
+  @Bean
+  public NotebookParamsBuilder notebookParamsBuilder(
+      @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,
+      List<NotebookParamsContributor> contributors) {
     LOG.info("Creating notebookParamsBuilder within Spring boot...");
-    return new NotebookParamsBuilder(objectMapper);
+    return new NotebookParamsBuilder(objectMapper, contributors);
   }
 
   @Bean
@@ -346,7 +376,16 @@ public class MaestroStepRuntimeConfiguration {
   }
 
   @Bean
-  @DependsOn({"sleep", "noop", "subworkflow", "foreach", "whileLoop", "kubernetes", "notebook"})
+  @DependsOn({
+    "sleep",
+    "noop",
+    "subworkflow",
+    "foreach",
+    "whileLoop",
+    "kubernetes",
+    "notebook",
+    "extension"
+  })
   public StepRuntimeManager stepRuntimeManager(
       @Qualifier(STEP_RUNTIME_QUALIFIER) Map<StepType, StepRuntime> stepRuntimeMap,
       @Qualifier(Constants.MAESTRO_QUALIFIER) ObjectMapper objectMapper,

@@ -16,7 +16,6 @@ import static org.junit.Assert.*;
 
 import com.netflix.sel.ast.ParseException;
 import com.netflix.sel.type.SelType;
-import java.security.AccessControlException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -32,36 +31,17 @@ public class SelThreadTest {
 
   @Before
   public void setUp() throws Exception {
-    t1 =
-        new SelThread(
-            "test",
-            new Runnable() {
-              @Override
-              public void run() {
-                System.exit(1);
-              }
-            },
-            10,
-            10,
-            10,
-            16,
-            100);
+    t1 = new SelThread("test", () -> {}, 10, 10, 10, 16, 100);
     t1.setUncaughtExceptionHandler(
-        new Thread.UncaughtExceptionHandler() {
-          @Override
-          public void uncaughtException(Thread t, Throwable e) {
-            i = -10;
-            ex = e;
-          }
+        (t, e) -> {
+          i = -10;
+          ex = e;
         });
     t2 =
         new SelThread(
             "test",
-            new Runnable() {
-              @Override
-              public void run() {
-                i = 10;
-              }
+            () -> {
+              i = 10;
             },
             100,
             100,
@@ -69,18 +49,14 @@ public class SelThreadTest {
             1000,
             100);
     t2.setUncaughtExceptionHandler(
-        new Thread.UncaughtExceptionHandler() {
-          @Override
-          public void uncaughtException(Thread t, Throwable e) {
-            i = -10;
-            ex = e;
-          }
+        (t, e) -> {
+          i = -10;
+          ex = e;
         });
   }
 
   @After
   public void tearDown() throws Exception {
-    System.setSecurityManager(null);
     i = 0;
     ex = null;
   }
@@ -117,24 +93,9 @@ public class SelThreadTest {
     t1.validate("x.IsInvalidExpression();", new HashSet<>());
   }
 
-  @Test(expected = IllegalStateException.class)
-  public void testRunWithoutSecurityManager() {
-    t1.run();
-  }
-
-  @Test
-  public void testRunAccessDenied() throws Exception {
-    System.setSecurityManager(new SelSecurityManager());
-    t1.start();
-    t1.join();
-    assertEquals(-10, i);
-    assertTrue(ex instanceof AccessControlException);
-  }
-
   @Test
   public void testRun() throws Exception {
     assertEquals(0, i);
-    System.setSecurityManager(new SelSecurityManager());
     t2.start();
     t2.join();
     assertEquals(10, i);

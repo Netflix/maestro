@@ -16,9 +16,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.netflix.maestro.exceptions.MaestroInternalError;
+import com.netflix.maestro.models.definition.Alerting;
+import com.netflix.maestro.models.definition.DefaultAlerting;
 
 /** Json helper utility class. */
 public final class JsonHelper {
@@ -55,6 +58,19 @@ public final class JsonHelper {
     mapper.configure(DeserializationFeature.USE_LONG_FOR_INTS, true);
     mapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_VALUES, true);
     mapper.setNodeFactory(JsonNodeFactory.withExactBigDecimals(true));
+    mapper.registerModule(defaultAbstractTypeMappings());
+  }
+
+  /**
+   * Default abstract-type bindings for pluggable OSS interfaces. Downstream consumers can override
+   * any of these by registering their own SimpleModule with a different {@code
+   * addAbstractTypeMapping(...)}; a later-registered mapping replaces the one here. Add new
+   * pluggable abstract types to this module rather than to {@link #configureMapper(ObjectMapper)}.
+   */
+  private static SimpleModule defaultAbstractTypeMappings() {
+    SimpleModule module = new SimpleModule("MaestroDefaultAbstractTypes");
+    module.addAbstractTypeMapping(Alerting.class, DefaultAlerting.class);
+    return module;
   }
 
   /**

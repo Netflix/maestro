@@ -140,6 +140,43 @@ public class MaestroEndTaskTest extends MaestroEngineBaseTest {
   }
 
   @Test
+  public void testStartedTimelineNamesTheStepSelection() {
+    Map<String, Object> summary = new HashMap<>();
+    summary.put("workflow_id", "testWorkflowId");
+    summary.put("workflow_instance_id", 123);
+    summary.put("workflow_run_id", 1);
+    summary.put("runtime_dag", singletonMap("job1", Collections.emptyMap()));
+    summary.put("initiator", twoItemMap("type", "MANUAL", "user", "tester"));
+    summary.put(
+        "step_selection",
+        singletonMap("exclude", singletonMap("step_ids", Collections.singletonList("job2"))));
+
+    Flow newFlow = new Flow(1, "testWorkflowId", 1, 234567, "ref");
+    newFlow.setStatus(flow.getStatus());
+    newFlow.setFlowDef(flow.getFlowDef());
+    newFlow.setInput(Collections.singletonMap("maestro_workflow_summary", summary));
+    newFlow.setPrepareTask(testTask);
+
+    testTask.setTaskDef(new TaskDef("maestro_start", Constants.DEFAULT_START_TASK_NAME, null));
+    testTask.setStartTime(123456L);
+    testTask.setOutputData(
+        twoItemMap(
+            "maestro_step_runtime_summary",
+            StepRuntimeSummary.builder().stepId("job1").type(StepType.NOOP).build(),
+            "maestro_workflow_runtime_summary",
+            Collections.singletonMap("instance_status", "CREATED")));
+
+    Assert.assertTrue(endTask.execute(newFlow, testTask));
+
+    WorkflowRuntimeSummary runtimeSummary =
+        (WorkflowRuntimeSummary) testTask.getOutputData().get("maestro_workflow_runtime_summary");
+    Assert.assertEquals(2, runtimeSummary.getTimeline().getTimelineEvents().size());
+    Assert.assertEquals(
+        TimelineLogEvent.info("Run excludes steps matching ids [job2].").getMessage(),
+        runtimeSummary.getTimeline().getTimelineEvents().getLast().getMessage());
+  }
+
+  @Test
   public void testMarkMaestroWorkflowStarted() {
     Flow newFlow = new Flow(1, "testWorkflowId", 1, 234567, "ref");
     newFlow.setStatus(flow.getStatus());

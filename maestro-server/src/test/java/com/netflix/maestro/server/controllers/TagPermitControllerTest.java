@@ -27,6 +27,7 @@ import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.tagpermits.TagPermit;
 import com.netflix.maestro.models.timeline.Timeline;
 import java.util.Collections;
+import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -62,19 +63,45 @@ public class TagPermitControllerTest extends MaestroBaseTest {
     ArgumentCaptor<String> tagCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<Integer> limitCaptor = ArgumentCaptor.forClass(Integer.class);
     ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<Map<String, Object>> extraInfoCaptor = ArgumentCaptor.forClass(Map.class);
 
     verify(tagPermitManager, times(1))
-        .upsertTagPermit(tagCaptor.capture(), limitCaptor.capture(), userCaptor.capture());
+        .upsertTagPermit(
+            tagCaptor.capture(),
+            limitCaptor.capture(),
+            userCaptor.capture(),
+            extraInfoCaptor.capture());
 
     assertEquals("test-tag", tagCaptor.getValue());
     assertEquals(Integer.valueOf(5), limitCaptor.getValue());
     assertEquals(testUser, userCaptor.getValue());
+    assertEquals(Collections.emptyMap(), extraInfoCaptor.getValue());
+  }
+
+  @Test
+  public void testUpsertTagPermitWithExtraInfo() {
+    TagPermitRequest request = new TagPermitRequest();
+    request.setTag("test-tag");
+    request.setMaxAllowed(5);
+    request.setExtraInfo(Map.of("source", "test"));
+
+    ResponseEntity<?> response = tagPermitController.upsertTagPermit(request);
+
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<Map<String, Object>> extraInfoCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(tagPermitManager, times(1))
+        .upsertTagPermit(any(), any(Integer.class), any(), extraInfoCaptor.capture());
+    assertEquals(Map.of("source", "test"), extraInfoCaptor.getValue());
   }
 
   @Test
   public void testGetTagPermit() {
     String tag = "existing-tag";
-    TagPermit expectedTagPermit = new TagPermit(tag, 10, new Timeline(Collections.emptyList()));
+    TagPermit expectedTagPermit =
+        new TagPermit(tag, 10, new Timeline(Collections.emptyList()), null);
     when(tagPermitManager.getTagPermit(any())).thenReturn(expectedTagPermit);
 
     TagPermit result = tagPermitController.getTagPermit(tag);

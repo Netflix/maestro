@@ -27,6 +27,7 @@ import com.netflix.maestro.engine.steps.StepRuntime;
 import com.netflix.maestro.models.stepruntime.KubernetesCommand;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.PodStatus;
+import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.PodResource;
@@ -179,6 +180,64 @@ public class Fabric8RuntimeExecutorTest extends MaestroBaseTest {
     assertEquals(
         List.of("/bin/sh", "-c", "cleanup.sh --flag"),
         container.getLifecycle().getPreStop().getExec().getCommand());
+  }
+
+  @Test
+  public void testLaunchJobWithResourceLimitsAndRequests() {
+    KubernetesCommand command =
+        KubernetesCommand.builder()
+            .jobDeduplicationKey("test-job")
+            .image("test-image")
+            .cpu("2")
+            .cpuRequest("1")
+            .memory("4G")
+            .memoryRequest("2G")
+            .disk("10G")
+            .diskRequest("5G")
+            .gpu("1")
+            .env(Collections.emptyMap())
+            .build();
+    KubernetesStepContext context = buildContext(command);
+
+    ArgumentCaptor<Pod> podCaptor = ArgumentCaptor.forClass(Pod.class);
+    when(nsOp.resource(podCaptor.capture())).thenReturn(podResource);
+
+    executor.launchJob(context);
+
+    var resources = podCaptor.getValue().getSpec().getContainers().getFirst().getResources();
+    assertEquals(new Quantity("2"), resources.getLimits().get("cpu"));
+    assertEquals(new Quantity("4G"), resources.getLimits().get("memory"));
+    assertEquals(new Quantity("10G"), resources.getLimits().get("ephemeral-storage"));
+    assertEquals(new Quantity("1"), resources.getLimits().get("nvidia.com/gpu"));
+    assertEquals(new Quantity("1"), resources.getRequests().get("cpu"));
+    assertEquals(new Quantity("2G"), resources.getRequests().get("memory"));
+    assertEquals(new Quantity("5G"), resources.getRequests().get("ephemeral-storage"));
+    assertNull(resources.getRequests().get("nvidia.com/gpu"));
+  }
+
+  @Test
+  public void testLaunchJobWithResourceLimitsOnly() {
+    KubernetesCommand command =
+        KubernetesCommand.builder()
+            .jobDeduplicationKey("test-job")
+            .image("test-image")
+            .cpu("2")
+            .memory("4G")
+            .disk("10G")
+            .env(Collections.emptyMap())
+            .build();
+    KubernetesStepContext context = buildContext(command);
+
+    ArgumentCaptor<Pod> podCaptor = ArgumentCaptor.forClass(Pod.class);
+    when(nsOp.resource(podCaptor.capture())).thenReturn(podResource);
+
+    executor.launchJob(context);
+
+    var resources = podCaptor.getValue().getSpec().getContainers().getFirst().getResources();
+    assertEquals(new Quantity("2"), resources.getLimits().get("cpu"));
+    assertEquals(new Quantity("4G"), resources.getLimits().get("memory"));
+    assertEquals(new Quantity("10G"), resources.getLimits().get("ephemeral-storage"));
+    assertTrue(resources.getRequests() == null || resources.getRequests().isEmpty());
   }
 
   private KubernetesStepContext buildContext(KubernetesCommand command) {

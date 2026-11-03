@@ -4,6 +4,7 @@ import com.netflix.maestro.exceptions.MaestroUnprocessableEntityException;
 import com.netflix.maestro.flow.Constants;
 import com.netflix.maestro.flow.engine.ExecutionContext;
 import com.netflix.maestro.flow.models.Flow;
+import com.netflix.maestro.flow.models.MessagePayload;
 import com.netflix.maestro.flow.models.Task;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -44,9 +45,9 @@ final class TaskActor extends BaseActor {
     switch (action) {
       case Action.TaskStart s -> start(s.resume());
       case Action.TaskStop ts -> stop();
-      case Action.TaskPing p -> execute(p.code());
-      case Action.TaskActivate a -> activate(a.code());
-      case Action.TaskTimeout t -> execute(Constants.TIMEOUT_TASK_CODE);
+      case Action.TaskPing p -> execute(p.code(), p.payload());
+      case Action.TaskActivate a -> activate(a.code(), a.payload());
+      case Action.TaskTimeout t -> execute(Constants.TIMEOUT_TASK_CODE, MessagePayload.DEFAULT);
       case Action.TaskShutdown d -> shutdown();
       default ->
           throw new MaestroUnprocessableEntityException(
@@ -83,18 +84,20 @@ final class TaskActor extends BaseActor {
     task.setStarted(true);
   }
 
-  private void activate(int code) {
+  private void activate(int code, MessagePayload payload) {
     if (!task.isActive()) {
       task.setActive(true);
     }
     // cancel any existing scheduled task ping as the activate call does the same action.
     var dedupAction =
-        code == Constants.TASK_PING_CODE ? Action.TASK_PING : new Action.TaskPing(code);
+        code == Constants.TASK_PING_CODE
+            ? Action.TASK_PING
+            : new Action.TaskPing(code, MessagePayload.DEFAULT);
     var future = getScheduledActions().get(dedupAction);
     if (future != null) {
       future.cancel(false);
     }
-    execute(code);
+    execute(code, payload);
   }
 
   private void stop() {
@@ -114,7 +117,7 @@ final class TaskActor extends BaseActor {
    * check will discover it as it also checks the parent status. Maestro engine makes sure to flip
    * the active flag if the task should not execution (e.g. NOT_CREATED case).
    */
-  private void execute(int code) {
+  private void execute(int code, MessagePayload payload) {
     if (!task.isStarted()) {
       LOG.info("Flow task [{}] is not started yet, skip execution", name);
       return;
@@ -122,8 +125,13 @@ final class TaskActor extends BaseActor {
     boolean changed = false;
     if (task.isActive()) { // execution only for active tasks
       task.setCode(code);
-      changed = getContext().execute(flow, task);
-      task.setCode(Constants.TASK_PING_CODE);
+      task.setMessagePayload(payload);
+      try {
+        changed = getContext().execute(flow, task);
+      } finally {
+        task.setCode(Constants.TASK_PING_CODE);
+        task.setMessagePayload(MessagePayload.DEFAULT);
+      }
     }
     if (task.getStatus().isTerminal()) {
       terminateNow(); // if terminal state, then stop

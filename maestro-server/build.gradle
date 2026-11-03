@@ -52,10 +52,6 @@ dependencies {
     testImplementation(testFixtures(project(':maestro-common')))
 }
 
-bootRun {
-    jvmArgs += ["-Djava.security.manager=allow"]
-}
-
 checkstyle {
     checkstyleIntegrationTest.enabled = false
 }

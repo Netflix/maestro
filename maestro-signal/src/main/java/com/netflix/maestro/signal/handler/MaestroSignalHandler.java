@@ -26,6 +26,9 @@ import lombok.extern.slf4j.Slf4j;
 public class MaestroSignalHandler implements SignalHandler {
   private final MaestroSignalBrokerDao brokerDao;
 
+  /** When enabled, marks still-pending dependencies as {@code CANCELED} on step termination. */
+  private final boolean terminalStatesEnabled;
+
   /**
    * Sends output signals of a step.
    *
@@ -130,6 +133,24 @@ public class MaestroSignalHandler implements SignalHandler {
       stepRuntimeSummary.flagToSync();
     }
     return dependencies.isSatisfied();
+  }
+
+  /**
+   * On step termination, marks any still-pending signal dependencies as {@code CANCELED} when
+   * terminal states are enabled, so consumers can tell a dependency never matched rather than that
+   * it might still match.
+   */
+  @Override
+  public void onTermination(
+      WorkflowSummary workflowSummary, StepRuntimeSummary stepRuntimeSummary) {
+    if (!terminalStatesEnabled
+        || stepRuntimeSummary == null
+        || stepRuntimeSummary.getSignalDependencies() == null) {
+      return;
+    }
+    if (stepRuntimeSummary.getSignalDependencies().markPendingAsCanceled()) {
+      stepRuntimeSummary.flagToSync();
+    }
   }
 
   /** params will not be null and contain at least a `name` param. */

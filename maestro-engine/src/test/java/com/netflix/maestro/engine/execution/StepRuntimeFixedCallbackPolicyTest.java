@@ -100,6 +100,47 @@ public class StepRuntimeFixedCallbackPolicyTest extends MaestroEngineBaseTest {
   }
 
   @Test
+  public void testGetCallBackInSecsPrefersSubTypeOverStepType() {
+    Map<StepInstance.Status, Map<String, Long>> stepRuntimeCallBackDelayConfig =
+        Collections.singletonMap(
+            StepInstance.Status.RUNNING,
+            threeItemMap("spark", 30L, StepType.EXTENSION.getType(), 10L, "default", 3L));
+    when(callbackDelayConfig.getFixedCallbackDelayInSecs())
+        .thenReturn(stepRuntimeCallBackDelayConfig);
+    StepRuntimeState stepRuntimeState = new StepRuntimeState();
+    stepRuntimeState.setStatus(StepInstance.Status.RUNNING);
+
+    StepRuntimeSummary runtimeSummary =
+        StepRuntimeSummary.builder()
+            .runtimeState(stepRuntimeState)
+            .type(StepType.EXTENSION)
+            .subType("Spark")
+            .build();
+    assertEquals(
+        30L,
+        stepRuntimeFixedCallbackDelayPolicy.getCallBackDelayInSecs(runtimeSummary).longValue());
+
+    runtimeSummary =
+        StepRuntimeSummary.builder()
+            .runtimeState(stepRuntimeState)
+            .type(StepType.EXTENSION)
+            .subType("flink")
+            .build();
+    assertEquals(
+        10L,
+        stepRuntimeFixedCallbackDelayPolicy.getCallBackDelayInSecs(runtimeSummary).longValue());
+
+    runtimeSummary =
+        StepRuntimeSummary.builder()
+            .runtimeState(stepRuntimeState)
+            .type(StepType.KUBERNETES)
+            .subType("flink")
+            .build();
+    assertEquals(
+        3L, stepRuntimeFixedCallbackDelayPolicy.getCallBackDelayInSecs(runtimeSummary).longValue());
+  }
+
+  @Test
   public void testGetCallBackInSecsInvalid() {
     Map<StepInstance.Status, Map<String, Long>> stepRuntimeCallBackDelayConfig =
         Collections.singletonMap(

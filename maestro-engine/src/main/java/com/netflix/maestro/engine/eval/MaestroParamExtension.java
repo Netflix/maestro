@@ -535,6 +535,8 @@ public class MaestroParamExtension extends AbstractParamExtension {
             stepInstanceAttributes.getType(), stepInstanceAttributes.getSubType());
       case Constants.STEP_ERROR_RETRIES_PARAM:
         return stepInstanceAttributes.getStepRetry().getErrorRetries();
+      case Constants.STEP_STATUS_PARAM:
+        return stepInstanceAttributes.getStatus().name();
       default:
         throw new MaestroValidationException(
             "Invalid field name [%s] for getFromStep call", fieldName);

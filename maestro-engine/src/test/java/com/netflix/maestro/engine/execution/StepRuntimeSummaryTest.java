@@ -22,6 +22,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.engine.MaestroEngineBaseTest;
 import com.netflix.maestro.engine.db.StepAction;
@@ -33,6 +34,7 @@ import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.artifact.DefaultArtifact;
 import com.netflix.maestro.models.artifact.ForeachArtifact;
 import com.netflix.maestro.models.artifact.SubworkflowArtifact;
+import com.netflix.maestro.models.definition.TimeoutPhase;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.instance.ForeachStepOverview;
 import com.netflix.maestro.models.instance.StepDependencyMatchStatus;
@@ -62,6 +64,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.Data;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -182,12 +185,92 @@ public class StepRuntimeSummaryTest extends MaestroEngineBaseTest {
   }
 
   @Test
+  public void testTimeoutsInMillisDeserialization() throws Exception {
+    StepRuntimeSummary summary =
+        loadObject(
+            "fixtures/execution/sample-step-runtime-summary-1.json", StepRuntimeSummary.class);
+    assertNull(summary.getTimeoutInMillis());
+    assertEquals(
+        Map.of(TimeoutPhase.STEP, 86400000L, TimeoutPhase.WAITING_FOR_SIGNALS, 14400000L),
+        summary.getTimeoutsInMillis());
+    String ser1 = MAPPER.writeValueAsString(summary);
+    StepRuntimeSummary actual = MAPPER.readValue(ser1, StepRuntimeSummary.class);
+    assertEquals(summary.getTimeoutsInMillis(), actual.getTimeoutsInMillis());
+    assertEquals(ser1, MAPPER.writeValueAsString(actual));
+  }
+
+  @Test
+  public void testResolveTimeoutsInMillis() throws Exception {
+    StepRuntimeSummary summary =
+        loadObject("fixtures/execution/sample-step-runtime-summary.json", StepRuntimeSummary.class);
+    assertNull(summary.getTimeoutInMillis());
+    assertNull(summary.getTimeoutsInMillis());
+    Map<TimeoutPhase, Long> defaults =
+        Map.of(TimeoutPhase.RUNNING, 864000000L, TimeoutPhase.WAITING_FOR_SIGNALS, 14400000L);
+    assertEquals(Map.of(), summary.resolveTimeoutsInMillis(TimeoutPhase.RUNNING, Map.of()));
+    assertEquals(defaults, summary.resolveTimeoutsInMillis(TimeoutPhase.RUNNING, defaults));
+
+    summary.setTimeoutInMillis(600000L);
+    assertEquals(
+        Map.of(TimeoutPhase.RUNNING, 600000L, TimeoutPhase.WAITING_FOR_SIGNALS, 14400000L),
+        summary.resolveTimeoutsInMillis(TimeoutPhase.RUNNING, defaults));
+    assertEquals(
+        Map.of(
+            TimeoutPhase.STEP,
+            600000L,
+            TimeoutPhase.RUNNING,
+            864000000L,
+            TimeoutPhase.WAITING_FOR_SIGNALS,
+            14400000L),
+        summary.resolveTimeoutsInMillis(TimeoutPhase.STEP, defaults));
+
+    summary.setTimeoutsInMillis(Map.of(TimeoutPhase.WAITING_FOR_SIGNALS, 3600000L));
+    assertEquals(
+        Map.of(TimeoutPhase.RUNNING, 864000000L, TimeoutPhase.WAITING_FOR_SIGNALS, 3600000L),
+        summary.resolveTimeoutsInMillis(TimeoutPhase.RUNNING, defaults));
+  }
+
+  @Test
   public void testStepRuntimeParams() throws Exception {
     StepRuntimeSummary summary =
         loadObject(
             "fixtures/execution/sample-step-runtime-summary-1.json", StepRuntimeSummary.class);
     Map<String, ParamDefinition> stepRunParams = summary.getStepRunParams();
     assertEquals("bar", stepRunParams.get("foo").asStringParamDef().getValue());
+  }
+
+  /** An extension runtime's artifact as a deployment would define it. */
+  @Data
+  private static class SparkArtifact implements Artifact {
+    private String applicationId;
+
+    @JsonIgnore
+    @Override
+    public Type getType() {
+      return Type.EXTENSION;
+    }
+  }
+
+  @Test
+  public void testMergeExtensionArtifactReplacesInsteadOfMerging() throws Exception {
+    StepRuntimeSummary summary =
+        loadObject(
+            "fixtures/execution/sample-step-runtime-summary-1.json", StepRuntimeSummary.class);
+    SparkArtifact first = new SparkArtifact();
+    first.setApplicationId("app-1");
+    summary.mergeRuntimeUpdate(null, Collections.singletonMap("spark", first));
+    assertEquals(first, summary.getArtifacts().get("spark"));
+
+    SparkArtifact second = new SparkArtifact();
+    second.setApplicationId("app-2");
+    summary.mergeRuntimeUpdate(null, Collections.singletonMap("spark", second));
+    assertEquals(second, summary.getArtifacts().get("spark"));
+    assertEquals("app-2", ((SparkArtifact) summary.getArtifacts().get("spark")).getApplicationId());
+
+    DefaultArtifact overwrite = DefaultArtifact.create("value", 1L);
+    summary.mergeRuntimeUpdate(null, Collections.singletonMap("spark", overwrite));
+    assertEquals(overwrite, summary.getArtifacts().get("spark"));
+    assertFalse(summary.isSynced());
   }
 
   @Test

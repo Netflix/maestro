@@ -24,6 +24,7 @@ import com.netflix.maestro.models.artifact.Artifact;
 import com.netflix.maestro.models.definition.RetryPolicy;
 import com.netflix.maestro.models.definition.Step;
 import com.netflix.maestro.models.definition.TagList;
+import com.netflix.maestro.models.definition.TimeoutPhase;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import com.netflix.maestro.models.parameter.Parameter;
@@ -64,6 +65,7 @@ import lombok.Getter;
       "transition",
       "step_retry",
       "timeout_in_millis",
+      "timeouts_in_millis",
       "runtime_state",
       "signal_dependencies",
       "signal_outputs",
@@ -116,6 +118,8 @@ public class StepInstance {
   @Valid private StepInstance.StepRetry stepRetry;
 
   @Nullable private Long timeoutInMillis; // parsed timeout for a given step instance
+
+  @Nullable private Map<TimeoutPhase, Long> timeoutsInMillis; // parsed per-phase timeouts
 
   @Valid @NotNull private StepRuntimeState runtimeState;
 

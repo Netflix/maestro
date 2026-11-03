@@ -1,0 +1,2 @@
+ALTER TABLE maestro_tag_permit
+  ADD COLUMN IF NOT EXISTS extra_info JSONB DEFAULT NULL;

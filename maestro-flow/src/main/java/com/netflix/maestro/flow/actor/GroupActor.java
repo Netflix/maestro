@@ -62,7 +62,8 @@ final class GroupActor extends BaseActor {
       case Action.GroupStart g -> startGroup();
       case Action.FlowLaunch l -> runFlow(l);
       case Action.FlowWakeUp w ->
-          wakeUpChildActor(w.flowReference(), new Action.TaskWakeUp(w.taskRef(), w.code()));
+          wakeUpChildActor(
+              w.flowReference(), new Action.TaskWakeUp(w.taskRef(), w.code(), w.payload()));
       case Action.GroupHeartbeat h -> heartbeat();
       case Action.GroupShutdown s -> startShutdown(Action.FLOW_SHUTDOWN);
       case Action.FlowDown d -> checkShutdown();

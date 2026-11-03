@@ -83,6 +83,7 @@ public class WorkflowParserTest extends BaseTest {
     assertEquals(StepType.NOTEBOOK, step1.getType());
     assertEquals("spark", step1.getSubType());
     assertEquals("30min", step1.getTimeout().asString());
+    assertNull(step1.getTimeouts());
     assertEquals(
         Map.of("process_partitions", "partition_count > 0"), step1.getTransition().getSuccessors());
 
@@ -119,6 +120,7 @@ public class WorkflowParserTest extends BaseTest {
     assertEquals("retry_failed_partitions", step3.getId());
     assertEquals("Retry Failed Partitions", step3.getName());
     assertEquals("1h", step3.getTimeout().asString());
+    assertNull(step3.getTimeouts());
     assertEquals(StepType.WHILE, step3.getType());
     assertNull(step3.getSubType());
     assertEquals("attempt_cnt < 10", ((WhileStep) step3).getCondition());
@@ -142,6 +144,11 @@ public class WorkflowParserTest extends BaseTest {
     assertEquals("Process Data from Source", step4.getName());
     assertEquals(StepType.KUBERNETES, step4.getType());
     assertEquals("shell", step4.getSubType());
+    assertNull(step4.getTimeout());
+    assertEquals("2h", step4.getTimeouts().getStep().asString());
+    assertEquals("1h", step4.getTimeouts().getRunning().asString());
+    assertNull(step4.getTimeouts().getWaitingForSignals());
+    assertNull(step4.getTimeouts().getWaitingForPermits());
     assertEquals(
         Map.of("validation_workflow", "foo == 'bar'"), step4.getTransition().getSuccessors());
 

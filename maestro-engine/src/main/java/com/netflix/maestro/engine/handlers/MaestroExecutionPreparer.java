@@ -279,11 +279,13 @@ public class MaestroExecutionPreparer implements ExecutionPreparer {
             .tags(stepInstance.getTags())
             .type(stepInstance.getDefinition().getType())
             .subType(stepInstance.getDefinition().getSubType())
+            .subTypeVersion(stepInstance.getDefinition().getSubTypeVersion())
             .params(stepInstance.getParams())
             .transition(stepInstance.getTransition())
             .stepRetry(stepInstance.getStepRetry())
             .timeoutInMillis(
                 stepInstance.getTimeoutInMillis()) // actors will re-calc timeout offset
+            .timeoutsInMillis(stepInstance.getTimeoutsInMillis())
             .synced(true)
             .runtimeState(stepInstance.getRuntimeState())
             .signalDependencies(stepInstance.getSignalDependencies())

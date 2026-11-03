@@ -12,6 +12,7 @@
  */
 package com.netflix.maestro.engine.dao;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.maestro.database.AbstractDatabaseDao;
 import com.netflix.maestro.database.DatabaseConfiguration;
@@ -32,21 +33,22 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import javax.sql.DataSource;
 
 /** DAO for managing tag permit. */
 public class MaestroTagPermitDao extends AbstractDatabaseDao {
   private static final String UPSERT_TAG_PERMIT_QUERY =
-      "INSERT INTO maestro_tag_permit (tag,max_allowed,timeline) VALUES (?,?,ARRAY[?]) ON CONFLICT (tag) DO UPDATE "
-          + "SET status=0,max_allowed=EXCLUDED.max_allowed,timeline = CASE "
+      "INSERT INTO maestro_tag_permit (tag,max_allowed,timeline,extra_info) VALUES (?,?,ARRAY[?],?::jsonb) ON CONFLICT (tag) DO UPDATE "
+          + "SET status=0,max_allowed=EXCLUDED.max_allowed,extra_info=EXCLUDED.extra_info,timeline = CASE "
           + "WHEN array_length(maestro_tag_permit.timeline, 1)>=32 "
           + "THEN array_append(maestro_tag_permit.timeline[2:32],?) "
           + "ELSE array_append(maestro_tag_permit.timeline,?) END";
   private static final String MARK_REMOVE_TAG_PERMIT_QUERY =
       "UPDATE maestro_tag_permit SET status=1 WHERE tag=?";
   private static final String GET_TAG_PERMIT_QUERY =
-      "SELECT max_allowed,timeline FROM maestro_tag_permit WHERE tag=?";
+      "SELECT max_allowed,timeline,extra_info FROM maestro_tag_permit WHERE tag=?";
 
   private static final String GET_TAG_PERMITS_QUERY =
       "SELECT tag,max_allowed FROM maestro_tag_permit where TAG>? AND status>=6 ORDER BY tag ASC LIMIT ?";
@@ -82,7 +84,10 @@ public class MaestroTagPermitDao extends AbstractDatabaseDao {
   private static final String MARK_STEP_TAG_PERMITS_ACQUIRED_QUERY =
       "UPDATE maestro_step_tag_permit SET (status,acquire_ts)=(7,NOW()) WHERE uuid=? AND status=6";
 
-  private record TagPermitRecord(int maxAllowed, String[] events) {}
+  private record TagPermitRecord(int maxAllowed, String[] events, String extraInfoJson) {}
+
+  private static final TypeReference<Map<String, Object>> EXTRA_INFO_TYPE =
+      new TypeReference<>() {};
 
   /** Constructor for OutputDataDAO. */
   public MaestroTagPermitDao(
@@ -100,8 +105,9 @@ public class MaestroTagPermitDao extends AbstractDatabaseDao {
    * @param tag tag name
    * @param limit max allowed limit
    * @param user user who made the change
+   * @param extraInfo optional extra information associated with the tag permit
    */
-  public void upsertTagPermit(String tag, int limit, User user) {
+  public void upsertTagPermit(String tag, int limit, User user, Map<String, Object> extraInfo) {
     String timelineForInsert =
         toJson(
             TimelineLogEvent.info(
@@ -110,6 +116,7 @@ public class MaestroTagPermitDao extends AbstractDatabaseDao {
         toJson(
             TimelineLogEvent.info(
                 "User [%s] updated the tag permit to the new limit [%s]", user.getName(), limit));
+    String extraInfoJson = (extraInfo == null || extraInfo.isEmpty()) ? null : toJson(extraInfo);
     withMetricLogError(
         () ->
             withRetryableUpdate(
@@ -119,6 +126,7 @@ public class MaestroTagPermitDao extends AbstractDatabaseDao {
                   stmt.setString(++idx, tag);
                   stmt.setInt(++idx, limit);
                   stmt.setString(++idx, timelineForInsert);
+                  stmt.setString(++idx, extraInfoJson);
                   stmt.setString(++idx, timelineForUpdate);
                   stmt.setString(++idx, timelineForUpdate);
                 }),
@@ -156,9 +164,13 @@ public class MaestroTagPermitDao extends AbstractDatabaseDao {
                     stmt -> stmt.setString(1, tag),
                     rs -> {
                       if (rs.next()) {
-                        Array array = rs.getArray(2);
+                        int idx = 0;
+                        int maxAllowed = rs.getInt(++idx);
+                        Array array = rs.getArray(++idx);
+                        String extraInfoJson = rs.getString(++idx);
                         try {
-                          return new TagPermitRecord(rs.getInt(1), (String[]) array.getArray());
+                          return new TagPermitRecord(
+                              maxAllowed, (String[]) array.getArray(), extraInfoJson);
                         } finally {
                           array.free();
                         }
@@ -170,11 +182,16 @@ public class MaestroTagPermitDao extends AbstractDatabaseDao {
             "Failed get tag permit for tag: [{}]",
             tag);
     if (res != null) {
+      Map<String, Object> extraInfo =
+          (res.extraInfoJson() == null || res.extraInfoJson().isBlank())
+              ? null
+              : fromJson(res.extraInfoJson(), EXTRA_INFO_TYPE);
       return new TagPermit(
           tag,
           res.maxAllowed(),
           new Timeline(
-              Arrays.stream(res.events()).map(s -> fromJson(s, TimelineEvent.class)).toList()));
+              Arrays.stream(res.events()).map(s -> fromJson(s, TimelineEvent.class)).toList()),
+          extraInfo);
     }
     return null;
   }
@@ -266,7 +283,7 @@ public class MaestroTagPermitDao extends AbstractDatabaseDao {
                   List<TagPermit> res = new ArrayList<>();
                   while (rs.next()) {
                     int idx = 0;
-                    res.add(new TagPermit(rs.getString(++idx), rs.getInt(++idx), null));
+                    res.add(new TagPermit(rs.getString(++idx), rs.getInt(++idx), null, null));
                   }
                   return res;
                 }),
@@ -315,7 +332,7 @@ public class MaestroTagPermitDao extends AbstractDatabaseDao {
                 rs -> {
                   List<TagPermit> res = new ArrayList<>();
                   while (rs.next()) {
-                    res.add(new TagPermit(rs.getString(1), rs.getInt(2), null));
+                    res.add(new TagPermit(rs.getString(1), rs.getInt(2), null, null));
                   }
                   return res;
                 }),

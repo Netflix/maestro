@@ -70,7 +70,7 @@ public class MaestroTagPermitTaskTest extends MaestroEngineBaseTest {
   @Test
   public void testStartLoadTagPermitsAndStepTagPermits() {
     List<TagPermit> tagPermits =
-        List.of(new TagPermit("tag1", 5, null), new TagPermit("tag2", 3, null));
+        List.of(new TagPermit("tag1", 5, null, null), new TagPermit("tag2", 3, null, null));
     when(tagPermitDao.getSyncedTagPermits(anyString(), anyInt()))
         .thenReturn(tagPermits)
         .thenReturn(List.of());
@@ -153,7 +153,7 @@ public class MaestroTagPermitTaskTest extends MaestroEngineBaseTest {
 
   @Test
   public void testTagPermitAssignmentWithAvailablePermits() {
-    List<TagPermit> tagPermits = List.of(new TagPermit("tag1", 2, null));
+    List<TagPermit> tagPermits = List.of(new TagPermit("tag1", 2, null, null));
     when(tagPermitDao.getSyncedTagPermits(anyString(), anyInt())).thenReturn(tagPermits);
 
     UUID stepUuid = UUID.randomUUID();
@@ -189,7 +189,7 @@ public class MaestroTagPermitTaskTest extends MaestroEngineBaseTest {
 
   @Test
   public void testTagPermitAssignmentWithLimitReached() {
-    List<TagPermit> tagPermits = List.of(new TagPermit("tag1", 1, null));
+    List<TagPermit> tagPermits = List.of(new TagPermit("tag1", 1, null, null));
     when(tagPermitDao.getSyncedTagPermits(anyString(), anyInt())).thenReturn(tagPermits);
 
     UUID acquiredUuid = UUID.randomUUID();

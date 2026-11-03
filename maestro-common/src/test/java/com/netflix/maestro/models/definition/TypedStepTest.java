@@ -35,6 +35,50 @@ public class TypedStepTest extends MaestroBaseTest {
     assertSerDe("fixtures/typedsteps/sample-typed-step.json");
   }
 
+  @Test
+  public void testSerDeStepWithTimeouts() throws Exception {
+    TypedStep typedStep =
+        (TypedStep)
+            loadObject("fixtures/typedsteps/sample-typed-step-with-timeouts.json", Step.class);
+    Assertions.assertThat(validator.validate(typedStep)).isEmpty();
+
+    Assert.assertNull(typedStep.getTimeout());
+    Assert.assertEquals("24h", typedStep.getTimeouts().getStep().asString());
+    Assert.assertEquals("4 hours", typedStep.getTimeouts().getWaitingForSignals().asString());
+    Assert.assertEquals(7200L, typedStep.getTimeouts().getWaitingForPermits().getLong());
+    Assert.assertEquals("8h", typedStep.getTimeouts().getRunning().asString());
+
+    TypedStep parsed =
+        (TypedStep) MAPPER.readValue(MAPPER.writeValueAsString(typedStep), Step.class);
+    Assertions.assertThat(typedStep).usingRecursiveComparison().isEqualTo(parsed);
+  }
+
+  @Test
+  public void testInvalidTimeouts() throws Exception {
+    TypedStep typedStep =
+        (TypedStep)
+            loadObject(
+                "fixtures/typedsteps/sample-typed-step-with-invalid-timeouts.json", Step.class);
+    Set<ConstraintViolation<TypedStep>> violations = validator.validate(typedStep);
+    Assertions.assertThat(violations).hasSize(1);
+    Assertions.assertThat(violations.iterator().next().getMessage())
+        .contains("cannot be non-positive");
+    Assert.assertEquals(
+        "timeouts.running", violations.iterator().next().getPropertyPath().toString());
+  }
+
+  @Test
+  public void testBothTimeoutAndTimeoutsSet() throws Exception {
+    TypedStep typedStep =
+        (TypedStep)
+            loadObject("fixtures/typedsteps/sample-typed-step-with-both-timeouts.json", Step.class);
+    Set<ConstraintViolation<TypedStep>> violations = validator.validate(typedStep);
+    Assertions.assertThat(violations).hasSize(1);
+    Assert.assertEquals(
+        "[step timeout] step [job1] cannot set both [timeout] and [timeouts], use one of them",
+        violations.iterator().next().getMessage());
+  }
+
   private void assertSerDe(String fileName) throws Exception {
     TypedStep typedStep1 = (TypedStep) loadObject(fileName, Step.class);
 
@@ -48,5 +92,18 @@ public class TypedStepTest extends MaestroBaseTest {
     TypedStep typedStep2 =
         (TypedStep) MAPPER.readValue(MAPPER.writeValueAsString(typedStep1), Step.class);
     Assertions.assertThat(typedStep1).usingRecursiveComparison().isEqualTo(typedStep2);
+  }
+
+  @Test
+  public void testSubTypeVersionAccessor() throws Exception {
+    Step step =
+        MAPPER.readValue(
+            """
+            {"step": {"id": "s1", "type": "extension", "sub_type": "spark", "sub_type_version": "v2"}}
+            """,
+            Step.class);
+    Assert.assertEquals("spark", step.getSubType());
+    Assert.assertEquals("v2", step.getSubTypeVersion());
+    Assert.assertNull(new ForeachStep().getSubTypeVersion());
   }
 }

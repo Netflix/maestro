@@ -185,6 +185,18 @@ return params.getFromStep('step1', 'MAESTRO_STEP_STATUS');    // returns the sta
 return params.getFromStep('step1', 'MAESTRO_STEP_END_TIME');    // returns the end time of upstream step1.
 ```
 
+* `Object getFromStep(String)`
+
+Returns a field of the current step instead of an upstream one. Useful in a step transition condition,
+which is evaluated in the context of the step it is attached to, to branch on how that step ended.
+```sel
+return params.getFromStep('MAESTRO_STEP_STATUS');    // returns the status of the current step.
+
+return params.getFromStep('MAESTRO_STEP_STATUS') == 'COMPLETED_WITH_ERROR';    // branch taken only when the current step failed.
+
+return params.getFromStep('step_id');    // also supports step_id, step_instance_id, step_instance_uuid, step_attempt_id, step_type_info and MAESTRO_STEP_ERROR_RETRIES.
+```
+
 * `Object getFromSignal(String, String)`
 ```sel
 return params.getFromSignal('signal1', 'param1');    // returns parameter param1's value from signal1. Use it to get param from the signal triggers.

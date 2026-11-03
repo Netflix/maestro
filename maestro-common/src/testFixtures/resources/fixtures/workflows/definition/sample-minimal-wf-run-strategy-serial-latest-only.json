@@ -1,0 +1,34 @@
+{
+  "properties_snapshot": {
+    "owner": "tester",
+    "run_strategy": "SERIAL_LATEST_ONLY"
+  },
+  "is_active": true,
+  "activate_time": 1598399975650,
+  "activated_by": "demo",
+  "is_default": true,
+  "modify_time": 1598399975650,
+  "metadata": {
+    "workflow_id": "sample-minimal-wf-run-strategy-serial-latest-only",
+    "create_time": 1598399975650,
+    "version_author": "demo"
+  },
+  "workflow": {
+    "id": "sample-minimal-wf-run-strategy-serial-latest-only",
+    "steps": [
+      {
+        "step": {
+          "id": "job1",
+          "type": "Sleep",
+          "params": {
+            "sleep_seconds": {
+              "value": 180,
+              "type": "LONG",
+              "mode": "MUTABLE"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

@@ -36,7 +36,7 @@ public class MaestroSignalHandlerTest extends MaestroBaseTest {
   @Before
   public void setup() {
     brokerDao = mock(MaestroSignalBrokerDao.class);
-    handler = new MaestroSignalHandler(brokerDao);
+    handler = new MaestroSignalHandler(brokerDao, false);
   }
 
   @Test
@@ -114,6 +114,37 @@ public class MaestroSignalHandlerTest extends MaestroBaseTest {
     when(brokerDao.matchSignalForStepDependency(any())).thenReturn(null);
     assertFalse(handler.signalsReady(new WorkflowSummary(), runtimeSummary));
     verify(brokerDao, times(1)).matchSignalForStepDependency(any());
+    assertEquals(
+        StepDependencyMatchStatus.PENDING,
+        runtimeSummary.getSignalDependencies().getDependencies().getLast().getStatus());
+    assertTrue(runtimeSummary.isSynced());
+  }
+
+  @Test
+  public void testOnTerminationMarksPendingAsCanceledWhenEnabled() throws Exception {
+    MaestroSignalHandler enabled = new MaestroSignalHandler(brokerDao, true);
+    StepRuntimeSummary runtimeSummary =
+        loadObject(
+            "fixtures/execution/step-runtime-summary-with-step-dependencies.json",
+            StepRuntimeSummary.class);
+
+    enabled.onTermination(new WorkflowSummary(), runtimeSummary);
+
+    assertEquals(
+        StepDependencyMatchStatus.CANCELED,
+        runtimeSummary.getSignalDependencies().getDependencies().getLast().getStatus());
+    assertFalse(runtimeSummary.isSynced());
+  }
+
+  @Test
+  public void testOnTerminationNoopWhenDisabled() throws Exception {
+    StepRuntimeSummary runtimeSummary =
+        loadObject(
+            "fixtures/execution/step-runtime-summary-with-step-dependencies.json",
+            StepRuntimeSummary.class);
+
+    handler.onTermination(new WorkflowSummary(), runtimeSummary);
+
     assertEquals(
         StepDependencyMatchStatus.PENDING,
         runtimeSummary.getSignalDependencies().getDependencies().getLast().getStatus());
