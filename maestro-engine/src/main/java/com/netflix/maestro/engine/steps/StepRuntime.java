@@ -93,15 +93,17 @@ public interface StepRuntime {
     /** the step becomes STOPPED terminate state. */
     STOPPED,
     /** the step becomes TIMED_OUT terminate state. */
-    TIMED_OUT;
+    TIMED_OUT,
+    /** the step is paused. */
+    PAUSED;
 
     public boolean isFailed() {
       // Note that TIMED_OUT is currently considered as failed.
-      return this != CONTINUE && this != DONE && this != STOPPED;
+      return this != CONTINUE && this != DONE && this != STOPPED && this != PAUSED;
     }
 
     public boolean isTerminal() {
-      return this != CONTINUE;
+      return this != CONTINUE && this != PAUSED;
     }
   }
 
