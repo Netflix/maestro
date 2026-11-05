@@ -33,6 +33,8 @@ import com.netflix.maestro.engine.execution.WorkflowSummary;
 import com.netflix.maestro.engine.handlers.SignalHandler;
 import com.netflix.maestro.engine.params.OutputDataManager;
 import com.netflix.maestro.engine.properties.StepTimeoutProperties;
+import com.netflix.maestro.exceptions.MaestroInternalError;
+import com.netflix.maestro.exceptions.MaestroRetryableError;
 import com.netflix.maestro.exceptions.MaestroValidationException;
 import com.netflix.maestro.flow.models.Flow;
 import com.netflix.maestro.flow.models.Task;
@@ -90,6 +92,8 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
   @Before
   public void setup() {
     doCallRealMethod().when(maestroTask).updateRetryDelayTimeToTimeline(any());
+    when(outputDataManager.validateAndMergeOutputParamsAndArtifacts(any()))
+        .thenReturn(OutputDataManager.MergeResult.EMPTY);
     when(maestroTask.isStepSkipped(any(), any())).thenCallRealMethod();
     timeoutProperties = new StepTimeoutProperties();
   }
@@ -516,6 +520,8 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
       Assert.assertTrue(maestroTask.execute(flow, task));
     } else if (runCode == 2) { // cancel
       maestroTask.cancel(flow, task);
+    } else if (runCode == 4) { // execute expecting a retryable error
+      Assert.assertFalse(maestroTask.execute(flow, task));
     } else { // execute without asserting on the returned sync flag
       maestroTask.execute(flow, task);
     }
@@ -924,7 +930,6 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
     createAndRunMaestroTask(3, Flow.Status.RUNNING, stepDef, runtimeSummary, workflowSummary);
 
     verify(outputDataManager).validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
-    verify(outputDataManager).isStepNonRetryable(runtimeSummary);
   }
 
   @Test
@@ -937,7 +942,6 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
     createAndRunMaestroTask(3, Flow.Status.RUNNING, stepDef, runtimeSummary, workflowSummary);
 
     verify(outputDataManager).validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
-    verify(outputDataManager).isStepNonRetryable(runtimeSummary);
   }
 
   @Test
@@ -952,13 +956,12 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
             invocation -> {
               StepRuntimeSummary summary = invocation.getArgument(0);
               summary.getParams().put("param1", buildParam("param1", "reported-before-failure"));
-              return List.of("param1");
+              return new OutputDataManager.MergeResult(List.of("param1"), false);
             });
 
     createAndRunMaestroTask(3, Flow.Status.RUNNING, stepDef, runtimeSummary, workflowSummary);
 
     verify(outputDataManager).validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
-    verify(outputDataManager, never()).isStepNonRetryable(runtimeSummary);
     Assert.assertEquals(
         "reported-before-failure", runtimeSummary.getParams().get("param1").getEvaluatedResult());
     List<TimelineEvent> events = runtimeSummary.getTimeline().getTimelineEvents();
@@ -977,7 +980,8 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
     WorkflowSummary workflowSummary = new WorkflowSummary();
     Step stepDef = loadObject("fixtures/typedsteps/sample-typed-step.json", Step.class);
     StepRuntimeSummary runtimeSummary = loadTimeoutRuntimeSummary(StepInstance.Status.USER_FAILED);
-    when(outputDataManager.isStepNonRetryable(any())).thenReturn(true);
+    when(outputDataManager.validateAndMergeOutputParamsAndArtifacts(any()))
+        .thenReturn(new OutputDataManager.MergeResult(List.of(), true));
 
     createAndRunMaestroTask(3, Flow.Status.RUNNING, stepDef, runtimeSummary, workflowSummary);
 
@@ -1000,7 +1004,6 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
 
     Assert.assertEquals(
         StepInstance.Status.USER_FAILED, runtimeSummary.getRuntimeState().getStatus());
-    verify(outputDataManager).isStepNonRetryable(runtimeSummary);
     assertThat(runtimeSummary.getTimeline().getTimelineEvents())
         .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
         .contains(
@@ -1030,6 +1033,45 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
             TimelineLogEvent.warn(
                 "Failed to merge the failed step's output data due to "
                     + "[Invalid output parameter [undeclared], not defined in params]."));
+  }
+
+  @Test
+  public void testUserFailedStepKeepsStatusWhenOutputDataMergeHitsAnInternalError()
+      throws Exception {
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+    Step stepDef = loadObject("fixtures/typedsteps/sample-typed-step.json", Step.class);
+    StepRuntimeSummary runtimeSummary = loadTimeoutRuntimeSummary(StepInstance.Status.USER_FAILED);
+    when(outputDataManager.validateAndMergeOutputParamsAndArtifacts(any()))
+        .thenThrow(
+            new MaestroInternalError("Param [m] is a [STRING] type and cannot be used as MAP"));
+
+    createAndRunMaestroTask(3, Flow.Status.RUNNING, stepDef, runtimeSummary, workflowSummary);
+
+    Assert.assertEquals(
+        StepInstance.Status.USER_FAILED, runtimeSummary.getRuntimeState().getStatus());
+    assertThat(runtimeSummary.getTimeline().getTimelineEvents())
+        .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
+        .contains(
+            TimelineLogEvent.warn(
+                "Failed to merge the failed step's output data due to "
+                    + "[Param [m] is a [STRING] type and cannot be used as MAP]."));
+  }
+
+  @Test
+  public void testFailedStepOutputDataMergeRetryableErrorIsRetried() throws Exception {
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+    Step stepDef = loadObject("fixtures/typedsteps/sample-typed-step.json", Step.class);
+    StepRuntimeSummary runtimeSummary =
+        loadTimeoutRuntimeSummary(StepInstance.Status.FATALLY_FAILED);
+    int eventsBefore = runtimeSummary.getTimeline().getTimelineEvents().size();
+    when(outputDataManager.validateAndMergeOutputParamsAndArtifacts(any()))
+        .thenThrow(new MaestroRetryableError("retryable db error"));
+
+    createAndRunMaestroTask(4, Flow.Status.RUNNING, stepDef, runtimeSummary, workflowSummary);
+
+    Assert.assertEquals(
+        StepInstance.Status.FATALLY_FAILED, runtimeSummary.getRuntimeState().getStatus());
+    Assert.assertEquals(eventsBefore, runtimeSummary.getTimeline().getTimelineEvents().size());
   }
 
   @Test

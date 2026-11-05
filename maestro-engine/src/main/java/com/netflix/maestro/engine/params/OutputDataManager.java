@@ -24,7 +24,6 @@ import com.netflix.maestro.models.parameter.StringParameter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -76,78 +75,71 @@ public class OutputDataManager {
   }
 
   /**
-   * Merge back output parameters updated by step into params space along with validation.
+   * Outcome of merging a step's output data.
    *
-   * @param runtimeSummary step runtime summary whose params and artifacts receive the output data
-   * @return the names of the params whose evaluated result the merge changed, empty if none
+   * @param changedParams names of the params whose evaluated result the merge changed
+   * @param nonRetryable true if the output data marks the step non-retryable by the system
    */
-  public List<String> validateAndMergeOutputParamsAndArtifacts(StepRuntimeSummary runtimeSummary) {
-    List<String> changedParams = new ArrayList<>();
-    Optional<String> externalJobId = extractExternalJobId(runtimeSummary);
-    if (externalJobId.isPresent()) {
-      Optional<OutputData> outputDataOpt =
-          outputDataDao.getOutputDataForExternalJob(externalJobId.get(), runtimeSummary.getType());
-      outputDataOpt.ifPresent(
-          outputData -> {
-            // merge output params if any.
-            if (outputData.getParams() != null) {
-              Map<String, Object> resultsBeforeMerge = new HashMap<>();
-              outputData
-                  .getParams()
-                  .keySet()
-                  .forEach(
-                      name -> {
-                        Parameter param = runtimeSummary.getParams().get(name);
-                        if (param != null) {
-                          resultsBeforeMerge.put(name, copyResult(param.getEvaluatedResult()));
-                        }
-                      });
-              ParamsMergeHelper.mergeOutputDataParams(
-                  runtimeSummary.getParams(), outputData.getParams());
-              resultsBeforeMerge.forEach(
-                  (name, before) -> {
-                    Object after = runtimeSummary.getParams().get(name).getEvaluatedResult();
-                    if (!sameResult(before, after)) {
-                      changedParams.add(name);
-                    }
-                  });
-            }
-            // merge output artifacts if any.
-            if (outputData.getArtifacts() != null) {
-              runtimeSummary.mergeRuntimeUpdate(null, outputData.getArtifacts());
-            }
-          });
-    }
-    return changedParams;
+  public record MergeResult(List<String> changedParams, boolean nonRetryable) {
+    /** Result of a merge without output data: no params changed and the step stays retryable. */
+    public static final MergeResult EMPTY = new MergeResult(List.of(), false);
   }
 
   /**
-   * Checks whether the step's output data marks a failed step as non-retryable by the system.
+   * Merge back output parameters and artifacts reported by the step into the step runtime summary
+   * along with validation. The output data is read once; its RETRY artifact decides {@link
+   * MergeResult#nonRetryable()} before the artifacts are merged.
    *
-   * @param runtimeSummary step runtime summary used to locate the output data
-   * @return true if the output data marks the step non-retryable, false otherwise
+   * @param runtimeSummary step runtime summary whose params and artifacts receive the output data
+   * @return the merge outcome, {@link MergeResult#EMPTY} if there is no output data
    */
-  public boolean isStepNonRetryable(StepRuntimeSummary runtimeSummary) {
+  public MergeResult validateAndMergeOutputParamsAndArtifacts(StepRuntimeSummary runtimeSummary) {
     Optional<String> externalJobId = extractExternalJobId(runtimeSummary);
     if (externalJobId.isEmpty()) {
-      return false;
+      return MergeResult.EMPTY;
     }
     Optional<OutputData> outputDataOpt =
         outputDataDao.getOutputDataForExternalJob(externalJobId.get(), runtimeSummary.getType());
-    return outputDataOpt
-        .map(OutputData::getArtifacts)
+    if (outputDataOpt.isEmpty()) {
+      return MergeResult.EMPTY;
+    }
+    OutputData outputData = outputDataOpt.get();
+    boolean nonRetryable = isNonRetryable(outputData);
+    List<String> changedParams = new ArrayList<>();
+    // merge output params if any.
+    if (outputData.getParams() != null) {
+      Map<String, Object> resultsBeforeMerge = new HashMap<>();
+      outputData
+          .getParams()
+          .keySet()
+          .forEach(
+              name -> {
+                Parameter param = runtimeSummary.getParams().get(name);
+                if (param != null) {
+                  resultsBeforeMerge.put(name, param.getEvaluatedResult());
+                }
+              });
+      ParamsMergeHelper.mergeOutputDataParams(runtimeSummary.getParams(), outputData.getParams());
+      resultsBeforeMerge.forEach(
+          (name, before) -> {
+            Object after = runtimeSummary.getParams().get(name).getEvaluatedResult();
+            if (!sameResult(before, after)) {
+              changedParams.add(name);
+            }
+          });
+    }
+    // merge output artifacts if any.
+    if (outputData.getArtifacts() != null) {
+      runtimeSummary.mergeRuntimeUpdate(null, outputData.getArtifacts());
+    }
+    return new MergeResult(changedParams, nonRetryable);
+  }
+
+  private static boolean isNonRetryable(OutputData outputData) {
+    return Optional.ofNullable(outputData.getArtifacts())
         .map(artifacts -> artifacts.get(Artifact.Type.RETRY.key()))
         .map(artifact -> !artifact.asRetry().isRetryable())
         .orElse(false);
-  }
-
-  private static Object copyResult(Object result) {
-    if (result instanceof Map<?, ?> map) {
-      Map<Object, Object> copy = new LinkedHashMap<>();
-      map.forEach((key, value) -> copy.put(key, copyResult(value)));
-      return copy;
-    }
-    return result;
   }
 
   private static boolean sameResult(Object before, Object after) {

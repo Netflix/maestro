@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.netflix.maestro.AssertHelper;
 import com.netflix.maestro.engine.MaestroEngineBaseTest;
 import com.netflix.maestro.engine.execution.RunRequest;
+import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.exceptions.MaestroValidationException;
 import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.parameter.InternalParamMode;
@@ -33,6 +34,7 @@ import com.netflix.maestro.models.parameter.ParamMode;
 import com.netflix.maestro.models.parameter.ParamSource;
 import com.netflix.maestro.models.parameter.Parameter;
 import com.netflix.maestro.models.parameter.StringMapParamDefinition;
+import com.netflix.maestro.models.parameter.StringMapParameter;
 import com.netflix.maestro.models.parameter.StringParamDefinition;
 import com.netflix.maestro.models.parameter.StringParameter;
 import java.io.IOException;
@@ -1154,18 +1156,79 @@ public class ParamsMergeHelperTest extends MaestroEngineBaseTest {
             .name("key")
             .value("v1")
             .evaluatedResult("v1")
+            .evaluatedTime(System.currentTimeMillis())
             .mode(ParamMode.MUTABLE)
             .build());
     Map<String, Parameter> paramsToMerge = new LinkedHashMap<>();
     paramsToMerge.put(
-        "key", StringParameter.builder().value("test").evaluatedResult("test").build());
-    paramsToMerge.put("undeclared", StringParameter.builder().value("x").build());
+        "key",
+        StringParameter.builder()
+            .name("key")
+            .value("test")
+            .evaluatedResult("test")
+            .evaluatedTime(System.currentTimeMillis())
+            .build());
+    paramsToMerge.put(
+        "undeclared",
+        StringParameter.builder()
+            .name("undeclared")
+            .value("x")
+            .evaluatedResult("x")
+            .evaluatedTime(System.currentTimeMillis())
+            .build());
     AssertHelper.assertThrows(
         "throws exception when output params to merge are not present in all params",
         MaestroValidationException.class,
         "Invalid output parameter [undeclared], not defined in params",
         () -> ParamsMergeHelper.mergeOutputDataParams(allParams, paramsToMerge));
     assertEquals("v1", allParams.get("key").asString());
+  }
+
+  @Test
+  public void testMergeOutputDataParamsTypeMismatchLeavesParamsUntouched() {
+    Map<String, Parameter> allParams = new LinkedHashMap<>();
+    allParams.put(
+        "key",
+        StringParameter.builder()
+            .name("key")
+            .value("v1")
+            .evaluatedResult("v1")
+            .evaluatedTime(System.currentTimeMillis())
+            .mode(ParamMode.MUTABLE)
+            .build());
+    allParams.put(
+        "map_key",
+        StringParameter.builder()
+            .name("map_key")
+            .value("not-a-map")
+            .evaluatedResult("not-a-map")
+            .evaluatedTime(System.currentTimeMillis())
+            .mode(ParamMode.MUTABLE)
+            .build());
+    Map<String, Parameter> paramsToMerge = new LinkedHashMap<>();
+    paramsToMerge.put(
+        "key",
+        StringParameter.builder()
+            .name("key")
+            .value("test")
+            .evaluatedResult("test")
+            .evaluatedTime(System.currentTimeMillis())
+            .build());
+    paramsToMerge.put(
+        "map_key",
+        StringMapParameter.builder()
+            .name("map_key")
+            .value(Map.of("a", "1"))
+            .evaluatedResult(Map.of("a", "1"))
+            .evaluatedTime(System.currentTimeMillis())
+            .build());
+    AssertHelper.assertThrows(
+        "throws internal error when a STRING_MAP output param targets a STRING param",
+        MaestroInternalError.class,
+        "Param [map_key] is a [STRING] type and cannot be used as STRING_MAP",
+        () -> ParamsMergeHelper.mergeOutputDataParams(allParams, paramsToMerge));
+    assertEquals("v1", allParams.get("key").asString());
+    assertEquals("not-a-map", allParams.get("map_key").asString());
   }
 
   @Test

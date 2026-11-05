@@ -43,7 +43,6 @@ import com.netflix.maestro.engine.utils.StepHelper;
 import com.netflix.maestro.engine.utils.TaskHelper;
 import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.exceptions.MaestroRetryableError;
-import com.netflix.maestro.exceptions.MaestroValidationException;
 import com.netflix.maestro.flow.models.Flow;
 import com.netflix.maestro.flow.models.Task;
 import com.netflix.maestro.flow.runtime.FlowTask;
@@ -952,11 +951,11 @@ public final class MaestroTask implements FlowTask {
           case PLATFORM_FAILED:
             // A failed step's output data is merged into its params, so downstream steps can read
             // what it reported before failing.
-            mergeFailedStepOutputData(runtimeSummary);
+            OutputDataManager.MergeResult merged = mergeFailedStepOutputData(runtimeSummary);
             failedOutputDataMerged = true;
             // A retryable failure is escalated to FATALLY_FAILED when the step's output data marks
             // it as non-retryable, then falls through to the FATALLY_FAILED handling.
-            if (!outputDataManager.isStepNonRetryable(runtimeSummary)) {
+            if (!merged.nonRetryable()) {
               doneWithExecute = true;
               break;
             }
@@ -1018,22 +1017,29 @@ public final class MaestroTask implements FlowTask {
   }
 
   /**
-   * Merges a failed step's output data into its params and artifacts. A validation failure is added
-   * to the timeline as a warning and the step's failure status is kept.
+   * Merges a failed step's output data into its params and artifacts. A retryable error is rethrown
+   * for the next polling cycle. Any other error is added to the timeline as a warning, the params
+   * stay unchanged and the step keeps its failure status.
    */
-  private void mergeFailedStepOutputData(StepRuntimeSummary runtimeSummary) {
+  private OutputDataManager.MergeResult mergeFailedStepOutputData(
+      StepRuntimeSummary runtimeSummary) {
     try {
-      List<String> changedParams =
+      OutputDataManager.MergeResult merged =
           outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
-      if (!changedParams.isEmpty()) {
+      if (!merged.changedParams().isEmpty()) {
         runtimeSummary.addTimeline(
             TimelineLogEvent.info(
-                "Merged the failed step's output data and changed params [%s].", changedParams));
+                "Merged the failed step's output data and changed params [%s].",
+                merged.changedParams()));
       }
-    } catch (MaestroValidationException e) {
+      return merged;
+    } catch (MaestroRetryableError e) {
+      throw e;
+    } catch (RuntimeException e) {
       runtimeSummary.addTimeline(
           TimelineLogEvent.warn(
               "Failed to merge the failed step's output data due to [%s].", e.getMessage()));
+      return OutputDataManager.MergeResult.EMPTY;
     }
   }
 
