@@ -1,0 +1,10 @@
+sample_ext:
+  internal_mode: REQUIRED
+  type: MAP
+  value:
+    endpoint:
+      internal_mode: PROVIDED
+      type: STRING
+      value: "https://sample.local"
+  tags:
+    - sample_ext
