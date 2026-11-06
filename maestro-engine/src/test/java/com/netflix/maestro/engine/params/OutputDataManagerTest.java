@@ -26,6 +26,7 @@ import com.netflix.maestro.engine.MaestroEngineBaseTest;
 import com.netflix.maestro.engine.dao.MaestroOutputDataDao;
 import com.netflix.maestro.engine.dto.OutputData;
 import com.netflix.maestro.engine.execution.StepRuntimeSummary;
+import com.netflix.maestro.exceptions.MaestroInternalError;
 import com.netflix.maestro.exceptions.MaestroValidationException;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.artifact.Artifact;
@@ -99,6 +100,42 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
         .thenReturn(Optional.of(outputData));
   }
 
+  @Test
+  public void testTypeMismatchInTheMiddleOfTheMergeLeavesEveryParamUntouched()
+      throws JsonProcessingException {
+    setupOutputData(
+        loadParams(
+            "{\"str_param\": {\"type\": \"STRING\",\"value\": \"hello\", \"evaluated_result\": \"hello\", \"evaluated_time\": 1625176565957},"
+                + "\"map_param\": {\"type\": \"STRING_MAP\",\"value\": {\"b\": \"2\"}, \"evaluated_result\": {\"b\": \"2\"}, \"evaluated_time\": 1625176565957}}"));
+    setupOutputDataDao();
+    Map<String, Parameter> params = mutableStringParam("v1");
+    params.put(
+        "map_param",
+        StringParameter.builder()
+            .name("map_param")
+            .value("not-a-map")
+            .evaluatedResult("not-a-map")
+            .mode(ParamMode.MUTABLE)
+            .evaluatedTime(System.currentTimeMillis())
+            .build());
+    runtimeSummary =
+        runtimeSummaryBuilder().type(StepType.TITUS).artifacts(artifacts).params(params).build();
+
+    AssertHelper.assertThrows(
+        "throws internal error when a STRING_MAP output param targets a STRING param",
+        MaestroInternalError.class,
+        "Param [map_param] is a [STRING] type and cannot be used as STRING_MAP",
+        () -> outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary));
+    assertEquals("v1", runtimeSummary.getParams().get("str_param").asString());
+    assertEquals("not-a-map", runtimeSummary.getParams().get("map_param").asString());
+  }
+
+  private void setupOutputData(Map<String, Parameter> params) {
+    outputData = new OutputData(params, new HashMap<>());
+    outputData.setExternalJobId(TASK_ID);
+    outputData.setExternalJobType(StepType.TITUS);
+  }
+
   private StepRuntimeSummary.StepRuntimeSummaryBuilder runtimeSummaryBuilder() {
     return StepRuntimeSummary.builder()
         .stepId("step1")
@@ -113,37 +150,49 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
   }
 
   @Test
-  public void testIsStepNonRetryableWhenMarkedNonRetryable() {
+  public void testMergeResultNonRetryableWhenMarkedNonRetryable() {
     RetryArtifact retryArtifact = new RetryArtifact();
     retryArtifact.setRetryable(false);
     OutputData output = new OutputData(null, Map.of(Artifact.Type.RETRY.key(), retryArtifact));
     when(outputDataDao.getOutputDataForExternalJob(TASK_ID, StepType.TITUS))
         .thenReturn(Optional.of(output));
-    runtimeSummary = runtimeSummaryBuilder().type(StepType.TITUS).artifacts(artifacts).build();
-    assertTrue(outputDataManager.isStepNonRetryable(runtimeSummary));
+    runtimeSummary =
+        runtimeSummaryBuilder().type(StepType.TITUS).artifacts(new HashMap<>(artifacts)).build();
+    assertTrue(
+        outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary).nonRetryable());
+    assertTrue(runtimeSummary.getArtifacts().containsKey(Artifact.Type.RETRY.key()));
   }
 
   @Test
-  public void testIsStepNonRetryableWhenMarkedRetryable() {
+  public void testMergeResultNonRetryableWhenMarkedRetryable() {
     OutputData output =
         new OutputData(null, Map.of(Artifact.Type.RETRY.key(), new RetryArtifact()));
     when(outputDataDao.getOutputDataForExternalJob(TASK_ID, StepType.TITUS))
         .thenReturn(Optional.of(output));
-    runtimeSummary = runtimeSummaryBuilder().type(StepType.TITUS).artifacts(artifacts).build();
-    assertFalse(outputDataManager.isStepNonRetryable(runtimeSummary));
+    runtimeSummary =
+        runtimeSummaryBuilder().type(StepType.TITUS).artifacts(new HashMap<>(artifacts)).build();
+    assertFalse(
+        outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary).nonRetryable());
   }
 
   @Test
-  public void testIsStepNonRetryableWhenNoRetryArtifact() {
+  public void testMergeResultNonRetryableWhenNoRetryArtifact() {
     setupOutputDataDao();
-    runtimeSummary = runtimeSummaryBuilder().type(StepType.TITUS).artifacts(artifacts).build();
-    assertFalse(outputDataManager.isStepNonRetryable(runtimeSummary));
+    runtimeSummary =
+        runtimeSummaryBuilder()
+            .type(StepType.TITUS)
+            .artifacts(artifacts)
+            .params(mutableStringParam("v1"))
+            .build();
+    assertFalse(
+        outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary).nonRetryable());
   }
 
   @Test
-  public void testIsStepNonRetryableWhenNoOutputData() {
+  public void testMergeResultNonRetryableWhenNoOutputData() {
     runtimeSummary = runtimeSummaryBuilder().type(StepType.TITUS).artifacts(artifacts).build();
-    assertFalse(outputDataManager.isStepNonRetryable(runtimeSummary));
+    assertFalse(
+        outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary).nonRetryable());
   }
 
   @Test
@@ -285,6 +334,148 @@ public class OutputDataManagerTest extends MaestroEngineBaseTest {
     outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
 
     assertEquals("hello", runtimeSummary.getParams().get("str_param").asString());
+  }
+
+  @Test
+  public void testMergeReturnsParamsWhoseValueChanged() {
+    setupOutputDataDao();
+    runtimeSummary =
+        runtimeSummaryBuilder()
+            .type(StepType.TITUS)
+            .artifacts(artifacts)
+            .params(mutableStringParam("v1"))
+            .build();
+
+    List<String> changed =
+        outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary).changedParams();
+
+    assertEquals(List.of("str_param"), changed);
+    assertEquals("hello", runtimeSummary.getParams().get("str_param").asString());
+  }
+
+  @Test
+  public void testMergeReturnsNothingWhenValuesAreUnchanged() {
+    setupOutputDataDao();
+    runtimeSummary =
+        runtimeSummaryBuilder()
+            .type(StepType.TITUS)
+            .artifacts(artifacts)
+            .params(mutableStringParam("hello"))
+            .build();
+
+    List<String> changed =
+        outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary).changedParams();
+
+    assertTrue(changed.isEmpty());
+    assertEquals("hello", runtimeSummary.getParams().get("str_param").asString());
+  }
+
+  @Test
+  public void testMergingTheSameOutputDataTwiceIsIdempotent() {
+    setupOutputDataDao();
+    runtimeSummary =
+        runtimeSummaryBuilder()
+            .type(StepType.TITUS)
+            .artifacts(artifacts)
+            .params(mutableStringParam("v1"))
+            .build();
+
+    assertEquals(
+        List.of("str_param"),
+        outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary).changedParams());
+    assertTrue(
+        outputDataManager
+            .validateAndMergeOutputParamsAndArtifacts(runtimeSummary)
+            .changedParams()
+            .isEmpty());
+    assertEquals("hello", runtimeSummary.getParams().get("str_param").asString());
+  }
+
+  @Test
+  public void testMergeReturnsNothingWithoutOutputData() {
+    runtimeSummary =
+        runtimeSummaryBuilder()
+            .type(StepType.TITUS)
+            .artifacts(artifacts)
+            .params(mutableStringParam("v1"))
+            .build();
+
+    assertTrue(
+        outputDataManager
+            .validateAndMergeOutputParamsAndArtifacts(runtimeSummary)
+            .changedParams()
+            .isEmpty());
+    assertEquals("v1", runtimeSummary.getParams().get("str_param").asString());
+  }
+
+  @Test
+  public void testMergeReportsStringMapParamWithNewKeysAsChanged() throws JsonProcessingException {
+    setupOutputData(
+        loadParams(
+            "{\"map_param\": {\"type\": \"STRING_MAP\",\"value\": {\"b\": \"2\"}, \"evaluated_result\": {\"b\": \"2\"}, \"evaluated_time\": 1625176565957}}"));
+    setupOutputDataDao();
+    Map<String, String> existing = new HashMap<>();
+    existing.put("a", "1");
+    Map<String, Parameter> params = new HashMap<>();
+    params.put("map_param", buildParam("map_param", existing));
+    runtimeSummary =
+        runtimeSummaryBuilder().type(StepType.TITUS).artifacts(artifacts).params(params).build();
+
+    assertEquals(
+        List.of("map_param"),
+        outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary).changedParams());
+    assertEquals(
+        Map.of("a", "1", "b", "2"),
+        runtimeSummary.getParams().get("map_param").asStringMapParam().getEvaluatedResult());
+    assertTrue(
+        outputDataManager
+            .validateAndMergeOutputParamsAndArtifacts(runtimeSummary)
+            .changedParams()
+            .isEmpty());
+  }
+
+  @Test
+  public void testMergeReportsMapParamWithUnchangedArrayAsUnchanged()
+      throws JsonProcessingException {
+    String mapParam =
+        "{\"map_param\":{\"value\":{\"ids\":{\"value\":[\"p1\",\"p2\"],\"type\":\"STRING_ARRAY\"}},\"type\":\"MAP\",\"evaluated_result\":{\"ids\":[\"p1\",\"p2\"]},\"evaluated_time\":1626893775979}}";
+    setupOutputData(loadParams(mapParam));
+    setupOutputDataDao();
+    runtimeSummary =
+        runtimeSummaryBuilder()
+            .type(StepType.TITUS)
+            .artifacts(artifacts)
+            .params(loadParams(mapParam))
+            .build();
+
+    assertTrue(
+        outputDataManager
+            .validateAndMergeOutputParamsAndArtifacts(runtimeSummary)
+            .changedParams()
+            .isEmpty());
+  }
+
+  @Test
+  public void testUndefinedOutputParameterLeavesDeclaredParamsUntouched()
+      throws JsonProcessingException {
+    setupOutputData(
+        loadParams(
+            "{\"str_param\": {\"type\": \"STRING\",\"value\": \"hello\", \"evaluated_result\": \"hello\", \"evaluated_time\": 1625176565957},"
+                + "\"undeclared\": {\"type\": \"STRING\",\"value\": \"x\", \"evaluated_result\": \"x\", \"evaluated_time\": 1625176565957}}"));
+    setupOutputDataDao();
+    runtimeSummary =
+        runtimeSummaryBuilder()
+            .type(StepType.TITUS)
+            .artifacts(artifacts)
+            .params(mutableStringParam("v1"))
+            .build();
+
+    AssertHelper.assertThrows(
+        "throws validation error before writing any param",
+        MaestroValidationException.class,
+        "Invalid output parameter [undeclared], not defined in params",
+        () -> outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary));
+    assertEquals("v1", runtimeSummary.getParams().get("str_param").asString());
   }
 
   private static Map<String, Parameter> mutableStringParam(String value) {

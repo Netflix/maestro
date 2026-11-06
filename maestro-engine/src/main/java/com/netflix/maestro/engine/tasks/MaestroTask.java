@@ -858,6 +858,7 @@ public final class MaestroTask implements FlowTask {
       StepRuntimeSummary runtimeSummary) {
     boolean doneWithExecute = false;
     while (!doneWithExecute) {
+      boolean failedOutputDataMerged = false;
       try {
         switch (runtimeSummary.getRuntimeState().getStatus()) {
           case NOT_CREATED:
@@ -956,10 +957,11 @@ public final class MaestroTask implements FlowTask {
           case PLATFORM_FAILED:
             // A failed step's output data is merged into its params, so downstream steps can read
             // what it reported before failing.
-            outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
+            OutputDataManager.MergeResult merged = mergeFailedStepOutputData(runtimeSummary);
+            failedOutputDataMerged = true;
             // A retryable failure is escalated to FATALLY_FAILED when the step's output data marks
             // it as non-retryable, then falls through to the FATALLY_FAILED handling.
-            if (!outputDataManager.isStepNonRetryable(runtimeSummary)) {
+            if (!merged.nonRetryable()) {
               doneWithExecute = true;
               break;
             }
@@ -971,6 +973,9 @@ public final class MaestroTask implements FlowTask {
                     failedStatus));
             // fall through, to apply failure mode handling
           case FATALLY_FAILED: // Failure mode only applies to FATALLY_FAILED
+            if (!failedOutputDataMerged) {
+              mergeFailedStepOutputData(runtimeSummary);
+            }
             if (!runtimeSummary.isIgnoreFailureMode()) {
               if (FailureMode.IGNORE_FAILURE == stepDefinition.getFailureMode()) {
                 runtimeSummary.markTerminated(
@@ -1015,6 +1020,33 @@ public final class MaestroTask implements FlowTask {
       }
     }
     return false;
+  }
+
+  /**
+   * Merges a failed step's output data into its params and artifacts. A retryable error is rethrown
+   * for the next polling cycle. Any other error is added to the timeline as a warning, the params
+   * stay unchanged and the step keeps its failure status.
+   */
+  private OutputDataManager.MergeResult mergeFailedStepOutputData(
+      StepRuntimeSummary runtimeSummary) {
+    try {
+      OutputDataManager.MergeResult merged =
+          outputDataManager.validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
+      if (!merged.changedParams().isEmpty()) {
+        runtimeSummary.addTimeline(
+            TimelineLogEvent.info(
+                "Merged the failed step's output data and changed params [%s].",
+                merged.changedParams()));
+      }
+      return merged;
+    } catch (MaestroRetryableError e) {
+      throw e;
+    } catch (RuntimeException e) {
+      runtimeSummary.addTimeline(
+          TimelineLogEvent.warn(
+              "Failed to merge the failed step's output data due to [%s].", e.getMessage()));
+      return OutputDataManager.MergeResult.EMPTY;
+    }
   }
 
   /**

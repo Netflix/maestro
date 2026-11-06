@@ -33,11 +33,16 @@ import com.netflix.maestro.engine.execution.WorkflowSummary;
 import com.netflix.maestro.engine.handlers.SignalHandler;
 import com.netflix.maestro.engine.params.OutputDataManager;
 import com.netflix.maestro.engine.properties.StepTimeoutProperties;
+import com.netflix.maestro.exceptions.MaestroInternalError;
+import com.netflix.maestro.exceptions.MaestroRetryableError;
+import com.netflix.maestro.exceptions.MaestroValidationException;
 import com.netflix.maestro.flow.models.Flow;
 import com.netflix.maestro.flow.models.Task;
 import com.netflix.maestro.models.Actions;
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.Defaults;
+import com.netflix.maestro.models.definition.AbstractStep;
+import com.netflix.maestro.models.definition.FailureMode;
 import com.netflix.maestro.models.definition.ParsableLong;
 import com.netflix.maestro.models.definition.RetryPolicy;
 import com.netflix.maestro.models.definition.Step;
@@ -84,13 +89,16 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
   @Mock private StepRuntimeManager stepRuntimeManager;
   @Mock private MaestroTask maestroTask;
   @Mock private StepRuntimeCallbackDelayPolicy callbackDelayPolicy;
+  @Mock private OutputDataManager outputDataManager;
   private StepTimeoutProperties timeoutProperties;
   private Task task;
-  private OutputDataManager outputDataManager;
+  private long taskRetryCount;
 
   @Before
   public void setup() {
     doCallRealMethod().when(maestroTask).updateRetryDelayTimeToTimeline(any());
+    when(outputDataManager.validateAndMergeOutputParamsAndArtifacts(any()))
+        .thenReturn(OutputDataManager.MergeResult.EMPTY);
     when(maestroTask.isStepSkipped(any(), any())).thenCallRealMethod();
     timeoutProperties = new StepTimeoutProperties();
   }
@@ -478,7 +486,6 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
       WorkflowSummary workflowSummary) {
     SignalHandler signalHandler = mock(SignalHandler.class);
     when(signalHandler.sendOutputSignals(any(), any())).thenReturn(true);
-    outputDataManager = mock(OutputDataManager.class);
     maestroTask =
         new MaestroTask(
             stepRuntimeManager,
@@ -498,6 +505,7 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
             paramExtensionRepo);
     task = mock(Task.class);
     when(task.referenceTaskName()).thenReturn("job1");
+    when(task.getRetryCount()).thenReturn(taskRetryCount);
     Map<String, Object> runtimeSummaryMap = new HashMap<>();
     runtimeSummaryMap.put(Constants.STEP_RUNTIME_SUMMARY_FIELD, input);
     when(task.getOutputData()).thenReturn(runtimeSummaryMap);
@@ -517,6 +525,8 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
       Assert.assertTrue(maestroTask.execute(flow, task));
     } else if (runCode == 2) { // cancel
       maestroTask.cancel(flow, task);
+    } else if (runCode == 4) { // execute expecting a retryable error
+      Assert.assertFalse(maestroTask.execute(flow, task));
     } else { // execute without asserting on the returned sync flag
       maestroTask.execute(flow, task);
     }
@@ -983,7 +993,6 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
     createAndRunMaestroTask(3, Flow.Status.RUNNING, stepDef, runtimeSummary, workflowSummary);
 
     verify(outputDataManager).validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
-    verify(outputDataManager).isStepNonRetryable(runtimeSummary);
   }
 
   @Test
@@ -996,6 +1005,165 @@ public class MaestroTaskTest extends MaestroEngineBaseTest {
     createAndRunMaestroTask(3, Flow.Status.RUNNING, stepDef, runtimeSummary, workflowSummary);
 
     verify(outputDataManager).validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
-    verify(outputDataManager).isStepNonRetryable(runtimeSummary);
+  }
+
+  @Test
+  public void testFatallyFailedStepOutputDataIsMergedBeforeFailureMode() throws Exception {
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+    Step stepDef = loadObject("fixtures/typedsteps/sample-typed-step.json", Step.class);
+    ((AbstractStep) stepDef).setFailureMode(FailureMode.IGNORE_FAILURE);
+    StepRuntimeSummary runtimeSummary =
+        loadTimeoutRuntimeSummary(StepInstance.Status.FATALLY_FAILED);
+    when(outputDataManager.validateAndMergeOutputParamsAndArtifacts(any()))
+        .thenAnswer(
+            invocation -> {
+              StepRuntimeSummary summary = invocation.getArgument(0);
+              summary.getParams().put("param1", buildParam("param1", "reported-before-failure"));
+              return new OutputDataManager.MergeResult(List.of("param1"), false);
+            });
+
+    createAndRunMaestroTask(3, Flow.Status.RUNNING, stepDef, runtimeSummary, workflowSummary);
+
+    verify(outputDataManager).validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
+    Assert.assertEquals(
+        "reported-before-failure", runtimeSummary.getParams().get("param1").getEvaluatedResult());
+    List<TimelineEvent> events = runtimeSummary.getTimeline().getTimelineEvents();
+    assertThat(events)
+        .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
+        .containsSubsequence(
+            TimelineLogEvent.info(
+                "Merged the failed step's output data and changed params [[param1]]."),
+            TimelineLogEvent.info(
+                "Step is failed but marked as COMPLETED_WITH_ERROR "
+                    + "because its failure mode is IGNORE_FAILURE."));
+  }
+
+  @Test
+  public void testUserFailedEscalatedToFatallyFailedMergesOutputDataOnce() throws Exception {
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+    Step stepDef = loadObject("fixtures/typedsteps/sample-typed-step.json", Step.class);
+    StepRuntimeSummary runtimeSummary = loadTimeoutRuntimeSummary(StepInstance.Status.USER_FAILED);
+    when(outputDataManager.validateAndMergeOutputParamsAndArtifacts(any()))
+        .thenReturn(new OutputDataManager.MergeResult(List.of(), true));
+
+    createAndRunMaestroTask(3, Flow.Status.RUNNING, stepDef, runtimeSummary, workflowSummary);
+
+    verify(outputDataManager).validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
+    Assert.assertEquals(
+        StepInstance.Status.FATALLY_FAILED, runtimeSummary.getRuntimeState().getStatus());
+  }
+
+  @Test
+  public void testUserFailedStepKeepsStatusWhenOutputDataIsInvalid() throws Exception {
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+    Step stepDef = loadObject("fixtures/typedsteps/sample-typed-step.json", Step.class);
+    StepRuntimeSummary runtimeSummary = loadTimeoutRuntimeSummary(StepInstance.Status.USER_FAILED);
+    when(outputDataManager.validateAndMergeOutputParamsAndArtifacts(any()))
+        .thenThrow(
+            new MaestroValidationException(
+                "Invalid output parameter [undeclared], not defined in params"));
+
+    createAndRunMaestroTask(3, Flow.Status.RUNNING, stepDef, runtimeSummary, workflowSummary);
+
+    Assert.assertEquals(
+        StepInstance.Status.USER_FAILED, runtimeSummary.getRuntimeState().getStatus());
+    assertThat(runtimeSummary.getTimeline().getTimelineEvents())
+        .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
+        .contains(
+            TimelineLogEvent.warn(
+                "Failed to merge the failed step's output data due to "
+                    + "[Invalid output parameter [undeclared], not defined in params]."));
+  }
+
+  @Test
+  public void testFatallyFailedStepKeepsStatusWhenOutputDataIsInvalid() throws Exception {
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+    Step stepDef = loadObject("fixtures/typedsteps/sample-typed-step.json", Step.class);
+    StepRuntimeSummary runtimeSummary =
+        loadTimeoutRuntimeSummary(StepInstance.Status.FATALLY_FAILED);
+    when(outputDataManager.validateAndMergeOutputParamsAndArtifacts(any()))
+        .thenThrow(
+            new MaestroValidationException(
+                "Invalid output parameter [undeclared], not defined in params"));
+
+    createAndRunMaestroTask(3, Flow.Status.RUNNING, stepDef, runtimeSummary, workflowSummary);
+
+    Assert.assertEquals(
+        StepInstance.Status.FATALLY_FAILED, runtimeSummary.getRuntimeState().getStatus());
+    assertThat(runtimeSummary.getTimeline().getTimelineEvents())
+        .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
+        .contains(
+            TimelineLogEvent.warn(
+                "Failed to merge the failed step's output data due to "
+                    + "[Invalid output parameter [undeclared], not defined in params]."));
+  }
+
+  @Test
+  public void testUserFailedStepKeepsStatusWhenOutputDataMergeHitsAnInternalError()
+      throws Exception {
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+    Step stepDef = loadObject("fixtures/typedsteps/sample-typed-step.json", Step.class);
+    StepRuntimeSummary runtimeSummary = loadTimeoutRuntimeSummary(StepInstance.Status.USER_FAILED);
+    when(outputDataManager.validateAndMergeOutputParamsAndArtifacts(any()))
+        .thenThrow(
+            new MaestroInternalError("Param [m] is a [STRING] type and cannot be used as MAP"));
+
+    createAndRunMaestroTask(3, Flow.Status.RUNNING, stepDef, runtimeSummary, workflowSummary);
+
+    Assert.assertEquals(
+        StepInstance.Status.USER_FAILED, runtimeSummary.getRuntimeState().getStatus());
+    assertThat(runtimeSummary.getTimeline().getTimelineEvents())
+        .usingRecursiveFieldByFieldElementComparatorIgnoringFields("timestamp")
+        .contains(
+            TimelineLogEvent.warn(
+                "Failed to merge the failed step's output data due to "
+                    + "[Param [m] is a [STRING] type and cannot be used as MAP]."));
+  }
+
+  @Test
+  public void testFailedStepOutputDataMergeRetryableErrorIsRetried() throws Exception {
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+    Step stepDef = loadObject("fixtures/typedsteps/sample-typed-step.json", Step.class);
+    StepRuntimeSummary runtimeSummary =
+        loadTimeoutRuntimeSummary(StepInstance.Status.FATALLY_FAILED);
+    int eventsBefore = runtimeSummary.getTimeline().getTimelineEvents().size();
+    when(outputDataManager.validateAndMergeOutputParamsAndArtifacts(any()))
+        .thenThrow(new MaestroRetryableError("retryable db error"));
+
+    createAndRunMaestroTask(4, Flow.Status.RUNNING, stepDef, runtimeSummary, workflowSummary);
+
+    Assert.assertEquals(
+        StepInstance.Status.FATALLY_FAILED, runtimeSummary.getRuntimeState().getStatus());
+    Assert.assertEquals(eventsBefore, runtimeSummary.getTimeline().getTimelineEvents().size());
+  }
+
+  @Test
+  public void testFailedStepMergeWithoutChangesAddsNoTimelineEvent() throws Exception {
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+    Step stepDef = loadObject("fixtures/typedsteps/sample-typed-step.json", Step.class);
+    StepRuntimeSummary runtimeSummary =
+        loadTimeoutRuntimeSummary(StepInstance.Status.FATALLY_FAILED);
+    int eventsBefore = runtimeSummary.getTimeline().getTimelineEvents().size();
+
+    createAndRunMaestroTask(3, Flow.Status.RUNNING, stepDef, runtimeSummary, workflowSummary);
+
+    verify(outputDataManager).validateAndMergeOutputParamsAndArtifacts(runtimeSummary);
+    Assert.assertEquals(eventsBefore, runtimeSummary.getTimeline().getTimelineEvents().size());
+  }
+
+  @Test
+  public void testRetryAttemptStartsFromDeclaredParams() throws Exception {
+    WorkflowSummary workflowSummary = new WorkflowSummary();
+    Step stepDef = loadObject("fixtures/typedsteps/sample-typed-step.json", Step.class);
+    StepRuntimeSummary failedAttempt = loadTimeoutRuntimeSummary(StepInstance.Status.USER_FAILED);
+    failedAttempt.getParams().put("param1", buildParam("param1", "reported-before-failure"));
+    taskRetryCount = 1;
+
+    StepRuntimeSummary retryAttempt =
+        createAndRunMaestroTask(0, null, stepDef, failedAttempt, workflowSummary);
+
+    Assert.assertEquals(2, retryAttempt.getStepAttemptId());
+    Assert.assertTrue(retryAttempt.getParams().isEmpty());
+    Assert.assertEquals(1, retryAttempt.getStepRetry().getErrorRetries());
   }
 }

@@ -209,9 +209,18 @@ public final class ParamsMergeHelper {
             });
   }
 
-  /** Merge output params into parameter map. */
+  /**
+   * Merge output params into parameter map. The parameter map is updated only after every output
+   * param has merged; a failed merge leaves it unchanged.
+   *
+   * @throws MaestroValidationException if an output param is not defined in the parameter map or
+   *     its mode or source does not allow the merge
+   * @throws MaestroInternalError if a MAP or STRING_MAP output param targets a param of another
+   *     type
+   */
   public static void mergeOutputDataParams(
       Map<String, Parameter> allParams, Map<String, Parameter> params) {
+    Map<String, Parameter> mergedParams = new LinkedHashMap<>();
     params.forEach(
         (name, param) -> {
           if (!allParams.containsKey(name)) {
@@ -230,10 +239,11 @@ public final class ParamsMergeHelper {
                 buildMergedParamDefinition(name, toMergeDef, baseDef, context, baseMap)
                     .toParameter();
             populateEvaluatedResultAndTime(mergedParam, param.getEvaluatedTime());
-            allParams.put(name, mergedParam);
+            mergedParams.put(name, mergedParam);
           } else if (param.getType() == ParamType.STRING_MAP && param.isLiteral()) {
             ParamDefinition baseDef = allParams.get(name).toDefinition();
-            Map<String, String> baseMap = baseDef.asStringMapParamDef().getValue();
+            Map<String, String> baseMap =
+                new LinkedHashMap<>(baseDef.asStringMapParamDef().getValue());
             ParamDefinition toMergeDef = param.toDefinition();
             Map<String, String> toMergeMap = toMergeDef.asStringMapParamDef().getValue();
 
@@ -242,7 +252,7 @@ public final class ParamsMergeHelper {
                 buildMergedParamDefinition(name, toMergeDef, baseDef, context, baseMap)
                     .toParameter();
             populateEvaluatedResultAndTime(mergedParam, param.getEvaluatedTime());
-            allParams.put(name, mergedParam);
+            mergedParams.put(name, mergedParam);
           } else {
             ParamDefinition paramDefinition =
                 ParamsMergeHelper.buildMergedParamDefinition(
@@ -254,9 +264,10 @@ public final class ParamsMergeHelper {
             Parameter parameter = paramDefinition.toParameter();
             parameter.setEvaluatedResult(param.getEvaluatedResult());
             parameter.setEvaluatedTime(param.getEvaluatedTime());
-            allParams.put(name, parameter);
+            mergedParams.put(name, parameter);
           }
         });
+    allParams.putAll(mergedParams);
   }
 
   /** Use the parameter value to populate the evaluated result for output parameter. */
