@@ -22,6 +22,7 @@ import com.netflix.maestro.models.definition.GitInfo;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.stepruntime.JobTemplate;
 import com.netflix.maestro.utils.Checks;
+import com.netflix.maestro.validations.JobTemplateDefinitionConstraint;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.util.Arrays;
@@ -51,7 +52,7 @@ public class JobTemplateCreateRequest {
   private List<String> testWorkflows;
   private GitInfo gitInfo;
 
-  @Valid @NotNull private JobTemplate.Definition definition;
+  @Valid @NotNull @JobTemplateDefinitionConstraint private JobTemplate.Definition definition;
 
   private Map<String, Object> extraInfo = new LinkedHashMap<>();
 

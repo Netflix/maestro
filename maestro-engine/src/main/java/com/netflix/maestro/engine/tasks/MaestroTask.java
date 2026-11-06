@@ -935,7 +935,13 @@ public final class MaestroTask implements FlowTask {
 
             if (initializeAndSendOutputSignals(
                 flow, stepDefinition, workflowSummary, runtimeSummary)) {
-              runtimeSummary.markTerminated(StepInstance.Status.SUCCEEDED, tracingManager);
+              // a step runtime may end its step COMPLETED_WITH_ERROR, e.g. a template step whose
+              // inline instance ran a step in that status
+              runtimeSummary.markTerminated(
+                  runtimeSummary.isCompletedWithError()
+                      ? StepInstance.Status.COMPLETED_WITH_ERROR
+                      : StepInstance.Status.SUCCEEDED,
+                  tracingManager);
             }
             break;
           case UNSATISFIED:

@@ -39,6 +39,7 @@ import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.definition.WorkflowDefinition;
 import com.netflix.maestro.models.error.Details;
 import com.netflix.maestro.models.initiator.ForeachInitiator;
+import com.netflix.maestro.models.initiator.TemplateInitiator;
 import com.netflix.maestro.models.initiator.UpstreamInitiator;
 import com.netflix.maestro.models.instance.RunConfig;
 import com.netflix.maestro.models.instance.RunPolicy;
@@ -973,6 +974,24 @@ public class MaestroWorkflowInstanceDaoTest extends MaestroDaoBaseTest {
 
     assertEquals(2L, instanceDao.getLargestForeachRunIdFromRuns(TEST_WORKFLOW_ID));
     MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID, 101);
+  }
+
+  @Test
+  public void testGetLargestTemplateRunIdFromRuns() throws Exception {
+    // the existing instance is not template initiated
+    assertEquals(0L, instanceDao.getLargestTemplateRunIdFromRuns(TEST_WORKFLOW_ID));
+
+    WorkflowInstance wfi2 = loadObject(TEST_WORKFLOW_INSTANCE, WorkflowInstance.class);
+    wfi2.setWorkflowUuid("wfi2-template-uuid");
+    wfi2.setWorkflowInstanceId(102L);
+    wfi2.setWorkflowRunId(3L);
+    wfi2.setInitiator(new TemplateInitiator());
+    Optional<Details> ret =
+        instanceDao.runWorkflowInstances(TEST_WORKFLOW_ID, Collections.singletonList(wfi2));
+    assertFalse(ret.isPresent());
+
+    assertEquals(3L, instanceDao.getLargestTemplateRunIdFromRuns(TEST_WORKFLOW_ID));
+    MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID, 102);
   }
 
   @Test

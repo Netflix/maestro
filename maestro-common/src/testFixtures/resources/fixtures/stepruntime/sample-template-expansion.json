@@ -1,0 +1,45 @@
+{
+  "steps": [
+    {
+      "step": {
+        "id": "prep",
+        "type": "NoOp",
+        "transition": {
+          "successors": {
+            "write_jobs": "true"
+          }
+        }
+      }
+    },
+    {
+      "step": {
+        "id": "write_jobs",
+        "type": "NoOp",
+        "transition": {
+          "successors": {
+            "audit": "true"
+          }
+        }
+      }
+    },
+    {
+      "step": {
+        "id": "audit",
+        "type": "NoOp",
+        "params": {
+          "row_count": {
+            "value": 42,
+            "type": "LONG",
+            "mode": "MUTABLE"
+          }
+        }
+      }
+    }
+  ],
+  "params": {
+    "wap_branch": {
+      "value": "wap-3f2a",
+      "type": "STRING"
+    }
+  }
+}

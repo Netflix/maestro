@@ -24,7 +24,10 @@ import com.netflix.maestro.models.definition.StepType;
 import com.netflix.maestro.models.definition.Tag;
 import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.parameter.ParamDefinition;
+import com.netflix.maestro.models.parameter.ParamMode;
+import com.netflix.maestro.models.parameter.ParamSource;
 import com.netflix.maestro.utils.Checks;
+import com.netflix.maestro.validations.JobTemplateDefinitionConstraint;
 import com.netflix.maestro.validations.MaestroReferenceIdConstraint;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -46,7 +49,7 @@ import lombok.Data;
 @Data
 public class JobTemplate {
   @Valid @NotNull private Metadata metadata;
-  @Valid @NotNull private Definition definition;
+  @Valid @NotNull @JobTemplateDefinitionConstraint private Definition definition;
 
   @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
   @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -112,7 +115,17 @@ public class JobTemplate {
   @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
   @JsonInclude(JsonInclude.Include.NON_NULL)
   @JsonPropertyOrder(
-      value = {"job_type", "step_type", "version", "description", "tags", "inherit_from", "params"},
+      value = {
+        "job_type",
+        "step_type",
+        "version",
+        "description",
+        "tags",
+        "inherit_from",
+        "params",
+        "prepare",
+        "step_inputs"
+      },
       alphabetic = true)
   @Data
   public static class Definition {
@@ -127,11 +140,52 @@ public class JobTemplate {
     // list of job type and its version pair to inherit params from
     @Valid private Map<String, String> inheritFrom;
 
+    // template inputs in a mutable mode; params with the TEMPLATE_OUTPUT source are what the
+    // template promises outward, see promisedParams()
     @Valid private Map<String, ParamDefinition> params;
+
+    // how the step list run by a template step is produced, only for the template step type
+    @Valid private TemplatePrepare prepare;
+
+    // positions where a workflow may attach steps of its own, keyed by position name, only for the
+    // template step type
+    @Valid private Map<String, TemplateStepInput> stepInputs;
 
     /** set params. */
     public void setParams(Map<String, ParamDefinition> input) {
       this.params = ParamDefinition.preprocessDefinitionParams(input);
+    }
+
+    /**
+     * The params the template promises outward: every param declared with the {@code
+     * TEMPLATE_OUTPUT} source, which is {@code IMMUTABLE} and carries an expression. They are
+     * evaluated inside the inline instance after the template steps ran and published on the
+     * template step; steps a workflow attaches may reference them by name. An {@code IMMUTABLE}
+     * param without that source is a constant internal to the template.
+     *
+     * @return the promised params in declaration order, empty if none
+     */
+    public Map<String, ParamDefinition> promisedParams() {
+      Map<String, ParamDefinition> promised = new LinkedHashMap<>();
+      if (params != null) {
+        params.forEach(
+            (name, def) -> {
+              if (isPromised(def)) {
+                promised.put(name, def);
+              }
+            });
+      }
+      return promised;
+    }
+
+    /**
+     * True if a template param is promised outward: declared with the TEMPLATE_OUTPUT source in
+     * IMMUTABLE mode with an expression.
+     */
+    public static boolean isPromised(ParamDefinition def) {
+      return def.getSource() == ParamSource.TEMPLATE_OUTPUT
+          && def.getMode() == ParamMode.IMMUTABLE
+          && def.getExpression() != null;
     }
   }
 }

@@ -225,6 +225,45 @@ public class WorkflowActionHandler {
   }
 
   /**
+   * Run an inline workflow instance for a template step. It bypasses the run strategy manager as
+   * the template step manages its own inline workflow instances. A fresh run request creates a new
+   * instance with the given ids. A restart request restarts the previous run of the same instance.
+   *
+   * @param workflow the inline workflow built for the template step
+   * @param internalId the parent workflow internal id
+   * @param workflowVersionId the parent workflow version id
+   * @param runProperties run properties
+   * @param templateStepId template step id
+   * @param instanceId inline workflow instance id to run
+   * @param runId inline workflow run id to run
+   * @param runRequest run request
+   * @return the details if failing to run the template inline workflow instance
+   */
+  public Optional<Details> runTemplateInstance(
+      Workflow workflow,
+      Long internalId,
+      long workflowVersionId,
+      RunProperties runProperties,
+      String templateStepId,
+      long instanceId,
+      long runId,
+      RunRequest runRequest) {
+    WorkflowInstance instance;
+    if (runRequest.isFreshRun()) {
+      instance =
+          workflowHelper.createWorkflowInstance(
+              workflow, internalId, workflowVersionId, runProperties, runRequest);
+    } else {
+      instance = instanceDao.getWorkflowInstanceRun(workflow.getId(), instanceId, runId - 1);
+      runRequest.updateForDownstreamIfNeeded(templateStepId, instance);
+      workflowHelper.updateWorkflowInstance(instance, runRequest);
+    }
+    instance.setWorkflowInstanceId(instanceId);
+    instance.setWorkflowRunId(runId);
+    return instanceDao.runWorkflowInstances(workflow.getId(), List.of(instance));
+  }
+
+  /**
    * Run a batch of foreach workflow instances for a given workflow and version. The request list
    * has already been sized by insertBatchLimit in StepRuntimeProperties.Foreach. Note that batch
    * start only supports a fresh new run (run_id=1). Additionally, the instance ids have already

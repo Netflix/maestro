@@ -94,7 +94,8 @@ import lombok.ToString;
       "pending_records",
       "tracing_context",
       "step_run_params",
-      "restart_config"
+      "restart_config",
+      "completed_with_error"
     },
     alphabetic = true)
 @JsonDeserialize(builder = StepRuntimeSummary.StepRuntimeSummaryBuilder.class)
@@ -138,6 +139,8 @@ public final class StepRuntimeSummary {
 
   @Setter @Nullable private Map<String, ParamDefinition> stepRunParams;
   @Setter @Nullable private RestartConfig restartConfig;
+  // set by the step runtime to end the step COMPLETED_WITH_ERROR instead of SUCCEEDED
+  @Setter @Nullable private Boolean completedWithError;
 
   // flag to ignore failure mode or not, default is false, won't persist it.
   @JsonIgnore @Nullable private boolean ignoreFailureMode;
@@ -177,7 +180,8 @@ public final class StepRuntimeSummary {
       List<StepInstanceUpdateJobEvent.StepInstancePendingRecord> pendingRecords,
       MaestroTracingContext tracingContext,
       @Nullable Map<String, ParamDefinition> stepRunParams,
-      @Nullable RestartConfig restartConfig) {
+      @Nullable RestartConfig restartConfig,
+      @Nullable Boolean completedWithError) {
     this.stepId = stepId;
     this.stepAttemptId = stepAttemptId;
     this.stepInstanceUuid = stepInstanceUuid;
@@ -203,6 +207,13 @@ public final class StepRuntimeSummary {
     this.tracingContext = tracingContext;
     this.stepRunParams = stepRunParams;
     this.restartConfig = restartConfig;
+    this.completedWithError = completedWithError;
+  }
+
+  /** true if the step runtime asked to end the step COMPLETED_WITH_ERROR instead of SUCCEEDED. */
+  @JsonIgnore
+  public boolean isCompletedWithError() {
+    return Boolean.TRUE.equals(completedWithError);
   }
 
   /** builder class for lombok and jackson. */

@@ -834,6 +834,50 @@ public class WorkflowActionHandlerTest extends MaestroEngineBaseTest {
     assertFalse(result.isPresent());
   }
 
+  private void runTemplateInstance(RunPolicy runPolicy, long instanceId, long runId) {
+    RunRequest request =
+        RunRequest.builder()
+            .initiator(new ManualInitiator())
+            .currentPolicy(runPolicy)
+            .requestId(IdHelper.createUuid("foo"))
+            .build();
+
+    Optional<Details> result =
+        actionHandler.runTemplateInstance(
+            definition.getWorkflow(),
+            123L,
+            1L,
+            new RunProperties(),
+            "template-step",
+            instanceId,
+            runId,
+            request);
+    assertFalse(result.isPresent());
+  }
+
+  @Test
+  public void testRunTemplateInstanceFreshRun() {
+    runTemplateInstance(RunPolicy.START_FRESH_NEW_RUN, 2L, 1L);
+    verify(instanceDao, times(1)).runWorkflowInstances(any(), any());
+    verify(workflowHelper, times(1)).createWorkflowInstance(any(), any(), anyLong(), any(), any());
+    verify(instanceDao, times(0)).getWorkflowInstanceRun(anyString(), anyLong(), anyLong());
+  }
+
+  @Test
+  public void testRunTemplateInstanceRestart() {
+    doNothing().when(workflowHelper).updateWorkflowInstance(any(), any());
+    when(instanceDao.getWorkflowInstanceRun(anyString(), anyLong(), anyLong()))
+        .thenReturn(instance);
+
+    runTemplateInstance(RunPolicy.RESTART_FROM_INCOMPLETE, 2L, 3L);
+    verify(instanceDao, times(1)).runWorkflowInstances(any(), any());
+    verify(instanceDao, times(1)).getWorkflowInstanceRun(definition.getWorkflow().getId(), 2L, 2L);
+    verify(workflowHelper, times(1)).updateWorkflowInstance(any(), any());
+    verify(workflowHelper, times(0)).createWorkflowInstance(any(), any(), anyLong(), any(), any());
+    assertEquals(2L, instance.getWorkflowInstanceId());
+    assertEquals(3L, instance.getWorkflowRunId());
+  }
+
   @Test
   public void testRunInlineWorkflowInstanceNewIteration() {
     runInlineWorkflowInstance(RunPolicy.RESTART_FROM_INCOMPLETE, 3L, 1L);

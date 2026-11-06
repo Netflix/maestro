@@ -1,0 +1,115 @@
+{
+  "owner": "tester",
+  "status": "alpha",
+  "support": "support-team",
+  "definition": {
+    "job_type": "sample_wap_dynamic",
+    "step_type": "template",
+    "version": "v1",
+    "description": "Same template as sample_wap_static, but a generator step running in a container returns the step list as maestro_expansion.",
+    "params": {
+      "table": {
+        "type": "STRING",
+        "value": ""
+      },
+      "snapshot": {
+        "type": "STRING",
+        "mode": "IMMUTABLE",
+        "expression": "publish__snapshot;",
+        "source": "TEMPLATE_OUTPUT"
+      },
+      "rows": {
+        "type": "LONG",
+        "mode": "IMMUTABLE",
+        "expression": "audit__total;",
+        "source": "TEMPLATE_OUTPUT"
+      },
+      "branch": {
+        "type": "STRING",
+        "mode": "IMMUTABLE",
+        "expression": "branch;",
+        "source": "TEMPLATE_OUTPUT"
+      }
+    },
+    "prepare": {
+      "type": "step",
+      "step": {
+        "step": {
+          "id": "generate",
+          "type": "kubernetes",
+          "retry_policy": {
+            "error_retry_limit": 0
+          },
+          "params": {
+            "kubernetes": {
+              "type": "MAP",
+              "value": {
+                "image": {
+                  "type": "STRING",
+                  "value": "busybox"
+                },
+                "command": {
+                  "type": "STRING_ARRAY",
+                  "value": [
+                    "/bin/sh",
+                    "-c"
+                  ]
+                },
+                "args": {
+                  "type": "STRING_ARRAY",
+                  "value": [
+                    "echo table=$$TABLE; echo step_inputs=$$STEP_INPUTS; echo template=$$TEMPLATE_IDENTITY; echo \"$$MAESTRO_OUTPUT_START\"; echo '{\"params\": {\"maestro_expansion\": {\"type\": \"STRING\", \"value\": \"{\\\"steps\\\": [{\\\"step\\\": {\\\"id\\\": \\\"audit\\\", \\\"type\\\": \\\"NoOp\\\", \\\"params\\\": {\\\"total\\\": {\\\"type\\\": \\\"LONG\\\", \\\"expression\\\": \\\"long t = 0; for (int i = 0; i < writes__row_count.length; i += 1) { t = t + writes__row_count[i]; } return t;\\\"}}, \\\"transition\\\": {\\\"successors\\\": {\\\"publish\\\": \\\"true\\\"}}}}, {\\\"step\\\": {\\\"id\\\": \\\"publish\\\", \\\"type\\\": \\\"NoOp\\\", \\\"params\\\": {\\\"snapshot\\\": {\\\"type\\\": \\\"STRING\\\", \\\"expression\\\": \\\"'\"'\"'snapshot-'\"'\"' + table;\\\"}}}}], \\\"params\\\": {\\\"branch\\\": {\\\"type\\\": \\\"STRING\\\", \\\"value\\\": \\\"generated\\\"}}}\", \"evaluated_result\": \"{\\\"steps\\\": [{\\\"step\\\": {\\\"id\\\": \\\"audit\\\", \\\"type\\\": \\\"NoOp\\\", \\\"params\\\": {\\\"total\\\": {\\\"type\\\": \\\"LONG\\\", \\\"expression\\\": \\\"long t = 0; for (int i = 0; i < writes__row_count.length; i += 1) { t = t + writes__row_count[i]; } return t;\\\"}}, \\\"transition\\\": {\\\"successors\\\": {\\\"publish\\\": \\\"true\\\"}}}}, {\\\"step\\\": {\\\"id\\\": \\\"publish\\\", \\\"type\\\": \\\"NoOp\\\", \\\"params\\\": {\\\"snapshot\\\": {\\\"type\\\": \\\"STRING\\\", \\\"expression\\\": \\\"'\"'\"'snapshot-'\"'\"' + table;\\\"}}}}], \\\"params\\\": {\\\"branch\\\": {\\\"type\\\": \\\"STRING\\\", \\\"value\\\": \\\"generated\\\"}}}\", \"evaluated_time\": 1}}}'; echo \"$$MAESTRO_OUTPUT_END\""
+                  ]
+                },
+                "env": {
+                  "type": "STRING_MAP",
+                  "value": {
+                    "TABLE": "${table_in}",
+                    "STEP_INPUTS": "${step_inputs_in}",
+                    "TEMPLATE_IDENTITY": "${identity_in}"
+                  }
+                }
+              }
+            },
+            "table_in": {
+              "type": "STRING",
+              "expression": "table;"
+            },
+            "step_inputs_in": {
+              "type": "STRING",
+              "expression": "maestro_step_inputs;"
+            },
+            "identity_in": {
+              "type": "STRING",
+              "expression": "maestro_template_identity;"
+            }
+          }
+        }
+      }
+    },
+    "step_inputs": {
+      "writes": {
+        "successors": [
+          "audit"
+        ],
+        "params": [
+          "table"
+        ],
+        "outputs": {
+          "row_count": {
+            "type": "LONG"
+          }
+        }
+      },
+      "after_publish": {
+        "predecessors": [
+          "publish"
+        ],
+        "params": [
+          "table",
+          "snapshot"
+        ]
+      }
+    }
+  }
+}

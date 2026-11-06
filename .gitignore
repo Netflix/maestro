@@ -40,6 +40,10 @@ bin/
 ### VS Code ###
 .vscode/
 
+### Codex ###
+.codex/
+.agents/
+
 ### Claude Code ###
 .claude/
 

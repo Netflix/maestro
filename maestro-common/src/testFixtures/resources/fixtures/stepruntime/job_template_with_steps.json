@@ -1,0 +1,92 @@
+{
+  "metadata": {
+    "owner": "tester",
+    "version_author": "tester",
+    "status": "alpha",
+    "support": "support-team",
+    "create_time": 1660751501925
+  },
+  "definition": {
+    "job_type": "write_audit_publish",
+    "step_type": "template",
+    "version": "v3",
+    "description": "Write into a snapshot, run checks against it, publish it. Workflows may attach their own write jobs before the audit and their own steps after the publish.",
+    "params": {
+      "target_table": {
+        "value": "db.sample_table",
+        "type": "STRING",
+        "internal_mode": "REQUIRED"
+      },
+      "snapshot_id": {
+        "expression": "return UUID.randomUUID().toString();",
+        "type": "STRING"
+      },
+      "published_snapshot": {
+        "expression": "publish_snapshot__snapshot;",
+        "type": "STRING",
+        "mode": "IMMUTABLE",
+        "source": "TEMPLATE_OUTPUT"
+      }
+    },
+    "prepare": {
+      "type": "static",
+      "steps": [
+        {
+          "step": {
+            "id": "write",
+            "type": "NoOp",
+            "transition": {
+              "successors": {
+                "audit": "true"
+              }
+            }
+          }
+        },
+        {
+          "step": {
+            "id": "audit",
+            "type": "NoOp",
+            "transition": {
+              "successors": {
+                "publish_snapshot": "true"
+              }
+            },
+            "params": {
+              "table": {
+                "expression": "target_table;",
+                "type": "STRING"
+              }
+            }
+          }
+        },
+        {
+          "step": {
+            "id": "publish_snapshot",
+            "type": "NoOp",
+            "params": {
+              "snapshot": {
+                "expression": "snapshot_id;",
+                "type": "STRING"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "step_inputs": {
+      "writes": {
+        "successors": ["audit"],
+        "params": ["target_table"],
+        "outputs": {
+          "row_count": {
+            "type": "LONG"
+          }
+        }
+      },
+      "after_publish": {
+        "predecessors": ["publish_snapshot"],
+        "params": ["target_table", "published_snapshot"]
+      }
+    }
+  }
+}

@@ -219,9 +219,14 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
           + MAX_INSTANCE_ID
           + " ";
 
+  private static final String GET_LARGEST_RUN_ID_QUERY_PREFIX =
+      "SELECT run_id as id FROM maestro_workflow_instance WHERE workflow_id=? AND initiator_type=";
+
   private static final String GET_LARGEST_FOREACH_RUN_ID_QUERY =
-      "SELECT run_id as id FROM maestro_workflow_instance "
-          + "WHERE workflow_id=? AND initiator_type='FOREACH' ORDER BY run_id DESC LIMIT 1";
+      GET_LARGEST_RUN_ID_QUERY_PREFIX + "'FOREACH' ORDER BY run_id DESC LIMIT 1";
+
+  private static final String GET_LARGEST_TEMPLATE_RUN_ID_QUERY =
+      GET_LARGEST_RUN_ID_QUERY_PREFIX + "'TEMPLATE' ORDER BY run_id DESC LIMIT 1";
 
   private static final String GET_MIN_MAX_WORKFLOW_INSTANCE_IDS_QUERY =
       SELECT_MIN_MAX_INSTANCE_ID + FROM_WORKFLOW_INSTANCE_TABLE + "WHERE workflow_id=?";
@@ -1243,6 +1248,29 @@ public class MaestroWorkflowInstanceDao extends AbstractDatabaseDao {
                 }),
         "getLargestForeachRunIdFromRuns",
         "Failed to get the largest foreach run_id for all runs of inline workflow [{}]",
+        workflowId);
+  }
+
+  /**
+   * Get the largest template run_id from all previous runs of a template inline workflow.
+   *
+   * @param workflowId template inline workflow id
+   * @return max run_id, 0 if the inline workflow has never run
+   */
+  public long getLargestTemplateRunIdFromRuns(String workflowId) {
+    return withMetricLogError(
+        () ->
+            withRetryableQuery(
+                GET_LARGEST_TEMPLATE_RUN_ID_QUERY,
+                stmt -> stmt.setString(1, workflowId),
+                result -> {
+                  if (result.next()) {
+                    return result.getLong(ID_COLUMN);
+                  }
+                  return 0L;
+                }),
+        "getLargestTemplateRunIdFromRuns",
+        "Failed to get the largest template run_id for all runs of inline workflow [{}]",
         workflowId);
   }
 

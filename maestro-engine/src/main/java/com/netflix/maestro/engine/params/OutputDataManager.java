@@ -120,6 +120,7 @@ public class OutputDataManager {
     } else if (artifacts.containsKey(Artifact.Type.TITUS.key())) {
       jobId = artifacts.get(Artifact.Type.TITUS.key()).asTitus().getTitusTaskId();
     } else if (artifacts.containsKey(Artifact.Type.HTTP.key())
+        || artifacts.containsKey(Artifact.Type.TEMPLATE.key())
         || runtimeSummary.getType() == StepType.EXTENSION) {
       jobId = runtimeSummary.getStepInstanceUuid();
     }

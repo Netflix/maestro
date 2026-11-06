@@ -13,21 +13,25 @@
 package com.netflix.maestro.validations;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import com.netflix.maestro.models.Constants;
 import com.netflix.maestro.models.definition.ForeachStep;
 import com.netflix.maestro.models.definition.StepTransition;
 import com.netflix.maestro.models.definition.StepType;
+import com.netflix.maestro.models.definition.TemplateStep;
 import com.netflix.maestro.models.definition.TypedStep;
 import com.netflix.maestro.models.definition.WhileStep;
 import com.netflix.maestro.models.definition.Workflow;
 import com.netflix.maestro.models.parameter.MapParamDefinition;
 import com.netflix.maestro.models.parameter.ParamDefinition;
 import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Valid;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.Test;
 
@@ -298,6 +302,136 @@ public class WorkflowConstraintTest extends BaseConstraintTest {
     assertEquals(
         "[workflow step transition] is invalid for step [foo]'s successor step id [bar], which does not exist in steps",
         violation.getMessage());
+  }
+
+  @Test
+  public void isStepDuplicateIncludingTemplateStepInputs() {
+    TypedStep step = new TypedStep();
+    step.setId("foo");
+    TemplateStep template = new TemplateStep();
+    template.setId("template");
+    template.setStepInputs(Map.of("writes", Collections.singletonList(step)));
+    Workflow workflow = Workflow.builder().steps(Arrays.asList(step, template)).build();
+    Set<ConstraintViolation<TestWorkflow>> violations =
+        validator.validate(new TestWorkflow(workflow));
+    assertEquals(1, violations.size());
+    ConstraintViolation<TestWorkflow> violation = violations.iterator().next();
+    assertEquals("workflow.steps", violation.getPropertyPath().toString());
+    assertEquals("[workflow step definitions] contain duplicate step ids", violation.getMessage());
+  }
+
+  @Test
+  public void isTemplateStepInputsEmpty() {
+    TemplateStep template = new TemplateStep();
+    template.setId("template");
+    template.setStepInputs(Collections.emptyMap());
+    Workflow workflow = Workflow.builder().steps(Collections.singletonList(template)).build();
+    Set<ConstraintViolation<TestWorkflow>> violations =
+        validator.validate(new TestWorkflow(workflow));
+    assertEquals(1, violations.size());
+    ConstraintViolation<TestWorkflow> violation = violations.iterator().next();
+    assertEquals("workflow.steps", violation.getPropertyPath().toString());
+    assertEquals(
+        "[workflow step definitions] template step [template] step_inputs cannot be empty",
+        violation.getMessage());
+  }
+
+  @Test
+  public void isTemplateStepInputPositionEmpty() {
+    TemplateStep template = new TemplateStep();
+    template.setId("template");
+    template.setStepInputs(Map.of("writes", Collections.emptyList()));
+    Workflow workflow = Workflow.builder().steps(Collections.singletonList(template)).build();
+    Set<ConstraintViolation<TestWorkflow>> violations =
+        validator.validate(new TestWorkflow(workflow));
+    assertEquals(1, violations.size());
+    ConstraintViolation<TestWorkflow> violation = violations.iterator().next();
+    assertEquals("workflow.steps", violation.getPropertyPath().toString());
+    assertEquals(
+        "[workflow step definitions] template step [template] step_inputs position [writes] "
+            + "cannot be empty",
+        violation.getMessage());
+  }
+
+  /** An attached step may only name steps of its own position, never a template step id. */
+  @Test
+  public void isTemplateStepInputNamingOutsidePosition() {
+    TypedStep step = new TypedStep();
+    step.setId("validate");
+    StepTransition transition = new StepTransition();
+    transition.setSuccessors(Collections.singletonMap("audit", "true"));
+    step.setTransition(transition);
+    TemplateStep template = new TemplateStep();
+    template.setId("template");
+    template.setStepInputs(Map.of("writes", Collections.singletonList(step)));
+    Workflow workflow = Workflow.builder().steps(Collections.singletonList(template)).build();
+    Set<ConstraintViolation<TestWorkflow>> violations =
+        validator.validate(new TestWorkflow(workflow));
+    assertEquals(1, violations.size());
+    ConstraintViolation<TestWorkflow> violation = violations.iterator().next();
+    assertEquals("workflow.steps", violation.getPropertyPath().toString());
+    assertEquals(
+        "[workflow step definitions] template step [template] step input [validate] at position "
+            + "[writes] names [audit], which is not a step of the same position",
+        violation.getMessage());
+  }
+
+  private static class TestValidTemplateStep {
+    @Valid TemplateStep step;
+
+    TestValidTemplateStep(TemplateStep step) {
+      this.step = step;
+    }
+  }
+
+  @Test
+  public void isTemplateStepInputIdReserved() {
+    TypedStep step = new TypedStep();
+    step.setId(Constants.TEMPLATE_OUTPUTS_STEP_ID);
+    step.setType(StepType.NOOP);
+    TemplateStep template = new TemplateStep();
+    template.setId("template");
+    template.setStepInputs(Map.of("writes", Collections.singletonList(step)));
+    Set<ConstraintViolation<TestValidTemplateStep>> violations =
+        validator.validate(new TestValidTemplateStep(template));
+    assertEquals(1, violations.size());
+    ConstraintViolation<TestValidTemplateStep> violation = violations.iterator().next();
+    String path = violation.getPropertyPath().toString();
+    assertTrue(
+        path, path.startsWith("step.stepInputs[writes].<map value>[0]") && path.endsWith(".id"));
+    assertEquals(
+        "[maestro id or name reference] cannot start with reserved prefix: maestro_ "
+            + "- rejected value is [maestro_template_outputs]",
+        violation.getMessage());
+  }
+
+  /** Attached steps of one position form their own DAG; position names are resolved at run time. */
+  @Test
+  public void isTemplateStepInputDagWithinPositionValid() {
+    TypedStep writeA = new TypedStep();
+    writeA.setId("write_a");
+    StepTransition transition = new StepTransition();
+    transition.setSuccessors(Collections.singletonMap("merge", "true"));
+    writeA.setTransition(transition);
+    TypedStep writeB = new TypedStep();
+    writeB.setId("write_b");
+    TypedStep merge = new TypedStep();
+    merge.setId("merge");
+    StepTransition transitionMerge = new StepTransition();
+    transitionMerge.setPredecessors(Collections.singletonList("write_b"));
+    merge.setTransition(transitionMerge);
+    TypedStep announce = new TypedStep();
+    announce.setId("announce");
+    TemplateStep template = new TemplateStep();
+    template.setId("template");
+    template.setStepInputs(
+        Map.of(
+            "writes",
+            Arrays.asList(writeA, writeB, merge),
+            "after_publish",
+            Collections.singletonList(announce)));
+    Workflow workflow = Workflow.builder().steps(Collections.singletonList(template)).build();
+    assertTrue(validator.validate(new TestWorkflow(workflow)).isEmpty());
   }
 
   @Test

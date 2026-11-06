@@ -50,6 +50,7 @@ import com.netflix.maestro.models.definition.User;
 import com.netflix.maestro.models.definition.Workflow;
 import com.netflix.maestro.models.definition.WorkflowDefinition;
 import com.netflix.maestro.models.initiator.ForeachInitiator;
+import com.netflix.maestro.models.initiator.TemplateInitiator;
 import com.netflix.maestro.models.initiator.UpstreamInitiator;
 import com.netflix.maestro.models.instance.WorkflowInstance;
 import com.netflix.maestro.models.parameter.ParamDefinition;
@@ -89,6 +90,8 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
   private static final String TEST_WORKFLOW_ID9 = "sample-minimal-wf-with-tags";
   private static final String TEST_INLINE_WORKFLOW_ID1 =
       Constants.FOREACH_INLINE_WORKFLOW_PREFIX + TEST_WORKFLOW_ID1;
+  private static final String TEST_TEMPLATE_INLINE_WORKFLOW_ID1 =
+      Constants.TEMPLATE_INLINE_WORKFLOW_PREFIX + TEST_WORKFLOW_ID1;
   private static final PropertiesUpdate PROPERTIES_UPDATE =
       new PropertiesUpdate(Type.UPDATE_PROPERTIES);
   private static final PropertiesUpdate PROPERTIES_UPDATE_ADD_TAG =
@@ -127,6 +130,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
     MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID1, 1);
     MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_WORKFLOW_ID1, 2);
     MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_INLINE_WORKFLOW_ID1, 1);
+    MaestroTestHelper.removeWorkflowInstance(DATA_SOURCE, TEST_TEMPLATE_INLINE_WORKFLOW_ID1, 1);
   }
 
   @Test
@@ -828,7 +832,7 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
     AssertHelper.assertThrows(
         "The inline workflow cannot be deleted.",
         MaestroUnprocessableEntityException.class,
-        "Cannot delete an inline foreach workflow [maestro_foreach",
+        "Cannot delete an inline workflow [maestro_foreach",
         () -> workflowDao.deleteWorkflow(TEST_INLINE_WORKFLOW_ID1, User.create("tester")));
 
     AssertHelper.assertThrows(
@@ -1161,6 +1165,35 @@ public class MaestroWorkflowDaoTest extends MaestroDaoBaseTest {
         () ->
             workflowDao.updateWorkflowProperties(
                 TEST_WORKFLOW_ID1, tester, properties, PROPERTIES_UPDATE));
+  }
+
+  @Test
+  public void testGetTemplateInlineWorkflowDefinition() throws Exception {
+    WorkflowInstance instance =
+        loadObject(
+            "fixtures/instances/sample-workflow-instance-created.json", WorkflowInstance.class);
+    instance.setWorkflowId(TEST_TEMPLATE_INLINE_WORKFLOW_ID1);
+    TemplateInitiator initiator = new TemplateInitiator();
+    UpstreamInitiator.Info parent = new UpstreamInitiator.Info();
+    parent.setWorkflowId(TEST_WORKFLOW_ID1);
+    initiator.setAncestors(Collections.singletonList(parent));
+    instance.setInitiator(initiator);
+
+    instanceDao.runWorkflowInstances(
+        TEST_TEMPLATE_INLINE_WORKFLOW_ID1, Collections.singletonList(instance));
+
+    WorkflowDefinition wfd = loadWorkflow(TEST_WORKFLOW_ID1);
+    workflowDao.addWorkflowDefinition(wfd, wfd.getPropertiesSnapshot().extractProperties());
+
+    WorkflowDefinition def =
+        workflowDao.getWorkflowDefinition(TEST_TEMPLATE_INLINE_WORKFLOW_ID1, "latest");
+
+    Metadata expected = new Metadata();
+    expected.setWorkflowVersionId(1L);
+    expected.setWorkflowId(TEST_TEMPLATE_INLINE_WORKFLOW_ID1);
+    assertEquals(expected, def.getMetadata());
+    assertEquals(wfd.getPropertiesSnapshot(), def.getPropertiesSnapshot());
+    assertEquals(instance.getRuntimeWorkflow(), def.getWorkflow());
   }
 
   @Test
